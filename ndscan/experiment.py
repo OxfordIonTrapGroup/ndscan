@@ -40,9 +40,6 @@ class FragmentScanExperiment(EnvExperiment):
             overrides = params.get("overrides", {})
         self.fragment._apply_param_overrides(overrides)
 
-        # TODO: Remove, this is just for temporary testing.
-        self.setattr_argument("vanilla_arg", NumberValue(5), group="Group 1")
-
     def prepare(self):
         assert self.fragment, "Fragment to scan not set"
 
@@ -94,11 +91,11 @@ class FragmentScanExperiment(EnvExperiment):
         # For each scan level, …
 
         pass
-    
+
     def _set_completed(self):
         # Set completion marker dataset.
         pass
-    
+
 
 def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):
     class FragmentScanShim(FragmentScanExperiment):
