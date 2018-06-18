@@ -60,6 +60,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.bg_gradient.setColorAt(0, self.palette().base().color())
         self.bg_gradient.setColorAt(1, self.palette().midlight().color())
 
+        self._shown_param_paths = set()
+
         self._groups = dict()
         self._arg_to_widgets = dict()
 
@@ -138,6 +140,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.verticalScrollBar().setValue(state["scroll"])
 
     def _make_param_item(self, path, schema, show_always, insert_at_idx=-1):
+        self._shown_param_paths.add(path)
+
         widgets = dict()
         self._arg_to_widgets[path] = widgets
 
@@ -288,9 +292,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.setItemWidget(self.override_prompt_item, 0, left)
 
         prompt = LayoutWidget()
-        self._build_param_choice_map()
-        # TODO: Only show parameters not already in interface.
-        self.add_override_prompt_box = FuzzySelectWidget([(s, 0) for s in self._param_choice_map.keys()])
+        self.add_override_prompt_box = FuzzySelectWidget([], self)
         self.add_override_prompt_box.finished.connect(self._make_override_item)
         self.add_override_prompt_box.aborted.connect(self._set_override_line_idle)
         prompt.addWidget(self.add_override_prompt_box)
@@ -303,6 +305,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.add_override_prompt_box.setVisible(False)
 
     def _set_override_line_active(self):
+        self._update_param_choice_map()
+        self.add_override_prompt_box.set_choices(
+            [(s, 0) for s in self._param_choice_map.keys()])
+
         self.add_override_button.setEnabled(False)
         self.add_override_button.setVisible(False)
         self.add_override_prompt_label.setVisible(True)
@@ -359,9 +365,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         # TODO: Implement.
         logger.info("Remove override: %s", path)
 
-    def _build_param_choice_map(self):
+    def _update_param_choice_map(self):
         self._param_choice_map = dict()
         for path, param in self.ndscan_params["schema"].items():
+            # Skip params already displayed.
+            if path in self._shown_param_paths:
+                continue
             d = "{} – {}".format(self._param_display_name(param["fqn"], path), param["description"])
             self._param_choice_map[d] = path
 
