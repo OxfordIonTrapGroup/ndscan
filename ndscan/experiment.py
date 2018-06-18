@@ -1,3 +1,5 @@
+import logging
+
 from artiq.language import *
 from artiq.protocols import pyon
 from contextlib import suppress
@@ -10,6 +12,8 @@ from .fragment import Fragment, ExpFragment
 __all__ = ["make_fragment_scan_exp", "PARAMS_ARG_KEY"]
 
 PARAMS_ARG_KEY = "ndscan_params"
+
+logger = logging.getLogger(__name__)
 
 
 class ScanSpec:
@@ -29,8 +33,12 @@ class FragmentScanExperiment(EnvExperiment):
 
         self.fragment = fragment_init()
 
+        params = dict()
+        schemata = dict()
+        self.fragment._build_param_tree(params, schemata)
         desc = {
-            "schema": self.fragment._build_param_schema(),
+            "params": params,
+            "schemata": schemata,
             "always_shown_params": self.fragment._get_always_shown_params()
         }
         params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))

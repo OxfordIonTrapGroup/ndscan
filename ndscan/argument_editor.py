@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 
+from collections import Counter
 from functools import partial
 from PyQt5 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
@@ -60,7 +61,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.bg_gradient.setColorAt(0, self.palette().base().color())
         self.bg_gradient.setColorAt(1, self.palette().midlight().color())
 
-        self._shown_param_paths = set()
+        self._shown_params = set()
 
         self._groups = dict()
         self._arg_to_widgets = dict()
@@ -84,11 +85,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
             self._build_shortened_fqns()
 
-            for path in ndscan_params["always_shown_params"]:
-                schema = ndscan_params["schema"].get(path, None)
-                if not schema:
-                    logger.warning("Invalid key in always_shown_params: %s", path)
-                self._make_param_item(path, schema, True)
+            for fqn, path in ndscan_params["always_shown_params"]:
+                self._make_param_item(fqn, path, True)
 
             for name, argument in vanilla_args.items():
                 self._make_vanilla_argument_item(name, argument)
@@ -139,11 +137,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 pass
         self.verticalScrollBar().setValue(state["scroll"])
 
-    def _make_param_item(self, path, schema, show_always, insert_at_idx=-1):
-        self._shown_param_paths.add(path)
+    def _make_param_item(self, fqn, path, show_always, insert_at_idx=-1):
+        self._shown_params.add((fqn, path))
 
-        widgets = dict()
-        self._arg_to_widgets[path] = widgets
+        schema = self._schema_for_fqn(fqn)
 
         added_item_count = 0
         def add_item(widget_item):
@@ -158,7 +155,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             else:
                 self._ensure_group_widget(group).addChild(widget_item)
 
-        id_string = self._param_display_name(schema["fqn"], path)
+        id_string = self._param_display_name(fqn, path)
 
         id_item = QtWidgets.QTreeWidgetItem([id_string])
         add_item(id_item)
@@ -191,14 +188,14 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             QtWidgets.QApplication.style().standardIcon(
                 QtWidgets.QStyle.SP_BrowserReload))
         reset_default.clicked.connect(
-            partial(self._reset_param_to_default, path))
+            partial(self._reset_param_to_default, fqn, path))
         buttons.addWidget(reset_default, col=0)
 
         remove_override = QtWidgets.QToolButton()
         remove_override.setIcon(self.remove_override_icon)
         remove_override.setToolTip("Remove this parameter override")
         remove_override.clicked.connect(
-            partial(self._remove_override, path))
+            partial(self._remove_override, fqn, path))
         buttons.addWidget(remove_override, col=1)
 
         self.setItemWidget(main_item, 2, buttons)
@@ -267,8 +264,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         return wi
 
     def _make_override_item(self, choice):
-        path = self._param_choice_map[choice]
-        self._make_param_item(path, self.ndscan_params["schema"][path], False,
+        fqn, path = self._param_choice_map[choice]
+        self._make_param_item(fqn, path, False,
             self.indexOfTopLevelItem(self.override_prompt_item))
 
     def _make_override_prompt_item(self):
@@ -357,33 +354,41 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.setItemWidget(widgets["widget_item"], 1, widgets["fix_layout"])
         self.updateGeometries()
 
-    def _reset_param_to_default(self, path):
+    def _reset_param_to_default(self, fqn, path):
         # TODO: Implement.
-        logger.info("Reset to default: %s", path)
+        logger.info("Reset to default: %s@%s", fqn, path)
 
-    def _remove_override(self, path):
+    def _remove_override(self, fqn, path):
         # TODO: Implement.
-        logger.info("Remove override: %s", path)
+        logger.info("Remove override: %s@%s", fqn, path)
 
     def _update_param_choice_map(self):
         self._param_choice_map = dict()
-        for path, param in self.ndscan_params["schema"].items():
+
+        def add(fqn, path):
             # Skip params already displayed.
-            if path in self._shown_param_paths:
-                continue
-            d = "{} – {}".format(self._param_display_name(param["fqn"], path), param["description"])
-            self._param_choice_map[d] = path
+            if (fqn, path) in self._shown_params:
+                return
+            schema = self._schema_for_fqn(fqn)
+            display_string = "{} – {}".format(self._param_display_name(fqn, path), schema["description"])
+            self._param_choice_map[display_string] = (fqn, path)
+
+        fqn_occurences = Counter()
+        for path, fqns in self.ndscan_params["params"].items():
+            for fqn in fqns:
+                add(fqn, path)
+                fqn_occurences[fqn] += 1
+
+        # TODO: Offer non-global wildcards for parameters used in multiple hierarchies.
+        for fqn, count in fqn_occurences.items():
+            if count > 1:
+                add(fqn, "*")
 
     def _build_shortened_fqns(self):
         short_to_fqns = dict()
         self.shortened_fqns = dict()
 
-        def last_n_parts(fqn, n):
-            return ".".join(fqn.split(".")[-(n + 1):])
-
-        for param in self.ndscan_params["schema"].values():
-            current = param["fqn"]
-
+        for current in self.ndscan_params["schemata"].keys():
             if current in self.shortened_fqns:
                 continue
 
@@ -407,6 +412,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 n += 1
 
     def _param_display_name(self, fqn, path):
-        return self.shortened_fqns[fqn] + "@" + "/".join(path.split("/")[:-1]) + "/"
+        if not path:
+            path = "/"
+        return self.shortened_fqns[fqn] + "@" + path
 
+    def _schema_for_fqn(self, fqn):
+        return self.ndscan_params["schemata"][fqn]
 
+def last_n_parts(fqn, n):
+    return ".".join(fqn.split(".")[-(n + 1):])

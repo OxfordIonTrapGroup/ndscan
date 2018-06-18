@@ -61,20 +61,27 @@ class Fragment(HasEnvironment):
         # TODO
         pass
 
-    def _build_param_schema(self) -> Dict[str, dict]:
-        result = dict()
+    def _build_param_tree(self, params: Dict[str, List[str]], schemata: Dict[str, dict]) -> None:
+        fqns = []
         for k, v in self._free_params.items():
-            result["/".join(self._fragment_path + [k])] = v
+            fqn = v["fqn"]
+            if fqn in schemata:
+                if schemata[fqn] != v:
+                    logger.warn("Mismatch in parameter schema '%s' for '%s'", fqn, path)
+            else:
+                schemata[fqn] = v
+            fqns.append(fqn)
+        params["/".join(self._fragment_path)] = fqns
+
         for s in self._subfragments:
-            result.update(s._build_param_schema())
-        return result
+            s._build_param_tree(params, schemata)
 
     def _apply_param_overrides(self, overrides: List[Dict[str, dict]]) -> None:
         for s in self._subfragments:
             s._apply_param_overrides(overrides)
 
     def _get_always_shown_params(self):
-        return list(self._free_params.keys())
+        return [(p["fqn"], "/".join(self._fragment_path)) for p in self._free_params.values()]
 
 
 class ExpFragment(Fragment):
