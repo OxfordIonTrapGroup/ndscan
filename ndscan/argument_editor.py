@@ -62,9 +62,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.bg_gradient.setColorAt(1, self.palette().midlight().color())
 
         self._shown_params = set()
-
         self._groups = dict()
         self._arg_to_widgets = dict()
+        self._override_items = dict()
 
         # FIXME: Paths after installation.
         def icon_path(name):
@@ -86,7 +86,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             self._build_shortened_fqns()
 
             for fqn, path in ndscan_params["always_shown_params"]:
-                self._make_param_item(fqn, path, True)
+                self._make_param_items(fqn, path, True)
 
             for name, argument in vanilla_args.items():
                 self._make_vanilla_argument_item(name, argument)
@@ -137,7 +137,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 pass
         self.verticalScrollBar().setValue(state["scroll"])
 
-    def _make_param_item(self, fqn, path, show_always, insert_at_idx=-1):
+    def _make_param_items(self, fqn, path, show_always, insert_at_idx=-1):
         self._shown_params.add((fqn, path))
 
         schema = self._schema_for_fqn(fqn)
@@ -206,6 +206,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             remove_override.setSizePolicy(sp)
             remove_override.setVisible(False)
 
+        return id_item, main_item
+
     def _make_vanilla_argument_item(self, name, argument):
         if name in self._arg_to_widgets:
             logger.warning("Argument with name '%s' already exists, skipping.", name)
@@ -265,8 +267,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     def _make_override_item(self, choice):
         fqn, path = self._param_choice_map[choice]
-        self._make_param_item(fqn, path, False,
+        items = self._make_param_items(fqn, path, False,
             self.indexOfTopLevelItem(self.override_prompt_item))
+        self._override_items[(fqn, path)] = items
 
     def _make_override_prompt_item(self):
         self.override_prompt_item = QtWidgets.QTreeWidgetItem()
@@ -359,8 +362,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         logger.info("Reset to default: %s@%s", fqn, path)
 
     def _remove_override(self, fqn, path):
-        # TODO: Implement.
-        logger.info("Remove override: %s@%s", fqn, path)
+        items = self._override_items[(fqn, path)]
+        for item in items:
+            idx = self.indexOfTopLevelItem(item)
+            self.takeTopLevelItem(idx)
 
     def _update_param_choice_map(self):
         self._param_choice_map = dict()
