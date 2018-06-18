@@ -1,8 +1,9 @@
 from artiq.language import *
 
-# TODO: Have a similar "language" module.
+# TODO: Have a single user-facing module similar to artiq.language,
+# possibly exposing all of artiq.language as well for convenience.
+from ndscan.experiment import *
 from ndscan.fragment import *
-from ndscan.scan import *
 
 
 class Freq422(Fragment):
@@ -80,6 +81,8 @@ class Readout(Fragment):
         self.setattr_param("freq_offset_422_pi", "Readout 422 pi offset")
         self.setattr_param("freq_offset_422_sigma", "Readout 422 sigma offset")
         self.setattr_param("duration", "Readout duration")
+
+        # TODO: Take number of shots as parameter, to be re-bound by SingleIonExp.
 
         self.setattr_result("counts", "Counts")
         self.setattr_result("p")

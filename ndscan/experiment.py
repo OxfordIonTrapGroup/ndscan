@@ -7,7 +7,9 @@ from .fragment import Fragment, ExpFragment
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
 # class discovery.
-__all__ = ["make_fragment_scan_exp"]
+__all__ = ["make_fragment_scan_exp", "PARAMS_ARG_KEY"]
+
+PARAMS_ARG_KEY = "ndscan_params"
 
 
 class ScanSpec:
@@ -27,10 +29,19 @@ class FragmentScanExperiment(EnvExperiment):
 
         self.fragment = fragment_init()
 
-        schema = self.fragment._build_param_schema()
-        params = self.get_argument("ndscan_params", PYONValue(default={"schema": schema}))
-        overrides = params.get("overrides", {})
+        desc = {
+            "schema": self.fragment._build_param_schema(),
+            "always_shown_params": self.fragment._get_always_shown_params()
+        }
+        params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
+
+        overrides = {}
+        if params:
+            overrides = params.get("overrides", {})
         self.fragment._apply_param_overrides(overrides)
+
+        # TODO: Remove, this is just for temporary testing.
+        self.setattr_argument("vanilla_arg", NumberValue(5), group="Group 1")
 
     def prepare(self):
         assert self.fragment, "Fragment to scan not set"
@@ -60,7 +71,7 @@ class FragmentScanExperiment(EnvExperiment):
                 self._krun_continuous()
                 self.core.comm.close()
                 self.scheduler.pause()
-        
+
     @kernel
     def _krun_continuous(self):
         self.core.reset()
