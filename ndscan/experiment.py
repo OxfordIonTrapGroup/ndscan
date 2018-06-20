@@ -33,16 +33,18 @@ class FragmentScanExperiment(EnvExperiment):
 
         self.fragment = fragment_init()
 
-        params = dict()
+        instances = dict()
         schemata = dict()
-        self.fragment._build_param_tree(params, schemata)
+        self.fragment._build_param_tree(instances, schemata)
         desc = {
-            "params": params,
+            "instances": instances,
             "schemata": schemata,
-            "always_shown_params": self.fragment._get_always_shown_params()
+            "always_shown_params": self.fragment._get_always_shown_params(),
+            "overrides": {}
         }
         params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
+        # fqn -> [(path_spec, value)]
         overrides = {}
         if params:
             overrides = params.get("overrides", {})

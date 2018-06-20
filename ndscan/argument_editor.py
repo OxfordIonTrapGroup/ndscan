@@ -379,7 +379,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             self._param_choice_map[display_string] = (fqn, path)
 
         fqn_occurences = Counter()
-        for path, fqns in self.ndscan_params["params"].items():
+        for path, fqns in self.ndscan_params["instances"].items():
             for fqn in fqns:
                 add(fqn, path)
                 fqn_occurences[fqn] += 1
