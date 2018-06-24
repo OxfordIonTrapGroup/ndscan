@@ -39,19 +39,18 @@ class FragmentScanExperiment(EnvExperiment):
         desc = {
             "instances": instances,
             "schemata": schemata,
-            "always_shown_params": self.fragment._get_always_shown_params(),
-            "overrides": {}
+            "always_shown": self.fragment._get_always_shown_params(),
+            "overrides": {},
+            "scan": {
+                "axes": []
+            }
         }
-        params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
-
-        # fqn -> [(path_spec, value)]
-        overrides = {}
-        if params:
-            overrides = params.get("overrides", {})
-        self.fragment._apply_param_overrides(overrides)
+        self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
     def prepare(self):
-        assert self.fragment, "Fragment to scan not set"
+        overrides = self._params.get("overrides", {})
+        print(overrides)
+        self.fragment._apply_param_overrides(overrides)
 
         # Validate things, etc.
         # Set up scan spec from arguments.

@@ -20,16 +20,12 @@ class Freq422(Fragment):
         # trap), this should be applied to nominal_dp_freq instead.
         self.setattr_param("offset", "422 master offset frequency (optical)")
 
-        # DESIGN NOTE: Need to use setattr_* for parameters (i.e. including a way
-        # for Fragment internals to keep track of where they go) to be able to
-        # update them for scans.
-
     @portable
-    def get_dp_freq(self, offset):
+    def get_dp_freq(self, offset=0.0):
         return self.dp_nominal + (self.offset + offset) / 2
 
     @portable
-    def get_rd_freq(self, offset):
+    def get_rd_freq(self, offset=0.0):
         return self.rd_nominal + offset
 
 
