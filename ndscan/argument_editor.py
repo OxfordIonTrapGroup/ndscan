@@ -82,8 +82,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             return os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", name)
         self._add_override_icon = QtGui.QIcon(icon_path("list-add-32.png"))
         self._remove_override_icon = QtGui.QIcon(icon_path("list-remove-32.png"))
-        self._default_value_icon = QtWidgets.QApplication.style().standardIcon(
+        self._default_value_icon = self.style().standardIcon(
                 QtWidgets.QStyle.SP_BrowserReload)
+        self._disable_scans_icon = self.style().standardIcon(
+                QtWidgets.QStyle.SP_DialogResetButton)
 
         self._arguments = self.manager.get_submission_arguments(self.expurl)
         ndscan_params, vanilla_args = _try_extract_ndscan_params(self._arguments)
@@ -128,13 +130,19 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             QtWidgets.QStyle.SP_DialogOpenButton))
         load_hdf5.clicked.connect(dock._load_hdf5_clicked)
 
+        disable_scans = QtWidgets.QPushButton("Disable all scans")
+        disable_scans.setIcon(self._disable_scans_icon)
+        disable_scans.clicked.connect(self.disable_all_scans)
+
         buttons = LayoutWidget()
-        buttons.addWidget(recompute_arguments, 1, 1)
-        buttons.addWidget(load_hdf5, 1, 2)
+        buttons.addWidget(recompute_arguments, col=1)
+        buttons.addWidget(load_hdf5, col=2)
+        buttons.addWidget(disable_scans, col=3)
         buttons.layout.setColumnStretch(0, 1)
         buttons.layout.setColumnStretch(1, 0)
         buttons.layout.setColumnStretch(2, 0)
-        buttons.layout.setColumnStretch(3, 1)
+        buttons.layout.setColumnStretch(3, 0)
+        buttons.layout.setColumnStretch(4, 1)
         self.setItemWidget(buttons_item, 0, buttons)
 
     def save_state(self):
@@ -160,6 +168,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     def about_to_close(self):
         self._save_to_argument()
+
+    def disable_all_scans(self):
+        for entry in self._param_entries.values():
+            entry.disable_scan()
 
     def _make_param_items(self, fqn, path, show_always, insert_at_idx=-1):
         if (fqn, path) in self._param_entries:
@@ -488,10 +500,13 @@ class OverrideEntry(LayoutWidget):
             container = QtWidgets.QWidget()
             self._build_scan_ui(name, container)
             self.widget_stack.addWidget(container)
-        self.scan_type.activated.connect(self.widget_stack.setCurrentIndex)
+        self.scan_type.currentIndexChanged.connect(self.widget_stack.setCurrentIndex)
         self.addWidget(self.widget_stack, col=1)
 
     def update_params(self, params):
+        raise NotImplementedError()
+
+    def disable_scan(self) -> None:
         raise NotImplementedError()
 
     def _scan_type_names(self) -> List[str]:
@@ -513,6 +528,10 @@ class FloatOverrideEntry(OverrideEntry):
 
     def update_params(self, params: dict) -> None:
         self.scan_types[self.scan_type.currentText()][1](params)
+
+    def disable_scan(self) -> None:
+        # TODO: Move this into parent class as well.
+        self.scan_type.setCurrentIndex(0)
 
     def _write_override(self, params: dict) -> None:
         # TODO: Move Fixed/Scanning distinction into parent class, have a subclass
