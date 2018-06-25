@@ -14,6 +14,7 @@ from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
 from artiq.protocols import pyon
 from .experiment import PARAMS_ARG_KEY
 from .fuzzy_select import FuzzySelectWidget
+from .utils import shorten_to_unambiguous_suffixes
 
 
 logger = logging.getLogger(__name__)
@@ -133,6 +134,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         disable_scans = QtWidgets.QPushButton("Disable all scans")
         disable_scans.setIcon(self._disable_scans_icon)
         disable_scans.clicked.connect(self.disable_all_scans)
+        disable_scans.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_R)
 
         buttons = LayoutWidget()
         buttons.addWidget(recompute_arguments, col=1)
@@ -427,31 +429,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 add(fqn, "*")
 
     def _build_shortened_fqns(self):
-        short_to_fqns = dict()
-        self.shortened_fqns = dict()
+        self.shortened_fqns = shorten_to_unambiguous_suffixes(
+            self._ndscan_params["schemata"].keys(),
+            lambda fqn, n: ".".join(fqn.split(".")[-(n + 1):]))
 
-        for current in self._ndscan_params["schemata"].keys():
-            if current in self.shortened_fqns:
-                continue
-
-            n = 1
-            while True:
-                candidate = _fqn_last_n_parst(current, n)
-                if candidate not in short_to_fqns:
-                    short_to_fqns[candidate] = set([current])
-                    self.shortened_fqns[current] = candidate
-                    break
-
-                # We have a conflict, disambiguate.
-                existing_fqns = short_to_fqns[candidate]
-                for old in existing_fqns:
-                    if self.shortened_fqns[old] == candidate:
-                        # This hasn't previously been moved to a higher n, so
-                        # do it now.
-                        self.shortened_fqns[old] = _fqn_last_n_parst(old, n + 1)
-                        break # Exits inner for loop.
-                existing_fqns.add(current)
-                n += 1
 
     def _param_display_name(self, fqn, path):
         if not path:
@@ -589,7 +570,3 @@ class FloatOverrideEntry(OverrideEntry):
             box.setSuffix(" " + unit)
 
         return box
-
-
-def _fqn_last_n_parst(fqn, n):
-    return ".".join(fqn.split(".")[-(n + 1):])

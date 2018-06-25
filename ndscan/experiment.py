@@ -1,10 +1,13 @@
+import json
 import logging
 
 from artiq.language import *
 from artiq.protocols import pyon
+from collections import OrderedDict
 from contextlib import suppress
 from typing import Callable, Dict, List, Type
-from .fragment import Fragment, ExpFragment
+from .fragment import Fragment, ExpFragment, ParamStore
+from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
 
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
@@ -17,11 +20,11 @@ logger = logging.getLogger(__name__)
 
 
 class ScanSpec:
-    def __init__(self, dims):
-        self.dims = []
+    def __init__(self, axes):
+        self.axes = []
 
     def is_continuous(self) -> bool:
-        return not self.dims
+        return not self.axes
 
 
 class FragmentScanExperiment(EnvExperiment):
@@ -48,15 +51,40 @@ class FragmentScanExperiment(EnvExperiment):
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
     def prepare(self):
-        overrides = self._params.get("overrides", {})
-        print(overrides)
-        self.fragment._apply_param_overrides(overrides)
+        param_stores = {}
+        for fqn, specs in self._params.get("overrides", {}).items():
+            param_stores[fqn] = [{"path": s["path"], "store": ParamStore(s["value"])} for s in specs]
 
-        # Validate things, etc.
+        scan = self._params.get("scan", {})
+
+        # Validate things, etc.z
         # Set up scan spec from arguments.
         self._scan = ScanSpec([])
 
+        for ax in self._scan.axes:
+            # Add to param_stores.
+            pass
+
+        self.fragment._apply_param_overrides(param_stores)
+
+        chan_dict = OrderedDict()
+        self.fragment._collect_result_channels(chan_dict)
+
+        chan_name_map = shorten_to_unambiguous_suffixes(
+            chan_dict.keys(),
+            lambda fqn, n: "/".join(fqn.split("/")[-n:]))
+
+        self.channels = OrderedDict()
+        for path, channel in chan_dict.items():
+            name = chan_name_map[path].replace("/", "_")
+            self.channels[name] = channel
+            def make_cb(name):
+                return lambda v: self._broadcast_result(name, v)
+            channel.set_result_callback(make_cb(name))
+
     def run(self):
+        self._broadcast_metadata()
+
         if self._scan.is_continuous():
             self._run_continuous()
         else:
@@ -68,20 +96,25 @@ class FragmentScanExperiment(EnvExperiment):
         self.fragment.analyze()
 
     def _run_continuous(self):
-        # Init things.
-
         # Issue CBC for applet display.
         with suppress(TerminationRequested):
             while True:
                 self.fragment.host_setup()
-                self._krun_continuous()
-                self.core.comm.close()
+                if will_spawn_kernel(self.fragment.run_once):
+                    self._krun_continuous()
+                    self.core.comm.close()
+                else:
+                    self._continuous_loop()
                 self.scheduler.pause()
+        self._set_completed()
 
     @kernel
     def _krun_continuous(self):
         self.core.reset()
+        self._continuous_loop()
 
+    @portable
+    def _continuous_loop(self):
         first = True
         while not self.scheduler.check_pause():
             if first:
@@ -93,17 +126,31 @@ class FragmentScanExperiment(EnvExperiment):
             # TODO: Broadcast result channels, or is this done explicitly before?
 
     def _run_scan(self):
-        # Setup machinery.
-
-        # Issue CBC for applet display.
+         # Issue CBC for applet display.
 
         # For each scan level, …
 
-        pass
+        self._set_completed()
 
     def _set_completed(self):
-        # Set completion marker dataset.
-        pass
+        self.set_dataset("ndscan.completed", True, broadcast=True)
+
+    def _broadcast_metadata(self):
+        def set(name, value):
+            self.set_dataset("ndscan." + name, value, broadcast=True)
+
+        set("rid", self.scheduler.rid)
+        set("completed", False)
+
+        # TODO: Describe axes, …
+        channels = {name: channel.describe() for (name, channel) in self.channels.items()}
+        set("channels", json.dumps(channels))
+
+    def _broadcast_result(self, channel_name, value):
+        if self._scan.is_continuous():
+            self.set_dataset("ndscan.point.{}".format(channel_name), value, broadcast=True)
+        else:
+            self.append_to_dataset("ndscan.points.channel_{}".format(channel_name), value)
 
 
 def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):
