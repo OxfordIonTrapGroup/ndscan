@@ -522,12 +522,15 @@ class FloatOverrideEntry(OverrideEntry):
         params["overrides"].setdefault(self.schema["fqn"], []).append(o)
 
     def _write_refining_scan(self, params: dict) -> None:
-        spec = dict()
-        spec["fqn"] = self.schema["fqn"]
-        spec["path"] = self.path
-        spec["type"] = "refining"
-        spec["lower_value"] = self.box_lower.value()
-        spec["upper_value"] = self.box_upper.value()
+        spec = {
+            "fqn": self.schema["fqn"],
+            "path": self.path,
+            "type": "refining",
+            "range": {
+                "lower": self.box_lower.value(),
+                "upper": self.box_upper.value()
+            }
+        }
         params["scan"].setdefault("axes", []).append(spec)
 
     def _scan_type_names(self) -> List[str]:
