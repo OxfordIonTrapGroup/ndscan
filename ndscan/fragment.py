@@ -148,7 +148,7 @@ class Fragment(HasEnvironment):
         # dashboard/artiq_run and the worker running the experiment. Should be fixed at the source.
         for f in ["artiq_run_", "artiq_worker_", "file_import_"]:
             mod = strip_prefix(mod, f)
-        self._fqn_prefix = mod + "." + klass.__qualname__
+        self.fqn = mod + "." + klass.__qualname__
 
         self._building = True
         self.build_fragment()
@@ -178,7 +178,7 @@ class Fragment(HasEnvironment):
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '%s' already exists".format(name)
 
-        fqn = self._fqn_prefix + "." + name
+        fqn = self.fqn + "." + name
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
         setattr(self, name, ParamHandle())
 
