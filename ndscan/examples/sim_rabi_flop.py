@@ -17,6 +17,11 @@ class Readout(Fragment):
         self.setattr_result("p")
         self.setattr_result("p_err", display_hints={"error_bar_for": "p"})
 
+        self.setattr_result("pinv")
+        self.setattr_result("pinv_err", display_hints={"error_bar_for": "pinv"})
+
+        self.setattr_result("half")
+
     def simulate_shots(self, p):
         num_shots = self.num_shots.get()
 
@@ -36,6 +41,11 @@ class Readout(Fragment):
 
         self.p.set(p)
         self.p_err.set(np.sqrt(p * (1 - p) / num_shots))
+
+        self.pinv.set(1 - p)
+        self.pinv_err.set(np.sqrt(p * (1 - p) / num_shots))
+
+        self.half.set(np.random.normal(0.5, 0.05))
 
 
 class RabiFlopSim(ExpFragment):
