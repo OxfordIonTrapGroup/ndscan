@@ -173,6 +173,14 @@ class IntChannel(NumericChannel):
         return int(value)
 
 
+class OpaqueChannel(ResultChannel):
+    def _get_type_string(self):
+        return "opaque"
+
+    def _coerce_to_type(self, value):
+        # Just pass through values, leaving it to the user to choose something HD5- and PYON-compatible.
+        return value
+
 
 class Fragment(HasEnvironment):
     def build(self, fragment_path: List[str]):

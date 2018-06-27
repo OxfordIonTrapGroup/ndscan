@@ -13,7 +13,7 @@ class Readout(Fragment):
         self.setattr_param("mean_1", FloatParam, "Bright counts over readout duration", 20.0)
         self.setattr_param("threshold", IntParam, "Threshold", 5)
 
-        self.setattr_result("counts") # FIXME: Type
+        self.setattr_result("counts", OpaqueChannel)
         self.setattr_result("p")
         self.setattr_result("p_err", display_hints={"error_bar_for": "p"})
 
