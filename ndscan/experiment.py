@@ -1,6 +1,7 @@
 import json
 import logging
 import numpy as np
+import random
 
 from artiq.language import *
 from artiq.protocols import pyon
@@ -191,6 +192,9 @@ class FragmentScanExperiment(EnvExperiment):
             while axis.generator.has_level(level):
                 points = axis.generator.points_for_level(level)
 
+                # TODO: Make configurable, use defined random generator with saved seed.
+                random.shuffle(points)
+
                 for p in points:
                     axis.param_store.set_value(p)
                     self.append_to_dataset("ndscan.points.axis_0", p)
@@ -209,6 +213,7 @@ class FragmentScanExperiment(EnvExperiment):
         def set(name, value):
             self.set_dataset("ndscan." + name, value, broadcast=True)
 
+        set("fragment_fqn", self.fragment.fqn)
         set("rid", self.scheduler.rid)
         set("completed", False)
 
