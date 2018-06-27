@@ -4,7 +4,7 @@ from ndscan.fragment import *
 
 import random
 import numpy as np
-
+import time
 
 class Readout(Fragment):
     def build_fragment(self):
@@ -52,6 +52,8 @@ class RabiFlopSim(ExpFragment):
         omega = np.sqrt(omega0**2 + delta**2)
         p = (omega0 / omega * np.sin(omega / 2 * self.duration.get()))**2
         self.readout.simulate_shots(p)
+        time.sleep(0.1)
+
 
 
 ScanRabiFlopSim = make_fragment_scan_exp(RabiFlopSim)
