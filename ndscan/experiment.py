@@ -133,7 +133,7 @@ class FragmentScanExperiment(EnvExperiment):
 
     def run(self):
         self._broadcast_metadata()
-        self._announce_ccb()
+        self._issue_ccb()
 
         if self._scan.is_continuous():
             self._run_continuous()
@@ -224,8 +224,11 @@ class FragmentScanExperiment(EnvExperiment):
         else:
             self.append_to_dataset("ndscan.points.channel_{}".format(channel_name), value)
 
-    def _announce_ccb(self):
-        self.ccb.issue("ndscan.new_run", rid=self.scheduler.rid)
+    def _issue_ccb(self):
+        cmd = "${python} -m ndscan.applet --server=${server} --port=${port_notify}"
+        cmd += " --rid={}".format(self.scheduler.rid)
+        self.ccb.issue("create_applet", "ndscan: " + self.fragment.fqn, cmd,
+            group="ndscan", is_transient=True)
 
 
 def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):
