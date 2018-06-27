@@ -56,7 +56,7 @@ class ParamHandle:
         self._changed_after_use = True
 
 
-class Float64Param:
+class FloatParam:
     def __init__(self, fqn: str, description: str, default: Union[str, float]):
         self.fqn = fqn
         self.description = description
@@ -66,7 +66,7 @@ class Float64Param:
         return {
             "fqn": self.fqn,
             "description": self.description,
-            "type": "float64",
+            "type": "float",
             "default": self.default
         }
 
@@ -78,7 +78,7 @@ class Float64Param:
         target.set_store(ParamStore(value))
 
 
-class Int16Param:
+class IntParam:
     def __init__(self, fqn: str, description: str, default: Union[str, int]):
         self.fqn = fqn
         self.description = description
@@ -88,7 +88,7 @@ class Int16Param:
         return {
             "fqn": self.fqn,
             "description": self.description,
-            "type": "int16",
+            "type": "int",
             "default": self.default
         }
 
@@ -104,7 +104,7 @@ def _eval_default(value: str, get_dataset: Callable):
     return eval(value, {"dataset": get_dataset})
 
 
-class NumericChannel:
+class ResultChannel:
     def __init__(self, path: List[str], description: str = "", display_hints: Dict[str, any] = {}):
         self.path = path
         self.description = description
@@ -112,12 +112,12 @@ class NumericChannel:
         self.result_callback = None
 
     def describe(self) -> Dict[str, any]:
-        # TODO: Optional range min/max, etc.
         desc = {
             "path": self.path,
             "description": self.description,
-            "type": "numeric"
+            "type": self._get_type_string()
         }
+
         if self.display_hints:
             desc["display_hints"] = self.display_hints
         return desc
@@ -130,9 +130,48 @@ class NumericChannel:
         self.result_callback = cb
 
     @rpc(flags={"async"})
-    def set(self, value):
+    def set(self, raw_value):
+        value = self._coerce_to_type(raw_value)
         if self.result_callback:
             self.result_callback(value)
+
+    def _get_type_string(self):
+        raise NotImplementedError()
+
+    def _coerce_to_type(self, value):
+        raise NotImplementedError()
+
+
+class NumericChannel(ResultChannel):
+    def __init__(self, path: List[str], description: str = "", display_hints: Dict[str, any] = {}, min = None, max = None):
+        super().__init__(path, description, display_hints)
+        self.min = min
+        self.max = max
+
+    def describe(self) -> Dict[str, any]:
+        result = super().describe()
+        if self.min is not None:
+            result["min"] = self.min
+        if self.max is not None:
+            result["max"] = self.max
+        return result
+
+
+class FloatChannel(NumericChannel):
+    def _get_type_string(self):
+        return "float"
+
+    def _coerce_to_type(self, value):
+        return float(value)
+
+
+class IntChannel(NumericChannel):
+    def _get_type_string(self):
+        return "int"
+
+    def _coerce_to_type(self, value):
+        return int(value)
+
 
 
 class Fragment(HasEnvironment):
@@ -182,7 +221,7 @@ class Fragment(HasEnvironment):
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
         setattr(self, name, ParamHandle())
 
-    def setattr_result(self, name: str, channel_class: Type = NumericChannel, *args, **kwargs) -> None:
+    def setattr_result(self, name: str, channel_class: Type = FloatChannel, *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_result() during build_fragment()"
         assert name.isidentifier(), "Result channel name must be valid Python identifier"
         assert not hasattr(self, name), "Field '%s' already exists".format(name)

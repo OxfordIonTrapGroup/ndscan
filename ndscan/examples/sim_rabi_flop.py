@@ -8,10 +8,10 @@ import time
 
 class Readout(Fragment):
     def build_fragment(self):
-        self.setattr_param("num_shots", Int16Param, "Number of shots", 100)
-        self.setattr_param("mean_0", Float64Param, "Dark counts over readout duration", 0.1)
-        self.setattr_param("mean_1", Float64Param, "Bright counts over readout duration", 20.0)
-        self.setattr_param("threshold", Int16Param, "Threshold", 5)
+        self.setattr_param("num_shots", IntParam, "Number of shots", 100)
+        self.setattr_param("mean_0", FloatParam, "Dark counts over readout duration", 0.1)
+        self.setattr_param("mean_1", FloatParam, "Bright counts over readout duration", 20.0)
+        self.setattr_param("threshold", IntParam, "Threshold", 5)
 
         self.setattr_result("counts") # FIXME: Type
         self.setattr_result("p")
@@ -42,9 +42,9 @@ class RabiFlopSim(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("readout", Readout)
 
-        self.setattr_param("rabi_freq", Float64Param, "Rabi frequency", 1.0)
-        self.setattr_param("duration", Float64Param, "Pulse duration", 0.5)
-        self.setattr_param("detuning", Float64Param, "Detuning", 0.0)
+        self.setattr_param("rabi_freq", FloatParam, "Rabi frequency", 1.0)
+        self.setattr_param("duration", FloatParam, "Pulse duration", 0.5)
+        self.setattr_param("detuning", FloatParam, "Detuning", 0.0)
 
     def run_once(self):
         omega0 = 2 * np.pi * self.rabi_freq.get()
