@@ -152,6 +152,7 @@ class FragmentScanExperiment(EnvExperiment):
         with suppress(TerminationRequested):
             while True:
                 self.fragment.host_setup()
+                self._point_phase = False
                 if will_spawn_kernel(self.fragment.run_once):
                     self._krun_continuous()
                     self.core.comm.close()
@@ -174,7 +175,7 @@ class FragmentScanExperiment(EnvExperiment):
             else:
                 self.fragment.device_reset([])
             self.fragment.run_once()
-            # TODO: Broadcast result channels, or is this done explicitly before?
+            self._broadcast_point_phase()
 
     def _run_scan(self):
         # TODO: This is the most simple implementation possible to get a 1D PoC working;
@@ -228,6 +229,11 @@ class FragmentScanExperiment(EnvExperiment):
             self.set_dataset("ndscan.point.{}".format(channel_name), value, broadcast=True)
         else:
             self.append_to_dataset("ndscan.points.channel_{}".format(channel_name), value)
+
+    @rpc(flags={"async"})
+    def _broadcast_point_phase(self):
+        self._point_phase = not self._point_phase
+        self.set_dataset("ndscan.point_phase", self._point_phase, broadcast=True)
 
     def _issue_ccb(self):
         cmd = "${python} -m ndscan.applet --server=${server} --port=${port_notify}"

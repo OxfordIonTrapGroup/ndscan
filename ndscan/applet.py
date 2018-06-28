@@ -10,13 +10,16 @@ from quamash import QtWidgets, QtCore
 logger = logging.getLogger(__name__)
 
 
+SERIES_COLORS = ["#d9d9d9aa", "#fdb462aa", "#80b1d3aa", "#fb8072aa", "#bebeadaaa", "#ffffb3aa"]
+
+
 class _XYSeries:
-    def __init__(self, plot, y_name, data_item, y_err_name, error_bar_item, plot_left_to_right):
+    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, plot_left_to_right):
         self.plot = plot
         self.data_item = data_item
-        self.y_name = y_name
+        self.data_name = data_name
         self.error_bar_item = error_bar_item
-        self.y_err_name = y_err_name
+        self.error_bar_name = error_bar_name
         self.plot_left_to_right = plot_left_to_right
         self.num_current_points = 0
 
@@ -24,11 +27,11 @@ class _XYSeries:
         def channel(name):
             return data.get("ndscan.points.channel_" + name, (False, []))[1]
 
-        y_data = channel(self.y_name)
+        y_data = channel(self.data_name)
         num_to_show = min(len(x_data), len(y_data))
 
         if self.error_bar_item:
-            y_err = channel(self.y_err_name)
+            y_err = channel(self.error_bar_name)
             num_to_show = min(num_to_show, len(y_err))
 
         if num_to_show == self.num_current_points:
@@ -61,6 +64,7 @@ class _XYSeries:
 
         self.num_current_points = num_to_show
 
+
 class _XYPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
 
@@ -92,31 +96,17 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
             channels = json.loads(channels_json)
 
-            data_names = set(name for name, spec in channels.items() if spec["type"] in ["int", "float"])
+            try:
+                data_names, error_bar_names = _extract_scalar_channels(channels)
+            except ValueError as e:
+                self.emit.error(str(e))
 
-            # Build map from "primary" channel names to error bar names.
-            error_bar_names = {}
-            for name in data_names:
-                spec = channels[name]
-                display_hints = spec.get("display_hints", {})
-                eb = display_hints.get("error_bar_for", "")
-                if eb:
-                    if eb in error_bar_names:
-                        self.error.emit("More than one set of error bars specified for channel '{}'".format(eb))
-                        return
-                    error_bar_names[eb] = name
-
-            data_names -= set(error_bar_names.values())
-
-            colors = ["#d9d9d9aa", "#fdb462aa", "#80b1d3aa", "#fb8072aa", "#bebeadaaa", "#ffffb3aa"]
             for i, name in enumerate(data_names):
-                color = colors[i % len(colors)]
+                color = SERIES_COLORS[i % len(SERIES_COLORS)]
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
 
                 error_bar_name = error_bar_names.get(name, None)
-                error_bar_item = None
-                if error_bar_name:
-                    error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
+                error_bar_item = pyqtgraph.ErrorBarItem(pen=color) if error_bar_name else None
 
                 self.series.append(_XYSeries(self, name, data_item, error_bar_name, error_bar_item, False))
 
@@ -128,6 +118,134 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
         for s in self.series:
             s.update(x_data, data)
+
+
+def _extract_scalar_channels(channels):
+    data_names = set(name for name, spec in channels.items() if spec["type"] in ["int", "float"])
+
+    # Build map from "primary" channel names to error bar names.
+    error_bar_names = {}
+    for name in data_names:
+        spec = channels[name]
+        display_hints = spec.get("display_hints", {})
+        eb = display_hints.get("error_bar_for", "")
+        if eb:
+            if eb in error_bar_names:
+                raise ValueError("More than one set of error bars specified for channel '{}'".format(eb))
+            error_bar_names[eb] = name
+
+    data_names -= set(error_bar_names.values())
+
+    return data_names, error_bar_names
+
+
+class _Rolling1DSeries:
+    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, history_length):
+        self.plot = plot
+        self.data_item = data_item
+        self.data_name = data_name
+        self.error_bar_item = error_bar_item
+        self.error_bar_name = error_bar_name
+
+        self.values = np.array([]).reshape((0, 2))
+        self.set_history_length(history_length)
+
+    def append(self, data):
+        new_data = data["ndscan.point." + self.data_name][1]
+        if self.error_bar_item:
+            new_error_bar = data["ndscan.point." + self.error_bar_name][1]
+
+        p = [new_data, 2 * new_error_bar] if self.error_bar_item else [new_data]
+
+        is_first = (self.values.shape[0] == 0)
+        if is_first:
+            self.values = np.array([p])
+        else:
+            if self.values.shape[0] == len(self.x_indices):
+                self.values = np.roll(self.values, -1, axis=0)
+                self.values[-1, :] = p
+            else:
+                self.values = np.vstack((self.values, p))
+
+        num_to_show = self.values.shape[0]
+        self.data_item.setData(self.x_indices[-num_to_show:], self.values[:, 0].T)
+        if self.error_bar_item:
+            self.error_bar_item.setData(x=self.x_indices[-num_to_show:], y=self.values[:, 0].T,
+                height=self.values[:, 1].T)
+
+        if is_first:
+            self.plot.addItem(self.data_item)
+            if self.error_bar_item:
+                self.plot.addItem(self.error_bar_item)
+
+    def set_history_length(self, n):
+        assert n > 0, "Invalid history length"
+        self.x_indices = np.arange(-n, 0)
+        if self.values.shape[0] > n:
+            self.values = self.values[-n:, :]
+
+
+class _RollingPlotWidget(pyqtgraph.PlotWidget):
+    error = QtCore.pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+
+        self.series_initialised = False
+        self.series = []
+
+        self.point_phase = False
+
+        self.showGrid(x=True, y=True)
+
+        self.num_history_action = QtWidgets.QWidgetAction(self)
+        self.num_history_box = QtWidgets.QSpinBox()
+        self.num_history_box.setMinimum(1)
+        self.num_history_box.setMaximum(2**16)
+        self.num_history_box.setValue(100)
+        self.num_history_box.valueChanged.connect(self.set_history_length)
+        self.num_history_action.setDefaultWidget(self.num_history_box)
+
+    def getContextMenus(self, ev):
+        return [self.num_history_action, super().getContextMenus(ev)]
+
+    def data_changed(self, data, mods):
+        def d(name):
+            return data.get("ndscan." + name, (False, None))[1]
+
+        if not self.series_initialised:
+            channels_json = d("channels")
+            if not channels_json:
+                return
+
+            channels = json.loads(channels_json)
+
+            try:
+                data_names, error_bar_names = _extract_scalar_channels(channels)
+            except ValueError as e:
+                self.emit.error(str(e))
+
+            for i, data_name in enumerate(data_names):
+                color = SERIES_COLORS[i % len(SERIES_COLORS)]
+                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
+
+                error_bar_name = error_bar_names.get(data_name, None)
+                error_bar_item = pyqtgraph.ErrorBarItem(pen=color) if error_bar_name else None
+
+                self.series.append(_Rolling1DSeries(self, data_name, data_item,
+                    error_bar_name, error_bar_item, self.num_history_box.value()))
+
+            self.series_initialised = True
+
+        phase = d("point_phase")
+        if phase is not None and phase != self.point_phase:
+            for s in self.series:
+                s.append(data)
+            self.point_phase = phase
+
+    def set_history_length(self, n):
+        for s in self.series:
+            s.set_history_length(n)
 
 
 class _MainWidget(QtWidgets.QWidget):
@@ -167,18 +285,19 @@ class _MainWidget(QtWidgets.QWidget):
                 return
             axes = json.loads(axes_json)
             if len(axes) == 0:
-                # Show rolling plot.
-                pass
+                self.plot = _RollingPlotWidget()
             elif len(axes) == 1:
-                # Show 1D plot.
                 self.plot = _XYPlotWidget(axes[0])
-                self.plot.error.connect(self._show_error)
-                self.widget_stack.addWidget(self.plot)
-                self._show(self.plot)
             else:
                 self.message_label.setText(
                     "{}-dimensional scans are not yet supported".format(len(axes)))
                 self._show(self.message_label)
+                return
+
+            self.plot.error.connect(self._show_error)
+            self.widget_stack.addWidget(self.plot)
+            self._show(self.plot)
+
             self.plot_initialised = True
 
         self.plot.data_changed(data, mods)
