@@ -198,16 +198,7 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
 
         self.showGrid(x=True, y=True)
 
-        self.num_history_action = QtWidgets.QWidgetAction(self)
-        self.num_history_box = QtWidgets.QSpinBox()
-        self.num_history_box.setMinimum(1)
-        self.num_history_box.setMaximum(2**16)
-        self.num_history_box.setValue(100)
-        self.num_history_box.valueChanged.connect(self.set_history_length)
-        self.num_history_action.setDefaultWidget(self.num_history_box)
-
-    def getContextMenus(self, ev):
-        return [self.num_history_action, super().getContextMenus(ev)]
+        self._install_context_menu()
 
     def data_changed(self, data, mods):
         def d(name):
@@ -246,6 +237,34 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
     def set_history_length(self, n):
         for s in self.series:
             s.set_history_length(n)
+
+    def _install_context_menu(self):
+        self.num_history_box = QtWidgets.QSpinBox()
+        self.num_history_box.setMinimum(1)
+        self.num_history_box.setMaximum(2**16)
+        self.num_history_box.setValue(100)
+        self.num_history_box.valueChanged.connect(self.set_history_length)
+
+        container = QtWidgets.QWidget()
+
+        layout = QtWidgets.QHBoxLayout()
+        container.setLayout(layout)
+
+        label = QtWidgets.QLabel("N: ")
+        layout.addWidget(label)
+
+        layout.addWidget(self.num_history_box)
+
+        action = QtWidgets.QWidgetAction(self)
+        action.setDefaultWidget(container)
+
+        separator = QtWidgets.QAction("", self)
+        separator.setSeparator(True)
+        enties = [
+            action,
+            separator
+        ]
+        self.plotItem.getContextMenus = lambda ev: enties + [self.getMenu()]
 
 
 class _MainWidget(QtWidgets.QWidget):
