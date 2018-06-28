@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import numpy as np
@@ -29,7 +30,7 @@ class RefiningGenerator:
     def has_level(self, level: int):
         return True
 
-    def points_for_level(self, level: int):
+    def points_for_level(self, level: int, rng=None):
         if level == 0:
             return [self.lower, self.upper]
 
@@ -59,11 +60,53 @@ class ScanAxis:
 
 
 class ScanSpec:
-    def __init__(self, axes):
+    def __init__(self, axes, randomise_order_globally=True, seed=None):
         self.axes = axes
+        self.randomise_order_globally = randomise_order_globally
+
+        if seed is None:
+            seed = random.getrandbits(32)
+        self.seed = seed
 
     def is_continuous(self) -> bool:
         return not self.axes
+
+
+def generate_points(scan: ScanSpec):
+    rng = np.random.RandomState(scan.seed)
+
+    # Stores computed coordinates for each axis, indexed first by
+    # axis order, then by level.
+    points_for_axes = [[]] * len(scan.axes)
+
+    max_level = 0
+    while True:
+        new_axes = False
+        for i, a in enumerate(scan.axes):
+            if a.generator.has_level(max_level):
+                points_for_axes[i].append(a.generator.points_for_level(max_level, rng))
+                new_axes = True
+
+        if not new_axes:
+            # No levels left to exhaust, done.
+            return
+
+        points = []
+
+        for axis_levels in itertools.product(*(range(0, len(p)) for p in points_for_axes)):
+            if all(l < max_level for l in axis_levels):
+                # Previously visited this combination already.
+                continue
+            tp = itertools.product(*(p[l] for (l, p) in zip(axis_levels, points_for_axes)))
+            points.extend(tp)
+
+        if scan.randomise_order_globally:
+            rng.shuffle(points)
+
+        for p in points:
+            yield p
+
+        max_level += 1
 
 
 class ScanSpecError(Exception):
@@ -95,6 +138,7 @@ class FragmentScanExperiment(EnvExperiment):
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
     def prepare(self):
+        # Collect parameters to set from both scan axes and simple overrides.
         param_stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
             param_stores[fqn] = [{"path": s["path"], "store": ParamStore(s["value"])} for s in specs]
@@ -113,10 +157,12 @@ class FragmentScanExperiment(EnvExperiment):
             store = ParamStore(generator.points_for_level(0)[0])
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store, generator))
+
         self._scan = ScanSpec(axes)
 
         self.fragment._apply_param_overrides(param_stores)
 
+        # Initialise result channels.
         chan_dict = {}
         self.fragment._collect_result_channels(chan_dict)
 
@@ -178,34 +224,25 @@ class FragmentScanExperiment(EnvExperiment):
             self._broadcast_point_phase()
 
     def _run_scan(self):
-        # TODO: This is the most simple implementation possible to get a 1D PoC working;
-        # the interesting bits (scheduling multidimensional scans on core device) are still
-        # to be implemented.
+        # TODO: Handle parameters requiring host setup.
+        self.fragment.host_setup()
 
-        if len(self._scan.axes) > 1:
-            raise ScanSpecError("Multidimensional scans not yet implemented")
-
-        axis = self._scan.axes[0]
-        level = 0
+        points = generate_points(self._scan)
 
         with suppress(TerminationRequested):
-            self.fragment.host_setup()
-            while axis.generator.has_level(level):
-                points = axis.generator.points_for_level(level)
+            while True:
+                axis_values = next(points, None)
+                if axis_values is None:
+                    break
+                for i, (a, p) in enumerate(zip(self._scan.axes, axis_values)):
+                    a.param_store.set_value(p)
+                    self.append_to_dataset("ndscan.points.axis_{}".format(i), p)
 
-                # TODO: Make configurable, use defined random generator with saved seed.
-                random.shuffle(points)
-
-                for p in points:
-                    axis.param_store.set_value(p)
-                    self.append_to_dataset("ndscan.points.axis_0", p)
-
-                    # TODO: Use device_reset after first run.
-                    self.fragment.device_setup()
-                    self.fragment.run_once()
-                    self.scheduler.pause()
-
-                level += 1
+                # TODO: Use device_reset after first run.
+                self.fragment.device_setup()
+                self.fragment.run_once()
+                self.scheduler.pause()
+            self._set_completed()
 
     def _set_completed(self):
         self.set_dataset("ndscan.completed", True, broadcast=True)
@@ -220,6 +257,8 @@ class FragmentScanExperiment(EnvExperiment):
 
         axes = [ax.describe() for ax in self._scan.axes]
         set("axes", json.dumps(axes))
+
+        set("seed", self._scan.seed)
 
         channels = {name: channel.describe() for (name, channel) in self.channels.items()}
         set("channels", json.dumps(channels))

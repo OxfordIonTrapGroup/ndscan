@@ -283,7 +283,7 @@ class ExpFragment(Fragment):
     def host_setup(self):
         """Called before kernel is entered for the first time.
 
-        TODO: Semantics for multiple invocations.
+        TODO: Define semantics for multiple invocations.
         """
         pass
 
