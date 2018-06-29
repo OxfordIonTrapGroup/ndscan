@@ -17,7 +17,7 @@ def will_spawn_kernel(func):
     if not hasattr(func, "artiq_embedded"):
         return False
     meta = func.artiq_embedded
-    return meta.core is not None and not meta.portable
+    return meta.core_name is not None and not meta.portable
 
 def shorten_to_unambiguous_suffixes(fqns: List[str], get_last_n_parts: Callable[[str, int], str]):
     short_to_fqns = dict()
