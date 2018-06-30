@@ -1,107 +1,15 @@
 import logging
+import numpy
 
 from artiq.language import *
 from artiq.protocols import pyon
 from collections import OrderedDict
 from contextlib import suppress
-from typing import Any, Callable, Dict, List, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, List, Type, TypeVar, Union
+from .parameters import *
 from .utils import path_matches_spec, strip_prefix
 
 logger = logging.getLogger(__name__)
-
-
-class ParamStore:
-    def __init__(self, value):
-        self._value = value
-        self._change_callbacks = set()
-
-    def register_change_callback(self, cb):
-        self._change_callbacks.add(cb)
-
-    def unregister_change_callback(self, cb):
-        self._change_callbacks.remove(cb)
-
-    def get_value(self):
-        return self._value
-
-    def set_value(self, value):
-        self._value = value
-        for cb in self._change_callbacks:
-            cb()
-
-
-class ParamHandle:
-    def __init__(self):
-        self._store = None
-        self._changed_after_use = True
-
-    def set_store(self, store) -> None:
-        if self._store:
-            self._store.unregister_change_callback(self._change_cb)
-        self._store = store
-        self._changed_after_use = True
-
-    def get(self):
-        return self._store.get_value()
-
-    def use(self):
-        self._changed_after_use = False
-        return self._store.get_value()
-
-    def changed_after_use(self) -> bool:
-        return self._changed_after_use
-
-    def _change_cb(self):
-        # Once transform lambdas are supported, handle them here.
-        self._changed_after_use = True
-
-
-class FloatParam:
-    def __init__(self, fqn: str, description: str, default: Union[str, float]):
-        self.fqn = fqn
-        self.description = description
-        self.default = default
-
-    def describe(self) -> Dict[str, any]:
-        return {
-            "fqn": self.fqn,
-            "description": self.description,
-            "type": "float",
-            "default": self.default
-        }
-
-    def apply_default(self, target: ParamHandle, get_dataset: Callable) -> None:
-        if type(self.default) is str:
-            value = float(_eval_default(self.default, get_dataset))
-        else:
-            value = self.default
-        target.set_store(ParamStore(value))
-
-
-class IntParam:
-    def __init__(self, fqn: str, description: str, default: Union[str, int]):
-        self.fqn = fqn
-        self.description = description
-        self.default = default
-
-    def describe(self) -> Dict[str, any]:
-        return {
-            "fqn": self.fqn,
-            "description": self.description,
-            "type": "int",
-            "default": self.default
-        }
-
-    def apply_default(self, target: ParamHandle, get_dataset: Callable) -> None:
-        if type(self.default) is str:
-            value = int(_eval_default(self.default, get_dataset))
-        else:
-            value = self.default
-        target.set_store(ParamStore(value))
-
-
-def _eval_default(value: str, get_dataset: Callable):
-    return eval(value, {"dataset": get_dataset})
 
 
 class ResultChannel:
@@ -204,7 +112,7 @@ class Fragment(HasEnvironment):
     def device_setup(self) -> None:
         pass
 
-    def device_reset(self, changes: list) -> None:
+    def device_reset(self) -> None:
         # By default, just completely reinitialize.
         self.device_setup()
 
@@ -227,7 +135,7 @@ class Fragment(HasEnvironment):
 
         fqn = self.fqn + "." + name
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
-        setattr(self, name, ParamHandle())
+        setattr(self, name, param_class.HandleType())
 
     def setattr_result(self, name: str, channel_class: Type = FloatChannel, *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_result() during build_fragment()"

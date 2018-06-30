@@ -9,7 +9,7 @@ from artiq.protocols import pyon
 from collections import OrderedDict
 from contextlib import suppress
 from typing import Callable, Dict, List, Type
-from .fragment import Fragment, ExpFragment, ParamStore
+from .fragment import Fragment, ExpFragment, type_string_to_param
 from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
 
 
@@ -141,7 +141,8 @@ class FragmentScanExperiment(EnvExperiment):
         # Collect parameters to set from both scan axes and simple overrides.
         param_stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
-            param_stores[fqn] = [{"path": s["path"], "store": ParamStore(s["value"])} for s in specs]
+            store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
+            param_stores[fqn] = [{"path": s["path"], "store": store_type(s["value"])} for s in specs]
 
         scan = self._params.get("scan", {})
 
@@ -154,7 +155,9 @@ class FragmentScanExperiment(EnvExperiment):
 
             fqn = axspec["fqn"]
             pathspec = axspec["path"]
-            store = ParamStore(generator.points_for_level(0)[0])
+
+            store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
+            store = store_type(generator.points_for_level(0)[0])
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store, generator))
 
@@ -200,14 +203,14 @@ class FragmentScanExperiment(EnvExperiment):
                 self.fragment.host_setup()
                 self._point_phase = False
                 if will_spawn_kernel(self.fragment.run_once):
-                    self._krun_continuous()
+                    self._run_continuous_kernel()
                     self.core.comm.close()
                 else:
                     self._continuous_loop()
                 self.scheduler.pause()
 
     @kernel
-    def _krun_continuous(self):
+    def _run_continuous_kernel(self):
         self.core.reset()
         self._continuous_loop()
 
@@ -219,7 +222,7 @@ class FragmentScanExperiment(EnvExperiment):
                 self.fragment.device_setup()
                 first = False
             else:
-                self.fragment.device_reset([])
+                self.fragment.device_reset()
             self.fragment.run_once()
             self._broadcast_point_phase()
 
@@ -229,6 +232,12 @@ class FragmentScanExperiment(EnvExperiment):
 
         points = generate_points(self._scan)
 
+        if will_spawn_kernel(self.fragment.run_once):
+            self._run_scan_on_kernel(points)
+        else:
+            self._run_scan_on_host(points)
+
+    def _run_scan_on_host(self, points):
         with suppress(TerminationRequested):
             while True:
                 axis_values = next(points, None)
@@ -238,11 +247,68 @@ class FragmentScanExperiment(EnvExperiment):
                     a.param_store.set_value(p)
                     self.append_to_dataset("ndscan.points.axis_{}".format(i), p)
 
-                # TODO: Use device_reset after first run.
                 self.fragment.device_setup()
                 self.fragment.run_once()
                 self.scheduler.pause()
             self._set_completed()
+
+    def _run_scan_on_kernel(self, points):
+        # Set up members to be accessed from the kernel through the
+        # _kscan_param_values_chunk RPC call later.
+        self._kscan_points = points
+
+        initial_chunk = self._kscan_param_values_chunk()
+        for i, values in enumerate(initial_chunk):
+            setattr(self, "_kscan_param_values_{}".format(i), values)
+
+        for i, axis in enumerate(self._scan.axes):
+            setattr(self, "_kscan_param_setter_{}".format(i), axis.param_store.set_value)
+
+        # _kscan_param_values_chunk returns a tuple of lists of values, one for each scan
+        # axis. Synthesize a return type annotation (`def foo(self): -> …`) with the concrete
+        # type for this scan so the compiler can infer the types in _kscan_impl() correctly.
+        self._kscan_param_values_chunk.__func__.__annotations__ = {
+            "return": TTuple([TList(type_string_to_param(a.param_schema["type"]).CompilerType) for a in self._scan.axes])
+        }
+
+        # TODO: Implement pausing logic.
+        # FIXME: Replace this with generated code once eval_kernel() is implemented.
+        num_dims = len(self._scan.axes)
+        scan_impl = getattr(self, "_kscan_impl_{}".format(num_dims), None)
+        if scan_impl is None:
+            raise NotImplementedError("{}-dimensional scans not supported yet".format(num_dims))
+        scan_impl()
+
+    @kernel
+    def _kscan_impl_1(self):
+        while True:
+            (param_values_0,) = self._kscan_param_values_chunk()
+            for i in range(len(param_values_0)):
+                self._kscan_param_setter_0(param_values_0[i])
+                self.fragment.device_setup()
+                self.fragment.run_once()
+            if self.scheduler.check_pause():
+                return
+
+    @kernel
+    def _kscan_impl_2(self):
+        while True:
+            param_values_0, param_values_1 = self._kscan_param_values_chunk()
+            for i in range(len(param_values_0)):
+                self._kscan_param_setter_0(param_values_0[i])
+                self._kscan_param_setter_1(param_values_1[i])
+                self.fragment.device_setup()
+                self.fragment.run_once()
+            if self.scheduler.check_pause():
+                return
+
+    def _kscan_param_values_chunk(self):
+        CHUNK_SIZE = 10
+        values = ([],) * len(self._scan.axes)
+        for p in itertools.islice(self._kscan_points, CHUNK_SIZE):
+            for i, v in enumerate(p):
+                values[i].append(v)
+        return values
 
     def _set_completed(self):
         self.set_dataset("ndscan.completed", True, broadcast=True)
