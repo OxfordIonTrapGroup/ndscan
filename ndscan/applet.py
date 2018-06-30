@@ -342,6 +342,16 @@ class NdscanApplet(SimpleApplet):
         self.loop.run_until_complete(self.subscriber.connect(
             self.args.server, self.args.port))
 
+        # Make sure we still respond to non-dataset messages like `terminate` in
+        # embed mode.
+        if self.embed is not None:
+            def ignore(*args):
+                pass
+            self.ipc.subscribe([], ignore, ignore)
+
+    def unsubscribe(self):
+        self.loop.run_until_complete(self.subscriber.close())
+
     def filter_mod(self, *args):
         return True
 
