@@ -257,6 +257,13 @@ class FragmentScanExperiment(EnvExperiment):
         # _kscan_param_values_chunk RPC call later.
         self._kscan_points = points
 
+        # Stash away points in current kernel chunk until they have been marked completed
+        # as a quick shortcut to be able to resume from interruptions. This should be cleaned
+        # up a bit later. Alternatively, if we use an (async, but still) RPC to keep track of
+        # points completed, we might as well use it to send back all the result channel values
+        # from the core device in one go.
+        self._kscan_current_chunk = []
+
         initial_chunk = self._kscan_param_values_chunk()
         for i, values in enumerate(initial_chunk):
             setattr(self, "_kscan_param_values_{}".format(i), values)
@@ -287,6 +294,7 @@ class FragmentScanExperiment(EnvExperiment):
                 self._kscan_param_setter_0(param_values_0[i])
                 self.fragment.device_setup()
                 self.fragment.run_once()
+                self._kscan_point_completed()
             if self.scheduler.check_pause():
                 return
 
@@ -299,16 +307,28 @@ class FragmentScanExperiment(EnvExperiment):
                 self._kscan_param_setter_1(param_values_1[i])
                 self.fragment.device_setup()
                 self.fragment.run_once()
+                self._kscan_point_completed()
             if self.scheduler.check_pause():
                 return
 
     def _kscan_param_values_chunk(self):
+        # Chunk size could be chosen adaptively in the future based on wall clock time
+        # per point to provide good responsitivity to pause/terminate requests while
+        # keeping RPC latency overhead low.
         CHUNK_SIZE = 10
+
+        self._kscan_current_chunk.extend(itertools.islice(self._kscan_points,
+            CHUNK_SIZE - len(self._kscan_current_chunk)))
+
         values = ([],) * len(self._scan.axes)
-        for p in itertools.islice(self._kscan_points, CHUNK_SIZE):
+        for p in self._kscan_current_chunk:
             for i, v in enumerate(p):
                 values[i].append(v)
         return values
+
+    @rpc(flags={"async"})
+    def _kscan_point_completed(self):
+        self._kscan_current_chunk.pop(0)
 
     def _set_completed(self):
         self.set_dataset("ndscan.completed", True, broadcast=True)
