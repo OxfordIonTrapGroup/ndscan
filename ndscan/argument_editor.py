@@ -503,7 +503,6 @@ class OverrideEntry(LayoutWidget):
             logger.error("Failed to evaluate defaults string \"%s\": %s", self.schema["default"], e)
             # XXX: Fix for other types.
             value = 0.0
-        print(value)
         self._set_fixed_value(value)
 
     def write_to_params(self, params: dict) -> None:
@@ -611,7 +610,7 @@ class FloatOverrideEntry(OverrideEntry):
         self.box_linear_points = QtWidgets.QSpinBox()
         self.box_linear_points.setMinimum(2)
         self.box_linear_points.setMaximum(2**16) # A gratuitous, but probably generous restriction
-        self.box_linear_points.setSuffix(" points")
+        self.box_linear_points.setSuffix(" pts")
         layout.addWidget(self.box_linear_points)
         layout.setStretchFactor(self.box_linear_points, 0)
 
