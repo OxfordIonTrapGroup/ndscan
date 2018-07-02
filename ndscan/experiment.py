@@ -5,7 +5,6 @@ import numpy as np
 import random
 
 from artiq.language import *
-from artiq.protocols import pyon
 from collections import OrderedDict
 from contextlib import suppress
 from typing import Callable, Dict, List, Type

@@ -2,7 +2,6 @@ import logging
 import numpy
 
 from artiq.language import *
-from artiq.protocols import pyon
 from collections import OrderedDict
 from contextlib import suppress
 from typing import Any, Callable, Dict, Generic, List, Type, TypeVar, Union
