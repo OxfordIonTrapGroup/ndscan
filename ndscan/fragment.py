@@ -116,7 +116,7 @@ class Fragment(HasEnvironment):
         self.device_setup()
 
     def build_fragment(self) -> None:
-        raise NotImplementedError("build_fragment() not implemented; add parameters/result channels here.")
+        raise NotImplementedError("build_fragment() not implemented; override it to add parameters/result channels.")
 
     def setattr_fragment(self, name: str, fragment_class: Type["Fragment"]) -> None:
         assert self._building, "Can only call setattr_fragment() during build_fragment()"
