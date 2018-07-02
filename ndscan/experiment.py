@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 class RefiningGenerator:
-    def __init__(self, lower, upper):
+    def __init__(self, lower, upper, randomise_order):
         self.lower = float(min(lower, upper))
         self.upper = float(max(lower, upper))
+        self.randomise_order = randomise_order
 
     def has_level(self, level: int):
         return True
@@ -35,7 +36,12 @@ class RefiningGenerator:
 
         d = self.upper - self.lower
         num = 2**(level - 1)
-        return np.arange(num) * d / num + d / (2 * num)
+        points = np.arange(num) * d / num + d / (2 * num)
+
+        if self.randomise_order:
+            rng.shuffle(points)
+
+        return points
 
     def describe_limits(self, target: dict):
         target["min"] = self.lower

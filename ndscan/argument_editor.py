@@ -83,7 +83,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             return os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", name)
         self._add_override_icon = QtGui.QIcon(icon_path("list-add-32.png"))
         self._remove_override_icon = QtGui.QIcon(icon_path("list-remove-32.png"))
-        self._randomize_scan_icon = QtGui.QIcon(icon_path("media-playlist-shuffle-32.svg"))
+        self._randomise_scan_icon = QtGui.QIcon(icon_path("media-playlist-shuffle-32.svg"))
         self._default_value_icon = self.style().standardIcon(
                 QtWidgets.QStyle.SP_BrowserReload)
         self._disable_scans_icon = self.style().standardIcon(
@@ -466,18 +466,18 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         schema = self._schema_for_fqn(fqn)
 
         # TODO: Switch on schema["type"].
-        return FloatOverrideEntry(schema, path, self._randomize_scan_icon)
+        return FloatOverrideEntry(schema, path, self._randomise_scan_icon)
 
 
 class OverrideEntry(LayoutWidget):
     value_changed = QtCore.pyqtSignal()
 
-    def __init__(self, schema, path, randomize_icon, *args):
+    def __init__(self, schema, path, randomise_icon, *args):
         super().__init__(*args)
 
         self.schema = schema
         self.path = path
-        self.randomize_icon = randomize_icon
+        self.randomise_icon = randomise_icon
 
         self.scan_type = QtWidgets.QComboBox()
         self.addWidget(self.scan_type, col=0)
@@ -552,7 +552,7 @@ class FloatOverrideEntry(OverrideEntry):
             "range": {
                 "lower": self.box_refining_lower.value() * self.scale,
                 "upper": self.box_refining_upper.value() * self.scale,
-                "randomize": self.box_refining_randomize.isChecked()
+                "randomise_order": self.box_refining_randomise.isChecked()
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
@@ -565,8 +565,8 @@ class FloatOverrideEntry(OverrideEntry):
             "range": {
                 "lower": self.box_linear_lower.value() * self.scale,
                 "upper": self.box_linear_upper.value() * self.scale,
-                "points": self.box_linear_points.value(),
-                "randomize": self.box_linear_randomize.isChecked(),
+                "num_points": self.box_linear_points.value(),
+                "randomise_order": self.box_linear_randomise.isChecked(),
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
@@ -590,9 +590,9 @@ class FloatOverrideEntry(OverrideEntry):
 
         layout.addWidget(self._make_divider())
 
-        self.box_refining_randomize = self._make_randomize_box()
-        layout.addWidget(self.box_refining_randomize)
-        layout.setStretchFactor(self.box_refining_randomize, 0)
+        self.box_refining_randomise = self._make_randomise_box()
+        layout.addWidget(self.box_refining_randomise)
+        layout.setStretchFactor(self.box_refining_randomise, 0)
 
         layout.addWidget(self._make_divider())
 
@@ -614,9 +614,9 @@ class FloatOverrideEntry(OverrideEntry):
         layout.addWidget(self.box_linear_points)
         layout.setStretchFactor(self.box_linear_points, 0)
 
-        self.box_linear_randomize = self._make_randomize_box()
-        layout.addWidget(self.box_linear_randomize)
-        layout.setStretchFactor(self.box_linear_randomize, 0)
+        self.box_linear_randomise = self._make_randomise_box()
+        layout.addWidget(self.box_linear_randomise)
+        layout.setStretchFactor(self.box_linear_randomise, 0)
 
         layout.addWidget(self._make_divider())
 
@@ -645,10 +645,10 @@ class FloatOverrideEntry(OverrideEntry):
 
         return box
 
-    def _make_randomize_box(self):
+    def _make_randomise_box(self):
         box = QtWidgets.QCheckBox()
-        box.setToolTip("Randomize scan point order")
-        box.setIcon(self.randomize_icon)
+        box.setToolTip("Randomise scan point order")
+        box.setIcon(self.randomise_icon)
         box.setCheckState(QtCore.Qt.Checked)
         return box
 
