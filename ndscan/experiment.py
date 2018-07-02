@@ -190,7 +190,7 @@ class FragmentScanExperiment(EnvExperiment):
             pathspec = axspec["path"]
 
             store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
-            store = store_type(generator.points_for_level(0)[0])
+            store = store_type(generator.points_for_level(0, random)[0])
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store, generator))
 
