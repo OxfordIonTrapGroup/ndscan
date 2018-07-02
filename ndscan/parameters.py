@@ -168,8 +168,7 @@ class FloatParam:
         self.step = step if step is not None else scale / 10.0
 
     def describe(self) -> Dict[str, any]:
-        spec = {"scale": self.scale}
-
+        spec = {"scale": self.scale, "step": self.step}
         if self.min is not None:
             spec["min"] = self.min
         if self.max is not None:
@@ -182,7 +181,7 @@ class FloatParam:
             "description": self.description,
             "type": "float",
             "default": self.default,
-            "spec": {}
+            "spec": spec
         }
 
     def apply_default(self, target: FloatParamHandle, get_dataset: Callable) -> None:
