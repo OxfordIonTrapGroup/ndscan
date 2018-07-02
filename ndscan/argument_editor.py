@@ -117,6 +117,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 for o in overrides:
                     self._make_override_item(fqn, o["path"])
 
+            for entry in self._param_entries.values():
+                entry.read_from_params(ndscan_params,
+                    self.manager.datasets.backing_store)
+
         self._make_line_separator()
 
         buttons_item = QtWidgets.QTreeWidgetItem()
@@ -223,7 +227,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             QtWidgets.QApplication.style().standardIcon(
                 QtWidgets.QStyle.SP_BrowserReload))
         reset_default.clicked.connect(
-            partial(self._reset_param_to_default, fqn, path))
+            partial(self._reset_entry_to_default, fqn, path))
         buttons.addWidget(reset_default, col=0)
 
         remove_override = QtWidgets.QToolButton()
@@ -393,9 +397,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.setItemWidget(widgets["widget_item"], 1, widgets["fix_layout"])
         self.updateGeometries()
 
-    def _reset_param_to_default(self, fqn, path):
-        # TODO: Implement.
-        logger.info("Reset to default: %s@%s", fqn, path)
+    def _reset_entry_to_default(self, fqn, path):
+        self._param_entries[(fqn, path)].read_from_params({},
+            self.manager.datasets.backing_store)
 
     def _remove_override(self, fqn, path):
         items = self._override_items[(fqn, path)]
@@ -453,7 +457,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._ndscan_params["scan"]["axes"] = []
         self._ndscan_params["overrides"] = {}
         for item in self._param_entries.values():
-            item.update_params(self._ndscan_params)
+            item.write_to_params(self._ndscan_params)
         _update_ndscan_params(self._arguments, self._ndscan_params)
 
     def _make_override_entry(self, fqn, path):
@@ -484,7 +488,22 @@ class OverrideEntry(LayoutWidget):
         self.scan_type.currentIndexChanged.connect(self.widget_stack.setCurrentIndex)
         self.addWidget(self.widget_stack, col=1)
 
-    def update_params(self, params):
+    def read_from_params(self, params: dict, datasets) -> None:
+        for o in params.get("overrides", {}).get(self.schema["fqn"], []):
+            if o["path"] == self.path:
+                self._set_fixed_value(o["value"])
+                return
+
+        try:
+            value = _eval_default(self.schema["default"], datasets)
+        except Exception as e:
+            logger.error("Failed to evaluate defaults string \"%s\": %s", self.schema["default"], e)
+            # XXX: Fix for other types.
+            value = 0.0
+        print(value)
+        self._set_fixed_value(value)
+
+    def write_to_params(self, params: dict) -> None:
         raise NotImplementedError()
 
     def disable_scan(self) -> None:
@@ -498,16 +517,17 @@ class OverrideEntry(LayoutWidget):
 
 
 class FloatOverrideEntry(OverrideEntry):
-    def __init__(self, *args):
+    def __init__(self, schema, *args):
         self.scan_types = OrderedDict([
             ("Fixed", (self._build_fixed_ui, self._write_override)),
             ("Refining", (self._build_refining_ui, self._write_refining_scan))
         ])
         self.current_scan_type = None
+        self.scale = schema.get("spec", {}).get("scale", 1.0)
 
-        super().__init__(*args)
+        super().__init__(schema, *args)
 
-    def update_params(self, params: dict) -> None:
+    def write_to_params(self, params: dict) -> None:
         self.scan_types[self.scan_type.currentText()][1](params)
 
     def disable_scan(self) -> None:
@@ -518,7 +538,7 @@ class FloatOverrideEntry(OverrideEntry):
         # TODO: Move Fixed/Scanning distinction into parent class, have a subclass
         # per possible scan type, and have the different float/int/bool/… entries just
         # provide the list of scan names and mapping to subclasses.
-        o = {"path": self.path, "value": self.box_value.value()}
+        o = {"path": self.path, "value": self.box_value.value() * self.scale}
         params["overrides"].setdefault(self.schema["fqn"], []).append(o)
 
     def _write_refining_scan(self, params: dict) -> None:
@@ -527,8 +547,8 @@ class FloatOverrideEntry(OverrideEntry):
             "path": self.path,
             "type": "refining",
             "range": {
-                "lower": self.box_lower.value(),
-                "upper": self.box_upper.value()
+                "lower": self.box_lower.value() * self.scale,
+                "upper": self.box_upper.value() * self.scale
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
@@ -558,18 +578,29 @@ class FloatOverrideEntry(OverrideEntry):
         box.valueChanged.connect(self.value_changed)
 
         spec = self.schema.get("spec", {})
-        scale = spec.get("scale", 1.0)
         step = spec.get("step", 1.0)
 
         box.setPrecision()
-        box.setSingleStep(step / scale)
+        box.setSingleStep(step / self.scale)
         box.setRelativeStep()
 
-        box.setMinimum(spec.get("min", float("-inf")) / scale)
-        box.setMaximum(spec.get("max", float("inf")) / scale)
+        box.setMinimum(spec.get("min", float("-inf")) / self.scale)
+        box.setMaximum(spec.get("max", float("inf")) / self.scale)
 
         unit = spec.get("unit", "")
         if unit:
             box.setSuffix(" " + unit)
 
         return box
+
+    def _set_fixed_value(self, value):
+        self.box_value.setValue(float(value) / self.scale)
+
+def _eval_default(value: str, datasets):
+    def get_dataset(key, default):
+        try:
+            return datasets[key][1]
+        except KeyError:
+            return default
+        return datasets
+    return eval(value, {"dataset": get_dataset})
