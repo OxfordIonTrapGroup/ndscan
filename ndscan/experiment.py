@@ -93,16 +93,16 @@ class ScanAxis:
 
 
 class ScanSpec:
-    def __init__(self, axes, randomise_order_globally=True, seed=None):
+    def __init__(self, axes, num_repeats: int, continuous_without_axes: bool,
+        randomise_order_globally: bool, seed=None):
         self.axes = axes
+        self.num_repeats = num_repeats
+        self.continuous_without_axes = continuous_without_axes
         self.randomise_order_globally = randomise_order_globally
 
         if seed is None:
             seed = random.getrandbits(32)
         self.seed = seed
-
-    def is_continuous(self) -> bool:
-        return not self.axes
 
 
 def generate_points(scan: ScanSpec):
@@ -114,30 +114,31 @@ def generate_points(scan: ScanSpec):
 
     max_level = 0
     while True:
-        new_axes = False
-        for i, a in enumerate(scan.axes):
-            if a.generator.has_level(max_level):
-                points_for_axes[i].append(a.generator.points_for_level(max_level, rng))
-                new_axes = True
+        for _ in range(scan.num_repeats):
+            found_new_levels = False
+            for i, a in enumerate(scan.axes):
+                if a.generator.has_level(max_level):
+                    points_for_axes[i].append(a.generator.points_for_level(max_level, rng))
+                    found_new_levels = True
 
-        if not new_axes:
-            # No levels left to exhaust, done.
-            return
+            if not found_new_levels:
+                # No levels left to exhaust, done.
+                return
 
-        points = []
+            points = []
 
-        for axis_levels in itertools.product(*(range(0, len(p)) for p in points_for_axes)):
-            if all(l < max_level for l in axis_levels):
-                # Previously visited this combination already.
-                continue
-            tp = itertools.product(*(p[l] for (l, p) in zip(axis_levels, points_for_axes)))
-            points.extend(tp)
+            for axis_levels in itertools.product(*(range(0, len(p)) for p in points_for_axes)):
+                if all(l < max_level for l in axis_levels):
+                    # Previously visited this combination already.
+                    continue
+                tp = itertools.product(*(p[l] for (l, p) in zip(axis_levels, points_for_axes)))
+                points.extend(tp)
 
-        if scan.randomise_order_globally:
-            rng.shuffle(points)
+            if scan.randomise_order_globally:
+                rng.shuffle(points)
 
-        for p in points:
-            yield p
+            for p in points:
+                yield p
 
         max_level += 1
 
@@ -165,7 +166,10 @@ class FragmentScanExperiment(EnvExperiment):
             "always_shown": self.fragment._get_always_shown_params(),
             "overrides": {},
             "scan": {
-                "axes": []
+                "axes": [],
+                "num_repeats": 1,
+                "continuous_without_axes": True,
+                "randomise_order_globally": False
             }
         }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
@@ -194,7 +198,12 @@ class FragmentScanExperiment(EnvExperiment):
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store, generator))
 
-        self._scan = ScanSpec(axes)
+        num_repeats = scan.get("num_repeats", 1)
+        continuous_without_axes = scan.get("continuous_without_axes", True)
+        randomise_order_globally = scan.get("randomise_order_globally", False)
+
+        self._scan = ScanSpec(axes, num_repeats, continuous_without_axes,
+            randomise_order_globally)
 
         self.fragment._apply_param_overrides(param_stores)
 
@@ -218,8 +227,8 @@ class FragmentScanExperiment(EnvExperiment):
         self._broadcast_metadata()
         self._issue_ccb()
 
-        if self._scan.is_continuous():
-            self._run_continuous()
+        if not self._scan.axes:
+            self._run_single()
         else:
             self._run_scan()
 
@@ -230,17 +239,22 @@ class FragmentScanExperiment(EnvExperiment):
         # parameter(s), otherwise call:
         self.fragment.analyze()
 
-    def _run_continuous(self):
-        with suppress(TerminationRequested):
-            while True:
-                self.fragment.host_setup()
-                self._point_phase = False
-                if will_spawn_kernel(self.fragment.run_once):
-                    self._run_continuous_kernel()
-                    self.core.comm.close()
-                else:
-                    self._continuous_loop()
-                self.scheduler.pause()
+    def _run_single(self):
+        try:
+            with suppress(TerminationRequested):
+                while True:
+                    self.fragment.host_setup()
+                    self._point_phase = False
+                    if will_spawn_kernel(self.fragment.run_once):
+                        self._run_continuous_kernel()
+                        self.core.comm.close()
+                    else:
+                        self._continuous_loop()
+                    if not self._scan.continuous_without_axes:
+                        return
+                    self.scheduler.pause()
+        finally:
+            self._set_completed()
 
     @kernel
     def _run_continuous_kernel(self):
@@ -258,6 +272,8 @@ class FragmentScanExperiment(EnvExperiment):
                 self.fragment.device_reset()
             self.fragment.run_once()
             self._broadcast_point_phase()
+            if not self._scan.continuous_without_axes:
+                return
 
     def _run_scan(self):
         # TODO: Handle parameters requiring host setup.
