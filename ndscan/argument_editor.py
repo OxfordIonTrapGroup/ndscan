@@ -119,8 +119,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                     self._make_override_item(fqn, o["path"])
 
             for entry in self._param_entries.values():
-                entry.read_from_params(ndscan_params,
-                    self.manager.datasets.backing_store)
+                # KLUDGE: On dashboard startup, the datasets have not necessarily been
+                # synced yet (self.manager.datasets is still an empty dict). However,
+                # all experiments opened on startup were open previously, so all parameters
+                # should have override values set.
+                datasets = getattr(self.manager.datasets, "backing_store", {})
+                entry.read_from_params(ndscan_params, datasets)
 
         self._make_line_separator()
 
