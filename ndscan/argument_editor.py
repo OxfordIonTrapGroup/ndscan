@@ -567,8 +567,8 @@ class FloatOverrideEntry(OverrideEntry):
             "path": self.path,
             "type": "linear",
             "range": {
-                "lower": self.box_linear_lower.value() * self.scale,
-                "upper": self.box_linear_upper.value() * self.scale,
+                "start": self.box_linear_start.value() * self.scale,
+                "stop": self.box_linear_stop.value() * self.scale,
                 "num_points": self.box_linear_points.value(),
                 "randomise_order": self.box_linear_randomise.isChecked(),
             }
@@ -605,9 +605,9 @@ class FloatOverrideEntry(OverrideEntry):
         layout.setStretchFactor(self.box_refining_upper, 1)
 
     def _build_linear_ui(self, layout: QtWidgets.QLayout) -> None:
-        self.box_linear_lower = self._make_spin_box()
-        layout.addWidget(self.box_linear_lower)
-        layout.setStretchFactor(self.box_linear_lower, 1)
+        self.box_linear_start = self._make_spin_box()
+        layout.addWidget(self.box_linear_start)
+        layout.setStretchFactor(self.box_linear_start, 1)
 
         layout.addWidget(self._make_divider())
 
@@ -624,9 +624,9 @@ class FloatOverrideEntry(OverrideEntry):
 
         layout.addWidget(self._make_divider())
 
-        self.box_linear_upper = self._make_spin_box()
-        layout.addWidget(self.box_linear_upper)
-        layout.setStretchFactor(self.box_linear_upper, 1)
+        self.box_linear_stop = self._make_spin_box()
+        layout.addWidget(self.box_linear_stop)
+        layout.setStretchFactor(self.box_linear_stop, 1)
 
     def _make_spin_box(self):
         box = ScientificSpinBox()
