@@ -48,6 +48,34 @@ class RefiningGenerator:
         target["max"] = self.upper
 
 
+class LinearGenerator:
+    def __init__(self, start, stop, num_points, randomise_order):
+        self.start = start
+        self.stop = stop
+        self.num_points = num_points
+        self.randomise_order = randomise_order
+
+    def has_level(self, level: int):
+        return level == 0
+
+    def points_for_level(self, level: int, rng=None):
+        assert level == 0
+        points = np.linspace(start=self.start, stop=self.stop, num=self.num_points, endpoint=True)
+        if self.randomise_order:
+            rng.shuffle(points)
+        return points
+
+    def describe_limits(self, target: dict):
+        target["min"] = min(self.start, self.stop)
+        target["max"] = max(self.start, self.stop)
+
+
+GENERATORS = {
+    "refining": RefiningGenerator,
+    "linear": LinearGenerator
+}
+
+
 class ScanAxis:
     def __init__(self, param_schema: str, path: str, param_store, generator):
         self.param_schema = param_schema
@@ -153,10 +181,10 @@ class FragmentScanExperiment(EnvExperiment):
 
         axes = []
         for axspec in scan["axes"]:
-            if axspec["type"] == "refining":
-                generator = RefiningGenerator(**axspec["range"])
-            else:
+            generator_class = GENERATORS.get(axspec["type"], None)
+            if not generator_class:
                 raise ScanSpecError("Axis type '{}' not implemented".format(axspec["type"]))
+            generator = generator_class(**axspec["range"])
 
             fqn = axspec["fqn"]
             pathspec = axspec["path"]
