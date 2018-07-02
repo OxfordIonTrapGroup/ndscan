@@ -374,6 +374,6 @@ def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):
     doc = fragment_class.__doc__
     if not doc:
         doc = fragment_class.__name__
-    FragmentScanShim.__doc__ = __doc__
+    FragmentScanShim.__doc__ = doc
 
     return FragmentScanShim
