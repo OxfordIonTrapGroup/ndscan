@@ -83,6 +83,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             return os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", name)
         self._add_override_icon = QtGui.QIcon(icon_path("list-add-32.png"))
         self._remove_override_icon = QtGui.QIcon(icon_path("list-remove-32.png"))
+        self._randomize_scan_icon = QtGui.QIcon(icon_path("media-playlist-shuffle-32.svg"))
         self._default_value_icon = self.style().standardIcon(
                 QtWidgets.QStyle.SP_BrowserReload)
         self._disable_scans_icon = self.style().standardIcon(
@@ -296,6 +297,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         f = QtWidgets.QFrame(self)
         f.setMinimumHeight(15)
         f.setFrameShape(QtWidgets.QFrame.HLine)
+        f.setFrameShadow(QtWidgets.QFrame.Sunken)
         f.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
 
         wi = QtWidgets.QTreeWidgetItem()
@@ -464,17 +466,18 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         schema = self._schema_for_fqn(fqn)
 
         # TODO: Switch on schema["type"].
-        return FloatOverrideEntry(schema, path)
+        return FloatOverrideEntry(schema, path, self._randomize_scan_icon)
 
 
 class OverrideEntry(LayoutWidget):
     value_changed = QtCore.pyqtSignal()
 
-    def __init__(self, schema, path, *args):
+    def __init__(self, schema, path, randomize_icon, *args):
         super().__init__(*args)
 
         self.schema = schema
         self.path = path
+        self.randomize_icon = randomize_icon
 
         self.scan_type = QtWidgets.QComboBox()
         self.addWidget(self.scan_type, col=0)
@@ -520,7 +523,8 @@ class FloatOverrideEntry(OverrideEntry):
     def __init__(self, schema, *args):
         self.scan_types = OrderedDict([
             ("Fixed", (self._build_fixed_ui, self._write_override)),
-            ("Refining", (self._build_refining_ui, self._write_refining_scan))
+            ("Refining", (self._build_refining_ui, self._write_refining_scan)),
+            ("Linear", (self._build_linear_ui, self._write_linear_scan))
         ])
         self.current_scan_type = None
         self.scale = schema.get("spec", {}).get("scale", 1.0)
@@ -547,8 +551,23 @@ class FloatOverrideEntry(OverrideEntry):
             "path": self.path,
             "type": "refining",
             "range": {
-                "lower": self.box_lower.value() * self.scale,
-                "upper": self.box_upper.value() * self.scale
+                "lower": self.box_refining_lower.value() * self.scale,
+                "upper": self.box_refining_upper.value() * self.scale,
+                "randomize": self.box_refining_randomize.isChecked()
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+    def _write_linear_scan(self, params: dict) -> None:
+        spec = {
+            "fqn": self.schema["fqn"],
+            "path": self.path,
+            "type": "linear",
+            "range": {
+                "lower": self.box_linear_lower.value() * self.scale,
+                "upper": self.box_linear_upper.value() * self.scale,
+                "points": self.box_linear_points.value(),
+                "randomize": self.box_linear_randomize.isChecked(),
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
@@ -566,11 +585,45 @@ class FloatOverrideEntry(OverrideEntry):
         layout.addWidget(self.box_value)
 
     def _build_refining_ui(self, layout: QtWidgets.QLayout) -> None:
-        self.box_lower = self._make_spin_box()
-        layout.addWidget(self.box_lower)
+        self.box_refining_lower = self._make_spin_box()
+        layout.addWidget(self.box_refining_lower)
+        layout.setStretchFactor(self.box_refining_lower, 1)
 
-        self.box_upper = self._make_spin_box()
-        layout.addWidget(self.box_upper)
+        layout.addWidget(self._make_divider())
+
+        self.box_refining_randomize = self._make_randomize_box()
+        layout.addWidget(self.box_refining_randomize)
+        layout.setStretchFactor(self.box_refining_randomize, 0)
+
+        layout.addWidget(self._make_divider())
+
+        self.box_refining_upper = self._make_spin_box()
+        layout.addWidget(self.box_refining_upper)
+        layout.setStretchFactor(self.box_refining_upper, 1)
+
+    def _build_linear_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box_linear_lower = self._make_spin_box()
+        layout.addWidget(self.box_linear_lower)
+        layout.setStretchFactor(self.box_linear_lower, 1)
+
+        layout.addWidget(self._make_divider())
+
+        self.box_linear_points = QtWidgets.QSpinBox()
+        self.box_linear_points.setMinimum(2)
+        self.box_linear_points.setMaximum(2**16) # A gratuitous, but probably generous restriction
+        self.box_linear_points.setSuffix(" points")
+        layout.addWidget(self.box_linear_points)
+        layout.setStretchFactor(self.box_linear_points, 0)
+
+        self.box_linear_randomize = self._make_randomize_box()
+        layout.addWidget(self.box_linear_randomize)
+        layout.setStretchFactor(self.box_linear_randomize, 0)
+
+        layout.addWidget(self._make_divider())
+
+        self.box_linear_upper = self._make_spin_box()
+        layout.addWidget(self.box_linear_upper)
+        layout.setStretchFactor(self.box_linear_upper, 1)
 
     def _make_spin_box(self):
         box = ScientificSpinBox()
@@ -592,6 +645,20 @@ class FloatOverrideEntry(OverrideEntry):
             box.setSuffix(" " + unit)
 
         return box
+
+    def _make_randomize_box(self):
+        box = QtWidgets.QCheckBox()
+        box.setToolTip("Randomize scan point order")
+        box.setIcon(self.randomize_icon)
+        box.setCheckState(QtCore.Qt.Checked)
+        return box
+
+    def _make_divider(self):
+        f = QtWidgets.QFrame()
+        f.setFrameShape(QtWidgets.QFrame.VLine)
+        f.setFrameShadow(QtWidgets.QFrame.Sunken)
+        f.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        return f
 
     def _set_fixed_value(self, value):
         self.box_value.setValue(float(value) / self.scale)
