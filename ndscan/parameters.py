@@ -23,6 +23,10 @@ def type_string_to_param(name: str):
     }[name]
 
 
+class InvalidDefaultError(ValueError):
+    pass
+
+
 class FloatParamStore:
     def __init__(self, value):
         self._change_callbacks = [self._do_nothing] # set is not iterable on kernel
@@ -138,17 +142,44 @@ class FloatParam:
     StoreType = FloatParamStore
     CompilerType = TFloat
 
-    def __init__(self, fqn: str, description: str, default: Union[str, float]):
+    def __init__(self, fqn: str, description: str, default: Union[str, float],
+        min: Union[float, None] = None, max: Union[float, None] = None,
+        unit: str = "", scale: Union[float, None] = None):
+
         self.fqn = fqn
         self.description = description
         self.default = default
+        self.min = min
+        self.max = max
+
+        if scale is None:
+            if unit == "":
+                scale = 1.0
+            else:
+                try:
+                    scale = getattr(units, unit)
+                except AttributeError:
+                    raise KeyError("Unit {} is unknown, you must specify "
+                                   "the scale manually".format(unit))
+        self.scale = scale
+        self.unit = unit
 
     def describe(self) -> Dict[str, any]:
+        spec = {"scale": self.scale}
+
+        if self.min is not None:
+            spec["min"] = self.min
+        if self.max is not None:
+            spec["max"] = self.max
+        if self.unit:
+            spec["unit"] = self.unit
+
         return {
             "fqn": self.fqn,
             "description": self.description,
             "type": "float",
-            "default": self.default
+            "default": self.default,
+            "spec": {}
         }
 
     def apply_default(self, target: FloatParamHandle, get_dataset: Callable) -> None:
@@ -156,6 +187,10 @@ class FloatParam:
             value = _eval_default(self.default, get_dataset)
         else:
             value = self.default
+        if self.min is not None and value < self.min:
+            raise InvalidDefaultError("Value {} below minimum of {}".format(value, self.min))
+        if self.max is not None and value > self.max:
+            raise InvalidDefaultError("Value {} above maximum of {}".format(value, self.max))
         target.set_store(FloatParamStore(value))
 
 
