@@ -557,18 +557,18 @@ class FloatOverrideEntry(OverrideEntry):
         disable_scroll_wheel(box)
         box.valueChanged.connect(self.value_changed)
 
-        scale = self.schema.get("scale", 1.0)
-        step = self.schema.get("step", 1.0)
+        spec = self.schema.get("spec", {})
+        scale = spec.get("scale", 1.0)
+        step = spec.get("step", 1.0)
 
-        # box.setDecimals(procdesc["ndecimals"])
         box.setPrecision()
         box.setSingleStep(step / scale)
         box.setRelativeStep()
 
-        box.setMinimum(self.schema.get("min", float("-inf")) / scale)
-        box.setMaximum(self.schema.get("max", float("inf")) / scale)
+        box.setMinimum(spec.get("min", float("-inf")) / scale)
+        box.setMaximum(spec.get("max", float("inf")) / scale)
 
-        unit = self.schema.get("unit", "")
+        unit = spec.get("unit", "")
         if unit:
             box.setSuffix(" " + unit)
 
