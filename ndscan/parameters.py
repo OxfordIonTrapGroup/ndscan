@@ -144,7 +144,8 @@ class FloatParam:
 
     def __init__(self, fqn: str, description: str, default: Union[str, float],
         min: Union[float, None] = None, max: Union[float, None] = None,
-        unit: str = "", scale: Union[float, None] = None):
+        unit: str = "", scale: Union[float, None] = None,
+        step: Union[float, None] = None):
 
         self.fqn = fqn
         self.description = description
@@ -163,6 +164,8 @@ class FloatParam:
                                    "the scale manually".format(unit))
         self.scale = scale
         self.unit = unit
+
+        self.step = step if step is not None else scale / 10.0
 
     def describe(self) -> Dict[str, any]:
         spec = {"scale": self.scale}
