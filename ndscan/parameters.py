@@ -181,7 +181,7 @@ class FloatParam:
             "fqn": self.fqn,
             "description": self.description,
             "type": "float",
-            "default": self.default,
+            "default": str(self.default),
             "spec": spec
         }
 
@@ -212,7 +212,7 @@ class IntParam:
             "fqn": self.fqn,
             "description": self.description,
             "type": "int",
-            "default": self.default
+            "default": str(self.default)
         }
 
     def apply_default(self, target: IntParamHandle, get_dataset: Callable) -> None:
