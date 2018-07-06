@@ -167,11 +167,6 @@ class Flop674(SingleIonExp):
         pass
 
     @kernel
-    def device_reset(self):
-        # FIXME: Why does this hang if not explicitly implemented?!
-        pass
-
-    @kernel
     def run_shot(self):
         print(self.t_674.get())
         # self.ttl_674.pulse(self.t_674)

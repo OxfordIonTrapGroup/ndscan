@@ -108,9 +108,11 @@ class Fragment(HasEnvironment):
         self.build_fragment(*args, **kwargs)
         self._building = False
 
+    @kernel
     def device_setup(self) -> None:
         pass
 
+    @kernel
     def device_reset(self) -> None:
         # By default, just completely reinitialize.
         self.device_setup()
