@@ -396,7 +396,7 @@ class FragmentScanExperiment(EnvExperiment):
         set("channels", json.dumps(channels))
 
     def _broadcast_result(self, channel_name, value):
-        if self._scan.is_continuous():
+        if not self._scan.axes:
             self.set_dataset("ndscan.point.{}".format(channel_name), value, broadcast=True)
         else:
             self.append_to_dataset("ndscan.points.channel_{}".format(channel_name), value)
