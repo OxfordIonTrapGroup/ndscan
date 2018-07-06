@@ -36,7 +36,7 @@ class RefiningGenerator:
 
         d = self.upper - self.lower
         num = 2**(level - 1)
-        points = np.arange(num) * d / num + d / (2 * num)
+        points = np.arange(num) * d / num + d / (2 * num) + self.lower
 
         if self.randomise_order:
             rng.shuffle(points)
