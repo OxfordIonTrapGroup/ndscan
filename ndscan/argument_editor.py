@@ -126,7 +126,72 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 datasets = getattr(self.manager.datasets, "backing_store", {})
                 entry.read_from_params(ndscan_params, datasets)
 
-        self._make_line_separator()
+            self._make_line_separator()
+
+            scan_options_group = self._make_group_header_item("Scan options")
+            self.addTopLevelItem(scan_options_group)
+
+
+            #
+
+            num_repeats_container = QtWidgets.QWidget()
+            num_repeats_layout = QtWidgets.QHBoxLayout()
+            num_repeats_container.setLayout(num_repeats_layout)
+
+            num_repeats_label = QtWidgets.QLabel("Number of repeats: ")
+            num_repeats_layout.addWidget(num_repeats_label)
+            num_repeats_layout.setStretchFactor(num_repeats_label, 0)
+
+            self.num_repeats_box = QtWidgets.QSpinBox()
+            self.num_repeats_box.setMinimum(1)
+            self.num_repeats_box.setMaximum(2**16) # A gratuitous, but hopefully generous restriction
+            self.num_repeats_box.setValue(ndscan_params["scan"].get("num_repeats", 1))
+            num_repeats_layout.addWidget(self.num_repeats_box)
+            num_repeats_layout.setStretchFactor(self.num_repeats_box, 0)
+
+            num_repeats_layout.addStretch()
+
+            num_repeats_item = QtWidgets.QTreeWidgetItem()
+            scan_options_group.addChild(num_repeats_item)
+            self.setItemWidget(num_repeats_item, 1, num_repeats_container)
+
+            #
+
+            cwa_container = QtWidgets.QWidget()
+            cwa_layout = QtWidgets.QHBoxLayout()
+            cwa_container.setLayout(cwa_layout)
+
+            cwa_label = QtWidgets.QLabel("Repeat continuously without axes: ")
+            cwa_layout.addWidget(cwa_label)
+            cwa_layout.setStretchFactor(cwa_label, 0)
+
+            self.cwa_box = QtWidgets.QCheckBox()
+            self.cwa_box.setChecked(ndscan_params["scan"].get("continuous_without_axes", True))
+            cwa_layout.addWidget(self.cwa_box)
+            cwa_layout.setStretchFactor(self.cwa_box, 1)
+
+            cwa_item = QtWidgets.QTreeWidgetItem()
+            scan_options_group.addChild(cwa_item)
+            self.setItemWidget(cwa_item, 1, cwa_container)
+
+            #
+
+            randomise_globally_container = QtWidgets.QWidget()
+            randomise_globally_layout = QtWidgets.QHBoxLayout()
+            randomise_globally_container.setLayout(randomise_globally_layout)
+
+            randomise_globally_label = QtWidgets.QLabel("Randomise point order across axes: ")
+            randomise_globally_layout.addWidget(randomise_globally_label)
+            randomise_globally_layout.setStretchFactor(randomise_globally_label, 0)
+
+            self.randomise_globally_box = QtWidgets.QCheckBox()
+            self.randomise_globally_box.setChecked(ndscan_params["scan"].get("randomise_order_globally", False))
+            randomise_globally_layout.addWidget(self.randomise_globally_box)
+            randomise_globally_layout.setStretchFactor(self.randomise_globally_box, 1)
+
+            randomise_globally_item = QtWidgets.QTreeWidgetItem()
+            scan_options_group.addChild(randomise_globally_item)
+            self.setItemWidget(randomise_globally_item, 1, randomise_globally_container)
 
         buttons_item = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(buttons_item)
@@ -364,9 +429,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         # TODO: See whether I can't get focus proxies to work.
         self._add_override_prompt_box.line_edit.setFocus()
 
-    def _ensure_group_widget(self, name):
-        if name in self._groups:
-            return self._groups[name]
+    def _make_group_header_item(self, name):
         group = QtWidgets.QTreeWidgetItem([name])
         for col in range(3):
             group.setBackground(col, self.palette().mid())
@@ -374,7 +437,13 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             font = group.font(col)
             font.setBold(True)
             group.setFont(col, font)
-        self.addTopLevelItem(group)
+        return group
+
+    def _ensure_group_widget(self, name):
+        if name in self._groups:
+            return self._groups[name]
+        group = self._make_group_header_item(name)
+        self.insertTopLevelItem(self.indexOfTopLevelItem(self.override_separator), group)
         self._groups[name] = group
         return group
 
@@ -461,10 +530,17 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._save_timer.stop()
 
         # Reset previous overrides, repopulate with currently active ones.
-        self._ndscan_params["scan"]["axes"] = []
+        scan = self._ndscan_params["scan"]
+        scan["axes"] = []
         self._ndscan_params["overrides"] = {}
         for item in self._param_entries.values():
             item.write_to_params(self._ndscan_params)
+
+        # Store scan parameters.
+        scan["num_repeats"] = self.num_repeats_box.value()
+        scan["continuous_without_axes"] = self.cwa_box.isChecked()
+        scan["randomise_order_globally"] = self.randomise_globally_box.isChecked()
+
         _update_ndscan_params(self._arguments, self._ndscan_params)
 
     def _make_override_entry(self, fqn, path):
@@ -501,7 +577,6 @@ class OverrideEntry(LayoutWidget):
             if o["path"] == self.path:
                 self._set_fixed_value(o["value"])
                 return
-
         try:
             value = _eval_default(self.schema["default"], datasets)
         except Exception as e:
@@ -654,7 +729,7 @@ class FloatOverrideEntry(OverrideEntry):
         box = QtWidgets.QCheckBox()
         box.setToolTip("Randomise scan point order")
         box.setIcon(self.randomise_icon)
-        box.setCheckState(QtCore.Qt.Checked)
+        box.setChecked(True)
         return box
 
     def _make_divider(self):
