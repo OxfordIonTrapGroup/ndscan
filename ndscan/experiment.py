@@ -313,10 +313,6 @@ class FragmentScanExperiment(EnvExperiment):
         # from the core device in one go.
         self._kscan_current_chunk = []
 
-        initial_chunk = self._kscan_param_values_chunk()
-        for i, values in enumerate(initial_chunk):
-            setattr(self, "_kscan_param_values_{}".format(i), values)
-
         for i, axis in enumerate(self._scan.axes):
             setattr(self, "_kscan_param_setter_{}".format(i), axis.param_store.set_value)
 
@@ -372,6 +368,7 @@ class FragmentScanExperiment(EnvExperiment):
         values = ([],) * len(self._scan.axes)
         for p in self._kscan_current_chunk:
             for i, v in enumerate(p):
+                self.append_to_dataset("ndscan.points.axis_{}".format(i), v)
                 values[i].append(v)
         return values
 
