@@ -90,7 +90,7 @@ class OpaqueChannel(ResultChannel):
 
 
 class Fragment(HasEnvironment):
-    def build(self, fragment_path: List[str]):
+    def build(self, fragment_path: List[str], *args, **kwargs):
         self._fragment_path = fragment_path
         self._subfragments = []
         self._free_params = OrderedDict()
@@ -105,7 +105,7 @@ class Fragment(HasEnvironment):
         self.fqn = mod + "." + klass.__qualname__
 
         self._building = True
-        self.build_fragment()
+        self.build_fragment(*args, **kwargs)
         self._building = False
 
     def device_setup(self) -> None:
@@ -115,15 +115,15 @@ class Fragment(HasEnvironment):
         # By default, just completely reinitialize.
         self.device_setup()
 
-    def build_fragment(self) -> None:
+    def build_fragment(self, *args, **kwargs) -> None:
         raise NotImplementedError("build_fragment() not implemented; override it to add parameters/result channels.")
 
-    def setattr_fragment(self, name: str, fragment_class: Type["Fragment"]) -> None:
+    def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_fragment() during build_fragment()"
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
         assert not hasattr(self, name), "Field '%s' already exists".format(name)
 
-        frag = fragment_class(self, self._fragment_path + [name])
+        frag = fragment_class(self, self._fragment_path + [name], *args, **kwargs)
         self._subfragments.append(frag)
         setattr(self, name, frag)
 
