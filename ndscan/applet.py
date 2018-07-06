@@ -273,6 +273,7 @@ class _MainWidget(QtWidgets.QWidget):
         self.args = args
 
         self.setWindowTitle("ndscan plot")
+        self.resize(800, 500)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
