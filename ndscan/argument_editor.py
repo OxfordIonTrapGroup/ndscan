@@ -220,6 +220,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         main_item.setFont(0, font)
 
         entry = self._make_override_entry(fqn, path)
+        entry.read_from_params(self._ndscan_params, self.manager.datasets.backing_store)
         entry.value_changed.connect(self._set_save_timer)
         self._param_entries[(fqn, path)] = entry
         self.setItemWidget(main_item, 1, entry)
