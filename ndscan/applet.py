@@ -333,7 +333,12 @@ class _MainWidget(QtWidgets.QWidget):
 
 class NdscanApplet(SimpleApplet):
     def __init__(self):
-        super().__init__(_MainWidget)
+        # Use a small update delay by default to avoid lagging out the UI by
+        # continuous redraws for plots with a large number of points. (20 ms
+        # is a pretty arbitrary choice for a latency not perceptible by the
+        # user in a normal use case).
+        super().__init__(_MainWidget, default_update_delay=20e-3)
+
         self.argparser.add_argument("--rid", help="RID of the experiment to plot")
 
     def subscribe(self):
