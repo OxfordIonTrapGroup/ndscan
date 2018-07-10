@@ -10,7 +10,8 @@ from quamash import QtWidgets, QtCore
 logger = logging.getLogger(__name__)
 
 
-SERIES_COLORS = ["#d9d9d9aa", "#fdb462aa", "#80b1d3aa", "#fb8072aa", "#bebeadaaa", "#ffffb3aa"]
+# Colours to use for data series (RGBA)
+SERIES_COLORS = ["#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebeada99", "#ffffb399"]
 
 
 class _XYSeries:
