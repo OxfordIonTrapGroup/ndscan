@@ -382,6 +382,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._override_items[(fqn, path)] = items
         self._set_save_timer()
 
+        # Make sure layout is updated to accomodate new row; without this, the
+        # new item and the add prompt button overlap on Qt 5.6.2/Win64 until
+        # the dock is resized for the first time.
+        geom = self.geometry()
+        self.resize(geom.width(), geom.height())
+
     def _make_add_override_prompt_item(self):
         self._override_prompt_item = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(self._override_prompt_item)
