@@ -14,7 +14,7 @@ from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
 from artiq.protocols import pyon
 from .experiment import PARAMS_ARG_KEY
 from .fuzzy_select import FuzzySelectWidget
-from .utils import shorten_to_unambiguous_suffixes
+from .utils import eval_param_default, shorten_to_unambiguous_suffixes
 
 
 logger = logging.getLogger(__name__)
@@ -584,7 +584,13 @@ class OverrideEntry(LayoutWidget):
                 self._set_fixed_value(o["value"])
                 return
         try:
-            value = _eval_default(self.schema["default"], datasets)
+            def get_dataset(key, default):
+                try:
+                    return datasets[key][1]
+                except KeyError:
+                    return default
+                return datasets
+            value = eval_param_default(self.schema["default"], get_dataset)
         except Exception as e:
             logger.error("Failed to evaluate defaults string \"%s\": %s", self.schema["default"], e)
             # XXX: Fix for other types.
@@ -747,12 +753,3 @@ class FloatOverrideEntry(OverrideEntry):
 
     def _set_fixed_value(self, value):
         self.box_value.setValue(float(value) / self.scale)
-
-def _eval_default(value: str, datasets):
-    def get_dataset(key, default):
-        try:
-            return datasets[key][1]
-        except KeyError:
-            return default
-        return datasets
-    return eval(value, {"dataset": get_dataset})
