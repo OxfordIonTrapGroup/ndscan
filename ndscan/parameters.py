@@ -1,6 +1,7 @@
 from artiq.language import *
 from artiq.language import units
 from typing import Callable, Dict, Union
+from .utils import eval_param_default
 
 """
 Fragment-side parameter containers.
@@ -187,7 +188,7 @@ class FloatParam:
 
     def apply_default(self, target: FloatParamHandle, get_dataset: Callable) -> None:
         if type(self.default) is str:
-            value = _eval_default(self.default, get_dataset)
+            value = eval_param_default(self.default, get_dataset)
         else:
             value = self.default
         if self.min is not None and value < self.min:
@@ -217,11 +218,7 @@ class IntParam:
 
     def apply_default(self, target: IntParamHandle, get_dataset: Callable) -> None:
         if type(self.default) is str:
-            value = _eval_default(self.default, get_dataset)
+            value = eval_param_default(self.default, get_dataset)
         else:
             value = self.default
         target.set_store(IntParamStore(value))
-
-
-def _eval_default(value: str, get_dataset: Callable):
-    return eval(value, {"dataset": get_dataset})

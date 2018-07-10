@@ -1,4 +1,5 @@
 from typing import Callable, List
+from artiq.language import units
 
 def path_matches_spec(path: List[str], spec: str):
     # TODO: Think about how we want to match.
@@ -47,3 +48,8 @@ def shorten_to_unambiguous_suffixes(fqns: List[str], get_last_n_parts: Callable[
             n += 1
 
     return shortened_fqns
+
+def eval_param_default(value: str, get_dataset: Callable):
+    env = {name: getattr(units, name) for name in units.__all__}
+    env.update({"dataset": get_dataset})
+    return eval(value, env)
