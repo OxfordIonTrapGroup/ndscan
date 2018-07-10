@@ -118,14 +118,6 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 for o in overrides:
                     self._make_override_item(fqn, o["path"])
 
-            for entry in self._param_entries.values():
-                # KLUDGE: On dashboard startup, the datasets have not necessarily been
-                # synced yet (self.manager.datasets is still an empty dict). However,
-                # all experiments opened on startup were open previously, so all parameters
-                # should have override values set.
-                datasets = getattr(self.manager.datasets, "backing_store", {})
-                entry.read_from_params(ndscan_params, datasets)
-
             self._make_line_separator()
 
             scan_options_group = self._make_group_header_item("Scan options")
@@ -285,7 +277,14 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         main_item.setFont(0, font)
 
         entry = self._make_override_entry(fqn, path)
-        entry.read_from_params(self._ndscan_params, self.manager.datasets.backing_store)
+
+        # KLUDGE: On dashboard startup, the datasets have not necessarily been
+        # synced yet (self.manager.datasets is still an empty dict). However,
+        # all experiments opened on startup were open previously, so all parameters
+        # should have override values set.
+        datasets = getattr(self.manager.datasets, "backing_store", {})
+        entry.read_from_params(self._ndscan_params, datasets)
+
         entry.value_changed.connect(self._set_save_timer)
         self._param_entries[(fqn, path)] = entry
         self.setItemWidget(main_item, 1, entry)
