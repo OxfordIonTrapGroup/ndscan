@@ -76,8 +76,11 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         self.series = []
 
         x_spec = x_schema["param"]["spec"]
+
+        self.x_unit_suffix = ""
         unit = x_spec.get("unit", "")
         if unit:
+            self.x_unit_suffix = " " + unit
             unit = "/ " + unit + " "
 
         path = x_schema["path"]
@@ -89,9 +92,74 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         label = "<b>{} {}</b><i>({})</i>".format(description, unit, param)
         self.setLabel("bottom", label)
 
-        self.getAxis("bottom").setScale(1 / x_spec["scale"])
+        self.x_data_to_display_scale = 1 / x_spec["scale"]
+        self.getAxis("bottom").setScale(self.x_data_to_display_scale)
 
         self.showGrid(x=True, y=True)
+
+        # Crosshair cursor with coordinate display. The TextItems for displaying
+        # the coordinates are updated on a timer to avoid a lag trail of buffered
+        # redraws when there are a lot of points.
+        #
+        # TODO: Abstract out, use for other plots as well.
+        self.getPlotItem().getViewBox().hoverEvent = self._on_viewbox_hover
+        self.getPlotItem().getViewBox().setCursor(QtCore.Qt.CrossCursor)
+        self.crosshair_timer = QtCore.QTimer(self)
+        self.crosshair_timer.timeout.connect(self._update_crosshair_text)
+        self.crosshair_timer.setSingleShot(True)
+        self.crosshair_x_text = None
+        self.crosshair_y_text = None
+
+    def _on_viewbox_hover(self, event):
+        if event.isExit():
+            self.removeItem(self.crosshair_x_text)
+            self.crosshair_x_text = None
+            self.removeItem(self.crosshair_y_text)
+            self.crosshair_y_text = None
+
+            self.crosshair_timer.stop()
+            return
+
+        self.last_hover_event = event
+        self.crosshair_timer.start(0)
+
+    def _update_crosshair_text(self):
+        vb = self.getPlotItem().getViewBox()
+        data_coords = vb.mapSceneToView(self.last_hover_event.scenePos())
+
+        def make_text():
+            text = pyqtgraph.TextItem()
+            # Don't take text item into account for auto-scaling; otherwise
+            # there will be positive feedback if the cursor is towards the
+            # bottom right of the screen.
+            text.setFlag(text.ItemHasNoContents)
+            self.addItem(text)
+            return text
+
+        if not self.crosshair_x_text:
+            self.crosshair_x_text = make_text()
+
+        if not self.crosshair_y_text:
+            self.crosshair_y_text = make_text()
+
+        x_range, y_range = vb.state['viewRange']
+        x_range = np.array(x_range) * self.x_data_to_display_scale
+        def num_digits_after_point(r):
+            # We want to be able to resolve at least 1000 points in the displayed
+            # range.
+            smallest_digit = np.floor(np.log10(r[1] - r[0])) - 3
+            return int(-smallest_digit) if smallest_digit < 0 else 0
+
+        self.crosshair_x_text.setText("{0:.{width}f}{1}".format(
+            data_coords.x() * self.x_data_to_display_scale,
+            self.x_unit_suffix, width=num_digits_after_point(x_range)))
+        self.crosshair_x_text.setPos(data_coords)
+
+        y_text_pos = QtCore.QPointF(self.last_hover_event.scenePos())
+        y_text_pos.setY(self.last_hover_event.scenePos().y() + 10)
+        self.crosshair_y_text.setText("{0:.{width}f}".format(data_coords.y(), width=num_digits_after_point(y_range)))
+        self.crosshair_y_text.setPos(vb.mapSceneToView(y_text_pos))
+
 
     def data_changed(self, data, mods):
         def d(name):
