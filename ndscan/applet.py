@@ -109,7 +109,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         #
         # TODO: Abstract out, use for other plots as well.
         self.getPlotItem().getViewBox().hoverEvent = self._on_viewbox_hover
-        self.getPlotItem().getViewBox().setCursor(QtCore.Qt.CrossCursor)
+        self.setCursor(QtCore.Qt.CrossCursor)
         self.crosshair_timer = QtCore.QTimer(self)
         self.crosshair_timer.timeout.connect(self._update_crosshair_text)
         self.crosshair_timer.setSingleShot(True)
