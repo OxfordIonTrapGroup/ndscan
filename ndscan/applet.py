@@ -75,14 +75,21 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         self.series_initialised = False
         self.series = []
 
+        x_spec = x_schema["param"]["spec"]
+        unit = x_spec.get("unit", "")
+        if unit:
+            unit = "/ " + unit + " "
+
         path = x_schema["path"]
         if not path:
             path = "/"
         param = x_schema["param"]["fqn"] + "@" + path
 
         description = x_schema["param"]["description"]
-        label = "{} ({})".format(description, param) if description else param
-        self.setLabel("bottom", label, x_schema["param"].get("units", ""))
+        label = "<b>{} {}</b><i>({})</i>".format(description, unit, param)
+        self.setLabel("bottom", label)
+
+        self.getAxis("bottom").setScale(1 / x_spec["scale"])
 
         self.showGrid(x=True, y=True)
 
