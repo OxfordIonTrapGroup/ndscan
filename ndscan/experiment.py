@@ -407,7 +407,7 @@ class FragmentScanExperiment(EnvExperiment):
         self.set_dataset("ndscan.point_phase", self._point_phase, broadcast=True)
 
     def _issue_ccb(self):
-        cmd = "${python} -m ndscan.applet --server=${server} --port=${port_notify}"
+        cmd = "${python} -m ndscan.applet --server=${server} --port=${port_notify} --port_control=${port_control}"
         cmd += " --rid={}".format(self.scheduler.rid)
         self.ccb.issue("create_applet", "ndscan: " + self.fragment.fqn, cmd,
             group="ndscan", is_transient=True)

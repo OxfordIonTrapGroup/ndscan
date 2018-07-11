@@ -1,11 +1,14 @@
+import asyncio
 import json
 import logging
 import pyqtgraph
 import numpy as np
 
 from artiq.applets.simple import SimpleApplet
+from artiq.protocols.pc_rpc import AsyncioClient
 from artiq.protocols.sync_struct import Subscriber
 from quamash import QtWidgets, QtCore
+from .utils import eval_param_default
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +72,10 @@ class _XYSeries:
 class _XYPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
 
-    def __init__(self, x_schema):
+    def __init__(self, x_schema, set_dataset):
         super().__init__()
+
+        self.set_dataset = set_dataset
 
         self.series_initialised = False
         self.series = []
@@ -94,6 +99,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
         self.x_data_to_display_scale = 1 / x_spec["scale"]
         self.getAxis("bottom").setScale(self.x_data_to_display_scale)
+        self.getAxis("bottom").autoSIPrefix = False
 
         self.showGrid(x=True, y=True)
 
@@ -109,6 +115,8 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         self.crosshair_timer.setSingleShot(True)
         self.crosshair_x_text = None
         self.crosshair_y_text = None
+
+        self._install_context_menu(x_schema)
 
     def _on_viewbox_hover(self, event):
         if event.isExit():
@@ -155,6 +163,8 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
             self.x_unit_suffix, width=num_digits_after_point(x_range)))
         self.crosshair_x_text.setPos(data_coords)
 
+        self.last_crosshair_x = data_coords.x()
+
         y_text_pos = QtCore.QPointF(self.last_hover_event.scenePos())
         y_text_pos.setY(self.last_hover_event.scenePos().y() + 10)
         self.crosshair_y_text.setText("{0:.{width}f}".format(data_coords.y(), width=num_digits_after_point(y_range)))
@@ -195,6 +205,40 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         for s in self.series:
             s.update(x_data, data)
 
+
+    def _install_context_menu(self, x_schema):
+        entries = []
+
+        for d in _extract_linked_datasets(x_schema["param"]):
+            action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
+            action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
+            entries.append(action)
+
+        if not entries:
+            return
+
+        separator = QtWidgets.QAction("", self)
+        separator.setSeparator(True)
+        entries.append(separator)
+        self.plotItem.getContextMenus = lambda ev: entries + [self.getMenu()]
+
+    def _set_dataset_from_crosshair_x(self, dataset):
+        self.set_dataset(dataset, self.last_crosshair_x)
+
+
+def _extract_linked_datasets(param_schema):
+    datasets = []
+    try:
+        def log_datasets(dataset, default):
+            datasets.append(dataset)
+            return default
+        eval_param_default(param_schema["default"], log_datasets)
+    except Exception as e:
+        # Ignore default parsing errors here; the user will get warnings from the
+        # experiment dock and on the core device anyway.
+        print(e)
+        pass
+    return datasets
 
 def _extract_scalar_channels(channels):
     data_names = set(name for name, spec in channels.items() if spec["type"] in ["int", "float"])
@@ -336,11 +380,11 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
 
         separator = QtWidgets.QAction("", self)
         separator.setSeparator(True)
-        enties = [
+        entries = [
             action,
             separator
         ]
-        self.plotItem.getContextMenus = lambda ev: enties + [self.getMenu()]
+        self.plotItem.getContextMenus = lambda ev: entries + [self.getMenu()]
 
 
 class _MainWidget(QtWidgets.QWidget):
@@ -383,7 +427,7 @@ class _MainWidget(QtWidgets.QWidget):
             if len(axes) == 0:
                 self.plot = _RollingPlotWidget()
             elif len(axes) == 1:
-                self.plot = _XYPlotWidget(axes[0])
+                self.plot = _XYPlotWidget(axes[0], self.set_dataset)
             else:
                 self.message_label.setText(
                     "{}-dimensional scans are not yet supported".format(len(axes)))
@@ -405,6 +449,22 @@ class _MainWidget(QtWidgets.QWidget):
         self.message_label.setText("Error: " + message)
         self._show(self.message_label)
 
+    def set_dataset(self, key, value):
+        asyncio.ensure_future(self._set_dataset_impl(key, value))
+
+    async def _set_dataset_impl(self, key, value):
+        logger.info("Setting '%s' to %s", key, value)
+        try:
+            remote = AsyncioClient()
+            await remote.connect_rpc(self.args.server, self.args.port_control,
+                "master_dataset_db")
+            try:
+                await remote.set(key, value)
+            finally:
+                remote.close_rpc()
+        except:
+            logger.error("Failed to set dataset '%s'", key, exc_info=True)
+
 
 class NdscanApplet(SimpleApplet):
     def __init__(self):
@@ -414,6 +474,9 @@ class NdscanApplet(SimpleApplet):
         # user in a normal use case).
         super().__init__(_MainWidget, default_update_delay=20e-3)
 
+        self.argparser.add_argument(
+            "--port-control", default=3251, type=int,
+            help="TCP port for master control commands")
         self.argparser.add_argument("--rid", help="RID of the experiment to plot")
 
     def subscribe(self):
