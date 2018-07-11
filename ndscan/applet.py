@@ -111,7 +111,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
             for i, name in enumerate(data_names):
                 color = SERIES_COLORS[i % len(SERIES_COLORS)]
-                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
+                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
 
                 error_bar_name = error_bar_names.get(name, None)
                 error_bar_item = pyqtgraph.ErrorBarItem(pen=color) if error_bar_name else None
