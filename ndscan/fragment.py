@@ -1,3 +1,4 @@
+from copy import deepcopy
 import logging
 import numpy
 
@@ -17,6 +18,7 @@ class Fragment(HasEnvironment):
         self._fragment_path = fragment_path
         self._subfragments = []
         self._free_params = OrderedDict()
+        self._rebound_subfragment_params = dict() #: Own key to subfragment handles.
         self._result_channels = {}
 
         klass = self.__class__
@@ -68,6 +70,26 @@ class Fragment(HasEnvironment):
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
         setattr(self, name, param_class.HandleType())
 
+    def setattr_param_rebind(self, name: str, original_owner, original_name, **kwargs) -> None:
+        assert self._building, "Can only call setattr_param_rebind() during build_fragment()"
+        assert name.isidentifier(), "Parameter name must be valid Python identifier"
+        assert not hasattr(self, name), "Field '%s' already exists".format(name)
+
+        # Set up our own copy of the parameter.
+        original_param = original_owner._free_params[original_name]
+        param = deepcopy(original_param)
+        param.fqn = self.fqn + "." + name
+        for k, v in kwargs.items():
+            setattr(param, k, v)
+        self._free_params[name] = param
+        setattr(self, name, param.HandleType())
+
+        # Deregister it from the original owner and make sure we set the store
+        # to our own later.
+        del original_owner._free_params[original_name]
+        original_handle = getattr(original_owner, original_name)
+        self._rebound_subfragment_params.setdefault(name, []).append(original_handle)
+
     def setattr_result(self, name: str, channel_class: Type = FloatChannel, *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_result() during build_fragment()"
         assert name.isidentifier(), "Result channel name must be valid Python identifier"
@@ -98,13 +120,16 @@ class Fragment(HasEnvironment):
 
     def _apply_param_overrides(self, overrides: Dict[str, List[dict]]) -> None:
         for name, param in self._free_params.items():
-            was_set = False
+            store = None
             for o in overrides.get(param.fqn, []):
                 if path_matches_spec(self._fragment_path, o["path"]):
-                    getattr(self, name).set_store(o["store"])
-                    was_set = True
-            if not was_set:
-                param.apply_default(getattr(self, name), self.get_dataset)
+                    store = o["store"]
+            if not store:
+                store = param.default_store(self.get_dataset)
+
+            getattr(self, name).set_store(store)
+            for handle in self._rebound_subfragment_params.get(name, []):
+                handle.set_store(store)
 
         for s in self._subfragments:
             s._apply_param_overrides(overrides)

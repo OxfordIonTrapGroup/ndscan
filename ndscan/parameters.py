@@ -186,7 +186,7 @@ class FloatParam:
             "spec": spec
         }
 
-    def apply_default(self, target: FloatParamHandle, get_dataset: Callable) -> None:
+    def default_store(self, get_dataset: Callable) -> None:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
@@ -195,7 +195,7 @@ class FloatParam:
             raise InvalidDefaultError("Value {} below minimum of {}".format(value, self.min))
         if self.max is not None and value > self.max:
             raise InvalidDefaultError("Value {} above maximum of {}".format(value, self.max))
-        target.set_store(FloatParamStore(value))
+        return FloatParamStore(value)
 
 
 class IntParam:
@@ -216,9 +216,9 @@ class IntParam:
             "default": str(self.default)
         }
 
-    def apply_default(self, target: IntParamHandle, get_dataset: Callable) -> None:
+    def default_store(self, get_dataset: Callable) -> None:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
             value = self.default
-        target.set_store(IntParamStore(value))
+        return IntParamStore(value)
