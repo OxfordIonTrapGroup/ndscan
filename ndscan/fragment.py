@@ -31,6 +31,13 @@ class Fragment(HasEnvironment):
         self.build_fragment(*args, **kwargs)
         self._building = False
 
+    def host_setup(self):
+        """Called before kernel is entered for the first time.
+
+        TODO: Define semantics for multiple invocations.
+        """
+        pass
+
     @kernel
     def device_setup(self) -> None:
         pass
@@ -112,13 +119,6 @@ class Fragment(HasEnvironment):
 
 
 class ExpFragment(Fragment):
-    def host_setup(self):
-        """Called before kernel is entered for the first time.
-
-        TODO: Define semantics for multiple invocations.
-        """
-        pass
-
     def run_once(self):
         pass
 
