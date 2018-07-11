@@ -98,26 +98,26 @@ def generate_points(scan: ScanSpec):
 
     max_level = 0
     while True:
+        found_new_levels = False
+        for i, a in enumerate(scan.axes):
+            if a.generator.has_level(max_level):
+                axis_level_points[i].append(a.generator.points_for_level(max_level, rng))
+                found_new_levels = True
+
+        if not found_new_levels:
+            # No levels left to exhaust, done.
+            return
+
+        points = []
+
+        for axis_levels in product(*(range(0, len(p)) for p in axis_level_points)):
+            if all(l < max_level for l in axis_levels):
+                # Previously visited this combination already.
+                continue
+            tp = product(*(p[l] for (l, p) in zip(axis_levels, axis_level_points)))
+            points.extend(tp)
+
         for _ in range(scan.num_repeats):
-            found_new_levels = False
-            for i, a in enumerate(scan.axes):
-                if a.generator.has_level(max_level):
-                    axis_level_points[i].append(a.generator.points_for_level(max_level, rng))
-                    found_new_levels = True
-
-            if not found_new_levels:
-                # No levels left to exhaust, done.
-                return
-
-            points = []
-
-            for axis_levels in product(*(range(0, len(p)) for p in axis_level_points)):
-                if all(l < max_level for l in axis_levels):
-                    # Previously visited this combination already.
-                    continue
-                tp = product(*(p[l] for (l, p) in zip(axis_levels, axis_level_points)))
-                points.extend(tp)
-
             if scan.randomise_order_globally:
                 rng.shuffle(points)
 
