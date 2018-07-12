@@ -18,7 +18,7 @@ class Fragment(HasEnvironment):
         self._fragment_path = fragment_path
         self._subfragments = []
         self._free_params = OrderedDict()
-        self._rebound_subfragment_params = dict() #: Own key to subfragment handles.
+        self._rebound_subfragment_params = dict() #: Maps own attribute name to subfragment handles.
         self._result_channels = {}
 
         klass = self.__class__
@@ -55,7 +55,7 @@ class Fragment(HasEnvironment):
     def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_fragment() during build_fragment()"
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '%s' already exists".format(name)
+        assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
         frag = fragment_class(self, self._fragment_path + [name], *args, **kwargs)
         self._subfragments.append(frag)
@@ -64,16 +64,19 @@ class Fragment(HasEnvironment):
     def setattr_param(self, name: str, param_class: Type, description: str, *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_param() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '%s' already exists".format(name)
+        assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
         fqn = self.fqn + "." + name
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
         setattr(self, name, param_class.HandleType())
 
-    def setattr_param_rebind(self, name: str, original_owner, original_name, **kwargs) -> None:
+    def setattr_param_rebind(self, name: str, original_owner, original_name=None, **kwargs) -> None:
         assert self._building, "Can only call setattr_param_rebind() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '%s' already exists".format(name)
+        assert not hasattr(self, name), "Field '{}' already exists".format(name)
+
+        if original_name is None:
+            original_name = name
 
         # Set up our own copy of the parameter.
         original_param = original_owner._free_params[original_name]
@@ -93,7 +96,7 @@ class Fragment(HasEnvironment):
     def setattr_result(self, name: str, channel_class: Type = FloatChannel, *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_result() during build_fragment()"
         assert name.isidentifier(), "Result channel name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '%s' already exists".format(name)
+        assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
         path = "/".join(self._fragment_path + [name])
         channel = channel_class(path, *args, **kwargs)
