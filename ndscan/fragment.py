@@ -104,7 +104,7 @@ class Fragment(HasEnvironment):
         setattr(self, name, channel)
 
     def _collect_params(self, params: Dict[str, List[str]], schemata: Dict[str, dict]) -> None:
-        """Collect parameters of this fragment and all its subfragments.
+        """Collect free parameters of this fragment and all its subfragments.
 
         :param params: Dictionary to write the list of instance paths for each
             parameter to, indexed by FQN.
@@ -128,7 +128,19 @@ class Fragment(HasEnvironment):
         for s in self._subfragments:
             s._collect_params(params, schemata)
 
-    def _apply_param_overrides(self, overrides: Dict[str, List[dict]]) -> None:
+    def init_params(self, overrides: Dict[str, List[dict]] = {}) -> None:
+        """Initialise free parameters of this fragment and all its subfragments.
+
+        If a relevant override is given, the specified ParamStore is used.
+        Otherwise, the default value is evaluated and a new store created.
+
+        This method should be called after build(), but before any of the
+        fragment's user-defined functions are used. FragmentScanExperiment
+        takes care of this, but the function can be called manually if fragments
+        are to be used in other contexts, e.g. from standalone EnvExperiments.
+        """
+        # TODO: Change overrides value type to a named tuple or something else
+        # more appropriate than a free-form dict.
         for name, param in self._free_params.items():
             store = None
             for o in overrides.get(param.fqn, []):
@@ -142,7 +154,7 @@ class Fragment(HasEnvironment):
                 handle.set_store(store)
 
         for s in self._subfragments:
-            s._apply_param_overrides(overrides)
+            s.init_params(overrides)
 
     def _get_always_shown_params(self) -> List[str]:
         return [(p.fqn, "/".join(self._fragment_path)) for p in self._free_params.values()]

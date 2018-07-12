@@ -84,7 +84,7 @@ class FragmentScanExperiment(EnvExperiment):
         self._scan = ScanSpec(axes, num_repeats, continuous_without_axes,
             randomise_order_globally)
 
-        self.fragment._apply_param_overrides(param_stores)
+        self.fragment.init_params(param_stores)
 
         # Initialise result channels.
         chan_dict = {}
