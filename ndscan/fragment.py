@@ -100,7 +100,14 @@ class Fragment(HasEnvironment):
         self._result_channels[path] = channel
         setattr(self, name, channel)
 
-    def _build_param_tree(self, params: Dict[str, List[str]], schemata: Dict[str, dict]) -> None:
+    def _collect_params(self, params: Dict[str, List[str]], schemata: Dict[str, dict]) -> None:
+        """Collect parameters of this fragment and all its subfragments.
+
+        :param params: Dictionary to write the list of instance paths for each
+            parameter to, indexed by FQN.
+        :param schemeta: Dictionary to write the schemata for each parameter to,
+            indexed by FQN.
+        """
         path = "/".join(self._fragment_path)
 
         fqns = []
@@ -116,7 +123,7 @@ class Fragment(HasEnvironment):
         params[path] = fqns
 
         for s in self._subfragments:
-            s._build_param_tree(params, schemata)
+            s._collect_params(params, schemata)
 
     def _apply_param_overrides(self, overrides: Dict[str, List[dict]]) -> None:
         for name, param in self._free_params.items():

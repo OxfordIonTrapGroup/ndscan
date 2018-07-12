@@ -38,7 +38,7 @@ class FragmentScanExperiment(EnvExperiment):
 
         instances = dict()
         self.schemata = dict()
-        self.fragment._build_param_tree(instances, self.schemata)
+        self.fragment._collect_params(instances, self.schemata)
         desc = {
             "instances": instances,
             "schemata": self.schemata,
