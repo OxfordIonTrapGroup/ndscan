@@ -1,13 +1,14 @@
 from artiq.language import *
+import artiq.language.units
 from typing import Any, Callable, Dict, List, Type
 
 
 class ResultSink:
     def push(self, value):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def get_all(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class AppendingDatasetSink(ResultSink, HasEnvironment):
@@ -80,17 +81,41 @@ class ResultChannel:
 
 
 class NumericChannel(ResultChannel):
-    def __init__(self, path: List[str], description: str = "", display_hints: Dict[str, Any] = {}, min = None, max = None):
+    def __init__(
+        self,
+        path: List[str],
+        description: str = "",
+        display_hints: Dict[str, Any] = {},
+        min = None,
+        max = None,
+        unit: str = "",
+        scale = None
+    ):
         super().__init__(path, description, display_hints)
         self.min = min
         self.max = max
 
+        if scale is None:
+            if unit == "":
+                scale = 1.0
+            else:
+                try:
+                    scale = getattr(artiq.language.units, unit)
+                except AttributeError:
+                    raise KeyError("Unit {} is unknown, you must specify "
+                                   "the scale manually".format(unit))
+        self.scale = scale
+        self.unit = unit
+
     def describe(self) -> Dict[str, Any]:
         result = super().describe()
+        result["scale"] = self.scale
         if self.min is not None:
             result["min"] = self.min
         if self.max is not None:
             result["max"] = self.max
+        if self.unit is not None:
+            result["unit"] = self.unit
         return result
 
 

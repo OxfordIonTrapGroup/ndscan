@@ -1,6 +1,6 @@
 from artiq.language import *
 from artiq.language import units
-from typing import Callable, Dict, Union
+from typing import Callable, Dict, Tuple, Union
 from .utils import eval_param_default
 
 """
@@ -11,9 +11,6 @@ of typing.Generic, nor any other), yet requires the inferred types/signatures
 of fields to match across all instances of a class. Hence, we have no option
 but to hang our heads in shame and manually instantiate the parameter handling
 machinery for all the value types.
-
-(Common code could possibly be cleaned up slightly using inheritance, but at
-this point, why bother?)
 """
 
 
@@ -30,7 +27,12 @@ class InvalidDefaultError(ValueError):
 
 
 class ParamStore:
-    def __init__(self, value):
+    def __init__(self, identity: Tuple[str, str], value):
+        self.identity = identity
+        """(fqn, path_spec) pair representing the identity of this param store,
+        i.e. the override/default value it was created for.
+        """
+
         self._change_callbacks = [] # set is not iterable on kernel
         self.set_value(value)
 
@@ -71,17 +73,23 @@ class IntParamStore(ParamStore):
             cb()
 
 
-class FloatParamHandle:
+class ParamHandle:
     def __init__(self):
         self._store = None
         self._changed_after_use = True
 
-    def set_store(self, store: FloatParamStore) -> None:
+    def set_store(self, store) -> None:
         if self._store:
             self._store.unregister_change_callback(self._change_cb)
         self._store = store
         self._changed_after_use = True
 
+    def _change_cb(self):
+        # Once transform lambdas are supported, handle them here.
+        self._changed_after_use = True
+
+
+class FloatParamHandle(ParamHandle):
     @portable
     def get(self) -> TFloat:
         return self._store.get_value()
@@ -95,22 +103,8 @@ class FloatParamHandle:
     def changed_after_use(self) -> TBool:
         return self._changed_after_use
 
-    def _change_cb(self):
-        # Once transform lambdas are supported, handle them here.
-        self._changed_after_use = True
 
-
-class IntParamHandle:
-    def __init__(self):
-        self._store = None
-        self._changed_after_use = True
-
-    def set_store(self, store: IntParamStore) -> None:
-        if self._store:
-            self._store.unregister_change_callback(self._change_cb)
-        self._store = store
-        self._changed_after_use = True
-
+class IntParamHandle(ParamHandle):
     @portable
     def get(self) -> TInt32:
         return self._store.get_value()
@@ -123,10 +117,6 @@ class IntParamHandle:
     @portable
     def changed_after_use(self) -> TBool:
         return self._changed_after_use
-
-    def _change_cb(self):
-        # Once transform lambdas are supported, handle them here.
-        self._changed_after_use = True
 
 
 class FloatParam:
@@ -176,7 +166,7 @@ class FloatParam:
             "spec": spec
         }
 
-    def default_store(self, get_dataset: Callable) -> None:
+    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> None:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
@@ -185,7 +175,7 @@ class FloatParam:
             raise InvalidDefaultError("Value {} below minimum of {}".format(value, self.min))
         if self.max is not None and value > self.max:
             raise InvalidDefaultError("Value {} above maximum of {}".format(value, self.max))
-        return FloatParamStore(value)
+        return FloatParamStore(identity, value)
 
 
 class IntParam:
@@ -206,9 +196,9 @@ class IntParam:
             "default": str(self.default)
         }
 
-    def default_store(self, get_dataset: Callable) -> None:
+    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> None:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
             value = self.default
-        return IntParamStore(value)
+        return IntParamStore(identity, value)

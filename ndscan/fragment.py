@@ -6,6 +6,7 @@ from artiq.language import *
 from collections import OrderedDict
 from contextlib import suppress
 from typing import Any, Callable, Dict, Generic, List, Type, Union
+from .auto_fit import AutoFitSpec
 from .parameters import *
 from .result_channels import *
 from .utils import path_matches_spec, strip_prefix
@@ -106,8 +107,8 @@ class Fragment(HasEnvironment):
     def _collect_params(self, params: Dict[str, List[str]], schemata: Dict[str, dict]) -> None:
         """Collect free parameters of this fragment and all its subfragments.
 
-        :param params: Dictionary to write the list of instance paths for each
-            parameter to, indexed by FQN.
+        :param params: Dictionary to write the list of FQNs for each fragment to,
+            indexed by the fragment path in string form.
         :param schemeta: Dictionary to write the schemata for each parameter to,
             indexed by FQN.
         """
@@ -147,7 +148,8 @@ class Fragment(HasEnvironment):
                 if path_matches_spec(self._fragment_path, o["path"]):
                     store = o["store"]
             if not store:
-                store = param.default_store(self.get_dataset)
+                identity = (param.fqn, self._stringize_path())
+                store = param.default_store(identity, self.get_dataset)
 
             getattr(self, name).set_store(store)
             for handle in self._rebound_subfragment_params.get(name, []):
@@ -157,7 +159,10 @@ class Fragment(HasEnvironment):
             s.init_params(overrides)
 
     def _get_always_shown_params(self) -> List[str]:
-        return [(p.fqn, "/".join(self._fragment_path)) for p in self._free_params.values()]
+        return [(p.fqn, self._stringize_path()) for p in self._free_params.values()]
+
+    def _stringize_path(self) -> str:
+        return "/".join(self._fragment_path)
 
     def _collect_result_channels(self, channels: dict):
         channels.update(self._result_channels)
@@ -169,5 +174,5 @@ class ExpFragment(Fragment):
     def run_once(self):
         pass
 
-    def analyze(self):
-        pass
+    def get_default_fits(self) -> List[AutoFitSpec]:
+        return []

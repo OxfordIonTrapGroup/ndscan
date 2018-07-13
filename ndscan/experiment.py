@@ -59,7 +59,10 @@ class FragmentScanExperiment(EnvExperiment):
         param_stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
             store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
-            param_stores[fqn] = [{"path": s["path"], "store": store_type(s["value"])} for s in specs]
+            param_stores[fqn] = [{
+                "path": s["path"],
+                "store": store_type((fqn, s["path"]), s["value"])
+            } for s in specs]
 
         scan = self._params.get("scan", {})
 
@@ -74,7 +77,7 @@ class FragmentScanExperiment(EnvExperiment):
             pathspec = axspec["path"]
 
             store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
-            store = store_type(generator.points_for_level(0, random)[0])
+            store = store_type((fqn, pathspec), generator.points_for_level(0, random)[0])
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store, generator))
 
@@ -96,14 +99,18 @@ class FragmentScanExperiment(EnvExperiment):
             lambda fqn, n: "/".join(fqn.split("/")[-n:]))
 
         self.channels = {}
+        self._channel_dataset_names = {}
         for path, channel in chan_dict.items():
             name = chan_name_map[path].replace("/", "_")
             self.channels[name] = channel
 
             if self._scan.axes:
-                sink = AppendingDatasetSink(self, "ndscan.points.channel_{}".format(name))
+                dataset = "channel_{}".format(name)
+                self._channel_dataset_names[path] = dataset
+                sink = AppendingDatasetSink(self, "ndscan.points." + dataset)
             else:
-                sink = ScalarDatasetSink(self, "ndscan.point.{}".format(name))
+                self._channel_dataset_names[path] = name
+                sink = ScalarDatasetSink(self, "ndscan.point." + name)
             channel.set_sink(sink)
 
     def run(self):
@@ -118,9 +125,7 @@ class FragmentScanExperiment(EnvExperiment):
         self._set_completed()
 
     def analyze(self):
-        # See whether there are any default fits set up for the chosen
-        # parameter(s), otherwise call:
-        self.fragment.analyze()
+        pass
 
     def _run_single(self):
         try:
@@ -277,6 +282,15 @@ class FragmentScanExperiment(EnvExperiment):
 
         channels = {name: channel.describe() for (name, channel) in self.channels.items()}
         set("channels", json.dumps(channels))
+
+        fits = []
+        axis_identities = [(s.param_schema["fqn"], s.path) for s in self._scan.axes]
+        for f in self.fragment.get_default_fits():
+            if f.has_data(axis_identities):
+                fits.append(f.describe(
+                    lambda identity: "axis_{}".format(axis_identities.index(identity)),
+                    lambda path: self._channel_dataset_names[path]))
+        set("auto_fit", json.dumps(fits))
 
     @rpc(flags={"async"})
     def _broadcast_point_phase(self):
