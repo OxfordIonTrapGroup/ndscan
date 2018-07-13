@@ -29,9 +29,9 @@ class InvalidDefaultError(ValueError):
     pass
 
 
-class FloatParamStore:
+class ParamStore:
     def __init__(self, value):
-        self._change_callbacks = [self._do_nothing] # set is not iterable on kernel
+        self._change_callbacks = [] # set is not iterable on kernel
         self.set_value(value)
 
     def register_change_callback(self, cb):
@@ -40,6 +40,12 @@ class FloatParamStore:
     def unregister_change_callback(self, cb):
         self._change_callbacks.remove(cb)
 
+    @portable
+    def _do_nothing(self):
+        pass
+
+
+class FloatParamStore(ParamStore):
     @portable
     def get_value(self) -> TFloat:
         return self._value
@@ -47,25 +53,12 @@ class FloatParamStore:
     @portable
     def set_value(self, value):
         self._value = float(value)
-        for cb in self._change_callbacks:
+        # KLUDGE: Help along type inference for empty callback lists.
+        for cb in (self._change_callbacks if True else [self._do_nothing]):
             cb()
 
-    @portable
-    def _do_nothing(self):
-        pass
 
-
-class IntParamStore:
-    def __init__(self, value):
-        self._change_callbacks = [self._do_nothing] # set is not iterable on kernel
-        self.set_value(value)
-
-    def register_change_callback(self, cb):
-        self._change_callbacks.append(cb)
-
-    def unregister_change_callback(self, cb):
-        self._change_callbacks.remove(cb)
-
+class IntParamStore(ParamStore):
     @portable
     def get_value(self) -> TInt32:
         return self._value
@@ -73,12 +66,9 @@ class IntParamStore:
     @portable
     def set_value(self, value):
         self._value = int(value)
-        for cb in self._change_callbacks:
+        # KLUDGE: Help along type inference for empty callback lists.
+        for cb in (self._change_callbacks if True else [self._do_nothing]):
             cb()
-
-    @portable
-    def _do_nothing(self):
-        pass
 
 
 class FloatParamHandle:
