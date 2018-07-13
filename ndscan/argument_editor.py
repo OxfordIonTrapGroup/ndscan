@@ -723,6 +723,7 @@ class FloatOverrideEntry(OverrideEntry):
         spec = self.schema.get("spec", {})
         step = spec.get("step", 1.0)
 
+        box.setDecimals(8)
         box.setPrecision()
         box.setSingleStep(step / self.scale)
         box.setRelativeStep()
