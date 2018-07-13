@@ -135,6 +135,10 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         vb = self.getPlotItem().getViewBox()
         data_coords = vb.mapSceneToView(self.last_hover_event.scenePos())
 
+        # TODO: Draw text directly to graphics scene rather than going through
+        # pyqtgraph for performance - don't need any of the fancy interaction
+        # or layouting features that come with being a plot item.
+
         def make_text():
             text = pyqtgraph.TextItem()
             # Don't take text item into account for auto-scaling; otherwise
@@ -205,7 +209,6 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         for s in self.series:
             s.update(x_data, data)
 
-
     def _install_context_menu(self, x_schema):
         entries = []
 
@@ -236,9 +239,9 @@ def _extract_linked_datasets(param_schema):
     except Exception as e:
         # Ignore default parsing errors here; the user will get warnings from the
         # experiment dock and on the core device anyway.
-        print(e)
         pass
     return datasets
+
 
 def _extract_scalar_channels(channels):
     data_names = set(name for name, spec in channels.items() if spec["type"] in ["int", "float"])
@@ -348,6 +351,8 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
 
             self.series_initialised = True
 
+        # FIXME: Phase check will miss points when using mod buffering - need
+        # to check mods for more than one change.
         phase = d("point_phase")
         if phase is not None and phase != self.point_phase:
             for s in self.series:
