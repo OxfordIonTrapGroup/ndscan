@@ -28,7 +28,7 @@ class ResultChannel:
         self.result_callback = cb
 
     @rpc(flags={"async"})
-    def set(self, raw_value):
+    def push(self, raw_value):
         value = self._coerce_to_type(raw_value)
         if self.result_callback:
             self.result_callback(value)
