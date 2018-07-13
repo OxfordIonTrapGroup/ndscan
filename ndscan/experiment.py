@@ -9,6 +9,7 @@ from collections import OrderedDict
 from contextlib import suppress
 from typing import Callable, Dict, List, Type
 from .fragment import Fragment, ExpFragment, type_string_to_param
+from .result_channels import AppendingDatasetSink, ScalarDatasetSink
 from .scan_generator import *
 from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
 
@@ -98,9 +99,12 @@ class FragmentScanExperiment(EnvExperiment):
         for path, channel in chan_dict.items():
             name = chan_name_map[path].replace("/", "_")
             self.channels[name] = channel
-            def make_cb(name):
-                return lambda v: self._broadcast_result(name, v)
-            channel.set_result_callback(make_cb(name))
+
+            if self._scan.axes:
+                sink = AppendingDatasetSink(self, "ndscan.points.channel_{}".format(name))
+            else:
+                sink = ScalarDatasetSink(self, "ndscan.point.{}".format(name))
+            channel.set_sink(sink)
 
     def run(self):
         self._broadcast_metadata()
@@ -273,12 +277,6 @@ class FragmentScanExperiment(EnvExperiment):
 
         channels = {name: channel.describe() for (name, channel) in self.channels.items()}
         set("channels", json.dumps(channels))
-
-    def _broadcast_result(self, channel_name, value):
-        if not self._scan.axes:
-            self.set_dataset("ndscan.point.{}".format(channel_name), value, broadcast=True)
-        else:
-            self.append_to_dataset("ndscan.points.channel_{}".format(channel_name), value)
 
     @rpc(flags={"async"})
     def _broadcast_point_phase(self):

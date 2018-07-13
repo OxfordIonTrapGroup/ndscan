@@ -2,12 +2,51 @@ from artiq.language import *
 from typing import Any, Callable, Dict, List, Type
 
 
+class ResultSink:
+    def push(self, value):
+        raise NotImplementedError()
+
+    def get_all(self):
+        raise NotImplementedError()
+
+
+class AppendingDatasetSink(ResultSink, HasEnvironment):
+    def build(self, key, broadcast=True):
+        self.key = key
+        self.broadcast = broadcast
+        self.has_pushed = False
+
+    def push(self, value):
+        if not self.has_pushed:
+            self.set_dataset(self.key, [value], broadcast=self.broadcast)
+            self.has_pushed = True
+            return
+        self.append_to_dataset(self.key, value)
+
+    def get_all(self):
+        return self.get_dataset(self.key) if self.has_pushed else []
+
+
+class ScalarDatasetSink(ResultSink, HasEnvironment):
+    def build(self, key, broadcast=True):
+        self.key = key
+        self.broadcast = broadcast
+        self.has_pushed = False
+
+    def push(self, value):
+        self.set_dataset(self.key, value, broadcast=self.broadcast)
+        self.has_pushed = True
+
+    def get_all(self):
+        return [self.get_dataset(self.key)] if self.has_pushed else []
+
+
 class ResultChannel:
     def __init__(self, path: List[str], description: str = "", display_hints: Dict[str, Any] = {}):
         self.path = path
         self.description = description
         self.display_hints = display_hints
-        self.result_callback = None
+        self.sink = None
 
     def describe(self) -> Dict[str, Any]:
         desc = {
@@ -24,14 +63,14 @@ class ResultChannel:
         # TODO: Implement muting interface.
         return False
 
-    def set_result_callback(self, cb: Callable):
-        self.result_callback = cb
+    def set_sink(self, sink: ResultSink):
+        self.sink = sink
 
     @rpc(flags={"async"})
     def push(self, raw_value):
         value = self._coerce_to_type(raw_value)
-        if self.result_callback:
-            self.result_callback(value)
+        if self.sink:
+            self.sink.push(value)
 
     def _get_type_string(self):
         raise NotImplementedError()
