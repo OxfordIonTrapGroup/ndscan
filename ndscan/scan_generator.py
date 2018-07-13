@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 from itertools import product
-from typing import Dict
+from typing import Dict, List
 
 
 class RefiningGenerator:
@@ -77,8 +77,8 @@ class ScanAxis:
 
 
 class ScanSpec:
-    def __init__(self, axes, num_repeats: int, continuous_without_axes: bool,
-        randomise_order_globally: bool, seed=None):
+    def __init__(self, axes: List[ScanAxis], num_repeats: int,
+        continuous_without_axes: bool, randomise_order_globally: bool, seed=None):
         self.axes = axes
         self.num_repeats = num_repeats
         self.continuous_without_axes = continuous_without_axes
