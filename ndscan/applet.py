@@ -80,26 +80,16 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         self.series_initialised = False
         self.series = []
 
-        x_spec = x_schema["param"]["spec"]
-
-        self.x_unit_suffix = ""
-        unit = x_spec.get("unit", "")
-        if unit:
-            self.x_unit_suffix = " " + unit
-            unit = "/ " + unit + " "
-
         path = x_schema["path"]
         if not path:
             path = "/"
-        param = x_schema["param"]["fqn"] + "@" + path
-
-        description = x_schema["param"]["description"]
-        label = "<b>{} {}</b><i>({})</i>".format(description, unit, param)
-        self.setLabel("bottom", label)
-
-        self.x_data_to_display_scale = 1 / x_spec["scale"]
-        self.getAxis("bottom").setScale(self.x_data_to_display_scale)
-        self.getAxis("bottom").autoSIPrefix = False
+        identity_string = x_schema["param"]["fqn"] + "@" + path
+        self.x_unit_suffix, self.x_data_to_display_scale = _setup_axis_item(
+            self.getAxis("bottom"),
+            x_schema["param"]["description"],
+            identity_string,
+            x_schema["param"]["spec"]
+        )
 
         self.showGrid(x=True, y=True)
 
@@ -156,6 +146,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
         x_range, y_range = vb.state['viewRange']
         x_range = np.array(x_range) * self.x_data_to_display_scale
+        y_range = np.array(y_range) * self.y_data_to_display_scale
         def num_digits_after_point(r):
             # We want to be able to resolve at least 1000 points in the displayed
             # range.
@@ -171,9 +162,10 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
         y_text_pos = QtCore.QPointF(self.last_hover_event.scenePos())
         y_text_pos.setY(self.last_hover_event.scenePos().y() + 10)
-        self.crosshair_y_text.setText("{0:.{width}f}".format(data_coords.y(), width=num_digits_after_point(y_range)))
+        self.crosshair_y_text.setText("{0:.{width}f}{1}".format(
+            data_coords.y() * self.y_data_to_display_scale,
+            self.y_unit_suffix, width=num_digits_after_point(y_range)))
         self.crosshair_y_text.setPos(vb.mapSceneToView(y_text_pos))
-
 
     def data_changed(self, data, mods):
         def d(name):
@@ -191,7 +183,10 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
             except ValueError as e:
                 self.emit.error(str(e))
 
-            for i, name in enumerate(data_names):
+            sorted_data_names = list(data_names)
+            sorted_data_names.sort(key=lambda n: channels[n]["path"])
+
+            for i, name in enumerate(sorted_data_names):
                 color = SERIES_COLORS[i % len(SERIES_COLORS)]
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
 
@@ -199,6 +194,24 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                 error_bar_item = pyqtgraph.ErrorBarItem(pen=color) if error_bar_name else None
 
                 self.series.append(_XYSeries(self, name, data_item, error_bar_name, error_bar_item, False))
+
+            if len(sorted_data_names) == 1:
+                # If there is only one series, set label/scaling accordingly.
+                # TODO: Add multiple y axis for additional channels.
+                c = channels[sorted_data_names[0]]
+
+                label = c["description"]
+                if not label:
+                    label = c["path"].split("/")[-1]
+                self.y_unit_suffix, self.y_data_to_display_scale = _setup_axis_item(
+                    self.getAxis("left"),
+                    label,
+                    c["path"],
+                    c # TODO: Change result channel schema and move this into "spec" field?
+                )
+            else:
+                self.y_unit_suffix = ""
+                self.y_data_to_display_scale = 1.0
 
             self.series_initialised = True
 
@@ -227,6 +240,25 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
     def _set_dataset_from_crosshair_x(self, dataset):
         self.set_dataset(dataset, self.last_crosshair_x)
+
+
+def _setup_axis_item(axis_item, description, identity_string, spec):
+    unit_suffix = ""
+    unit = spec.get("unit", "")
+    if unit:
+        unit_suffix = " " + unit
+        unit = "/ " + unit + " "
+
+    label = "<b>{} {}</b>".format(description, unit)
+    if identity_string:
+        label += "<i>({})</i>".format(identity_string)
+    axis_item.setLabel(label)
+
+    data_to_display_scale = 1 / spec["scale"]
+    axis_item.setScale(data_to_display_scale)
+    axis_item.autoSIPrefix = False
+
+    return unit_suffix, data_to_display_scale
 
 
 def _extract_linked_datasets(param_schema):
@@ -339,7 +371,10 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
             except ValueError as e:
                 self.emit.error(str(e))
 
-            for i, data_name in enumerate(data_names):
+            sorted_data_names = list(data_names)
+            sorted_data_names.sort(key=lambda n: channels[n]["path"])
+
+            for i, data_name in enumerate(sorted_data_names):
                 color = SERIES_COLORS[i % len(SERIES_COLORS)]
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
 
@@ -348,6 +383,21 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
 
                 self.series.append(_Rolling1DSeries(self, data_name, data_item,
                     error_bar_name, error_bar_item, self.num_history_box.value()))
+
+            if len(sorted_data_names) == 1:
+                # If there is only one series, set label/scaling accordingly.
+                # TODO: Add multiple y axis for additional channels.
+                c = channels[sorted_data_names[0]]
+
+                label = c["description"]
+                if not label:
+                    label = c["path"].split("/")[-1]
+                _setup_axis_item(
+                    self.getAxis("left"),
+                    label,
+                    c["path"],
+                    c # TODO: Change result channel schema and move this into "spec" field?
+                )
 
             self.series_initialised = True
 
