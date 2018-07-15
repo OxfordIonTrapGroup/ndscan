@@ -8,6 +8,7 @@ from artiq.applets.simple import SimpleApplet
 from artiq.protocols.pc_rpc import AsyncioClient
 from artiq.protocols.sync_struct import Subscriber
 from concurrent.futures import ProcessPoolExecutor
+from oitg import uncertainty_to_string
 from quamash import QtWidgets, QtCore
 from .auto_fit import FIT_OBJECTS
 from .utils import eval_param_default
@@ -21,7 +22,7 @@ FIT_COLORS = ["#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebeadadd", 
 
 
 class _XYSeries(QtCore.QObject):
-    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, plot_left_to_right, fit_spec=None, fit_item=None):
+    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, plot_left_to_right, fit_spec=None, fit_item=None, fit_pois=[]):
         super().__init__(plot)
 
         self.plot = plot
@@ -33,7 +34,7 @@ class _XYSeries(QtCore.QObject):
         self.num_current_points = 0
 
         if fit_spec:
-            self._install_fit(fit_spec, fit_item)
+            self._install_fit(fit_spec, fit_item, fit_pois)
 
     def update(self, x_data, data):
         def channel(name):
@@ -80,10 +81,11 @@ class _XYSeries(QtCore.QObject):
             self._trigger_recompute_fit.emit()
 
     _trigger_recompute_fit = QtCore.pyqtSignal()
-    def _install_fit(self, spec, item):
+    def _install_fit(self, spec, item, pois):
         self.fit_type = spec["fit_type"]
         self.fit_obj = FIT_OBJECTS[self.fit_type]
         self.fit_item = item
+        self.fit_pois = pois
         self.fit_item_added = False
 
         self.last_fit_params = None
@@ -129,6 +131,8 @@ class _XYSeries(QtCore.QObject):
 
         if not self.fit_item_added:
             self.plot.addItem(self.fit_item, ignoreBounds=True)
+            for f in self.fit_pois:
+                f.add_to_plot(self.plot)
             self.fit_item_added = True
 
         # Choose horizontal range based on currently visible area.
@@ -143,6 +147,56 @@ class _XYSeries(QtCore.QObject):
         fit_ys = self.fit_obj.fitting_function(fit_xs, self.last_fit_params)
 
         self.fit_item.setData(fit_xs, fit_ys)
+
+        for f in self.fit_pois:
+            f.update(self.last_fit_params, self.last_fit_errors)
+
+
+class _VLineFitPOI:
+    def __init__(self, fit_param_name, base_color, x_data_to_display_scale, x_unit_suffix):
+        self.fit_param_name = fit_param_name
+        self.x_data_to_display_scale = x_data_to_display_scale
+        self.x_unit_suffix = x_unit_suffix
+
+        self.left_line = pyqtgraph.InfiniteLine(movable=False, angle=90,
+            pen={"color": base_color, "style": QtCore.Qt.DotLine})
+        self.center_line = pyqtgraph.InfiniteLine(movable=False, angle=90,label="",
+            labelOpts={"position": 0.97, "color": base_color, "movable": True},
+            pen={"color": base_color, "style": QtCore.Qt.SolidLine})
+        self.right_line = pyqtgraph.InfiniteLine(movable=False, angle=90,
+            pen={"color": base_color, "style": QtCore.Qt.DotLine})
+
+        self.has_warned = False
+
+    def add_to_plot(self, plot):
+        plot.addItem(self.left_line, ignoreBounds=True)
+        plot.addItem(self.center_line, ignoreBounds=True)
+        plot.addItem(self.right_line, ignoreBounds=True)
+
+    def update(self, fit_minimizers, fit_minimizer_errors):
+        try:
+            x = fit_minimizers[self.fit_param_name]
+            delta_x = fit_minimizer_errors[self.fit_param_name]
+        except KeyError as e:
+            if not self.has_warned:
+                logger.warn("Unknown reference to fit parameter '%s' in point of interest", str(e))
+                self.has_warned = True
+            # TODO: Remove POI.
+            return
+
+        if np.isnan(delta_x) or delta_x == 0.0:
+            # If the covariance extraction failed, just don't display the
+            # confidence interval at all.
+            delta_x = 0.0
+            label = str(x)
+        else:
+            label = uncertainty_to_string(x * self.x_data_to_display_scale,
+                delta_x * self.x_data_to_display_scale)
+        self.center_line.label.setFormat(label + self.x_unit_suffix)
+
+        self.left_line.setPos(x - delta_x)
+        self.center_line.setPos(x)
+        self.right_line.setPos(x + delta_x)
 
 
 def _run_fit(fit_type, xs, ys, y_errs=None):
@@ -288,6 +342,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                 # TODO: Multiple fit specs, error bars from other channels.
                 fit_spec = None
                 fit_item = None
+                fit_pois = []
                 for spec in fit_specs:
                     if spec["data"]["x"] != "axis_0":
                         continue
@@ -298,12 +353,19 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                         continue
 
                     fit_spec = spec
-                    pen = pyqtgraph.mkPen(FIT_COLORS[i % len(FIT_COLORS)], width=4)
+                    fit_color = FIT_COLORS[i % len(FIT_COLORS)]
+                    pen = pyqtgraph.mkPen(fit_color, width=3)
                     fit_item = pyqtgraph.PlotCurveItem(pen=pen)
+
+                    for p in spec["pois"]:
+                        # TODO: Support horizontal lines, points, ...
+                        if p.get("x", None):
+                            fit_pois.append(_VLineFitPOI(p["x"], fit_color,
+                                self.x_data_to_display_scale, self.x_unit_suffix))
                     break
 
                 self.series.append(_XYSeries(self, name, data_item,
-                    error_bar_name, error_bar_item, False, fit_spec, fit_item))
+                    error_bar_name, error_bar_item, False, fit_spec, fit_item, fit_pois))
 
             if len(sorted_data_names) == 1:
                 # If there is only one series, set label/scaling accordingly.
