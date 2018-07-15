@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 FIT_OBJECTS = {
-    n: getattr(oitg.fitting, n) for n in ["lorentzian", "parabola", "rabi_flop"]
+    n: getattr(oitg.fitting, n) for n in ["lorentzian", "rabi_flop"]
 }
+FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 
 
 class AutoFitSpec:
