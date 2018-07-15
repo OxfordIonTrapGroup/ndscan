@@ -280,8 +280,9 @@ class FragmentScanExperiment(EnvExperiment):
 
         set("seed", self._scan.seed)
 
-        channels = {name: channel.describe() for (name, channel) in self.channels.items()}
-        set("channels", json.dumps(channels))
+        # KLDUGE: Broadcast auto_fit before channels to allow simpler implementation
+        # in current fit applet. As the applet implementation grows more sophisticated
+        # (hiding axes, etc.), it should be easy to relax this requirement.
 
         fits = []
         axis_identities = [(s.param_schema["fqn"], s.path) for s in self._scan.axes]
@@ -291,6 +292,9 @@ class FragmentScanExperiment(EnvExperiment):
                     lambda identity: "axis_{}".format(axis_identities.index(identity)),
                     lambda path: self._channel_dataset_names[path]))
         set("auto_fit", json.dumps(fits))
+
+        channels = {name: channel.describe() for (name, channel) in self.channels.items()}
+        set("channels", json.dumps(channels))
 
     @rpc(flags={"async"})
     def _broadcast_point_phase(self):
