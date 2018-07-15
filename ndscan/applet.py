@@ -141,7 +141,7 @@ class _XYSeries(QtCore.QObject):
         ext = (x_range[1] - x_range[0]) / 10
         x_lims = (x_range[0] - ext, x_range[1] + ext)
 
-        # Choose number of points based on pixel width.
+        # Choose number of points based on width of plot on screen (in pixels).
         fit_xs = np.linspace(*x_lims, view_box.width())
 
         fit_ys = self.fit_obj.fitting_function(fit_xs, self.last_fit_params)
