@@ -15,16 +15,9 @@ FIT_OBJECTS = {
 FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 
 DEFAULT_POIS = {
-    "parabola": {
-        "minimizer": {
-            "x": "position"
-        }
-   },
-    "rabi_flop": {
-        "pi_time": {
-            "x": "t_pi"
-        }
-   }
+    "parabola": {"extremum": {"x": "position"}},
+    "rabi_flop": {"pi_time": {"x": "t_pi"}},
+    "lorentzian": {"extremum": {"x": "x0"}}
 }
 
 
