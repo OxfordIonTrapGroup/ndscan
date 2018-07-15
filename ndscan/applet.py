@@ -357,7 +357,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                     pen = pyqtgraph.mkPen(fit_color, width=3)
                     fit_item = pyqtgraph.PlotCurveItem(pen=pen)
 
-                    for p in spec["pois"]:
+                    for p in spec.get("pois", []):
                         # TODO: Support horizontal lines, points, ...
                         if p.get("x", None):
                             fit_pois.append(_VLineFitPOI(p["x"], fit_color,
