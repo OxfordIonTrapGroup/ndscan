@@ -14,14 +14,34 @@ FIT_OBJECTS = {
 }
 FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 
+DEFAULT_POIS = {
+    "parabola": {
+        "minimizer": {
+            "x": "position"
+        }
+   },
+    "rabi_flop": {
+        "pi_time": {
+            "x": "t_pi"
+        }
+   }
+}
+
 
 class AutoFitSpec:
-    def __init__(self, fit_type: str, data: Dict[str, Union[ParamHandle, ResultChannel]], display_hints: Dict[str, dict] = {}):
+    def __init__(
+        self,
+        fit_type: str,
+        data: Dict[str, Union[ParamHandle, ResultChannel]],
+        points_of_interest: Union[None, Dict[str, Dict[str, any]]] = None
+    ):
         self.fit_type = fit_type
         if fit_type not in FIT_OBJECTS:
             logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
         self.data = data
-        self.display_hints = display_hints
+        if points_of_interest is None:
+            points_of_interest = DEFAULT_POIS.get(fit_type, {})
+        self.points_of_interest = points_of_interest
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]):
         for arg in self.data.values():
@@ -47,5 +67,5 @@ class AutoFitSpec:
         return {
             "fit_type": self.fit_type,
             "data": {name: describe_argument(obj) for name, obj in self.data.items()},
-            "display_hints": self.display_hints
+            "pois": list(self.points_of_interest.values())
         }
