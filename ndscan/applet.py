@@ -77,7 +77,7 @@ class _XYSeries(QtCore.QObject):
 
         self.num_current_points = num_to_show
 
-        if self.fit_obj:
+        if self.fit_obj and self.num_current_points >= len(self.fit_obj.parameter_names):
             self._trigger_recompute_fit.emit()
 
     _trigger_recompute_fit = QtCore.pyqtSignal()
