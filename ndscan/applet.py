@@ -9,7 +9,7 @@ from artiq.protocols.pc_rpc import AsyncioClient
 from artiq.protocols.sync_struct import Subscriber
 from concurrent.futures import ProcessPoolExecutor
 from quamash import QtWidgets, QtCore
-from .auto_fit import FIT_TYPES
+from .auto_fit import FIT_OBJECTS
 from .utils import eval_param_default
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class _XYSeries(QtCore.QObject):
     _trigger_recompute_fit = QtCore.pyqtSignal()
     def _install_fit(self, spec, item):
         self.fit_type = spec["fit_type"]
-        self.fit_obj = FIT_TYPES[self.fit_type]
+        self.fit_obj = FIT_OBJECTS[self.fit_type]
         self.fit_item = item
         self.fit_item_added = False
 
@@ -152,7 +152,7 @@ def _run_fit(fit_type, xs, ys, y_errs=None):
     primitive API.
     """
     try:
-        return FIT_TYPES[fit_type].fit(xs, ys, y_errs)
+        return FIT_OBJECTS[fit_type].fit(xs, ys, y_errs)
     except Exception as e:
         return None, None
 
