@@ -7,18 +7,23 @@ import numpy as np
 from artiq.applets.simple import SimpleApplet
 from artiq.protocols.pc_rpc import AsyncioClient
 from artiq.protocols.sync_struct import Subscriber
+from concurrent.futures import ProcessPoolExecutor
 from quamash import QtWidgets, QtCore
+from .auto_fit import FIT_TYPES
 from .utils import eval_param_default
 
 logger = logging.getLogger(__name__)
 
 
-# Colours to use for data series (RGBA)
+# Colours to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = ["#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebeada99", "#ffffb399"]
+FIT_COLORS = ["#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebeadadd", "#ffffb3dd"]
 
 
-class _XYSeries:
-    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, plot_left_to_right):
+class _XYSeries(QtCore.QObject):
+    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, plot_left_to_right, fit_spec=None, fit_item=None):
+        super().__init__(plot)
+
         self.plot = plot
         self.data_item = data_item
         self.data_name = data_name
@@ -26,6 +31,9 @@ class _XYSeries:
         self.error_bar_name = error_bar_name
         self.plot_left_to_right = plot_left_to_right
         self.num_current_points = 0
+
+        if fit_spec:
+            self._install_fit(fit_spec, fit_item)
 
     def update(self, x_data, data):
         def channel(name):
@@ -67,6 +75,86 @@ class _XYSeries:
                     self.plot.addItem(self.error_bar_item)
 
         self.num_current_points = num_to_show
+
+        if self.fit_obj:
+            self._trigger_recompute_fit.emit()
+
+    _trigger_recompute_fit = QtCore.pyqtSignal()
+    def _install_fit(self, spec, item):
+        self.fit_type = spec["fit_type"]
+        self.fit_obj = FIT_TYPES[self.fit_type]
+        self.fit_item = item
+        self.fit_item_added = False
+
+        self.last_fit_params = None
+
+        self.recompute_fit_limiter = pyqtgraph.SignalProxy(
+            self._trigger_recompute_fit,
+            slot=lambda: asyncio.ensure_future(self._recompute_fit()),
+            rateLimit=30)
+        self.recompute_in_progress = False
+        self.fit_executor = ProcessPoolExecutor(max_workers=1)
+
+        self.redraw_fit_limiter = pyqtgraph.SignalProxy(
+            self.plot.getPlotItem().getViewBox().sigXRangeChanged,
+            slot=self._redraw_fit,
+            rateLimit=30)
+
+    async def _recompute_fit(self):
+        if self.recompute_in_progress:
+            # Run at most one fit computation at a time. To make sure we don't
+            # leave a few final data points completely disregarded, just
+            # re-emit the signal – even for long fits, repeated checks aren't
+            # expensive, as long as the SignalProxy rate is slow enough.
+            self._trigger_recompute_fit.emit()
+            return
+
+        self.recompute_in_progress = True
+
+        xs, ys = self.data_item.getData()
+        y_errs = None
+        if self.error_bar_item:
+            y_errs = self.error_bar_item.opts['height'] / 2
+
+        loop = asyncio.get_event_loop()
+        self.last_fit_params, self.last_fit_errors = await loop.run_in_executor(
+            self.fit_executor, _run_fit, self.fit_type, xs, ys, y_errs)
+        self.redraw_fit_limiter.signalReceived()
+
+        self.recompute_in_progress = False
+
+    def _redraw_fit(self, *args):
+        if not self.last_fit_params:
+            return
+
+        if not self.fit_item_added:
+            self.plot.addItem(self.fit_item, ignoreBounds=True)
+            self.fit_item_added = True
+
+        # Choose horizontal range based on currently visible area.
+        view_box = self.plot.getPlotItem().getViewBox()
+        x_range, _ = view_box.state["viewRange"]
+        ext = (x_range[1] - x_range[0]) / 10
+        x_lims = (x_range[0] - ext, x_range[1] + ext)
+
+        # Choose number of points based on pixel width.
+        fit_xs = np.linspace(*x_lims, view_box.width())
+
+        fit_ys = self.fit_obj.fitting_function(fit_xs, self.last_fit_params)
+
+        self.fit_item.setData(fit_xs, fit_ys)
+
+
+def _run_fit(fit_type, xs, ys, y_errs=None):
+    """Fits the given data with the chosen method.
+
+    This function is intended to be executed on a worker process, hence the
+    primitive API.
+    """
+    try:
+        return FIT_TYPES[fit_type].fit(xs, ys, y_errs)
+    except Exception as e:
+        return None, None
 
 
 class _XYPlotWidget(pyqtgraph.PlotWidget):
@@ -144,7 +232,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         if not self.crosshair_y_text:
             self.crosshair_y_text = make_text()
 
-        x_range, y_range = vb.state['viewRange']
+        x_range, y_range = vb.state["viewRange"]
         x_range = np.array(x_range) * self.x_data_to_display_scale
         y_range = np.array(y_range) * self.y_data_to_display_scale
         def num_digits_after_point(r):
@@ -186,6 +274,10 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
             sorted_data_names = list(data_names)
             sorted_data_names.sort(key=lambda n: channels[n]["path"])
 
+            # KLUDGE: We rely on fit specs to be set before channels in order
+            # for them to be displayed at all.
+            fit_specs = json.loads(d("auto_fit") or "[]")
+
             for i, name in enumerate(sorted_data_names):
                 color = SERIES_COLORS[i % len(SERIES_COLORS)]
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
@@ -193,7 +285,25 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                 error_bar_name = error_bar_names.get(name, None)
                 error_bar_item = pyqtgraph.ErrorBarItem(pen=color) if error_bar_name else None
 
-                self.series.append(_XYSeries(self, name, data_item, error_bar_name, error_bar_item, False))
+                # TODO: Multiple fit specs, error bars from other channels.
+                fit_spec = None
+                fit_item = None
+                for spec in fit_specs:
+                    if spec["data"]["x"] != "axis_0":
+                        continue
+                    if spec["data"]["y"] != "channel_" + name:
+                        continue
+                    e = spec["data"].get("y_err", None)
+                    if e and e != ("channel_" + error_bar_name):
+                        continue
+
+                    fit_spec = spec
+                    pen = pyqtgraph.mkPen(FIT_COLORS[i % len(FIT_COLORS)], width=4)
+                    fit_item = pyqtgraph.PlotCurveItem(pen=pen)
+                    break
+
+                self.series.append(_XYSeries(self, name, data_item,
+                    error_bar_name, error_bar_item, False, fit_spec, fit_item))
 
             if len(sorted_data_names) == 1:
                 # If there is only one series, set label/scaling accordingly.
