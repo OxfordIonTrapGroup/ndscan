@@ -551,8 +551,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
     def _make_override_entry(self, fqn, path):
         schema = self._schema_for_fqn(fqn)
 
-        # TODO: Switch on schema["type"].
-        return FloatOverrideEntry(schema, path, self._randomise_scan_icon)
+        entry_class = FloatOverrideEntry
+        if schema["type"] == "string":
+            entry_class = StringOverrideEntry
+        # TODO: Properly handle int, add errors (or default to PYON value).
+
+        return entry_class(schema, path, self._randomise_scan_icon)
 
 
 class OverrideEntry(LayoutWidget):
@@ -592,21 +596,23 @@ class OverrideEntry(LayoutWidget):
             value = eval_param_default(self.schema["default"], get_dataset)
         except Exception as e:
             logger.error("Failed to evaluate defaults string \"%s\": %s", self.schema["default"], e)
-            # XXX: Fix for other types.
-            value = 0.0
+            value = None
         self._set_fixed_value(value)
 
     def write_to_params(self, params: dict) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def disable_scan(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _scan_type_names(self) -> List[str]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _build_scan_ui(self, name: str, target: QtWidgets.QWidget) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
+
+    def _set_fixed_value(self, value) -> None:
+        raise NotImplementedError
 
 
 class FloatOverrideEntry(OverrideEntry):
@@ -752,4 +758,32 @@ class FloatOverrideEntry(OverrideEntry):
         return f
 
     def _set_fixed_value(self, value):
+        if value is None:
+            # Error evaluating defaults, no better guess.
+            value = 0.0
         self.box_value.setValue(float(value) / self.scale)
+
+
+class StringOverrideEntry(OverrideEntry):
+    def write_to_params(self, params: dict) -> None:
+        o = {"path": self.path, "value": self.box_value.text()}
+        params["overrides"].setdefault(self.schema["fqn"], []).append(o)
+
+    def disable_scan(self) -> None:
+        pass
+
+    def _scan_type_names(self) -> List[str]:
+        return ["Fixed"]
+
+    def _build_scan_ui(self, name: str, target: QtWidgets.QWidget) -> None:
+        if name != self._scan_type_names()[0]:
+            raise ValueError("Unknown scan type: '{}'".format(name))
+
+        layout = QtWidgets.QHBoxLayout()
+        target.setLayout(layout)
+
+        self.box_value = QtWidgets.QLineEdit()
+        layout.addWidget(self.box_value)
+
+    def _set_fixed_value(self, value) -> None:
+        self.box_value.setText(value)
