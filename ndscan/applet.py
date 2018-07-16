@@ -687,7 +687,7 @@ class _MainWidget(QtWidgets.QWidget):
             await remote.connect_rpc(self.args.server, self.args.port_control,
                 "master_dataset_db")
             try:
-                await remote.set(key, value)
+                await remote.set(key, value, persist=True)
             finally:
                 remote.close_rpc()
         except:
