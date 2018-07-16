@@ -32,6 +32,7 @@ class _XYSeries(QtCore.QObject):
         self.error_bar_name = error_bar_name
         self.plot_left_to_right = plot_left_to_right
         self.num_current_points = 0
+        self.fit_obj = None
 
         if fit_spec:
             self._install_fit(fit_spec, fit_item, fit_pois)
