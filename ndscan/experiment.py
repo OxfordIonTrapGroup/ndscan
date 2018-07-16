@@ -231,19 +231,6 @@ class FragmentScanExperiment(EnvExperiment):
             if self.scheduler.check_pause():
                 return
 
-    @kernel
-    def _kscan_impl_2(self):
-        while True:
-            param_values_0, param_values_1 = self._kscan_param_values_chunk()
-            for i in range(len(param_values_0)):
-                self._kscan_param_setter_0(param_values_0[i])
-                self._kscan_param_setter_1(param_values_1[i])
-                self.fragment.device_setup()
-                self.fragment.run_once()
-                self._kscan_point_completed()
-            if self.scheduler.check_pause():
-                return
-
     def _kscan_param_values_chunk(self):
         # Chunk size could be chosen adaptively in the future based on wall clock time
         # per point to provide good responsitivity to pause/terminate requests while
