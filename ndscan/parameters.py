@@ -18,7 +18,8 @@ def type_string_to_param(name: str):
     """Resolves param schema type strings to *Param implementations."""
     return {
         "float": FloatParam,
-        "int": IntParam
+        "int": IntParam,
+        "string": StringParam
     }[name]
 
 
@@ -73,6 +74,19 @@ class IntParamStore(ParamStore):
             cb()
 
 
+class StringParamStore(ParamStore):
+    @portable
+    def get_value(self) -> TStr:
+        return self._value
+
+    @portable
+    def set_value(self, value):
+        self._value = str(value)
+        # KLUDGE: Help along type inference for empty callback lists.
+        for cb in (self._change_callbacks if True else [self._do_nothing]):
+            cb()
+
+
 class ParamHandle:
     def __init__(self):
         self._store = None
@@ -88,6 +102,10 @@ class ParamHandle:
         # Once transform lambdas are supported, handle them here.
         self._changed_after_use = True
 
+    @portable
+    def changed_after_use(self) -> TBool:
+        return self._changed_after_use
+
 
 class FloatParamHandle(ParamHandle):
     @portable
@@ -98,10 +116,6 @@ class FloatParamHandle(ParamHandle):
     def use(self) -> TFloat:
         self._changed_after_use = False
         return self._store.get_value()
-
-    @portable
-    def changed_after_use(self) -> TBool:
-        return self._changed_after_use
 
 
 class IntParamHandle(ParamHandle):
@@ -114,9 +128,16 @@ class IntParamHandle(ParamHandle):
         self._changed_after_use = False
         return self._store.get_value()
 
+
+class StringParamHandle(ParamHandle):
     @portable
-    def changed_after_use(self) -> TBool:
-        return self._changed_after_use
+    def get(self) -> TStr:
+        return self._store.get_value()
+
+    @portable
+    def use(self) -> TStr:
+        self._changed_after_use = False
+        return self._store.get_value()
 
 
 class FloatParam:
@@ -166,7 +187,7 @@ class FloatParam:
             "spec": spec
         }
 
-    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> None:
+    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> FloatParamStore:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
@@ -196,9 +217,32 @@ class IntParam:
             "default": str(self.default)
         }
 
-    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> None:
+    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> IntParamStore:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
             value = self.default
         return IntParamStore(identity, value)
+
+
+class StringParam:
+    HandleType = StringParamHandle
+    StoreType = StringParamStore
+    CompilerType = TStr
+
+    def __init__(self, fqn: str, description: str, default: str):
+        self.fqn = fqn
+        self.description = description
+        self.default = default
+
+    def describe(self) -> Dict[str, any]:
+        return {
+            "fqn": self.fqn,
+            "description": self.description,
+            "type": "string",
+            "default": str(self.default)
+        }
+
+    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> StringParamStore:
+        default = eval_param_default(self.default, get_dataset)
+        return StringParamStore(identity, default)
