@@ -602,6 +602,7 @@ class OverrideEntry(LayoutWidget):
             logger.error("Failed to evaluate defaults string \"%s\": %s", self.schema["default"], e)
             value = None
         self._set_fixed_value(value)
+        self.disable_scan()
 
     def write_to_params(self, params: dict) -> None:
         raise NotImplementedError
