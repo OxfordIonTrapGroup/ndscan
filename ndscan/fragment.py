@@ -149,7 +149,7 @@ class Fragment(HasEnvironment):
                     store = o["store"]
             if not store:
                 identity = (param.fqn, self._stringize_path())
-                store = param.default_store(identity, self.get_dataset)
+                store = param.default_store(identity, self._get_dataset_or_set_default)
 
             getattr(self, name).set_store(store)
             for handle in self._rebound_subfragment_params.get(name, []):
@@ -168,6 +168,14 @@ class Fragment(HasEnvironment):
         channels.update(self._result_channels)
         for s in self._subfragments:
             s._collect_result_channels(channels)
+
+    def _get_dataset_or_set_default(self, key, default):
+        try:
+            return self.get_dataset(key)
+        except KeyError:
+            logger.info("Setting dataset '%s' to default value (%s)", key, default)
+            self.set_dataset(key, default, broadcast=True, persist=True)
+            return default
 
 
 class ExpFragment(Fragment):
