@@ -573,7 +573,11 @@ class OverrideEntry(LayoutWidget):
         self.addWidget(self.scan_type, col=0)
 
         self.widget_stack = QtWidgets.QStackedWidget()
-        for name in self._scan_type_names():
+
+        scan_type_names = self._scan_type_names()
+        if len(scan_type_names) == 1:
+            self.scan_type.setEnabled(False)
+        for name in scan_type_names:
             self.scan_type.addItem(name)
             container = QtWidgets.QWidget()
             self._build_scan_ui(name, container)
