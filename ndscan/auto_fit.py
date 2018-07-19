@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 FIT_OBJECTS = {
-    n: getattr(oitg.fitting, n) for n in ["lorentzian", "rabi_flop"]
+    n: getattr(oitg.fitting, n) for n in ["exponential_decay", "lorentzian", "rabi_flop"]
 }
 FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 
 DEFAULT_POIS = {
+    "exponential_decay": {"time_constant": {"x": "tau"}},
     "parabola": {"extremum": {"x": "position"}},
     "rabi_flop": {"pi_time": {"x": "t_pi"}},
     "lorentzian": {"extremum": {"x": "x0"}}
