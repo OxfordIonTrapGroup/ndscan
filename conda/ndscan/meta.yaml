@@ -1,0 +1,19 @@
+package:
+  name: ndscan
+  version: {{ environ.get("GIT_DESCRIBE_TAG", "") }}
+
+source:
+  git_url: ../..
+
+build:
+  noarch: python
+  number: {{ environ.get("GIT_DESCRIBE_NUMBER", 0) }}
+  string: py35_{{ environ.get("GIT_DESCRIBE_NUMBER", 0) }}+git{{ environ.get("GIT_DESCRIBE_HASH", "")[1:] }}
+  script: python setup.py install
+
+requirements:
+  build:
+    - python 3.5*
+    - setuptools
+  run:
+    - python 3.5*
