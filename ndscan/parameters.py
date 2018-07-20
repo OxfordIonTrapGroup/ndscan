@@ -34,14 +34,28 @@ class ParamStore:
         i.e. the override/default value it was created for.
         """
 
-        self._change_callbacks = [] # set is not iterable on kernel
+        # KLUDGE: Work around type inference failing for empty lists.
+        self._handles = []
+        self._notify = self._do_nothing
+
         self.set_value(value)
 
-    def register_change_callback(self, cb):
-        self._change_callbacks.append(cb)
+    @host_only
+    def register_handle(self, handle):
+        self._handles.append(handle)
+        self._notify = self._notify_handles
 
-    def unregister_change_callback(self, cb):
-        self._change_callbacks.remove(cb)
+    @host_only
+    def unregister_handle(self, handle):
+        self._handles.remove(handle)
+
+        if not self._handles:
+            self._notify = self._do_nothing
+
+    @portable
+    def _notify_handles(self):
+        for h in self._handles:
+            h._changed_after_use = True
 
     @portable
     def _do_nothing(self):
@@ -56,9 +70,7 @@ class FloatParamStore(ParamStore):
     @portable
     def set_value(self, value):
         self._value = float(value)
-        # KLUDGE: Help along type inference for empty callback lists.
-        for cb in (self._change_callbacks if True else [self._do_nothing]):
-            cb()
+        self._notify()
 
 
 class IntParamStore(ParamStore):
@@ -69,9 +81,7 @@ class IntParamStore(ParamStore):
     @portable
     def set_value(self, value):
         self._value = int(value)
-        # KLUDGE: Help along type inference for empty callback lists.
-        for cb in (self._change_callbacks if True else [self._do_nothing]):
-            cb()
+        self._notify()
 
 
 class StringParamStore(ParamStore):
@@ -82,9 +92,7 @@ class StringParamStore(ParamStore):
     @portable
     def set_value(self, value):
         self._value = str(value)
-        # KLUDGE: Help along type inference for empty callback lists.
-        for cb in (self._change_callbacks if True else [self._do_nothing]):
-            cb()
+        self._notify()
 
 
 class ParamHandle:
@@ -94,10 +102,12 @@ class ParamHandle:
 
     def set_store(self, store) -> None:
         if self._store:
-            self._store.unregister_change_callback(self._change_cb)
+            self._store.unregister_handle(self)
+        store.register_handle(self)
         self._store = store
         self._changed_after_use = True
 
+    @portable
     def _change_cb(self):
         # Once transform lambdas are supported, handle them here.
         self._changed_after_use = True
