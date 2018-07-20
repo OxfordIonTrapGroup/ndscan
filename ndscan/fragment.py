@@ -30,6 +30,13 @@ class Fragment(HasEnvironment):
             mod = strip_prefix(mod, f)
         self.fqn = mod + "." + klass.__qualname__
 
+        # Mangle the arguments into the FQN, so they can be used to parametrise
+        # the parameter definitions.=
+        # TODO: Also handle kwargs, make sure this generates valid identifiers.
+        for a in args:
+            self.fqn += "_"
+            self.fqn += str(a)
+
         self._building = True
         self.build_fragment(*args, **kwargs)
         self._building = False
@@ -62,6 +69,8 @@ class Fragment(HasEnvironment):
         self._subfragments.append(frag)
         setattr(self, name, frag)
 
+        return frag
+
     def setattr_param(self, name: str, param_class: Type, description: str, *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_param() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
@@ -69,7 +78,10 @@ class Fragment(HasEnvironment):
 
         fqn = self.fqn + "." + name
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
-        setattr(self, name, param_class.HandleType())
+
+        handle = param_class.HandleType()
+        setattr(self, name, handle)
+        return handle
 
     def setattr_param_rebind(self, name: str, original_owner, original_name=None, **kwargs) -> None:
         assert self._building, "Can only call setattr_param_rebind() during build_fragment()"
@@ -86,13 +98,16 @@ class Fragment(HasEnvironment):
         for k, v in kwargs.items():
             setattr(param, k, v)
         self._free_params[name] = param
-        setattr(self, name, param.HandleType())
+        handle = param.HandleType()
+        setattr(self, name, handle)
 
         # Deregister it from the original owner and make sure we set the store
         # to our own later.
         del original_owner._free_params[original_name]
         original_handle = getattr(original_owner, original_name)
         self._rebound_subfragment_params.setdefault(name, []).append(original_handle)
+
+        return handle
 
     def setattr_result(self, name: str, channel_class: Type = FloatChannel, *args, **kwargs) -> None:
         assert self._building, "Can only call setattr_result() during build_fragment()"
@@ -103,6 +118,8 @@ class Fragment(HasEnvironment):
         channel = channel_class(path, *args, **kwargs)
         self._result_channels[path] = channel
         setattr(self, name, channel)
+
+        return channel
 
     def _collect_params(self, params: Dict[str, List[str]], schemata: Dict[str, dict]) -> None:
         """Collect free parameters of this fragment and all its subfragments.
