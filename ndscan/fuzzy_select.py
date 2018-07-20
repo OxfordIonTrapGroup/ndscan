@@ -13,13 +13,14 @@ class FuzzySelectWidget(LayoutWidget):
     aborted = QtCore.pyqtSignal()
     finished = QtCore.pyqtSignal(str)
 
-    def __init__(self, choices: List[Tuple[str, int]] = [], *args):
+    def __init__(self, choices: List[Tuple[str, int]] = [], entry_count_limit: int = 25, *args):
         super().__init__(*args)
         self.choices = choices
+        self.entry_count_limit = entry_count_limit
 
         self.line_edit = QtWidgets.QLineEdit(self)
         self.layout.addWidget(self.line_edit)
-        
+
         # self.setFocusProxy(self.line_edit)
         line_edit_focus_filter = _FocusEventFilter(self.line_edit)
         line_edit_focus_filter.focus_gained.connect(self._activate)
@@ -86,6 +87,9 @@ class FuzzySelectWidget(LayoutWidget):
             self.abort_when_line_edit_unfocussed = True
             self.line_edit.setFocus()
             return
+
+        if len(filtered_choices) > self.entry_count_limit:
+            filtered_choices = filtered_choices[: self.entry_count_limit]
 
         # We are going to end up with a menu shown and the line edit losing focus.
         self.abort_when_line_edit_unfocussed = False
