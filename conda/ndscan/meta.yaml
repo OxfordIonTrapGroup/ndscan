@@ -17,3 +17,4 @@ requirements:
     - setuptools
   run:
     - python 3.5*
+    - artiq

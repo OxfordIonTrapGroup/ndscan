@@ -7,7 +7,4 @@ setup(
     author='David P. Nadlinger',
     packages=['ndscan'],
     entry_points={},
-    install_requires=[
-        'artiq'
-    ]
 )
