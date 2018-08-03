@@ -98,6 +98,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         else:
             self._ndscan_params = ndscan_params
 
+            self.override_separator = None
+
             self._build_shortened_fqns()
 
             for fqn, path in ndscan_params["always_shown"]:
@@ -448,7 +450,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         if name in self._groups:
             return self._groups[name]
         group = self._make_group_header_item(name)
-        self.insertTopLevelItem(self.indexOfTopLevelItem(self.override_separator), group)
+        if self.override_separator:
+            self.insertTopLevelItem(self.indexOfTopLevelItem(self.override_separator), group)
+        else:
+            self.addTopLevelItem(group)
         self._groups[name] = group
         return group
 
