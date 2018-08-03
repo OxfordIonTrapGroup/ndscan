@@ -625,12 +625,17 @@ class OverrideEntry(LayoutWidget):
         raise NotImplementedError
 
 
+def _parse_list_pyon(values: str) -> List[float]:
+   return pyon.decode("[" + values + "]")
+
+
 class FloatOverrideEntry(OverrideEntry):
     def __init__(self, schema, *args):
         self.scan_types = OrderedDict([
             ("Fixed", (self._build_fixed_ui, self._write_override)),
             ("Refining", (self._build_refining_ui, self._write_refining_scan)),
-            ("Linear", (self._build_linear_ui, self._write_linear_scan))
+            ("Linear", (self._build_linear_ui, self._write_linear_scan)),
+            ("List", (self._build_list_ui, self._write_list_scan))
         ])
         self.current_scan_type = None
         self.scale = schema.get("spec", {}).get("scale", 1.0)
@@ -674,6 +679,23 @@ class FloatOverrideEntry(OverrideEntry):
                 "stop": self.box_linear_stop.value() * self.scale,
                 "num_points": self.box_linear_points.value(),
                 "randomise_order": self.box_linear_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+    def _write_list_scan(self, params: dict) -> None:
+        try:
+            values = [v * self.scale for v in _parse_list_pyon(self.box_list_pyon.text())]
+        except Exception as e:
+            logger.info(e)
+            values = []
+        spec = {
+            "fqn": self.schema["fqn"],
+            "path": self.path,
+            "type": "list",
+            "range": {
+                "values": values,
+                "randomise_order": self.box_list_randomise.isChecked(),
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
@@ -730,6 +752,24 @@ class FloatOverrideEntry(OverrideEntry):
         self.box_linear_stop = self._make_spin_box()
         layout.addWidget(self.box_linear_stop)
         layout.setStretchFactor(self.box_linear_stop, 1)
+
+    def _build_list_ui(self, layout: QtWidgets.QLayout) -> None:
+        class Validator(QtGui.QValidator):
+            def validate(self, input, pos):
+                try:
+                    [float(f) for f in _parse_list_pyon(input)]
+                    return QtGui.QValidator.Acceptable, input, pos
+                except:
+                    return QtGui.QValidator.Intermediate, input, pos
+        self.box_list_pyon = QtWidgets.QLineEdit()
+        self.box_list_pyon.setValidator(Validator(self))
+        layout.addWidget(self.box_list_pyon)
+
+        layout.addWidget(self._make_divider())
+
+        self.box_list_randomise = self._make_randomise_box()
+        layout.addWidget(self.box_list_randomise)
+        layout.setStretchFactor(self.box_list_randomise, 0)
 
     def _make_spin_box(self):
         box = ScientificSpinBox()
