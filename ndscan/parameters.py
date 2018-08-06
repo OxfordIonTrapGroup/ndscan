@@ -2,7 +2,6 @@ from artiq.language import *
 from artiq.language import units
 from typing import Callable, Dict, Tuple, Union
 from .utils import eval_param_default
-
 """
 Fragment-side parameter containers.
 
@@ -16,11 +15,7 @@ machinery for all the value types.
 
 def type_string_to_param(name: str):
     """Resolves param schema type strings to *Param implementations."""
-    return {
-        "float": FloatParam,
-        "int": IntParam,
-        "string": StringParam
-    }[name]
+    return {"float": FloatParam, "int": IntParam, "string": StringParam}[name]
 
 
 class InvalidDefaultError(ValueError):
@@ -167,10 +162,15 @@ class FloatParam:
     StoreType = FloatParamStore
     CompilerType = TFloat
 
-    def __init__(self, fqn: str, description: str, default: Union[str, float],
-        min: Union[float, None] = None, max: Union[float, None] = None,
-        unit: str = "", scale: Union[float, None] = None,
-        step: Union[float, None] = None):
+    def __init__(self,
+                 fqn: str,
+                 description: str,
+                 default: Union[str, float],
+                 min: Union[float, None] = None,
+                 max: Union[float, None] = None,
+                 unit: str = "",
+                 scale: Union[float, None] = None,
+                 step: Union[float, None] = None):
 
         self.fqn = fqn
         self.description = description
@@ -209,15 +209,18 @@ class FloatParam:
             "spec": spec
         }
 
-    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> FloatParamStore:
+    def default_store(self, identity: Tuple[str, str],
+                      get_dataset: Callable) -> FloatParamStore:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
             value = self.default
         if self.min is not None and value < self.min:
-            raise InvalidDefaultError("Value {} below minimum of {}".format(value, self.min))
+            raise InvalidDefaultError("Value {} below minimum of {}".format(
+                value, self.min))
         if self.max is not None and value > self.max:
-            raise InvalidDefaultError("Value {} above maximum of {}".format(value, self.max))
+            raise InvalidDefaultError("Value {} above maximum of {}".format(
+                value, self.max))
         return FloatParamStore(identity, value)
 
 
@@ -226,7 +229,13 @@ class IntParam:
     StoreType = IntParamStore
     CompilerType = TInt32
 
-    def __init__(self, fqn: str, description: str, default: Union[str, int], min=0, unit: str = "", scale=1):
+    def __init__(self,
+                 fqn: str,
+                 description: str,
+                 default: Union[str, int],
+                 min=0,
+                 unit: str = "",
+                 scale=1):
         self.fqn = fqn
         self.description = description
         self.default = default
@@ -242,7 +251,8 @@ class IntParam:
                     raise KeyError("Unit {} is unknown, you must specify "
                                    "the scale manually".format(unit))
         if scale != 1:
-            raise NotImplementedError("Non-unity scales not implemented for integer parameters")
+            raise NotImplementedError(
+                "Non-unity scales not implemented for integer parameters")
 
     def describe(self) -> Dict[str, any]:
         return {
@@ -250,10 +260,13 @@ class IntParam:
             "description": self.description,
             "type": "int",
             "default": str(self.default),
-            "spec": {"scale": 1}
+            "spec": {
+                "scale": 1
+            }
         }
 
-    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> IntParamStore:
+    def default_store(self, identity: Tuple[str, str],
+                      get_dataset: Callable) -> IntParamStore:
         if type(self.default) is str:
             value = eval_param_default(self.default, get_dataset)
         else:
@@ -279,6 +292,7 @@ class StringParam:
             "default": str(self.default)
         }
 
-    def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> StringParamStore:
+    def default_store(self, identity: Tuple[str, str],
+                      get_dataset: Callable) -> StringParamStore:
         default = eval_param_default(self.default, get_dataset)
         return StringParamStore(identity, default)

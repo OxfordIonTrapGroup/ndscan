@@ -16,7 +16,6 @@ from .experiment import PARAMS_ARG_KEY
 from .fuzzy_select import FuzzySelectWidget
 from .utils import eval_param_default, shorten_to_unambiguous_suffixes
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +33,7 @@ def _try_extract_ndscan_params(arguments):
     vanilla_args = arguments.copy()
     del vanilla_args[PARAMS_ARG_KEY]
     return params, vanilla_args
+
 
 def _update_ndscan_params(arguments, params):
     arguments[PARAMS_ARG_KEY]["state"] = pyon.encode(params)
@@ -66,7 +66,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.viewport().installEventFilter(_WheelFilter(self.viewport()))
 
         self._bg_gradient = QtGui.QLinearGradient(
-                0, 0, 0, QtGui.QFontMetrics(self.font()).lineSpacing())
+            0, 0, 0,
+            QtGui.QFontMetrics(self.font()).lineSpacing())
         self._bg_gradient.setColorAt(0, self.palette().base().color())
         self._bg_gradient.setColorAt(1, self.palette().midlight().color())
 
@@ -80,21 +81,24 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
         # FIXME: Paths after installation.
         def icon_path(name):
-            return os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", name)
+            return os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "icons", name)
+
         self._add_override_icon = QtGui.QIcon(icon_path("list-add-32.png"))
         self._remove_override_icon = QtGui.QIcon(icon_path("list-remove-32.png"))
-        self._randomise_scan_icon = QtGui.QIcon(icon_path("media-playlist-shuffle-32.svg"))
+        self._randomise_scan_icon = QtGui.QIcon(
+            icon_path("media-playlist-shuffle-32.svg"))
         self._default_value_icon = self.style().standardIcon(
-                QtWidgets.QStyle.SP_BrowserReload)
+            QtWidgets.QStyle.SP_BrowserReload)
         self._disable_scans_icon = self.style().standardIcon(
-                QtWidgets.QStyle.SP_DialogResetButton)
+            QtWidgets.QStyle.SP_DialogResetButton)
 
         self._arguments = self.manager.get_submission_arguments(self.expurl)
         ndscan_params, vanilla_args = _try_extract_ndscan_params(self._arguments)
 
         if not ndscan_params:
-            self.addTopLevelItem(QtWidgets.QTreeWidgetItem([
-                "Error: Parameter metadata not found."]))
+            self.addTopLevelItem(
+                QtWidgets.QTreeWidgetItem(["Error: Parameter metadata not found."]))
         else:
             self._ndscan_params = ndscan_params
 
@@ -125,7 +129,6 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             scan_options_group = self._make_group_header_item("Scan options")
             self.addTopLevelItem(scan_options_group)
 
-
             #
 
             num_repeats_container = QtWidgets.QWidget()
@@ -138,7 +141,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
             self.num_repeats_box = QtWidgets.QSpinBox()
             self.num_repeats_box.setMinimum(1)
-            self.num_repeats_box.setMaximum(2**16) # A gratuitous, but hopefully generous restriction
+            self.num_repeats_box.setMaximum(
+                2**16)  # A gratuitous, but hopefully generous restriction
             self.num_repeats_box.setValue(ndscan_params["scan"].get("num_repeats", 1))
             num_repeats_layout.addWidget(self.num_repeats_box)
             num_repeats_layout.setStretchFactor(self.num_repeats_box, 0)
@@ -160,7 +164,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             cwa_layout.setStretchFactor(cwa_label, 0)
 
             self.cwa_box = QtWidgets.QCheckBox()
-            self.cwa_box.setChecked(ndscan_params["scan"].get("continuous_without_axes", True))
+            self.cwa_box.setChecked(ndscan_params["scan"].get(
+                "continuous_without_axes", True))
             cwa_layout.addWidget(self.cwa_box)
             cwa_layout.setStretchFactor(self.cwa_box, 1)
 
@@ -174,12 +179,14 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             randomise_globally_layout = QtWidgets.QHBoxLayout()
             randomise_globally_container.setLayout(randomise_globally_layout)
 
-            randomise_globally_label = QtWidgets.QLabel("Randomise point order across axes: ")
+            randomise_globally_label = QtWidgets.QLabel(
+                "Randomise point order across axes: ")
             randomise_globally_layout.addWidget(randomise_globally_label)
             randomise_globally_layout.setStretchFactor(randomise_globally_label, 0)
 
             self.randomise_globally_box = QtWidgets.QCheckBox()
-            self.randomise_globally_box.setChecked(ndscan_params["scan"].get("randomise_order_globally", False))
+            self.randomise_globally_box.setChecked(ndscan_params["scan"].get(
+                "randomise_order_globally", False))
             randomise_globally_layout.addWidget(self.randomise_globally_box)
             randomise_globally_layout.setStretchFactor(self.randomise_globally_box, 1)
 
@@ -220,10 +227,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         for k, v in self._groups.items():
             if v.isExpanded():
                 expanded.append(k)
-        return {
-            "expanded": expanded,
-            "scroll": self.verticalScrollBar().value()
-        }
+        return {"expanded": expanded, "scroll": self.verticalScrollBar().value()}
 
     def restore_state(self, state):
         for e in state["expanded"]:
@@ -249,6 +253,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         schema = self._schema_for_fqn(fqn)
 
         added_item_count = 0
+
         def add_item(widget_item):
             nonlocal added_item_count
             group = schema.get("group", None)
@@ -256,7 +261,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 if insert_at_idx == -1:
                     self.addTopLevelItem(widget_item)
                 else:
-                    self.insertTopLevelItem(insert_at_idx + added_item_count, widget_item)
+                    self.insertTopLevelItem(insert_at_idx + added_item_count,
+                                            widget_item)
                 added_item_count += 1
             else:
                 self._ensure_group_widget(group).addChild(widget_item)
@@ -295,18 +301,15 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
         reset_default = QtWidgets.QToolButton()
         reset_default.setToolTip("Reset parameter to default value")
-        reset_default.setIcon(
-            QtWidgets.QApplication.style().standardIcon(
-                QtWidgets.QStyle.SP_BrowserReload))
-        reset_default.clicked.connect(
-            partial(self._reset_entry_to_default, fqn, path))
+        reset_default.setIcon(QtWidgets.QApplication.style().standardIcon(
+            QtWidgets.QStyle.SP_BrowserReload))
+        reset_default.clicked.connect(partial(self._reset_entry_to_default, fqn, path))
         buttons.addWidget(reset_default, col=0)
 
         remove_override = QtWidgets.QToolButton()
         remove_override.setIcon(self._remove_override_icon)
         remove_override.setToolTip("Remove this parameter override")
-        remove_override.clicked.connect(
-            partial(self._remove_override, fqn, path))
+        remove_override.clicked.connect(partial(self._remove_override, fqn, path))
         buttons.addWidget(remove_override, col=1)
 
         self.setItemWidget(main_item, 2, buttons)
@@ -369,7 +372,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         f.setMinimumHeight(15)
         f.setFrameShape(QtWidgets.QFrame.HLine)
         f.setFrameShadow(QtWidgets.QFrame.Sunken)
-        f.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        f.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                        QtWidgets.QSizePolicy.Preferred)
 
         wi = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(wi)
@@ -378,8 +382,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         return wi
 
     def _make_override_item(self, fqn, path):
-        items = self._make_param_items(fqn, path, False,
-            self.indexOfTopLevelItem(self._override_prompt_item))
+        items = self._make_param_items(
+            fqn, path, False, self.indexOfTopLevelItem(self._override_prompt_item))
         self._override_items[(fqn, path)] = items
         self._set_save_timer()
 
@@ -425,8 +429,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     def _set_override_line_active(self):
         self._update_param_choice_map()
-        self._add_override_prompt_box.set_choices(
-            [(s, 0) for s in self._param_choice_map.keys()])
+        self._add_override_prompt_box.set_choices([(s, 0) for s in
+                                                   self._param_choice_map.keys()])
 
         self._add_override_button.setEnabled(False)
         self._add_override_button.setVisible(False)
@@ -451,7 +455,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             return self._groups[name]
         group = self._make_group_header_item(name)
         if self.override_separator:
-            self.insertTopLevelItem(self.indexOfTopLevelItem(self.override_separator), group)
+            self.insertTopLevelItem(
+                self.indexOfTopLevelItem(self.override_separator), group)
         else:
             self.addTopLevelItem(group)
         self._groups[name] = group
@@ -464,8 +469,11 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         try:
             arginfo, _ = await self.manager.examine_arginfo(self.expurl)
         except:
-            logger.error("Could not recompute argument '%s' of '%s'",
-                         name, self.expurl, exc_info=True)
+            logger.error(
+                "Could not recompute argument '%s' of '%s'",
+                name,
+                self.expurl,
+                exc_info=True)
             return
         argument = self.manager.get_submission_arguments(self.expurl)[name]
 
@@ -484,8 +492,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.updateGeometries()
 
     def _reset_entry_to_default(self, fqn, path):
-        self._param_entries[(fqn, path)].read_from_params({},
-            self.manager.datasets.backing_store)
+        self._param_entries[(fqn, path)].read_from_params(
+            {}, self.manager.datasets.backing_store)
 
     def _remove_override(self, fqn, path):
         items = self._override_items[(fqn, path)]
@@ -504,7 +512,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             if (fqn, path) in self._param_entries:
                 return
             schema = self._schema_for_fqn(fqn)
-            display_string = "{} – {}".format(self._param_display_name(fqn, path), schema["description"])
+            display_string = "{} – {}".format(
+                self._param_display_name(fqn, path), schema["description"])
             self._param_choice_map[display_string] = (fqn, path)
 
         fqn_occurences = Counter()
@@ -522,7 +531,6 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.shortened_fqns = shorten_to_unambiguous_suffixes(
             self._ndscan_params["schemata"].keys(),
             lambda fqn, n: ".".join(fqn.split(".")[-(n + 1):]))
-
 
     def _param_display_name(self, fqn, path):
         if not path:
@@ -596,15 +604,18 @@ class OverrideEntry(LayoutWidget):
                 self._set_fixed_value(o["value"])
                 return
         try:
+
             def get_dataset(key, default):
                 try:
                     return datasets[key][1]
                 except KeyError:
                     return default
                 return datasets
+
             value = eval_param_default(self.schema["default"], get_dataset)
         except Exception as e:
-            logger.error("Failed to evaluate defaults string \"%s\": %s", self.schema["default"], e)
+            logger.error("Failed to evaluate defaults string \"%s\": %s",
+                         self.schema["default"], e)
             value = None
         self._set_fixed_value(value)
         self.disable_scan()
@@ -626,17 +637,17 @@ class OverrideEntry(LayoutWidget):
 
 
 def _parse_list_pyon(values: str) -> List[float]:
-   return pyon.decode("[" + values + "]")
+    return pyon.decode("[" + values + "]")
 
 
 class FloatOverrideEntry(OverrideEntry):
     def __init__(self, schema, *args):
-        self.scan_types = OrderedDict([
-            ("Fixed", (self._build_fixed_ui, self._write_override)),
-            ("Refining", (self._build_refining_ui, self._write_refining_scan)),
-            ("Linear", (self._build_linear_ui, self._write_linear_scan)),
-            ("List", (self._build_list_ui, self._write_list_scan))
-        ])
+        self.scan_types = OrderedDict(
+            [("Fixed", (self._build_fixed_ui, self._write_override)),
+             ("Refining", (self._build_refining_ui, self._write_refining_scan)),
+             ("Linear", (self._build_linear_ui,
+                         self._write_linear_scan)), ("List", (self._build_list_ui,
+                                                              self._write_list_scan))])
         self.current_scan_type = None
         self.scale = schema.get("spec", {}).get("scale", 1.0)
 
@@ -685,7 +696,9 @@ class FloatOverrideEntry(OverrideEntry):
 
     def _write_list_scan(self, params: dict) -> None:
         try:
-            values = [v * self.scale for v in _parse_list_pyon(self.box_list_pyon.text())]
+            values = [
+                v * self.scale for v in _parse_list_pyon(self.box_list_pyon.text())
+            ]
         except Exception as e:
             logger.info(e)
             values = []
@@ -738,7 +751,8 @@ class FloatOverrideEntry(OverrideEntry):
 
         self.box_linear_points = QtWidgets.QSpinBox()
         self.box_linear_points.setMinimum(2)
-        self.box_linear_points.setMaximum(2**16) # A gratuitous, but probably generous restriction
+        self.box_linear_points.setMaximum(
+            2**16)  # A gratuitous, but probably generous restriction
         self.box_linear_points.setSuffix(" pts")
         layout.addWidget(self.box_linear_points)
         layout.setStretchFactor(self.box_linear_points, 0)
@@ -761,6 +775,7 @@ class FloatOverrideEntry(OverrideEntry):
                     return QtGui.QValidator.Acceptable, input, pos
                 except:
                     return QtGui.QValidator.Intermediate, input, pos
+
         self.box_list_pyon = QtWidgets.QLineEdit()
         self.box_list_pyon.setValidator(Validator(self))
         layout.addWidget(self.box_list_pyon)
@@ -804,7 +819,8 @@ class FloatOverrideEntry(OverrideEntry):
         f = QtWidgets.QFrame()
         f.setFrameShape(QtWidgets.QFrame.VLine)
         f.setFrameShadow(QtWidgets.QFrame.Sunken)
-        f.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        f.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                        QtWidgets.QSizePolicy.Expanding)
         return f
 
     def _set_fixed_value(self, value):

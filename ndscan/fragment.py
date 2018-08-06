@@ -19,7 +19,8 @@ class Fragment(HasEnvironment):
         self._fragment_path = fragment_path
         self._subfragments = []
         self._free_params = OrderedDict()
-        self._rebound_subfragment_params = dict() #: Maps own attribute name to subfragment handles.
+        self._rebound_subfragment_params = dict(
+        )  #: Maps own attribute name to subfragment handles.
         self._result_channels = {}
 
         klass = self.__class__
@@ -58,9 +59,12 @@ class Fragment(HasEnvironment):
         self.device_setup()
 
     def build_fragment(self, *args, **kwargs) -> None:
-        raise NotImplementedError("build_fragment() not implemented; override it to add parameters/result channels.")
+        raise NotImplementedError(
+            "build_fragment() not implemented; override it to add parameters/result channels."
+        )
 
-    def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args, **kwargs) -> None:
+    def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args,
+                         **kwargs) -> None:
         assert self._building, "Can only call setattr_fragment() during build_fragment()"
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
@@ -71,7 +75,8 @@ class Fragment(HasEnvironment):
 
         return frag
 
-    def setattr_param(self, name: str, param_class: Type, description: str, *args, **kwargs) -> None:
+    def setattr_param(self, name: str, param_class: Type, description: str, *args,
+                      **kwargs) -> None:
         assert self._building, "Can only call setattr_param() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
@@ -83,7 +88,11 @@ class Fragment(HasEnvironment):
         setattr(self, name, handle)
         return handle
 
-    def setattr_param_rebind(self, name: str, original_owner, original_name=None, **kwargs) -> None:
+    def setattr_param_rebind(self,
+                             name: str,
+                             original_owner,
+                             original_name=None,
+                             **kwargs) -> None:
         assert self._building, "Can only call setattr_param_rebind() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
@@ -109,9 +118,14 @@ class Fragment(HasEnvironment):
 
         return handle
 
-    def setattr_result(self, name: str, channel_class: Type = FloatChannel, *args, **kwargs) -> None:
+    def setattr_result(self,
+                       name: str,
+                       channel_class: Type = FloatChannel,
+                       *args,
+                       **kwargs) -> None:
         assert self._building, "Can only call setattr_result() during build_fragment()"
-        assert name.isidentifier(), "Result channel name must be valid Python identifier"
+        assert name.isidentifier(
+        ), "Result channel name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
         path = "/".join(self._fragment_path + [name])
@@ -121,7 +135,8 @@ class Fragment(HasEnvironment):
 
         return channel
 
-    def _collect_params(self, params: Dict[str, List[str]], schemata: Dict[str, dict]) -> None:
+    def _collect_params(self, params: Dict[str, List[str]],
+                        schemata: Dict[str, dict]) -> None:
         """Collect free parameters of this fragment and all its subfragments.
 
         :param params: Dictionary to write the list of FQNs for each fragment to,

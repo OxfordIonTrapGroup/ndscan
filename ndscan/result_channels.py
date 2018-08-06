@@ -43,7 +43,10 @@ class ScalarDatasetSink(ResultSink, HasEnvironment):
 
 
 class ResultChannel:
-    def __init__(self, path: List[str], description: str = "", display_hints: Dict[str, Any] = {}):
+    def __init__(self,
+                 path: List[str],
+                 description: str = "",
+                 display_hints: Dict[str, Any] = {}):
         self.path = path
         self.description = description
         self.display_hints = display_hints
@@ -81,16 +84,14 @@ class ResultChannel:
 
 
 class NumericChannel(ResultChannel):
-    def __init__(
-        self,
-        path: List[str],
-        description: str = "",
-        display_hints: Dict[str, Any] = {},
-        min = None,
-        max = None,
-        unit: str = "",
-        scale = None
-    ):
+    def __init__(self,
+                 path: List[str],
+                 description: str = "",
+                 display_hints: Dict[str, Any] = {},
+                 min=None,
+                 max=None,
+                 unit: str = "",
+                 scale=None):
         super().__init__(path, description, display_hints)
         self.min = min
         self.max = max

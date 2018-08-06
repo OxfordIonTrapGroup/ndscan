@@ -1,18 +1,22 @@
 from typing import Callable, List
 from artiq.language import units
 
+
 def path_matches_spec(path: List[str], spec: str):
     # TODO: Think about how we want to match.
     if spec == "*":
         return True
     if "*" in spec:
-        raise NotImplementedError("Non-trivial wildcard path specifications not implemented yet")
+        raise NotImplementedError(
+            "Non-trivial wildcard path specifications not implemented yet")
     return "/".join(path) == spec
+
 
 def strip_prefix(string: str, prefix: str):
     if string.startswith(prefix):
         return string[len(prefix):]
     return string
+
 
 def will_spawn_kernel(func):
     if not hasattr(func, "artiq_embedded"):
@@ -20,7 +24,9 @@ def will_spawn_kernel(func):
     meta = func.artiq_embedded
     return meta.core_name is not None and not meta.portable
 
-def shorten_to_unambiguous_suffixes(fqns: List[str], get_last_n_parts: Callable[[str, int], str]):
+
+def shorten_to_unambiguous_suffixes(fqns: List[str],
+                                    get_last_n_parts: Callable[[str, int], str]):
     short_to_fqns = dict()
     shortened_fqns = dict()
 
@@ -43,11 +49,12 @@ def shorten_to_unambiguous_suffixes(fqns: List[str], get_last_n_parts: Callable[
                     # This hasn't previously been moved to a higher n, so
                     # do it now.
                     shortened_fqns[old] = get_last_n_parts(old, n + 1)
-                    break # Exits inner for loop.
+                    break  # Exits inner for loop.
             existing_fqns.add(current)
             n += 1
 
     return shortened_fqns
+
 
 def eval_param_default(value: str, get_dataset: Callable):
     env = {name: getattr(units, name) for name in units.__all__}

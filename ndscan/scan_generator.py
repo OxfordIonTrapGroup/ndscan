@@ -44,7 +44,8 @@ class LinearGenerator:
 
     def points_for_level(self, level: int, rng=None):
         assert level == 0
-        points = np.linspace(start=self.start, stop=self.stop, num=self.num_points, endpoint=True)
+        points = np.linspace(
+            start=self.start, stop=self.stop, num=self.num_points, endpoint=True)
         if self.randomise_order:
             rng.shuffle(points)
         return points
@@ -101,8 +102,12 @@ class ScanAxis:
 
 
 class ScanSpec:
-    def __init__(self, axes: List[ScanAxis], num_repeats: int,
-        continuous_without_axes: bool, randomise_order_globally: bool, seed=None):
+    def __init__(self,
+                 axes: List[ScanAxis],
+                 num_repeats: int,
+                 continuous_without_axes: bool,
+                 randomise_order_globally: bool,
+                 seed=None):
         self.axes = axes
         self.num_repeats = num_repeats
         self.continuous_without_axes = continuous_without_axes
@@ -125,7 +130,8 @@ def generate_points(scan: ScanSpec):
         found_new_levels = False
         for i, a in enumerate(scan.axes):
             if a.generator.has_level(max_level):
-                axis_level_points[i].append(a.generator.points_for_level(max_level, rng))
+                axis_level_points[i].append(
+                    a.generator.points_for_level(max_level, rng))
                 found_new_levels = True
 
         if not found_new_levels:

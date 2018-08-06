@@ -14,7 +14,6 @@ from .result_channels import AppendingDatasetSink, ScalarDatasetSink
 from .scan_generator import *
 from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
 
-
 # We don't want to export FragmentScanExperiment to hide it from experiment
 # class discovery.
 __all__ = ["make_fragment_scan_exp", "PARAMS_ARG_KEY"]
@@ -75,14 +74,16 @@ class FragmentScanExperiment(EnvExperiment):
         for axspec in scan["axes"]:
             generator_class = GENERATORS.get(axspec["type"], None)
             if not generator_class:
-                raise ScanSpecError("Axis type '{}' not implemented".format(axspec["type"]))
+                raise ScanSpecError("Axis type '{}' not implemented".format(
+                    axspec["type"]))
             generator = generator_class(**axspec["range"])
 
             fqn = axspec["fqn"]
             pathspec = axspec["path"]
 
             store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
-            store = store_type((fqn, pathspec), generator.points_for_level(0, random)[0])
+            store = store_type((fqn, pathspec),
+                               generator.points_for_level(0, random)[0])
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store, generator))
 
@@ -91,7 +92,7 @@ class FragmentScanExperiment(EnvExperiment):
         randomise_order_globally = scan.get("randomise_order_globally", False)
 
         self._scan = ScanSpec(axes, num_repeats, continuous_without_axes,
-            randomise_order_globally)
+                              randomise_order_globally)
 
         self.fragment.init_params(param_stores)
 
@@ -100,8 +101,7 @@ class FragmentScanExperiment(EnvExperiment):
         self.fragment._collect_result_channels(chan_dict)
 
         chan_name_map = shorten_to_unambiguous_suffixes(
-            chan_dict.keys(),
-            lambda fqn, n: "/".join(fqn.split("/")[-n:]))
+            chan_dict.keys(), lambda fqn, n: "/".join(fqn.split("/")[-n:]))
 
         self.channels = {}
         self._channel_dataset_names = {}
@@ -207,13 +207,18 @@ class FragmentScanExperiment(EnvExperiment):
         self._kscan_current_chunk = []
 
         for i, axis in enumerate(self._scan.axes):
-            setattr(self, "_kscan_param_setter_{}".format(i), axis.param_store.set_value)
+            setattr(self, "_kscan_param_setter_{}".format(i),
+                    axis.param_store.set_value)
 
         # _kscan_param_values_chunk returns a tuple of lists of values, one for each scan
         # axis. Synthesize a return type annotation (`def foo(self): -> …`) with the concrete
         # type for this scan so the compiler can infer the types in _kscan_impl() correctly.
         self._kscan_param_values_chunk.__func__.__annotations__ = {
-            "return": TTuple([TList(type_string_to_param(a.param_schema["type"]).CompilerType) for a in self._scan.axes])
+            "return":
+            TTuple([
+                TList(type_string_to_param(a.param_schema["type"]).CompilerType)
+                for a in self._scan.axes
+            ])
         }
 
         # TODO: Implement pausing logic.
@@ -221,7 +226,8 @@ class FragmentScanExperiment(EnvExperiment):
         num_dims = len(self._scan.axes)
         scan_impl = getattr(self, "_kscan_impl_{}".format(num_dims), None)
         if scan_impl is None:
-            raise NotImplementedError("{}-dimensional scans not supported yet".format(num_dims))
+            raise NotImplementedError(
+                "{}-dimensional scans not supported yet".format(num_dims))
 
         # KLUDGE: Returning tuples of empty lists triggers bug in ARTIQ RPC code (kernel
         # aborts), so use an exception to signal end of scan.
@@ -235,7 +241,7 @@ class FragmentScanExperiment(EnvExperiment):
     @kernel
     def _kscan_impl_1(self):
         while True:
-            (param_values_0,) = self._kscan_param_values_chunk()
+            (param_values_0, ) = self._kscan_param_values_chunk()
             for i in range(len(param_values_0)):
                 self._kscan_param_setter_0(param_values_0[i])
                 self._kscan_run_fragment_once()
@@ -280,8 +286,9 @@ class FragmentScanExperiment(EnvExperiment):
         # keeping RPC latency overhead low.
         CHUNK_SIZE = 10
 
-        self._kscan_current_chunk.extend(itertools.islice(self._kscan_points,
-            CHUNK_SIZE - len(self._kscan_current_chunk)))
+        self._kscan_current_chunk.extend(
+            itertools.islice(self._kscan_points,
+                             CHUNK_SIZE - len(self._kscan_current_chunk)))
 
         values = tuple([] for _ in self._scan.axes)
         for p in self._kscan_current_chunk:
@@ -329,7 +336,10 @@ class FragmentScanExperiment(EnvExperiment):
                     lambda path: self._channel_dataset_names[path]))
         set("auto_fit", json.dumps(fits))
 
-        channels = {name: channel.describe() for (name, channel) in self.channels.items()}
+        channels = {
+            name: channel.describe()
+            for (name, channel) in self.channels.items()
+        }
         set("channels", json.dumps(channels))
 
     @rpc(flags={"async"})
@@ -340,8 +350,12 @@ class FragmentScanExperiment(EnvExperiment):
     def _issue_ccb(self):
         cmd = "${python} -m ndscan.applet --server=${server} --port=${port_notify} --port-control=${port_control}"
         cmd += " --rid={}".format(self.scheduler.rid)
-        self.ccb.issue("create_applet", "ndscan: " + self.fragment.fqn, cmd,
-            group="ndscan", is_transient=True)
+        self.ccb.issue(
+            "create_applet",
+            "ndscan: " + self.fragment.fqn,
+            cmd,
+            group="ndscan",
+            is_transient=True)
 
 
 def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):

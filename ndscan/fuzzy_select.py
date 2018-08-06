@@ -13,7 +13,10 @@ class FuzzySelectWidget(LayoutWidget):
     aborted = QtCore.pyqtSignal()
     finished = QtCore.pyqtSignal(str)
 
-    def __init__(self, choices: List[Tuple[str, int]] = [], entry_count_limit: int = 25, *args):
+    def __init__(self,
+                 choices: List[Tuple[str, int]] = [],
+                 entry_count_limit: int = 25,
+                 *args):
         super().__init__(*args)
         self.choices = choices
         self.entry_count_limit = entry_count_limit
@@ -89,7 +92,7 @@ class FuzzySelectWidget(LayoutWidget):
             return
 
         if len(filtered_choices) > self.entry_count_limit:
-            filtered_choices = filtered_choices[: self.entry_count_limit]
+            filtered_choices = filtered_choices[:self.entry_count_limit]
 
         # We are going to end up with a menu shown and the line edit losing focus.
         self.abort_when_line_edit_unfocussed = False
@@ -119,7 +122,8 @@ class FuzzySelectWidget(LayoutWidget):
 
         if self.line_edit_up_down_filter:
             self.line_edit.removeEventFilter(self.line_edit_up_down_filter)
-        self.line_edit_up_down_filter = _UpDownKeyFilter(self.line_edit, self.menu, first_action, last_action)
+        self.line_edit_up_down_filter = _UpDownKeyFilter(self.line_edit, self.menu,
+                                                         first_action, last_action)
         self.line_edit.installEventFilter(self.line_edit_up_down_filter)
 
         self.abort_when_menu_hidden = True

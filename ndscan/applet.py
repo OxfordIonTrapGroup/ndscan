@@ -15,14 +15,26 @@ from .utils import eval_param_default
 
 logger = logging.getLogger(__name__)
 
-
 # Colours to use for data series (RGBA) and associated fit curves.
-SERIES_COLORS = ["#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebeada99", "#ffffb399"]
-FIT_COLORS = ["#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebeadadd", "#ffffb3dd"]
+SERIES_COLORS = [
+    "#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebeada99", "#ffffb399"
+]
+FIT_COLORS = [
+    "#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebeadadd", "#ffffb3dd"
+]
 
 
 class _XYSeries(QtCore.QObject):
-    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, plot_left_to_right, fit_spec=None, fit_item=None, fit_pois=[]):
+    def __init__(self,
+                 plot,
+                 data_name,
+                 data_item,
+                 error_bar_name,
+                 error_bar_item,
+                 plot_left_to_right,
+                 fit_spec=None,
+                 fit_item=None,
+                 fit_pois=[]):
         super().__init__(plot)
 
         self.plot = plot
@@ -62,7 +74,8 @@ class _XYSeries(QtCore.QObject):
 
             if self.error_bar_item:
                 y_err = np.array(y_err)
-                self.error_bar_item.setData(x=x_data[order], y=y_data[order], height=y_err[order])
+                self.error_bar_item.setData(
+                    x=x_data[order], y=y_data[order], height=y_err[order])
                 if self.num_current_points == 0:
                     self.plot.addItem(self.error_bar_item)
         else:
@@ -71,17 +84,21 @@ class _XYSeries(QtCore.QObject):
                 self.plot.addItem(self.data_item)
 
             if self.error_bar_item:
-                self.error_bar_item.setData(x=x_data[:num_to_show], y=y_data[:num_to_show],
+                self.error_bar_item.setData(
+                    x=x_data[:num_to_show],
+                    y=y_data[:num_to_show],
                     height=(2 * np.array(y_err[:num_to_show])))
                 if self.num_current_points == 0:
                     self.plot.addItem(self.error_bar_item)
 
         self.num_current_points = num_to_show
 
-        if self.fit_obj and self.num_current_points >= len(self.fit_obj.parameter_names):
+        if self.fit_obj and self.num_current_points >= len(
+                self.fit_obj.parameter_names):
             self._trigger_recompute_fit.emit()
 
     _trigger_recompute_fit = QtCore.pyqtSignal()
+
     def _install_fit(self, spec, item, pois):
         self.fit_type = spec["fit_type"]
         self.fit_obj = FIT_OBJECTS[self.fit_type]
@@ -154,18 +171,39 @@ class _XYSeries(QtCore.QObject):
 
 
 class _VLineFitPOI:
-    def __init__(self, fit_param_name, base_color, x_data_to_display_scale, x_unit_suffix):
+    def __init__(self, fit_param_name, base_color, x_data_to_display_scale,
+                 x_unit_suffix):
         self.fit_param_name = fit_param_name
         self.x_data_to_display_scale = x_data_to_display_scale
         self.x_unit_suffix = x_unit_suffix
 
-        self.left_line = pyqtgraph.InfiniteLine(movable=False, angle=90,
-            pen={"color": base_color, "style": QtCore.Qt.DotLine})
-        self.center_line = pyqtgraph.InfiniteLine(movable=False, angle=90,label="",
-            labelOpts={"position": 0.97, "color": base_color, "movable": True},
-            pen={"color": base_color, "style": QtCore.Qt.SolidLine})
-        self.right_line = pyqtgraph.InfiniteLine(movable=False, angle=90,
-            pen={"color": base_color, "style": QtCore.Qt.DotLine})
+        self.left_line = pyqtgraph.InfiniteLine(
+            movable=False,
+            angle=90,
+            pen={
+                "color": base_color,
+                "style": QtCore.Qt.DotLine
+            })
+        self.center_line = pyqtgraph.InfiniteLine(
+            movable=False,
+            angle=90,
+            label="",
+            labelOpts={
+                "position": 0.97,
+                "color": base_color,
+                "movable": True
+            },
+            pen={
+                "color": base_color,
+                "style": QtCore.Qt.SolidLine
+            })
+        self.right_line = pyqtgraph.InfiniteLine(
+            movable=False,
+            angle=90,
+            pen={
+                "color": base_color,
+                "style": QtCore.Qt.DotLine
+            })
 
         self.has_warned = False
 
@@ -180,7 +218,9 @@ class _VLineFitPOI:
             delta_x = fit_minimizer_errors[self.fit_param_name]
         except KeyError as e:
             if not self.has_warned:
-                logger.warn("Unknown reference to fit parameter '%s' in point of interest", str(e))
+                logger.warn(
+                    "Unknown reference to fit parameter '%s' in point of interest",
+                    str(e))
                 self.has_warned = True
             # TODO: Remove POI.
             return
@@ -192,7 +232,7 @@ class _VLineFitPOI:
             label = str(x)
         else:
             label = uncertainty_to_string(x * self.x_data_to_display_scale,
-                delta_x * self.x_data_to_display_scale)
+                                          delta_x * self.x_data_to_display_scale)
         self.center_line.label.setFormat(label + self.x_unit_suffix)
 
         self.left_line.setPos(x - delta_x)
@@ -228,11 +268,8 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
             path = "/"
         identity_string = x_schema["param"]["fqn"] + "@" + path
         self.x_unit_suffix, self.x_data_to_display_scale = _setup_axis_item(
-            self.getAxis("bottom"),
-            x_schema["param"]["description"],
-            identity_string,
-            x_schema["param"]["spec"]
-        )
+            self.getAxis("bottom"), x_schema["param"]["description"], identity_string,
+            x_schema["param"]["spec"])
 
         self.showGrid(x=True, y=True)
 
@@ -290,6 +327,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         x_range, y_range = vb.state["viewRange"]
         x_range = np.array(x_range) * self.x_data_to_display_scale
         y_range = np.array(y_range) * self.y_data_to_display_scale
+
         def num_digits_after_point(r):
             # We want to be able to resolve at least 1000 points in the displayed
             # range.
@@ -298,7 +336,8 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
 
         self.crosshair_x_text.setText("{0:.{width}f}{1}".format(
             data_coords.x() * self.x_data_to_display_scale,
-            self.x_unit_suffix, width=num_digits_after_point(x_range)))
+            self.x_unit_suffix,
+            width=num_digits_after_point(x_range)))
         self.crosshair_x_text.setPos(data_coords)
 
         self.last_crosshair_x = data_coords.x()
@@ -307,7 +346,8 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
         y_text_pos.setY(self.last_hover_event.scenePos().y() + 10)
         self.crosshair_y_text.setText("{0:.{width}f}{1}".format(
             data_coords.y() * self.y_data_to_display_scale,
-            self.y_unit_suffix, width=num_digits_after_point(y_range)))
+            self.y_unit_suffix,
+            width=num_digits_after_point(y_range)))
         self.crosshair_y_text.setPos(vb.mapSceneToView(y_text_pos))
 
     def data_changed(self, data, mods):
@@ -338,7 +378,8 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
 
                 error_bar_name = error_bar_names.get(name, None)
-                error_bar_item = pyqtgraph.ErrorBarItem(pen=color) if error_bar_name else None
+                error_bar_item = pyqtgraph.ErrorBarItem(
+                    pen=color) if error_bar_name else None
 
                 # TODO: Multiple fit specs, error bars from other channels.
                 fit_spec = None
@@ -361,12 +402,15 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                     for p in spec.get("pois", []):
                         # TODO: Support horizontal lines, points, ...
                         if p.get("x", None):
-                            fit_pois.append(_VLineFitPOI(p["x"], fit_color,
-                                self.x_data_to_display_scale, self.x_unit_suffix))
+                            fit_pois.append(
+                                _VLineFitPOI(p["x"], fit_color,
+                                             self.x_data_to_display_scale,
+                                             self.x_unit_suffix))
                     break
 
-                self.series.append(_XYSeries(self, name, data_item,
-                    error_bar_name, error_bar_item, False, fit_spec, fit_item, fit_pois))
+                self.series.append(
+                    _XYSeries(self, name, data_item, error_bar_name, error_bar_item,
+                              False, fit_spec, fit_item, fit_pois))
 
             if len(sorted_data_names) == 1:
                 # If there is only one series, set label/scaling accordingly.
@@ -380,7 +424,7 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                     self.getAxis("left"),
                     label,
                     c["path"],
-                    c # TODO: Change result channel schema and move this into "spec" field?
+                    c  # TODO: Change result channel schema and move this into "spec" field?
                 )
             else:
                 self.y_unit_suffix = ""
@@ -437,9 +481,11 @@ def _setup_axis_item(axis_item, description, identity_string, spec):
 def _extract_linked_datasets(param_schema):
     datasets = []
     try:
+
         def log_datasets(dataset, default):
             datasets.append(dataset)
             return default
+
         eval_param_default(param_schema["default"], log_datasets)
     except Exception as e:
         # Ignore default parsing errors here; the user will get warnings from the
@@ -449,7 +495,8 @@ def _extract_linked_datasets(param_schema):
 
 
 def _extract_scalar_channels(channels):
-    data_names = set(name for name, spec in channels.items() if spec["type"] in ["int", "float"])
+    data_names = set(
+        name for name, spec in channels.items() if spec["type"] in ["int", "float"])
 
     # Build map from "primary" channel names to error bar names.
     error_bar_names = {}
@@ -459,7 +506,9 @@ def _extract_scalar_channels(channels):
         eb = display_hints.get("error_bar_for", "")
         if eb:
             if eb in error_bar_names:
-                raise ValueError("More than one set of error bars specified for channel '{}'".format(eb))
+                raise ValueError(
+                    "More than one set of error bars specified for channel '{}'".format(
+                        eb))
             error_bar_names[eb] = name
 
     data_names -= set(error_bar_names.values())
@@ -468,7 +517,8 @@ def _extract_scalar_channels(channels):
 
 
 class _Rolling1DSeries:
-    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item, history_length):
+    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item,
+                 history_length):
         self.plot = plot
         self.data_item = data_item
         self.data_name = data_name
@@ -498,7 +548,9 @@ class _Rolling1DSeries:
         num_to_show = self.values.shape[0]
         self.data_item.setData(self.x_indices[-num_to_show:], self.values[:, 0].T)
         if self.error_bar_item:
-            self.error_bar_item.setData(x=self.x_indices[-num_to_show:], y=self.values[:, 0].T,
+            self.error_bar_item.setData(
+                x=self.x_indices[-num_to_show:],
+                y=self.values[:, 0].T,
                 height=self.values[:, 1].T)
 
         if is_first:
@@ -552,10 +604,12 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
 
                 error_bar_name = error_bar_names.get(data_name, None)
-                error_bar_item = pyqtgraph.ErrorBarItem(pen=color) if error_bar_name else None
+                error_bar_item = pyqtgraph.ErrorBarItem(
+                    pen=color) if error_bar_name else None
 
-                self.series.append(_Rolling1DSeries(self, data_name, data_item,
-                    error_bar_name, error_bar_item, self.num_history_box.value()))
+                self.series.append(
+                    _Rolling1DSeries(self, data_name, data_item, error_bar_name,
+                                     error_bar_item, self.num_history_box.value()))
 
             if len(sorted_data_names) == 1:
                 # If there is only one series, set label/scaling accordingly.
@@ -569,7 +623,7 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
                     self.getAxis("left"),
                     label,
                     c["path"],
-                    c # TODO: Change result channel schema and move this into "spec" field?
+                    c  # TODO: Change result channel schema and move this into "spec" field?
                 )
 
             self.series_initialised = True
@@ -608,10 +662,7 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
 
         separator = QtWidgets.QAction("", self)
         separator.setSeparator(True)
-        entries = [
-            action,
-            separator
-        ]
+        entries = [action, separator]
         self.plotItem.getContextMenus = lambda ev: entries + [self.getMenu()]
 
 
@@ -685,7 +736,7 @@ class _MainWidget(QtWidgets.QWidget):
         try:
             remote = AsyncioClient()
             await remote.connect_rpc(self.args.server, self.args.port_control,
-                "master_dataset_db")
+                                     "master_dataset_db")
             try:
                 await remote.set(key, value, persist=True)
             finally:
@@ -703,7 +754,9 @@ class NdscanApplet(SimpleApplet):
         super().__init__(_MainWidget, default_update_delay=20e-3)
 
         self.argparser.add_argument(
-            "--port-control", default=3251, type=int,
+            "--port-control",
+            default=3251,
+            type=int,
             help="TCP port for master control commands")
         self.argparser.add_argument("--rid", help="RID of the experiment to plot")
 
@@ -712,14 +765,16 @@ class NdscanApplet(SimpleApplet):
         # (but always, even if using IPC – this can be optimised later).
         self.subscriber = Subscriber("datasets_rid_{}".format(self.args.rid),
                                      self.sub_init, self.sub_mod)
-        self.loop.run_until_complete(self.subscriber.connect(
-            self.args.server, self.args.port))
+        self.loop.run_until_complete(
+            self.subscriber.connect(self.args.server, self.args.port))
 
         # Make sure we still respond to non-dataset messages like `terminate` in
         # embed mode.
         if self.embed is not None:
+
             def ignore(*args):
                 pass
+
             self.ipc.subscribe([], ignore, ignore)
 
     def unsubscribe(self):
@@ -734,6 +789,7 @@ def main():
 
     applet = NdscanApplet()
     applet.run()
+
 
 if __name__ == "__main__":
     main()
