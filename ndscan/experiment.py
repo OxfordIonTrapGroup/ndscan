@@ -285,7 +285,11 @@ class FragmentScanExperiment(EnvExperiment):
 
         values = tuple([] for _ in self._scan.axes)
         for p in self._kscan_current_chunk:
-            for i, v in enumerate(p):
+            for i, (value, axis) in enumerate(zip(p, self._scan.axes)):
+                # KLUDGE: Explicitly coerce value to the target type here so we can use
+                # the regular (float) scans for integers until proper support for int
+                # scans is implemented.
+                v = axis.param_store.coerce(value)
                 self.append_to_dataset("ndscan.points.axis_{}".format(i), v)
                 values[i].append(v)
         if not values[0]:

@@ -69,8 +69,12 @@ class FloatParamStore(ParamStore):
 
     @portable
     def set_value(self, value):
-        self._value = float(value)
+        self._value = self.coerce(value)
         self._notify()
+
+    @portable
+    def coerce(self, value):
+        return float(value)
 
 
 class IntParamStore(ParamStore):
@@ -80,8 +84,12 @@ class IntParamStore(ParamStore):
 
     @portable
     def set_value(self, value):
-        self._value = int(value)
+        self._value = self.coerce(value)
         self._notify()
+
+    @portable
+    def coerce(self, value):
+        return int(value)
 
 
 class StringParamStore(ParamStore):
@@ -91,8 +99,12 @@ class StringParamStore(ParamStore):
 
     @portable
     def set_value(self, value):
-        self._value = str(value)
+        self._value = self.coerce(value)
         self._notify()
+
+    @portable
+    def coerce(self, value):
+        return str(value)
 
 
 class ParamHandle:
