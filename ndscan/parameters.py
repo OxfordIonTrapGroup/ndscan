@@ -214,17 +214,31 @@ class IntParam:
     StoreType = IntParamStore
     CompilerType = TInt32
 
-    def __init__(self, fqn: str, description: str, default: Union[str, int]):
+    def __init__(self, fqn: str, description: str, default: Union[str, int], min=0, unit: str = "", scale=1):
         self.fqn = fqn
         self.description = description
         self.default = default
+        self.min = min
+
+        if scale is None:
+            if unit == "":
+                scale = 1
+            else:
+                try:
+                    scale = getattr(units, unit)
+                except AttributeError:
+                    raise KeyError("Unit {} is unknown, you must specify "
+                                   "the scale manually".format(unit))
+        if scale != 1:
+            raise NotImplementedError("Non-unity scales not implemented for integer parameters")
 
     def describe(self) -> Dict[str, any]:
         return {
             "fqn": self.fqn,
             "description": self.description,
             "type": "int",
-            "default": str(self.default)
+            "default": str(self.default),
+            "spec": {"scale": 1}
         }
 
     def default_store(self, identity: Tuple[str, str], get_dataset: Callable) -> IntParamStore:
