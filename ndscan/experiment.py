@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import random
 
+from artiq.coredevice.exceptions import RTIOUnderflow
 from artiq.language import *
 from collections import OrderedDict
 from contextlib import suppress
@@ -24,6 +25,10 @@ logger = logging.getLogger(__name__)
 
 
 class ScanSpecError(Exception):
+    pass
+
+
+class ScanFinished(Exception):
     pass
 
 
@@ -217,7 +222,15 @@ class FragmentScanExperiment(EnvExperiment):
         scan_impl = getattr(self, "_kscan_impl_{}".format(num_dims), None)
         if scan_impl is None:
             raise NotImplementedError("{}-dimensional scans not supported yet".format(num_dims))
-        scan_impl()
+
+        # KLUDGE: Returning tuples of empty lists triggers bug in ARTIQ RPC code (kernel
+        # aborts), so use an exception to signal end of scan.
+        with suppress(ScanFinished, TerminationRequested):
+            while True:
+                scan_impl()
+                self.core.comm.close()
+                self.scheduler.pause()
+        self._set_completed()
 
     @kernel
     def _kscan_impl_1(self):
@@ -225,11 +238,41 @@ class FragmentScanExperiment(EnvExperiment):
             (param_values_0,) = self._kscan_param_values_chunk()
             for i in range(len(param_values_0)):
                 self._kscan_param_setter_0(param_values_0[i])
-                self.fragment.device_setup()
-                self.fragment.run_once()
+                self._kscan_run_fragment_once()
                 self._kscan_point_completed()
             if self.scheduler.check_pause():
                 return
+
+    @kernel
+    def _kscan_impl_2(self):
+        while True:
+            param_values_0, param_values_1 = self._kscan_param_values_chunk()
+            for i in range(len(param_values_0)):
+                self._kscan_param_setter_0(param_values_0[i])
+                self._kscan_param_setter_1(param_values_1[i])
+                self._kscan_run_fragment_once()
+                self._kscan_point_completed()
+            if self.scheduler.check_pause():
+                return
+
+    @kernel
+    def _kscan_impl_3(self):
+        while True:
+            param_values_0, param_values_1, param_values_2 =\
+                self._kscan_param_values_chunk()
+            for i in range(len(param_values_0)):
+                self._kscan_param_setter_0(param_values_0[i])
+                self._kscan_param_setter_1(param_values_1[i])
+                self._kscan_param_setter_2(param_values_2[i])
+                self._kscan_run_fragment_once()
+                self._kscan_point_completed()
+            if self.scheduler.check_pause():
+                return
+
+    @kernel
+    def _kscan_run_fragment_once(self):
+        self.fragment.device_setup()
+        self.fragment.run_once()
 
     def _kscan_param_values_chunk(self):
         # Chunk size could be chosen adaptively in the future based on wall clock time
@@ -240,11 +283,13 @@ class FragmentScanExperiment(EnvExperiment):
         self._kscan_current_chunk.extend(itertools.islice(self._kscan_points,
             CHUNK_SIZE - len(self._kscan_current_chunk)))
 
-        values = ([],) * len(self._scan.axes)
+        values = tuple([] for _ in self._scan.axes)
         for p in self._kscan_current_chunk:
             for i, v in enumerate(p):
                 self.append_to_dataset("ndscan.points.axis_{}".format(i), v)
                 values[i].append(v)
+        if not values[0]:
+            raise ScanFinished
         return values
 
     @rpc(flags={"async"})
