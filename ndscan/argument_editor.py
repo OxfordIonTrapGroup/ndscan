@@ -3,12 +3,11 @@ import logging
 import os
 
 from collections import Counter, OrderedDict
-from enum import Enum, unique
 from functools import partial
 from typing import List
 from PyQt5 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
-from artiq.gui.entries import procdesc_to_entry, ScanEntry
+from artiq.gui.entries import procdesc_to_entry
 from artiq.gui.scientific_spinbox import ScientificSpinBox
 from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
 from artiq.protocols import pyon
@@ -468,7 +467,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
     async def _recompute_vanilla_argument(self, name):
         try:
             arginfo, _ = await self.manager.examine_arginfo(self.expurl)
-        except:
+        except Exception:
             logger.error(
                 "Could not recompute argument '%s' of '%s'",
                 name,
@@ -773,7 +772,7 @@ class FloatOverrideEntry(OverrideEntry):
                 try:
                     [float(f) for f in _parse_list_pyon(input)]
                     return QtGui.QValidator.Acceptable, input, pos
-                except:
+                except Exception:
                     return QtGui.QValidator.Intermediate, input, pos
 
         self.box_list_pyon = QtWidgets.QLineEdit()

@@ -1,11 +1,9 @@
 from copy import deepcopy
 import logging
-import numpy
 
 from artiq.language import *
 from collections import OrderedDict
-from contextlib import suppress
-from typing import Any, Callable, Dict, Generic, List, Type, Union
+from typing import Dict, List, Type
 from .auto_fit import AutoFitSpec
 from .parameters import *
 from .result_channels import *
@@ -19,14 +17,17 @@ class Fragment(HasEnvironment):
         self._fragment_path = fragment_path
         self._subfragments = []
         self._free_params = OrderedDict()
-        self._rebound_subfragment_params = dict(
-        )  #: Maps own attribute name to subfragment handles.
+
+        #: Maps own attribute name to subfragment handles.
+        self._rebound_subfragment_params = dict()
+
         self._result_channels = {}
 
         klass = self.__class__
         mod = klass.__module__
-        # KLUDGE: Strip prefix added by file_import() to make path matches compatible across
-        # dashboard/artiq_run and the worker running the experiment. Should be fixed at the source.
+        # KLUDGE: Strip prefix added by file_import() to make path matches compatible
+        # across dashboard/artiq_run and the worker running the experiment. Should be
+        # fixed at the source.
         for f in ["artiq_run_", "artiq_worker_", "file_import_"]:
             mod = strip_prefix(mod, f)
         self.fqn = mod + "." + klass.__qualname__
@@ -59,13 +60,13 @@ class Fragment(HasEnvironment):
         self.device_setup()
 
     def build_fragment(self, *args, **kwargs) -> None:
-        raise NotImplementedError(
-            "build_fragment() not implemented; override it to add parameters/result channels."
-        )
+        raise NotImplementedError("build_fragment() not implemented; "
+                                  "override it to add parameters/result channels.")
 
     def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args,
                          **kwargs) -> None:
-        assert self._building, "Can only call setattr_fragment() during build_fragment()"
+        assert self._building, ("Can only call setattr_fragment() "
+                                "during build_fragment()")
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
@@ -93,7 +94,8 @@ class Fragment(HasEnvironment):
                              original_owner,
                              original_name=None,
                              **kwargs) -> None:
-        assert self._building, "Can only call setattr_param_rebind() during build_fragment()"
+        assert (self._building
+                ), "Can only call setattr_param_rebind() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
@@ -124,8 +126,8 @@ class Fragment(HasEnvironment):
                        *args,
                        **kwargs) -> None:
         assert self._building, "Can only call setattr_result() during build_fragment()"
-        assert name.isidentifier(
-        ), "Result channel name must be valid Python identifier"
+        assert name.isidentifier(), ("Result channel name must be valid "
+                                     "Python identifier")
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
         path = "/".join(self._fragment_path + [name])

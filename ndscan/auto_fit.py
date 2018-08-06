@@ -55,7 +55,7 @@ class AutoFitSpec:
             if isinstance(arg, ParamHandle):
                 if not arg._store:
                     return False
-                if not arg._store.identity in scanned_axes:
+                if arg._store.identity not in scanned_axes:
                     return False
         return True
 

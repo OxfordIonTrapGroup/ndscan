@@ -3,7 +3,7 @@ import re
 
 from functools import partial
 from typing import List, Tuple
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from artiq.gui.tools import LayoutWidget
 
 logger = logging.getLogger(__name__)
@@ -209,8 +209,8 @@ class _NonUpDownKeyFilter(QtCore.QObject):
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
             k = event.key()
-            if k != QtCore.Qt.Key_Down and k != QtCore.Qt.Key_Up and k != QtCore.Qt.Key_Enter \
-                    and k != QtCore.Qt.Key_Return:
+            if (k != QtCore.Qt.Key_Down and k != QtCore.Qt.Key_Up
+                    and k != QtCore.Qt.Key_Enter and k != QtCore.Qt.Key_Return):
                 QtWidgets.QApplication.sendEvent(self.target, event)
                 return True
         return False

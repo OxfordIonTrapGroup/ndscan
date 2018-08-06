@@ -248,7 +248,7 @@ def _run_fit(fit_type, xs, ys, y_errs=None):
     """
     try:
         return FIT_OBJECTS[fit_type].fit(xs, ys, y_errs)
-    except Exception as e:
+    except Exception:
         return None, None
 
 
@@ -420,12 +420,11 @@ class _XYPlotWidget(pyqtgraph.PlotWidget):
                 label = c["description"]
                 if not label:
                     label = c["path"].split("/")[-1]
+
+                # TODO: Change result channel schema and move properties accessed here
+                # into "spec" field to match parameters?
                 self.y_unit_suffix, self.y_data_to_display_scale = _setup_axis_item(
-                    self.getAxis("left"),
-                    label,
-                    c["path"],
-                    c  # TODO: Change result channel schema and move this into "spec" field?
-                )
+                    self.getAxis("left"), label, c["path"], c)
             else:
                 self.y_unit_suffix = ""
                 self.y_data_to_display_scale = 1.0
@@ -487,7 +486,7 @@ def _extract_linked_datasets(param_schema):
             return default
 
         eval_param_default(param_schema["default"], log_datasets)
-    except Exception as e:
+    except Exception:
         # Ignore default parsing errors here; the user will get warnings from the
         # experiment dock and on the core device anyway.
         pass
@@ -619,12 +618,7 @@ class _RollingPlotWidget(pyqtgraph.PlotWidget):
                 label = c["description"]
                 if not label:
                     label = c["path"].split("/")[-1]
-                _setup_axis_item(
-                    self.getAxis("left"),
-                    label,
-                    c["path"],
-                    c  # TODO: Change result channel schema and move this into "spec" field?
-                )
+                _setup_axis_item(self.getAxis("left"), label, c["path"], c)
 
             self.series_initialised = True
 
@@ -741,7 +735,7 @@ class _MainWidget(QtWidgets.QWidget):
                 await remote.set(key, value, persist=True)
             finally:
                 remote.close_rpc()
-        except:
+        except Exception:
             logger.error("Failed to set dataset '%s'", key, exc_info=True)
 
 

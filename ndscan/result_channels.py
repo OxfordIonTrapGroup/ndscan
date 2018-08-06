@@ -1,6 +1,6 @@
 from artiq.language import *
 import artiq.language.units
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Dict, List
 
 
 class ResultSink:
@@ -141,5 +141,6 @@ class OpaqueChannel(ResultChannel):
         return "opaque"
 
     def _coerce_to_type(self, value):
-        # Just pass through values, leaving it to the user to choose something HD5- and PYON-compatible.
+        # Just pass through values, leaving it to the user to choose something
+        # HD5- and PYON-compatible.
         return value

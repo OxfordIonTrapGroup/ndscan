@@ -1,15 +1,12 @@
 import itertools
 import json
 import logging
-import numpy as np
 import random
 
-from artiq.coredevice.exceptions import RTIOUnderflow
 from artiq.language import *
-from collections import OrderedDict
 from contextlib import suppress
-from typing import Callable, Dict, List, Type
-from .fragment import Fragment, ExpFragment, type_string_to_param
+from typing import Callable, Type
+from .fragment import ExpFragment, type_string_to_param
 from .result_channels import AppendingDatasetSink, ScalarDatasetSink
 from .scan_generator import *
 from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
@@ -199,20 +196,21 @@ class FragmentScanExperiment(EnvExperiment):
         # _kscan_param_values_chunk RPC call later.
         self._kscan_points = points
 
-        # Stash away points in current kernel chunk until they have been marked completed
-        # as a quick shortcut to be able to resume from interruptions. This should be cleaned
-        # up a bit later. Alternatively, if we use an (async, but still) RPC to keep track of
-        # points completed, we might as well use it to send back all the result channel values
-        # from the core device in one go.
+        # Stash away points in current kernel chunk until they have been marked
+        # completed as a quick shortcut to be able to resume from interruptions. This
+        # should be cleaned up a bit later. Alternatively, if we use an (async, but
+        # still) RPC to keep track of points completed, we might as well use it to send
+        # back all the result channel values from the core device in one go.
         self._kscan_current_chunk = []
 
         for i, axis in enumerate(self._scan.axes):
             setattr(self, "_kscan_param_setter_{}".format(i),
                     axis.param_store.set_value)
 
-        # _kscan_param_values_chunk returns a tuple of lists of values, one for each scan
-        # axis. Synthesize a return type annotation (`def foo(self): -> …`) with the concrete
-        # type for this scan so the compiler can infer the types in _kscan_impl() correctly.
+        # _kscan_param_values_chunk returns a tuple of lists of values, one for each
+        # scan axis. Synthesize a return type annotation (`def foo(self): -> …`) with
+        # the concrete type for this scan so the compiler can infer the types in
+        # _kscan_impl() correctly.
         self._kscan_param_values_chunk.__func__.__annotations__ = {
             "return":
             TTuple([
@@ -348,7 +346,10 @@ class FragmentScanExperiment(EnvExperiment):
         self.set_dataset("ndscan.point_phase", self._point_phase, broadcast=True)
 
     def _issue_ccb(self):
-        cmd = "${python} -m ndscan.applet --server=${server} --port=${port_notify} --port-control=${port_control}"
+        cmd = ("${python} -m ndscan.applet "
+               "--server=${server} "
+               "--port=${port_notify} "
+               "--port-control=${port_control}")
         cmd += " --rid={}".format(self.scheduler.rid)
         self.ccb.issue(
             "create_applet",
