@@ -118,7 +118,7 @@ def generate_points(scan: ScanSpec):
 
     # Stores computed coordinates for each axis, indexed first by
     # axis order, then by level.
-    axis_level_points = [[]] * len(scan.axes)
+    axis_level_points = [[] for _ in scan.axes]
 
     max_level = 0
     while True:
@@ -134,7 +134,7 @@ def generate_points(scan: ScanSpec):
 
         points = []
 
-        for axis_levels in product(*(range(0, len(p)) for p in axis_level_points)):
+        for axis_levels in product(*(range(len(p)) for p in axis_level_points)):
             if all(l < max_level for l in axis_levels):
                 # Previously visited this combination already.
                 continue
