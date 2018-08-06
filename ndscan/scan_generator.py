@@ -54,9 +54,33 @@ class LinearGenerator:
         target["max"] = max(self.start, self.stop)
 
 
+class ListGenerator:
+    def __init__(self, values, randomise_order):
+        self.values = values
+        self.randomise_order = randomise_order
+
+    def has_level(self, level: int):
+        return level == 0
+
+    def points_for_level(self, level: int, rng=None):
+        assert level == 0
+        values = self.values
+        if self.randomise_order:
+            values = np.array(self.values)
+            rng.shuffle(values)
+        return values
+
+    def describe_limits(self, target: dict):
+        values = np.array(self.values)
+        if np.issubdtype(values.dtype, np.number):
+            target["min"] = np.min(values)
+            target["max"] = np.max(values)
+
+
 GENERATORS = {
     "refining": RefiningGenerator,
-    "linear": LinearGenerator
+    "linear": LinearGenerator,
+    "list": ListGenerator
 }
 
 
