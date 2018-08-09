@@ -52,8 +52,8 @@ class ScalarDatasetSink(ResultSink, HasEnvironment):
         self.set_dataset(self.key, value, broadcast=self.broadcast)
         self.has_pushed = True
 
-    def get_all(self):
-        return [self.get_dataset(self.key)] if self.has_pushed else []
+    def get_last(self):
+        return self.get_dataset(self.key) if self.has_pushed else None
 
 
 class ResultChannel:
