@@ -46,10 +46,12 @@ class ResultChannel:
     def __init__(self,
                  path: List[str],
                  description: str = "",
-                 display_hints: Dict[str, Any] = {}):
+                 display_hints: Dict[str, Any] = {},
+                 save_by_default: bool = True):
         self.path = path
         self.description = description
         self.display_hints = display_hints
+        self.save_by_default = save_by_default
         self.sink = None
 
     def describe(self) -> Dict[str, Any]:
@@ -64,8 +66,8 @@ class ResultChannel:
         return desc
 
     def is_muted(self) -> bool:
-        # TODO: Implement muting interface.
-        return False
+        # TODO: Implement muting interface?
+        return self.sink is not None
 
     def set_sink(self, sink: ResultSink):
         self.sink = sink

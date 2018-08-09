@@ -104,6 +104,8 @@ class FragmentScanExperiment(EnvExperiment):
         self._channel_dataset_names = {}
         for path, channel in chan_dict.items():
             name = chan_name_map[path].replace("/", "_")
+            if not channel.save_by_default:
+                continue
             self.channels[name] = channel
 
             if self._scan.axes:
