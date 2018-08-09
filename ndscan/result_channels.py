@@ -11,6 +11,20 @@ class ResultSink:
         raise NotImplementedError
 
 
+class ArraySink(ResultSink):
+    def __init__(self):
+        self.data = []
+
+    def push(self, value):
+        self.data.append(value)
+
+    def get_all(self):
+        return self.data
+
+    def clear(self):
+        self.data = []
+
+
 class AppendingDatasetSink(ResultSink, HasEnvironment):
     def build(self, key, broadcast=True):
         self.key = key
