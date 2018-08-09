@@ -235,7 +235,7 @@ class IntParam:
                  default: Union[str, int],
                  min=0,
                  unit: str = "",
-                 scale=1):
+                 scale=None):
         self.fqn = fqn
         self.description = description
         self.default = default
