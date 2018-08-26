@@ -1,3 +1,5 @@
+from ndscan.utils import eval_param_default
+
 # Colours to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = [
     "#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebeada99", "#ffffb399"
@@ -27,6 +29,22 @@ def extract_scalar_channels(channels):
     data_names -= set(error_bar_names.values())
 
     return data_names, error_bar_names
+
+
+def extract_linked_datasets(param_schema):
+    datasets = []
+    try:
+
+        def log_datasets(dataset, default):
+            datasets.append(dataset)
+            return default
+
+        eval_param_default(param_schema["default"], log_datasets)
+    except Exception:
+        # Ignore default parsing errors here; the user will get warnings from the
+        # experiment dock and on the core device anyway.
+        pass
+    return datasets
 
 
 def setup_axis_item(axis_item, description, identity_string, spec):

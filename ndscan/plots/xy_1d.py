@@ -7,8 +7,9 @@ import pyqtgraph
 from quamash import QtWidgets, QtCore
 
 from ndscan.auto_fit import FIT_OBJECTS
-from ndscan.utils import eval_param_default
-from .utils import extract_scalar_channels, setup_axis_item, FIT_COLORS, SERIES_COLORS
+from .cursor import LabeledCrosshairCursor
+from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
+                    FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
@@ -260,84 +261,9 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
             self.getAxis("bottom"), x_schema["param"]["description"], identity_string,
             x_schema["param"]["spec"])
 
-        self.showGrid(x=True, y=True)
-
-        # Crosshair cursor with coordinate display. The TextItems for displaying
-        # the coordinates are updated on a timer to avoid a lag trail of buffered
-        # redraws when there are a lot of points.
-        #
-        # TODO: Abstract out, use for other plots as well.
-        self.getPlotItem().getViewBox().hoverEvent = self._on_viewbox_hover
-        self.setCursor(QtCore.Qt.CrossCursor)
-        self.crosshair_timer = QtCore.QTimer(self)
-        self.crosshair_timer.timeout.connect(self._update_crosshair_text)
-        self.crosshair_timer.setSingleShot(True)
-        self.crosshair_x_text = None
-        self.crosshair_y_text = None
-
         self._install_context_menu(x_schema)
-
-    def _on_viewbox_hover(self, event):
-        if event.isExit():
-            self.removeItem(self.crosshair_x_text)
-            self.crosshair_x_text = None
-            self.removeItem(self.crosshair_y_text)
-            self.crosshair_y_text = None
-
-            self.crosshair_timer.stop()
-            return
-
-        self.last_hover_event = event
-        self.crosshair_timer.start(0)
-
-    def _update_crosshair_text(self):
-        vb = self.getPlotItem().getViewBox()
-        data_coords = vb.mapSceneToView(self.last_hover_event.scenePos())
-
-        # TODO: Draw text directly to graphics scene rather than going through
-        # pyqtgraph for performance - don't need any of the fancy interaction
-        # or layouting features that come with being a plot item.
-
-        def make_text():
-            text = pyqtgraph.TextItem()
-            # Don't take text item into account for auto-scaling; otherwise
-            # there will be positive feedback if the cursor is towards the
-            # bottom right of the screen.
-            text.setFlag(text.ItemHasNoContents)
-            self.addItem(text)
-            return text
-
-        if not self.crosshair_x_text:
-            self.crosshair_x_text = make_text()
-
-        if not self.crosshair_y_text:
-            self.crosshair_y_text = make_text()
-
-        x_range, y_range = vb.state["viewRange"]
-        x_range = np.array(x_range) * self.x_data_to_display_scale
-        y_range = np.array(y_range) * self.y_data_to_display_scale
-
-        def num_digits_after_point(r):
-            # We want to be able to resolve at least 1000 points in the displayed
-            # range.
-            smallest_digit = np.floor(np.log10(r[1] - r[0])) - 3
-            return int(-smallest_digit) if smallest_digit < 0 else 0
-
-        self.crosshair_x_text.setText("{0:.{width}f}{1}".format(
-            data_coords.x() * self.x_data_to_display_scale,
-            self.x_unit_suffix,
-            width=num_digits_after_point(x_range)))
-        self.crosshair_x_text.setPos(data_coords)
-
-        self.last_crosshair_x = data_coords.x()
-
-        y_text_pos = QtCore.QPointF(self.last_hover_event.scenePos())
-        y_text_pos.setY(self.last_hover_event.scenePos().y() + 10)
-        self.crosshair_y_text.setText("{0:.{width}f}{1}".format(
-            data_coords.y() * self.y_data_to_display_scale,
-            self.y_unit_suffix,
-            width=num_digits_after_point(y_range)))
-        self.crosshair_y_text.setPos(vb.mapSceneToView(y_text_pos))
+        self.crosshair = None
+        self.showGrid(x=True, y=True)
 
     def data_changed(self, data, mods):
         def d(name):
@@ -418,6 +344,9 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
                 self.y_unit_suffix = ""
                 self.y_data_to_display_scale = 1.0
 
+            self.crosshair = LabeledCrosshairCursor(
+                self, self, self.x_unit_suffix, self.x_data_to_display_scale,
+                self.y_unit_suffix, self.y_data_to_display_scale)
             self.series_initialised = True
 
         x_data = d("points.axis_0")
@@ -430,7 +359,7 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
     def _install_context_menu(self, x_schema):
         entries = []
 
-        for d in _extract_linked_datasets(x_schema["param"]):
+        for d in extract_linked_datasets(x_schema["param"]):
             action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
             action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
             entries.append(action)
@@ -444,20 +373,7 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
         self.plotItem.getContextMenus = lambda ev: entries + [self.getMenu()]
 
     def _set_dataset_from_crosshair_x(self, dataset):
-        self.set_dataset(dataset, self.last_crosshair_x)
-
-
-def _extract_linked_datasets(param_schema):
-    datasets = []
-    try:
-
-        def log_datasets(dataset, default):
-            datasets.append(dataset)
-            return default
-
-        eval_param_default(param_schema["default"], log_datasets)
-    except Exception:
-        # Ignore default parsing errors here; the user will get warnings from the
-        # experiment dock and on the core device anyway.
-        pass
-    return datasets
+        if not self.crosshair:
+            logger.warning("Plot not initialised yet, ignoring set dataset request")
+            return
+        self.set_dataset(dataset, self.crosshair.last_x)
