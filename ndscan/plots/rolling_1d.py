@@ -64,7 +64,7 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
         self.series_initialised = False
         self.series = []
 
-        self.point_phase = False
+        self.point_phase = None
 
         self.showGrid(x=True, y=True)
 
@@ -113,8 +113,8 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
 
             self.series_initialised = True
 
-        # FIXME: Phase check will miss points when using mod buffering - need
-        # to check mods for more than one change.
+        # FIXME: Phase check will miss points when using mod buffering - need to
+        # directly read all the data from mods.
         phase = d("point_phase")
         if phase is not None and phase != self.point_phase:
             for s in self.series:
