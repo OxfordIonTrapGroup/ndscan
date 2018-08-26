@@ -1,9 +1,8 @@
 import asyncio
-import logging
-import os
-
 from collections import Counter, OrderedDict
 from functools import partial
+import logging
+import os
 from typing import List
 from PyQt5 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
@@ -11,9 +10,10 @@ from artiq.gui.entries import procdesc_to_entry
 from artiq.gui.scientific_spinbox import ScientificSpinBox
 from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
 from artiq.protocols import pyon
-from .experiment import PARAMS_ARG_KEY
+
+from ndscan.experiment import PARAMS_ARG_KEY
+from ndscan.utils import eval_param_default, shorten_to_unambiguous_suffixes
 from .fuzzy_select import FuzzySelectWidget
-from .utils import eval_param_default, shorten_to_unambiguous_suffixes
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         # FIXME: Paths after installation.
         def icon_path(name):
             return os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "icons", name)
+                os.path.dirname(os.path.abspath(__file__)), "..", "icons", name)
 
         self._add_override_icon = QtGui.QIcon(icon_path("list-add-32.png"))
         self._remove_override_icon = QtGui.QIcon(icon_path("list-remove-32.png"))

@@ -1,9 +1,9 @@
 import logging
 import oitg.fitting
+from typing import Callable, Dict, List, Tuple, Union
 
 from .parameters import ParamHandle
 from .result_channels import ResultChannel
-from typing import Callable, Dict, List, Tuple, Union
 
 logger = logging.getLogger(__name__)
 

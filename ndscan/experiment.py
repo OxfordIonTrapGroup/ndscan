@@ -1,11 +1,11 @@
+from artiq.language import *
+from contextlib import suppress
 import itertools
 import json
 import logging
 import random
-
-from artiq.language import *
-from contextlib import suppress
 from typing import Callable, Type
+
 from .fragment import ExpFragment, type_string_to_param
 from .result_channels import AppendingDatasetSink, ScalarDatasetSink
 from .scan_generator import *

@@ -1,5 +1,5 @@
-from typing import Callable, List
 from artiq.language import units
+from typing import Callable, List
 
 
 def path_matches_spec(path: List[str], spec: str):

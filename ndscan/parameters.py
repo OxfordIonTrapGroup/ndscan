@@ -1,7 +1,3 @@
-from artiq.language import *
-from artiq.language import units
-from typing import Callable, Dict, Tuple, Union
-from .utils import eval_param_default
 """
 Fragment-side parameter containers.
 
@@ -11,6 +7,12 @@ of fields to match across all instances of a class. Hence, we have no option
 but to hang our heads in shame and manually instantiate the parameter handling
 machinery for all the value types.
 """
+
+from artiq.language import *
+from artiq.language import units
+from typing import Callable, Dict, Tuple, Union
+
+from .utils import eval_param_default
 
 
 def type_string_to_param(name: str):

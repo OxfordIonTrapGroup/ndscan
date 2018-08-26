@@ -1,9 +1,9 @@
-from copy import deepcopy
-import logging
-
 from artiq.language import *
 from collections import OrderedDict
+from copy import deepcopy
+import logging
 from typing import Dict, List, Type
+
 from .auto_fit import AutoFitSpec
 from .parameters import *
 from .result_channels import *
@@ -50,11 +50,11 @@ class Fragment(HasEnvironment):
         """
         pass
 
-    @kernel
+    @portable
     def device_setup(self) -> None:
         pass
 
-    @kernel
+    @portable
     def device_reset(self) -> None:
         # By default, just completely reinitialize.
         self.device_setup()
