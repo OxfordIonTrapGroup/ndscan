@@ -28,13 +28,17 @@ def extract_scalar_channels(channels):
 
     data_names -= set(error_bar_names.values())
 
+    # Sort by path for stable order.
+    # TODO: Respect "priority" key.
+    data_names = list(data_names)
+    data_names.sort(key=lambda n: channels[n]["path"])
+
     return data_names, error_bar_names
 
 
 def extract_linked_datasets(param_schema):
     datasets = []
     try:
-
         def log_datasets(dataset, default):
             datasets.append(dataset)
             return default

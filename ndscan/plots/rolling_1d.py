@@ -84,12 +84,9 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
             try:
                 data_names, error_bar_names = extract_scalar_channels(channels)
             except ValueError as e:
-                self.emit.error(str(e))
+                self.error.emit(str(e))
 
-            sorted_data_names = list(data_names)
-            sorted_data_names.sort(key=lambda n: channels[n]["path"])
-
-            for i, data_name in enumerate(sorted_data_names):
+            for i, data_name in enumerate(data_names):
                 color = SERIES_COLORS[i % len(SERIES_COLORS)]
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
 
@@ -101,10 +98,10 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
                     _Series(self, data_name, data_item, error_bar_name, error_bar_item,
                             self.num_history_box.value()))
 
-            if len(sorted_data_names) == 1:
+            if len(data_names) == 1:
                 # If there is only one series, set label/scaling accordingly.
                 # TODO: Add multiple y axis for additional channels.
-                c = channels[sorted_data_names[0]]
+                c = channels[data_names[0]]
 
                 label = c["description"]
                 if not label:

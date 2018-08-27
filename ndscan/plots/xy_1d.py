@@ -279,16 +279,13 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
             try:
                 data_names, error_bar_names = extract_scalar_channels(channels)
             except ValueError as e:
-                self.emit.error(str(e))
-
-            sorted_data_names = list(data_names)
-            sorted_data_names.sort(key=lambda n: channels[n]["path"])
+                self.error.emit(str(e))
 
             # KLUDGE: We rely on fit specs to be set before channels in order
             # for them to be displayed at all.
             fit_specs = json.loads(d("auto_fit") or "[]")
 
-            for i, name in enumerate(sorted_data_names):
+            for i, name in enumerate(data_names):
                 color = SERIES_COLORS[i % len(SERIES_COLORS)]
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
 
@@ -327,10 +324,10 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
                     _XYSeries(self, name, data_item, error_bar_name, error_bar_item,
                               False, fit_spec, fit_item, fit_pois))
 
-            if len(sorted_data_names) == 1:
+            if len(data_names) == 1:
                 # If there is only one series, set label/scaling accordingly.
                 # TODO: Add multiple y axis for additional channels.
-                c = channels[sorted_data_names[0]]
+                c = channels[data_names[0]]
 
                 label = c["description"]
                 if not label:
