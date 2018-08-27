@@ -9,6 +9,7 @@ from quamash import QtWidgets, QtCore
 
 from .plots.rolling_1d import Rolling1DPlotWidget
 from .plots.xy_1d import XY1DPlotWidget
+from .plots.image_2d import Image2DPlotWidget
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class _MainWidget(QtWidgets.QWidget):
         self.args = args
 
         self.setWindowTitle("ndscan plot")
-        self.resize(800, 500)
+        self.resize(600, 600)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -50,13 +51,16 @@ class _MainWidget(QtWidgets.QWidget):
             if not axes_json:
                 return
             axes = json.loads(axes_json)
-            if len(axes) == 0:
+            dim = len(axes)
+            if dim == 0:
                 self.plot = Rolling1DPlotWidget()
-            elif len(axes) == 1:
-                self.plot = XY1DPlotWidget(axes[0], self.set_dataset)
+            elif dim == 1:
+                self.plot = XY1DPlotWidget(*axes, self.set_dataset)
+            elif dim == 2:
+                self.plot = Image2DPlotWidget(*axes, self.set_dataset)
             else:
                 self.message_label.setText(
-                    "{}-dimensional scans are not yet supported".format(len(axes)))
+                    "{}-dimensional scans are not yet supported".format(dim))
                 self._show(self.message_label)
                 return
 
