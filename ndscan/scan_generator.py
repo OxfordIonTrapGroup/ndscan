@@ -33,6 +33,8 @@ class RefiningGenerator:
 
 class LinearGenerator:
     def __init__(self, start, stop, num_points, randomise_order):
+        if num_points < 2:
+            raise ValueError("Need at least 2 points in linear scan")
         self.start = start
         self.stop = stop
         self.num_points = num_points
