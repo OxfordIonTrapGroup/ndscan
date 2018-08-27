@@ -54,6 +54,7 @@ class LinearGenerator:
     def describe_limits(self, target: dict):
         target["min"] = min(self.start, self.stop)
         target["max"] = max(self.start, self.stop)
+        target["increment"] = abs(self.stop - self.start) / (self.num_points - 1)
 
 
 class ListGenerator:
