@@ -361,13 +361,12 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
             action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
             entries.append(action)
 
-        if not entries:
-            return
+        if entries:
+            separator = QtWidgets.QAction("", self)
+            separator.setSeparator(True)
+            entries.append(separator)
 
-        separator = QtWidgets.QAction("", self)
-        separator.setSeparator(True)
-        entries.append(separator)
-        self.plotItem.getContextMenus = lambda ev: entries + [self.getMenu()]
+        self.plotItem.getContextMenus = lambda ev: entries
 
     def _set_dataset_from_crosshair_x(self, dataset):
         if not self.crosshair:

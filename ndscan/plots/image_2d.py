@@ -225,7 +225,7 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
             first_action.setChecked(True)
         append_separator()
 
-        self.plotItem.getContextMenus = lambda ev: entries + [self.getMenu()]
+        self.plotItem.getContextMenus = lambda ev: entries
 
     def _set_dataset_from_crosshair(self, dataset, axis):
         if not self.crosshair:

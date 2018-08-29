@@ -145,4 +145,4 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
         separator = QtWidgets.QAction("", self)
         separator.setSeparator(True)
         entries = [action, separator]
-        self.plotItem.getContextMenus = lambda ev: entries + [self.getMenu()]
+        self.plotItem.getContextMenus = lambda ev: entries
