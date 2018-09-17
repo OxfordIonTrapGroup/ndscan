@@ -60,6 +60,7 @@ class _ImagePlot:
         self.y_increment = y_increment
 
         self.num_shown = 0
+        self.current_z_limits = None
         self.x_range = None
         self.y_range = None
         self.image_data = None
@@ -67,6 +68,7 @@ class _ImagePlot:
     def activate_channel(self, channel_name: str):
         self.active_channel_name = channel_name
         self.num_shown = 0
+        self.current_z_limits = None
         self._update()
 
     def data_changed(self, datasets):
@@ -79,12 +81,33 @@ class _ImagePlot:
 
         x_data, y_data = d("axis_0"), d("axis_1")
         z_data = d("channel_" + self.active_channel_name)
+
+        # Figure out how many complete data points we have, and whether there are any
+        # not already shown.
+
         num_to_show = min(len(x_data), len(y_data), len(z_data))
 
         if num_to_show == self.num_shown:
             return
         num_skip = self.num_shown
         self.num_shown = num_to_show
+
+        # Update z autorange if active.
+        if True:  # TODO: Provide manual override.
+            data_min = np.min(z_data[num_skip:num_to_show])
+            data_max = np.max(z_data[num_skip:num_to_show])
+            if self.current_z_limits is None:
+                self.current_z_limits = (data_min, data_max)
+                num_skip = 0
+            else:
+                z_limits = (min(self.current_z_limits[0], data_min),
+                            max(self.current_z_limits[1], data_max))
+                if z_limits != self.current_z_limits:
+                    self.current_z_limits = z_limits
+                    num_skip = 0
+
+        # Determine range of x/y values to show and prepare image buffer accordingly if
+        # it changed.
 
         try:
             x_range = _calc_range_spec(self.x_min, self.x_max, self.x_increment, x_data)
@@ -113,9 +136,9 @@ class _ImagePlot:
         x_inds = _coords_to_indices(x_data[num_skip:num_to_show], self.x_range)
         y_inds = _coords_to_indices(y_data[num_skip:num_to_show], self.y_range)
 
-        # TODO: Range!
-        self.image_data[x_inds, y_inds, :] = colormaps.plasma.map(
-            z_data[num_skip:num_to_show])
+        z_min, z_max = self.current_z_limits
+        z_scaled = (z_data[num_skip:num_to_show] - z_min) / (z_max - z_min)
+        self.image_data[x_inds, y_inds, :] = colormaps.plasma.map(z_scaled)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
         if num_skip == 0:
