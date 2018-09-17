@@ -28,10 +28,12 @@ def extract_scalar_channels(channels):
 
     data_names -= set(error_bar_names.values())
 
-    # Sort by path for stable order.
-    # TODO: Respect "priority" key.
+    # Sort by descending priority and then path (the latter for stable order).
     data_names = list(data_names)
-    data_names.sort(key=lambda n: channels[n]["path"])
+    data_names.sort(
+        key=lambda name: (-channels[name].get("display_hints", {}).get("priority", 0),
+                          channels[name]["path"])
+    )
 
     return data_names, error_bar_names
 
