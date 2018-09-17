@@ -35,7 +35,7 @@ def _calc_range_spec(preset_min, preset_max, preset_increment, data):
 
 def _num_points_in_range(range_spec):
     min, max, increment = range_spec
-    return int((max - min) / increment + 1)
+    return int(np.rint((max - min) / increment + 1))
 
 
 def _coords_to_indices(coords, range_spec):
