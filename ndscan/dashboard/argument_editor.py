@@ -78,7 +78,6 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._arg_to_widgets = dict()
         self._override_items = dict()
 
-        # FIXME: Paths after installation.
         def icon_path(name):
             return os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "..", "icons", name)
