@@ -130,7 +130,7 @@ def generate_points(scan: ScanSpec):
     max_level = 0
     while True:
         found_new_levels = False
-        for i, a in enumerate(scan.axes):
+        for i, a in enumerate(scan.axes[::-1]):
             if a.generator.has_level(max_level):
                 axis_level_points[i].append(
                     a.generator.points_for_level(max_level, rng))
@@ -154,6 +154,6 @@ def generate_points(scan: ScanSpec):
                 rng.shuffle(points)
 
             for p in points:
-                yield p
+                yield p[::-1]
 
         max_level += 1
