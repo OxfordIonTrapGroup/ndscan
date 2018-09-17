@@ -73,7 +73,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._save_timer = QtCore.QTimer(self)
         self._save_timer.timeout.connect(self._save_to_argument)
 
-        self._param_entries = dict()
+        self._param_entries = OrderedDict()
         self._groups = dict()
         self._arg_to_widgets = dict()
         self._override_items = dict()
