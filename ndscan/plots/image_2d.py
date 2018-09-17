@@ -22,13 +22,14 @@ class NotEnoughPoints(ValueError):
 
 
 def _calc_range_spec(preset_min, preset_max, preset_increment, data):
-    udata = np.unique(data)
-    if len(udata) < 2:
+    sorted_data = np.unique(data)
+    if len(sorted_data) < 2:
         raise NotEnoughPoints
 
-    lower = preset_min if preset_min else udata[0]
-    upper = preset_max if preset_max else udata[-1]
-    increment = preset_increment if preset_increment else np.min(udata[1:] - udata[:-1])
+    lower = preset_min if preset_min else sorted_data[0]
+    upper = preset_max if preset_max else sorted_data[-1]
+    increment = preset_increment if preset_increment else np.min(sorted_data[1:] -
+                                                                 sorted_data[:-1])
 
     return lower, upper, increment
 
