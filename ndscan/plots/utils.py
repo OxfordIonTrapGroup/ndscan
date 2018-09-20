@@ -29,11 +29,12 @@ def extract_scalar_channels(channels):
     data_names -= set(error_bar_names.values())
 
     # Sort by descending priority and then path (the latter for stable order).
+    def priority_key(name):
+        return (-channels[name].get("display_hints", {}).get("priority", 0),
+                channels[name]["path"])
+
     data_names = list(data_names)
-    data_names.sort(
-        key=lambda name: (-channels[name].get("display_hints", {}).get("priority", 0),
-                          channels[name]["path"])
-    )
+    data_names.sort(key=priority_key)
 
     return data_names, error_bar_names
 
@@ -41,6 +42,7 @@ def extract_scalar_channels(channels):
 def extract_linked_datasets(param_schema):
     datasets = []
     try:
+        # Intercept dataset() to build up list of accessed keys.
         def log_datasets(dataset, default):
             datasets.append(dataset)
             return default
