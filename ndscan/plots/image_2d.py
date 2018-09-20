@@ -78,7 +78,7 @@ class _ImagePlot:
 
     def _update(self):
         def d(name):
-            return self.datasets.get("ndscan.points." + name, (False, None))[1]
+            return self.datasets.get("ndscan.points." + name, (False, []))[1]
 
         x_data, y_data = d("axis_0"), d("axis_1")
         z_data = d("channel_" + self.active_channel_name)
