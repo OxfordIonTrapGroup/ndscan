@@ -99,3 +99,5 @@ class LabeledCrosshairCursor(QtCore.QObject):
             self.y_unit_suffix,
             width=num_digits_after_point(y_range)))
         self.y_text.setPos(vb.mapSceneToView(y_text_pos))
+
+        self.last_y = data_coords.y()
