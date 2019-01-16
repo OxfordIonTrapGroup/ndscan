@@ -19,12 +19,12 @@ def extract_scalar_channels(channels):
         spec = channels[name]
         display_hints = spec.get("display_hints", {})
         eb = display_hints.get("error_bar_for", "")
-        if eb:
-            if eb in error_bar_names:
-                raise ValueError(
-                    "More than one set of error bars specified for channel '{}'".format(
-                        eb))
-            error_bar_names[eb] = name
+        if not eb:
+            continue
+        if eb in error_bar_names:
+            raise ValueError(
+                "More than one set of error bars specified for channel '{}'".format(eb))
+        error_bar_names[eb] = name
 
     data_names -= set(error_bar_names.values())
 
