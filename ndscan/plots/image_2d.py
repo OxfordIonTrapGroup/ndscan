@@ -8,7 +8,7 @@ import numpy as np
 from oitg import uncertainty_to_string
 import pyqtgraph
 from quamash import QtWidgets, QtCore
-from typing import Union
+from typing import Dict, Union
 
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
@@ -48,9 +48,11 @@ class _ImagePlot:
     def __init__(self, image_item: pyqtgraph.ImageItem, active_channel_name: str,
                  x_min: Union[float, None], x_max: Union[float, None],
                  x_increment: Union[float, None], y_min: Union[float, None],
-                 y_max: Union[float, None], y_increment: Union[float, None]):
+                 y_max: Union[float, None], y_increment: Union[float, None],
+                 hints_for_channels: Dict[str, dict]):
         self.image_item = image_item
         self.active_channel_name = active_channel_name
+        self.hints_for_channels = hints_for_channels
 
         self.x_min = x_min
         self.x_max = x_max
@@ -75,6 +77,9 @@ class _ImagePlot:
     def data_changed(self, datasets):
         self.datasets = datasets
         self._update()
+
+    def _get_display_hints(self):
+        return self.hints_for_channels[self.active_channel_name]
 
     def _update(self):
         def d(name):
@@ -139,7 +144,11 @@ class _ImagePlot:
 
         z_min, z_max = self.current_z_limits
         z_scaled = (z_data[num_skip:num_to_show] - z_min) / (z_max - z_min)
-        self.image_data[x_inds, y_inds, :] = colormaps.plasma.map(z_scaled)
+
+        cmap = colormaps.plasma
+        if self._get_display_hints().get("coordinate_type", "") == "cyclic":
+            cmap = colormaps.cyclic_mygbm_30_95_c78
+        self.image_data[x_inds, y_inds, :] = cmap.map(z_scaled)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
         if num_skip == 0:
@@ -195,13 +204,17 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
             if not data_names:
                 self.error.emit("No scalar result channels to display")
 
+            hints_for_channels = {
+                name: channels[name].get("display_hints", {})
+                for name in data_names
+            }
             self._install_context_menu(data_names)
 
-            bounds = lambda s: (s.get("min", None), s.get("max", None), s.get("increment", None))
+            bounds = lambda s: (s.get(n, None) for n in ("min", "max", "increment"))
             image_item = pyqtgraph.ImageItem()
             self.addItem(image_item)
             self.plot = _ImagePlot(image_item, data_names[0], *bounds(self.x_schema),
-                                   *bounds(self.y_schema))
+                                   *bounds(self.y_schema), hints_for_channels)
 
         self.plot.data_changed(datasets)
 
