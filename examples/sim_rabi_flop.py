@@ -19,10 +19,10 @@ class Readout(Fragment):
         self.setattr_result("p")
         self.setattr_result("p_err", display_hints={"error_bar_for": "p"})
 
-        self.setattr_result("pinv")
-        self.setattr_result("pinv_err", display_hints={"error_bar_for": "pinv"})
+        self.setattr_result("z")
+        self.setattr_result("z_err", display_hints={"error_bar_for": "z"})
 
-        self.setattr_result("half")
+        self.setattr_result("half", display_hints={"priority": -1})
 
     def simulate_shots(self, p):
         num_shots = self.num_shots.get()
@@ -39,11 +39,13 @@ class Readout(Fragment):
                 p += 1.0
         p /= num_shots
 
-        self.p.push(p)
-        self.p_err.push(np.sqrt(p * (1 - p) / num_shots))
+        p_err = np.sqrt(p * (1 - p) / num_shots)
 
-        self.pinv.push(1 - p)
-        self.pinv_err.push(np.sqrt(p * (1 - p) / num_shots))
+        self.p.push(p)
+        self.p_err.push(p_err)
+
+        self.z.push(2 * p - 1)
+        self.z_err.push(2 * p_err)
 
         self.half.push(np.random.normal(0.5, 0.05))
 
@@ -52,9 +54,11 @@ class RabiFlopSim(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("readout", Readout)
 
-        self.setattr_param("rabi_freq", FloatParam, "Rabi frequency", 1.0)
-        self.setattr_param("duration", FloatParam, "Pulse duration", 0.5)
-        self.setattr_param("detuning", FloatParam, "Detuning", 0.0)
+        self.setattr_param(
+            "rabi_freq", FloatParam, "Rabi frequency", 1.0 * MHz, unit="MHz")
+        self.setattr_param(
+            "duration", FloatParam, "Pulse duration", 0.5 * us, unit="us")
+        self.setattr_param("detuning", FloatParam, "Detuning", 0.0 * MHz, unit="MHz")
 
     def run_once(self):
         omega0 = 2 * np.pi * self.rabi_freq.get()
@@ -62,7 +66,7 @@ class RabiFlopSim(ExpFragment):
         omega = np.sqrt(omega0**2 + delta**2)
         p = (omega0 / omega * np.sin(omega / 2 * self.duration.get()))**2
         self.readout.simulate_shots(p)
-        time.sleep(1)
+        time.sleep(0.1)
 
 
 ScanRabiFlopSim = make_fragment_scan_exp(RabiFlopSim)
