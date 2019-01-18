@@ -17,19 +17,27 @@ from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis
 logger = logging.getLogger(__name__)
 
 
-class NotEnoughPoints(ValueError):
-    pass
-
-
 def _calc_range_spec(preset_min, preset_max, preset_increment, data):
     sorted_data = np.unique(data)
-    if len(sorted_data) < 2:
-        raise NotEnoughPoints
 
     lower = preset_min if preset_min else sorted_data[0]
     upper = preset_max if preset_max else sorted_data[-1]
-    increment = preset_increment if preset_increment else np.min(sorted_data[1:] -
-                                                                 sorted_data[:-1])
+
+    if preset_increment:
+        increment = preset_increment
+    elif len(sorted_data) > 1:
+        increment = np.min(sorted_data[1:] - sorted_data[:-1])
+    else:
+        # Only one point on this (i.e. all data so far is from one row/column), and no
+        # way to infer what the increment is going to be. To be able to still display
+        # the data as it comes in, fall back on an arbitrary increment so far.
+        #
+        # If we have lower/upper limits, we can at least try to guess a reasonable order
+        # of magnitude.
+        if lower != upper:
+            increment = (upper - lower) / 32
+        else:
+            increment = 1.0
 
     return lower, upper, increment
 
@@ -114,13 +122,8 @@ class _ImagePlot:
 
         # Determine range of x/y values to show and prepare image buffer accordingly if
         # it changed.
-
-        try:
-            x_range = _calc_range_spec(self.x_min, self.x_max, self.x_increment, x_data)
-            y_range = _calc_range_spec(self.y_min, self.y_max, self.y_increment, y_data)
-        except NotEnoughPoints:
-            # Not enough points yet, will retry next time around.
-            return
+        x_range = _calc_range_spec(self.x_min, self.x_max, self.x_increment, x_data)
+        y_range = _calc_range_spec(self.y_min, self.y_max, self.y_increment, y_data)
 
         if x_range != self.x_range or y_range != self.y_range:
             self.x_range = x_range
@@ -131,6 +134,7 @@ class _ImagePlot:
                 (_num_points_in_range(x_range), _num_points_in_range(y_range), 4),
                 0,
                 dtype="ubyte")
+
             self.image_rect = QtCore.QRectF(
                 QtCore.QPointF(x_range[0] - x_range[2] / 2,
                                y_range[0] - y_range[2] / 2),
@@ -152,6 +156,7 @@ class _ImagePlot:
 
         self.image_item.setImage(self.image_data, autoLevels=False)
         if num_skip == 0:
+            # Image size has changed, set plot item size accordingly.
             self.image_item.setRect(self.image_rect)
 
 
