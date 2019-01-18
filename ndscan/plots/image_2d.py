@@ -151,7 +151,7 @@ class _ImagePlot:
 
         cmap = colormaps.plasma
         if self._get_display_hints().get("coordinate_type", "") == "cyclic":
-            cmap = colormaps.cyclic_mygbm_30_95_c78
+            cmap = colormaps.kovesi_c8
         self.image_data[x_inds, y_inds, :] = cmap.map(z_scaled)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
