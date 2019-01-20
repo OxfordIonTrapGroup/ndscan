@@ -233,17 +233,7 @@ class FragmentScanExperiment(EnvExperiment):
         # aborts), so use an exception to signal end of scan.
         with suppress(ScanFinished, TerminationRequested):
             while True:
-                # FIXME: Quick hack to tolerate smoltcp bugs leading to
-                # spurious connection resets. This assumes that whatever
-                # fragment crashed is fine with being restarted without extra
-                # reinitialisation, which is not the case in general (result
-                # channels being half set, etc.).
-                try:
-                    scan_impl()
-                except (ConnectionResetError, ConnectionAbortedError,
-                        BrokenPipeError) as e:
-                    logger.warning("Core device network error, will try to restart: %s",
-                                   e)
+                scan_impl()
                 self.core.comm.close()
                 self.scheduler.pause()
         self._set_completed()
