@@ -7,5 +7,4 @@ setup(
     author='David P. Nadlinger',
     packages=find_packages(),
     package_data={'ndscan': ['icons/*.png', 'icons/*.svg']},
-    entry_points={},
 )
