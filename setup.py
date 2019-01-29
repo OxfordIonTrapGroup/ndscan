@@ -9,7 +9,7 @@ setup(
     author="David Nadlinger",
     packages=find_packages(),
     package_data={"ndscan": ["icons/*.png", "icons/*.svg"]},
-    install_requires={
+    install_requires=[
         "artiq"
-    }
+    ]
 )
