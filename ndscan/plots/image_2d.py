@@ -1,11 +1,9 @@
 """Pseudocolor 2D plot for equidistant data."""
 
-from concurrent.futures import ProcessPoolExecutor
 from itertools import chain, repeat
 import json
 import logging
 import numpy as np
-from oitg import uncertainty_to_string
 import pyqtgraph
 from quamash import QtWidgets, QtCore
 from typing import Dict, Union
@@ -215,7 +213,8 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
             }
             self._install_context_menu(data_names)
 
-            bounds = lambda s: (s.get(n, None) for n in ("min", "max", "increment"))
+            def bounds(schema): 
+                return (schema.get(n, None) for n in ("min", "max", "increment"))
             image_item = pyqtgraph.ImageItem()
             self.addItem(image_item)
             self.plot = _ImagePlot(image_item, data_names[0], *bounds(self.x_schema),

@@ -5,7 +5,7 @@ import asyncio
 import json
 import logging
 import pyqtgraph
-from quamash import QtWidgets, QtCore
+from quamash import QtWidgets
 
 from .plots.rolling_1d import Rolling1DPlotWidget
 from .plots.xy_1d import XY1DPlotWidget
