@@ -1,6 +1,8 @@
 ndscan
 ======
 
+[![Documentation](https://readthedocs.org/projects/pip/badge/?version=latest&style=flat)][1]
+
 This is a framework for composing complex experiments from modular building
 blocks in the [ARTIQ](https://github.com/m-labs/artiq) laboratory control
 system, with particular support for flexible n-dimensional scans.
@@ -58,3 +60,6 @@ Developer notes
    package definition for integration with the continuous integration pipeline
    internal to the Ion Trap Quantum Computing group. The package is not 
    currently published on a public Conda channel, and likely won't ever be.
+
+
+[1]: https://ndscan.readthedocs.io/en/latest/ "Read the Docs build status"
