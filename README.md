@@ -12,6 +12,10 @@ system, with particular support for flexible n-dimensional scans.
 but is expected to be useful in any laboratory environment where complex
 experiments are actively built and debugged.
 
+**`ndscan` is currently largely undocumented pre-alpha software. While it is
+in active use within the Ion Trap Quantum Computing group, tread carefully for
+now.**
+
 
 Getting started
 ---------------
