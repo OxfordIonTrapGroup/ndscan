@@ -29,8 +29,7 @@ ndscan directly from the Git checkout:
     (artiq) $ python setup.py develop
 
 If you haven't already, also install the
-[oitg](http://gitlab.physics.ox.ac.uk/ion-trap/artiq/) package (not available
-externally yet; it is only used for the built-in fitting functions, though).
+[oitg](http://github.com/OxfordIonTrapGroup/oitg) package.
 
 You are then ready to run the sample experiments. Start the ARITQ master
 process as usual
