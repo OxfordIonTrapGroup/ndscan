@@ -1,11 +1,11 @@
 from ndscan.utils import eval_param_default
 
-# Colours to use for data series (RGBA) and associated fit curves.
+# ColorBrewer-inspired to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = [
-    "#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebeada99", "#ffffb399"
+    "#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebada99", "#ffffb399"
 ]
 FIT_COLORS = [
-    "#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebeadadd", "#ffffb3dd"
+    "#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebadadd", "#ffffb3dd"
 ]
 
 
