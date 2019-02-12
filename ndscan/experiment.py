@@ -230,9 +230,10 @@ def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):
         def build(self):
             super().build(lambda: fragment_class(self, []))
 
-    doc = fragment_class.__doc__
-    if not doc:
-        doc = fragment_class.__name__
-    FragmentScanShim.__doc__ = doc
+    # Take on the name of the fragment class to keep result file names informative.
+    FragmentScanShim.__name__ = fragment_class.__name__
+
+    # Use the fragment class docstring to display in the experiment explorer UI.
+    FragmentScanShim.__doc__ = fragment_class.__doc__
 
     return FragmentScanShim
