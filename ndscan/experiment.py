@@ -1,14 +1,15 @@
 from artiq.language import *
 from contextlib import suppress
-import itertools
 import json
 import logging
 import random
 from typing import Callable, Type
 
-from .fragment import ExpFragment, type_string_to_param
+from .fragment import ExpFragment
+from .parameters import type_string_to_param
 from .result_channels import AppendingDatasetSink, ScalarDatasetSink
-from .scan_generator import *
+from .scan_generator import GENERATORS, ScanAxis, ScanSpec
+from .scan_runner import ScanRunner
 from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
@@ -21,10 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class ScanSpecError(Exception):
-    pass
-
-
-class ScanFinished(Exception):
     pass
 
 
@@ -121,12 +118,17 @@ class FragmentScanExperiment(EnvExperiment):
         self._broadcast_metadata()
         self._issue_ccb()
 
-        if not self._scan.axes:
-            self._run_single()
-        else:
-            self._run_scan()
-
-        self._set_completed()
+        with suppress(TerminationRequested):
+            if not self._scan.axes:
+                self._run_single()
+            else:
+                runner = ScanRunner(self)
+                axis_sinks = [
+                    AppendingDatasetSink(self, "ndscan.points.axis_{}".format(i))
+                    for i in range(len(self._scan.axes))
+                ]
+                runner.run(self.fragment, self._scan, axis_sinks)
+            self._set_completed()
 
     def analyze(self):
         pass
@@ -166,146 +168,6 @@ class FragmentScanExperiment(EnvExperiment):
             self._broadcast_point_phase()
             if not self._scan.continuous_without_axes:
                 return
-
-    def _run_scan(self):
-        # TODO: Handle parameters requiring host setup.
-        self.fragment.host_setup()
-
-        points = generate_points(self._scan)
-
-        if will_spawn_kernel(self.fragment.run_once):
-            self._run_scan_on_kernel(points)
-        else:
-            self._run_scan_on_host(points)
-
-    def _run_scan_on_host(self, points):
-        with suppress(TerminationRequested):
-            while True:
-                axis_values = next(points, None)
-                if axis_values is None:
-                    break
-                for i, (a, p) in enumerate(zip(self._scan.axes, axis_values)):
-                    a.param_store.set_value(p)
-                    self.append_to_dataset("ndscan.points.axis_{}".format(i), p)
-
-                self.fragment.device_setup()
-                self.fragment.run_once()
-                self.scheduler.pause()
-            self._set_completed()
-
-    def _run_scan_on_kernel(self, points):
-        # Set up members to be accessed from the kernel through the
-        # _kscan_param_values_chunk RPC call later.
-        self._kscan_points = points
-
-        # Stash away points in current kernel chunk until they have been marked
-        # completed as a quick shortcut to be able to resume from interruptions. This
-        # should be cleaned up a bit later. Alternatively, if we use an (async, but
-        # still) RPC to keep track of points completed, we might as well use it to send
-        # back all the result channel values from the core device in one go.
-        self._kscan_current_chunk = []
-
-        for i, axis in enumerate(self._scan.axes):
-            setattr(self, "_kscan_param_setter_{}".format(i),
-                    axis.param_store.set_value)
-
-        # _kscan_param_values_chunk returns a tuple of lists of values, one for each
-        # scan axis. Synthesize a return type annotation (`def foo(self): -> …`) with
-        # the concrete type for this scan so the compiler can infer the types in
-        # _kscan_impl() correctly.
-        self._kscan_param_values_chunk.__func__.__annotations__ = {
-            "return":
-            TTuple([
-                TList(type_string_to_param(a.param_schema["type"]).CompilerType)
-                for a in self._scan.axes
-            ])
-        }
-
-        # TODO: Implement pausing logic.
-        # FIXME: Replace this with generated code once eval_kernel() is implemented.
-        num_dims = len(self._scan.axes)
-        scan_impl = getattr(self, "_kscan_impl_{}".format(num_dims), None)
-        if scan_impl is None:
-            raise NotImplementedError(
-                "{}-dimensional scans not supported yet".format(num_dims))
-
-        # KLUDGE: Returning tuples of empty lists triggers bug in ARTIQ RPC code (kernel
-        # aborts), so use an exception to signal end of scan.
-        with suppress(ScanFinished, TerminationRequested):
-            while True:
-                scan_impl()
-                self.core.comm.close()
-                self.scheduler.pause()
-        self._set_completed()
-
-    @kernel
-    def _kscan_impl_1(self):
-        while True:
-            (param_values_0, ) = self._kscan_param_values_chunk()
-            for i in range(len(param_values_0)):
-                self._kscan_param_setter_0(param_values_0[i])
-                self._kscan_run_fragment_once()
-                self._kscan_point_completed()
-            if self.scheduler.check_pause():
-                return
-
-    @kernel
-    def _kscan_impl_2(self):
-        while True:
-            param_values_0, param_values_1 = self._kscan_param_values_chunk()
-            for i in range(len(param_values_0)):
-                self._kscan_param_setter_0(param_values_0[i])
-                self._kscan_param_setter_1(param_values_1[i])
-                self._kscan_run_fragment_once()
-                self._kscan_point_completed()
-            if self.scheduler.check_pause():
-                return
-
-    @kernel
-    def _kscan_impl_3(self):
-        while True:
-            param_values_0, param_values_1, param_values_2 =\
-                self._kscan_param_values_chunk()
-            for i in range(len(param_values_0)):
-                self._kscan_param_setter_0(param_values_0[i])
-                self._kscan_param_setter_1(param_values_1[i])
-                self._kscan_param_setter_2(param_values_2[i])
-                self._kscan_run_fragment_once()
-                self._kscan_point_completed()
-            if self.scheduler.check_pause():
-                return
-
-    @kernel
-    def _kscan_run_fragment_once(self):
-        self.fragment.device_setup()
-        self.fragment.run_once()
-
-    def _kscan_param_values_chunk(self):
-        # Chunk size could be chosen adaptively in the future based on wall clock time
-        # per point to provide good responsitivity to pause/terminate requests while
-        # keeping RPC latency overhead low.
-        CHUNK_SIZE = 10
-
-        self._kscan_current_chunk.extend(
-            itertools.islice(self._kscan_points,
-                             CHUNK_SIZE - len(self._kscan_current_chunk)))
-
-        values = tuple([] for _ in self._scan.axes)
-        for p in self._kscan_current_chunk:
-            for i, (value, axis) in enumerate(zip(p, self._scan.axes)):
-                # KLUDGE: Explicitly coerce value to the target type here so we can use
-                # the regular (float) scans for integers until proper support for int
-                # scans is implemented.
-                values[i].append(axis.param_store.coerce(value))
-        if not values[0]:
-            raise ScanFinished
-        return values
-
-    @rpc(flags={"async"})
-    def _kscan_point_completed(self):
-        values = self._kscan_current_chunk.pop(0)
-        for i, v in enumerate(values):
-            self.append_to_dataset("ndscan.points.axis_{}".format(i), v)
 
     def _set_completed(self):
         self.set_dataset("ndscan.completed", True, broadcast=True)
