@@ -60,6 +60,8 @@ Developer notes
    are picked up automatically. It is just not worth spending time to obsess
    or argue about formatting details.
 
+ - Unit tests are run using `python -m unittest -v discover test`.
+
  - `conda` contains a very rudimentary [Conda](https://conda.io/en/latest/)
    package definition for integration with the continuous integration pipeline
    internal to the Ion Trap Quantum Computing group. The package is not 
