@@ -2,7 +2,7 @@ from artiq.language import *
 from collections import OrderedDict
 from copy import deepcopy
 import logging
-from typing import Dict, List, Type
+from typing import Any, Dict, List, Type
 
 from .auto_fit import AutoFitSpec
 from .parameters import *
@@ -64,7 +64,7 @@ class Fragment(HasEnvironment):
                                   "override it to add parameters/result channels.")
 
     def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args,
-                         **kwargs) -> None:
+                         **kwargs) -> Type["Fragment"]:
         assert self._building, ("Can only call setattr_fragment() "
                                 "during build_fragment()")
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
@@ -77,7 +77,7 @@ class Fragment(HasEnvironment):
         return frag
 
     def setattr_param(self, name: str, param_class: Type, description: str, *args,
-                      **kwargs) -> None:
+                      **kwargs) -> ParamHandle:
         assert self._building, "Can only call setattr_param() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
@@ -93,7 +93,7 @@ class Fragment(HasEnvironment):
                              name: str,
                              original_owner,
                              original_name=None,
-                             **kwargs) -> None:
+                             **kwargs) -> ParamHandle:
         assert (self._building
                 ), "Can only call setattr_param_rebind() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
@@ -122,9 +122,9 @@ class Fragment(HasEnvironment):
 
     def setattr_result(self,
                        name: str,
-                       channel_class: Type = FloatChannel,
+                       channel_class: Type[ResultChannel] = FloatChannel,
                        *args,
-                       **kwargs) -> None:
+                       **kwargs) -> ResultChannel:
         assert self._building, "Can only call setattr_result() during build_fragment()"
         assert name.isidentifier(), ("Result channel name must be valid "
                                      "Python identifier")
@@ -198,12 +198,12 @@ class Fragment(HasEnvironment):
     def _stringize_path(self) -> str:
         return "/".join(self._fragment_path)
 
-    def _collect_result_channels(self, channels: dict):
+    def _collect_result_channels(self, channels: dict) -> None:
         channels.update(self._result_channels)
         for s in self._subfragments:
             s._collect_result_channels(channels)
 
-    def _get_dataset_or_set_default(self, key, default):
+    def _get_dataset_or_set_default(self, key, default) -> Any:
         try:
             return self.get_dataset(key)
         except KeyError:
