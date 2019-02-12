@@ -1,7 +1,7 @@
 from itertools import product
 import numpy as np
 import random
-from typing import Dict, List
+from typing import Any, Dict, List
 
 
 class RefiningGenerator:
@@ -94,7 +94,7 @@ class ScanAxis:
         self.generator = generator
         self.param_store = param_store
 
-    def describe(self) -> Dict[str, any]:
+    def describe(self) -> Dict[str, Any]:
         result = {
             "param": self.param_schema,
             "path": self.path,

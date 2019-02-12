@@ -10,7 +10,7 @@ machinery for all the value types.
 
 from artiq.language import *
 from artiq.language import units
-from typing import Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Tuple, Union
 
 from .utils import eval_param_default
 
@@ -194,7 +194,7 @@ class FloatParam:
 
         self.step = step if step is not None else scale / 10.0
 
-    def describe(self) -> Dict[str, any]:
+    def describe(self) -> Dict[str, Any]:
         spec = {"scale": self.scale, "step": self.step}
         if self.min is not None:
             spec["min"] = self.min
@@ -256,7 +256,7 @@ class IntParam:
             raise NotImplementedError(
                 "Non-unity scales not implemented for integer parameters")
 
-    def describe(self) -> Dict[str, any]:
+    def describe(self) -> Dict[str, Any]:
         return {
             "fqn": self.fqn,
             "description": self.description,
@@ -286,7 +286,7 @@ class StringParam:
         self.description = description
         self.default = default
 
-    def describe(self) -> Dict[str, any]:
+    def describe(self) -> Dict[str, Any]:
         return {
             "fqn": self.fqn,
             "description": self.description,

@@ -1,6 +1,6 @@
 import logging
 import oitg.fitting
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from .parameters import ParamHandle
 from .result_channels import ResultChannel
@@ -41,7 +41,7 @@ class AutoFitSpec:
     def __init__(self,
                  fit_type: str,
                  data: Dict[str, Union[ParamHandle, ResultChannel]],
-                 points_of_interest: Union[None, Dict[str, Dict[str, any]]] = None):
+                 points_of_interest: Union[None, Dict[str, Dict[str, Any]]] = None):
         self.fit_type = fit_type
         if fit_type not in FIT_OBJECTS:
             logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
@@ -60,7 +60,7 @@ class AutoFitSpec:
         return True
 
     def describe(self, get_axis_name: Callable[[Tuple[str, str]], str],
-                 get_channel_name: Callable[[str], str]) -> Dict[str, any]:
+                 get_channel_name: Callable[[str], str]) -> Dict[str, Any]:
         def describe_argument(obj):
             if isinstance(obj, ParamHandle):
                 return get_axis_name(obj._store.identity)
