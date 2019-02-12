@@ -213,8 +213,9 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
             }
             self._install_context_menu(data_names)
 
-            def bounds(schema): 
+            def bounds(schema):
                 return (schema.get(n, None) for n in ("min", "max", "increment"))
+
             image_item = pyqtgraph.ImageItem()
             self.addItem(image_item)
             self.plot = _ImagePlot(image_item, data_names[0], *bounds(self.x_schema),
@@ -230,8 +231,8 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
         for d, axis in chain(
                 zip(x_datasets, repeat("x")), zip(y_datasets, repeat("y"))):
             action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
-            action.triggered.connect(
-                lambda *a, d=d: self._set_dataset_from_crosshair(d, axis))
+            action.triggered.connect(lambda *a, d=d: self._set_dataset_from_crosshair(
+                d, axis))
             entries.append(action)
         if len(x_datasets) == 1 and len(y_datasets) == 1:
             action = QtWidgets.QAction("Set both from crosshair".format(d), self)
@@ -259,8 +260,8 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
                 first_action = action
             action.setCheckable(True)
             action.setActionGroup(self.channel_menu_group)
-            action.triggered.connect(
-                lambda *a, name=name: self.plot.activate_channel(name))
+            action.triggered.connect(lambda *a, name=name: self.plot.activate_channel(
+                name))
             entries.append(action)
         if first_action:
             first_action.setChecked(True)

@@ -331,9 +331,11 @@ class FragmentScanExperiment(EnvExperiment):
         axis_identities = [(s.param_schema["fqn"], s.path) for s in self._scan.axes]
         for f in self.fragment.get_default_fits():
             if f.has_data(axis_identities):
-                fits.append(f.describe(
-                    lambda identity: "axis_{}".format(axis_identities.index(identity)),
-                    lambda path: self._channel_dataset_names[path]))
+                fits.append(
+                    f.describe(
+                        lambda identity: "axis_{}".format(
+                            axis_identities.index(identity)), lambda path: self.
+                        _channel_dataset_names[path]))
         set("auto_fit", json.dumps(fits))
 
         channels = {

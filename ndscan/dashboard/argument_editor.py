@@ -427,8 +427,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     def _set_override_line_active(self):
         self._update_param_choice_map()
-        self._add_override_prompt_box.set_choices([(s, 0) for s in
-                                                   self._param_choice_map.keys()])
+        self._add_override_prompt_box.set_choices(
+            [(s, 0) for s in self._param_choice_map.keys()])
 
         self._add_override_button.setEnabled(False)
         self._add_override_button.setVisible(False)
@@ -527,8 +527,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     def _build_shortened_fqns(self):
         self.shortened_fqns = shorten_to_unambiguous_suffixes(
-            self._ndscan_params["schemata"].keys(),
-            lambda fqn, n: ".".join(fqn.split(".")[-(n + 1):]))
+            self._ndscan_params["schemata"].keys(), lambda fqn, n: ".".join(
+                fqn.split(".")[-(n + 1):]))
 
     def _param_display_name(self, fqn, path):
         if not path:
@@ -643,9 +643,8 @@ class FloatOverrideEntry(OverrideEntry):
         self.scan_types = OrderedDict(
             [("Fixed", (self._build_fixed_ui, self._write_override)),
              ("Refining", (self._build_refining_ui, self._write_refining_scan)),
-             ("Linear", (self._build_linear_ui,
-                         self._write_linear_scan)), ("List", (self._build_list_ui,
-                                                              self._write_list_scan))])
+             ("Linear", (self._build_linear_ui, self._write_linear_scan)),
+             ("List", (self._build_list_ui, self._write_list_scan))])
         self.current_scan_type = None
         self.scale = schema.get("spec", {}).get("scale", 1.0)
 
