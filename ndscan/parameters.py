@@ -211,12 +211,12 @@ class FloatParam:
             "spec": spec
         }
 
-    def default_store(self, identity: Tuple[str, str],
-                      get_dataset: Callable) -> FloatParamStore:
+    def eval_default(self, get_dataset: Callable) -> float:
         if type(self.default) is str:
-            value = eval_param_default(self.default, get_dataset)
-        else:
-            value = self.default
+            return eval_param_default(self.default, get_dataset)
+        return self.default
+
+    def make_store(self, identity: Tuple[str, str], value: float) -> FloatParamStore:
         if self.min is not None and value < self.min:
             raise InvalidDefaultError("Value {} below minimum of {}".format(
                 value, self.min))
@@ -267,12 +267,15 @@ class IntParam:
             }
         }
 
-    def default_store(self, identity: Tuple[str, str],
-                      get_dataset: Callable) -> IntParamStore:
+    def eval_default(self, get_dataset: Callable) -> int:
         if type(self.default) is str:
-            value = eval_param_default(self.default, get_dataset)
-        else:
-            value = self.default
+            return eval_param_default(self.default, get_dataset)
+        return self.default
+
+    def make_store(self, identity: Tuple[str, str], value: int) -> FloatParamStore:
+        if self.min is not None and value < self.min:
+            raise InvalidDefaultError("Value {} below minimum of {}".format(
+                value, self.min))
         return IntParamStore(identity, value)
 
 
@@ -294,7 +297,8 @@ class StringParam:
             "default": str(self.default)
         }
 
-    def default_store(self, identity: Tuple[str, str],
-                      get_dataset: Callable) -> StringParamStore:
-        default = eval_param_default(self.default, get_dataset)
-        return StringParamStore(identity, default)
+    def eval_default(self, get_dataset: Callable) -> str:
+        return eval_param_default(self.default, get_dataset)
+
+    def make_store(self, identity: Tuple[str, str], value: str) -> FloatParamStore:
+        return StringParamStore(identity, value)

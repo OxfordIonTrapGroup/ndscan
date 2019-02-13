@@ -110,14 +110,8 @@ def setattr_subscan(owner: Fragment,
     # TODO: Potentially make handles have identity and accept them directly.
     axes = {}
     for i, (param_owner, name) in enumerate(axis_params):
-        param = param_owner._free_params.get(name, None)
-        assert param is not None, "Not a free parameter: '{}'".format(name)
-        del param_owner._free_params[name]
-
-        identity = (param.fqn, param_owner._stringize_path())
-        store = param.default_store(identity, owner._get_dataset_or_set_default)
         handle = getattr(param_owner, name)
-        handle.set_store(store)
+        param, store = param_owner.override_param(name)
 
         # FIXME: Refactor this so we don't needlessly pass None here.
         axes[handle] = ScanAxis(param.describe(), param_owner._fragment_path, store,

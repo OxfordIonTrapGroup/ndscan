@@ -1,6 +1,16 @@
 API documentation
 =================
 
+Fragments
+---------
+
+:mod:`ndscan.fragment` module
++++++++++++++++++++++++++++++
+
+.. automodule:: ndscan.fragment
+    :members:
+
+
 Scan execution
 --------------
 

@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class Fragment(HasEnvironment):
+    """Main building block."""
+
     def build(self, fragment_path: List[str], *args, **kwargs):
         self._fragment_path = fragment_path
         self._subfragments = []
@@ -144,6 +146,29 @@ class Fragment(HasEnvironment):
 
         return channel
 
+    def override_param(self, param_name: str,
+                       initial_value: Any = None) -> Tuple[Any, ParamStore]:
+        """Overrides the parameter with the given name and sets it to the provided value.
+
+        :param param_name: The name of the parameter.
+        :param initial_value: The initial value for the parameter. If ``None``, the
+            default from the parameter schema is used.
+
+        :return: A tuple ``(param, store)`` of the parameter metadata and the newly
+            created :class:`ParamStore` instance that the parameter handles are now
+            bound to.
+        """
+        param = self._free_params.get(param_name, None)
+        assert param is not None, "Not a free parameter: '{}'".format(param_name)
+        del self._free_params[param_name]
+
+        if initial_value is None:
+            initial_value = param.eval_default(self._get_dataset_or_set_default)
+        store = param.make_store((param.fqn, self._stringize_path()), initial_value)
+        handle = getattr(self, param_name)
+        handle.set_store(store)
+        return param, store
+
     def _collect_params(self, params: Dict[str, List[str]],
                         schemata: Dict[str, dict]) -> None:
         """Collect free parameters of this fragment and all its subfragments.
@@ -191,7 +216,8 @@ class Fragment(HasEnvironment):
                     store = o["store"]
             if not store:
                 identity = (param.fqn, self._stringize_path())
-                store = param.default_store(identity, self._get_dataset_or_set_default)
+                value = param.eval_default(self._get_dataset_or_set_default)
+                store = param.make_store(identity, value)
 
             getattr(self, name).set_store(store)
             for handle in self._rebound_subfragment_params.get(name, []):
