@@ -165,8 +165,8 @@ class Fragment(HasEnvironment):
         if initial_value is None:
             initial_value = param.eval_default(self._get_dataset_or_set_default)
         store = param.make_store((param.fqn, self._stringize_path()), initial_value)
-        handle = getattr(self, param_name)
-        handle.set_store(store)
+        for handle in self._get_all_handles_for_param(param_name):
+            handle.set_store(store)
         return param, store
 
     def _collect_params(self, params: Dict[str, List[str]],
@@ -219,12 +219,14 @@ class Fragment(HasEnvironment):
                 value = param.eval_default(self._get_dataset_or_set_default)
                 store = param.make_store(identity, value)
 
-            getattr(self, name).set_store(store)
-            for handle in self._rebound_subfragment_params.get(name, []):
+            for handle in self._get_all_handles_for_param(name):
                 handle.set_store(store)
 
         for s in self._subfragments:
             s.init_params(overrides)
+
+    def _get_all_handles_for_param(self, name: str) -> List[ParamHandle]:
+        return [getattr(self, name)] + self._rebound_subfragment_params.get(name, [])
 
     def _get_always_shown_params(self) -> List[str]:
         return [(p.fqn, self._stringize_path()) for p in self._free_params.values()]
