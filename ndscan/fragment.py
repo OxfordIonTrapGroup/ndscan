@@ -148,7 +148,7 @@ class Fragment(HasEnvironment):
 
     def override_param(self, param_name: str,
                        initial_value: Any = None) -> Tuple[Any, ParamStore]:
-        """Overrides the parameter with the given name and sets it to the provided value.
+        """Override the parameter with the given name and set it to the provided value.
 
         :param param_name: The name of the parameter.
         :param initial_value: The initial value for the parameter. If ``None``, the
