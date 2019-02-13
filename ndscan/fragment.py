@@ -18,10 +18,17 @@ class Fragment(HasEnvironment):
         self._subfragments = []
         self._free_params = OrderedDict()
 
-        #: Maps own attribute name to subfragment handles.
+        #: Maps own attribute name to the ParamHandles of the rebound parameters in
+        #: their original subfragment (currently always only one, as there is only a
+        #: rebinding API that targets single paths).
         self._rebound_subfragment_params = dict()
 
+        #: Maps full path of own result channels to ResultChannel instances.
         self._result_channels = {}
+
+        #: Subfragments the ResultChannels of which should not be re-exported (e.g.
+        #: for subscans).
+        self._absorbed_results_subfragments = set()
 
         klass = self.__class__
         mod = klass.__module__
@@ -91,8 +98,8 @@ class Fragment(HasEnvironment):
 
     def setattr_param_rebind(self,
                              name: str,
-                             original_owner,
-                             original_name=None,
+                             original_owner: Type["Fragment"],
+                             original_name: str = None,
                              **kwargs) -> ParamHandle:
         assert (self._building
                 ), "Can only call setattr_param_rebind() during build_fragment()"
@@ -126,7 +133,7 @@ class Fragment(HasEnvironment):
                        *args,
                        **kwargs) -> ResultChannel:
         assert self._building, "Can only call setattr_result() during build_fragment()"
-        assert name.isidentifier(), ("Result channel name must be valid "
+        assert name.isidentifier(), ("Result channel name must be a valid "
                                      "Python identifier")
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
@@ -169,10 +176,11 @@ class Fragment(HasEnvironment):
         If a relevant override is given, the specified ParamStore is used.
         Otherwise, the default value is evaluated and a new store created.
 
-        This method should be called after build(), but before any of the
-        fragment's user-defined functions are used. FragmentScanExperiment
-        takes care of this, but the function can be called manually if fragments
-        are to be used in other contexts, e.g. from standalone EnvExperiments.
+        This method should be called after :meth:`build`, but before any of the
+        fragment's user-defined functions are used.
+        :class:`ndscan.experiment.FragmentScanExperiment` takes care of this, but the
+        function can be called manually if fragments are to be used in other contexts,
+        e.g. from a standalone ``artiq.language.environment.EnvExperiment``.
         """
         # TODO: Change overrides value type to a named tuple or something else
         # more appropriate than a free-form dict.
@@ -201,6 +209,8 @@ class Fragment(HasEnvironment):
     def _collect_result_channels(self, channels: dict) -> None:
         channels.update(self._result_channels)
         for s in self._subfragments:
+            if s in self._absorbed_results_subfragments:
+                continue
             s._collect_result_channels(channels)
 
     def _get_dataset_or_set_default(self, key, default) -> Any:

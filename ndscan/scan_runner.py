@@ -6,7 +6,7 @@ from .fragment import ExpFragment
 from .parameters import type_string_to_param
 from .result_channels import ResultSink
 from .scan_generator import generate_points, ScanAxis, ScanSpec
-from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
+from .utils import will_spawn_kernel
 
 
 class ScanFinished(Exception):

@@ -8,4 +8,10 @@ Scan execution
 ++++++++++++++++++++++++++++++++
 
 .. automodule:: ndscan.scan_runner
-	:members:
+    :members:
+
+:mod:`ndscan.subscan` module
+++++++++++++++++++++++++++++
+
+.. automodule:: ndscan.subscan
+    :members:
