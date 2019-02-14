@@ -7,9 +7,6 @@ class ResultSink:
     def push(self, value):
         raise NotImplementedError
 
-    def get_all(self):
-        raise NotImplementedError
-
 
 class ArraySink(ResultSink):
     def __init__(self):
