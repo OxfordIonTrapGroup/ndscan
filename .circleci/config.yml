@@ -1,0 +1,13 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: dnadlinger/docker-oitg-artiq@sha256:3ef8dcb89e08f063602c2fc677c2a68e1eada4036cdc995dbddc4a92bfaf4925
+    steps:
+      - checkout
+      - run:
+        name: Verify Flake8 passes
+        command: flake8 examples ndscan test
+      - run:
+        name: Check YAPF doesn't change formatting
+        command: yapf -d -r examples ndscan test
