@@ -1,8 +1,8 @@
 version: 2
-jobs:
-  build:
+
+artiq-docker: &artiq_docker
     docker:
-      - image: dnadlinger/docker-oitg-artiq@sha256:3ef8dcb89e08f063602c2fc677c2a68e1eada4036cdc995dbddc4a92bfaf4925
+      - image: dnadlinger/docker-oitg-artiq@sha256:6f80fca9945a522500ce9e30a9cc3c1b28745d6000ac88502cf18c4c5dbf8da1
 
     # The container is set up such that the correct Conda environment gets
     # activated in ~/.bashrc, but CircleCI seems to override it when not
@@ -10,6 +10,9 @@ jobs:
     environment:
        BASH_ENV: ~/.bashrc
 
+jobs:
+  test:
+    <<: *artiq_docker
     steps:
       - checkout
       - run:
@@ -21,3 +24,48 @@ jobs:
       - run:
           name: Check that YAPF doesn't change formatting
           command: yapf -d -r examples ndscan test
+  docs-build:
+    <<: *artiq_docker
+    steps:
+      - checkout
+      - run:
+          name: Build documentation
+          command: cd docs && make html
+      - persist_to_workspace:
+          root: docs/_build
+          paths: html
+  docs-deploy:
+    docker:
+      - image: node:8.10.0
+    steps:
+      - attach_workspace:
+          at: docs/_build
+      - run:
+          name: Disable jekyll builds
+          command: touch docs/_build/html/.nojekyll
+      - run:
+          name: Install and configure dependencies
+          command: |
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "david.nadlinger@physics.ox.ac.uk"
+            git config user.name "CircleCI builder"
+      - add_ssh_keys:
+          fingerprints:
+            - "f4:33:74:aa:c3:35:f4:49:34:00:01:32:f2:0c:7f:33"
+      - run:
+          name: Deploy docs to gh-pages branch
+          command: gh-pages --dotfiles --message "[skip ci] Update docs" --dist docs/_build/html
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - test
+      - docs-build
+      - docs-deploy:
+          requires:
+            - test
+            - docs-build
+          filters:
+            branches:
+              only: master
