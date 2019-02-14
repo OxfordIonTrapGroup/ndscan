@@ -1,24 +1,25 @@
-ndscan
-======
+ndscan – N-dimensional scans for ARTIQ
+======================================
 
-[![Documentation](https://readthedocs.org/projects/pip/badge/?version=latest&style=flat)][1]
+`ndscan` extends the [ARTIQ](https://github.com/m-labs/artiq) real-time
+laboratory control system with the concept of _fragments_ – building blocks that
+accept parameters and produce result data – and tools for productively working
+with experiments consisting of many such parts. In particular, `ndscan` allows
+users to easily override parameters from anywhere in the system on the fly, and
+to acquire data by iterating over (“scanning”) any number of them at a time.
 
-This is a framework for composing complex experiments from modular building
-blocks in the [ARTIQ](https://github.com/m-labs/artiq) laboratory control
-system, with particular support for flexible n-dimensional scans.
+See the [documentation](https://oxfordiontrapgroup.github.io/ndscan) for more
+information. 
 
-`ndscan` was originally developed by David Nadlinger for use in the Oxford
+**`ndscan` is pre-alpha software. While the system has been carefully
+architected and the library is in active use within the
 [Ion Trap Quantum Computing Group](https://www.physics.ox.ac.uk/research/ion-trap-quantum-computing-group),
-but is expected to be useful in any laboratory environment where complex
-experiments are actively built and debugged.
-
-**`ndscan` is currently largely undocumented pre-alpha software. While it is
-in active use within the Ion Trap Quantum Computing group, tread carefully for
-now.**
+the current implementation is very much a minimum viable product in spirit
+and mostly lacks documentation and tests.**
 
 
-Getting started
----------------
+Quickstart guide
+----------------
 
 To get started with `ndscan`, first prepare a Python 3.5+ environment with
 ARTIQ as usual (Conda or some form of virtualenv is recommended). While the
@@ -68,4 +69,10 @@ Developer notes
    currently published on a public Conda channel, and likely won't ever be.
 
 
-[1]: https://ndscan.readthedocs.io/en/latest/ "Read the Docs build status"
+Contact
+-------
+
+If you are using `ndscan` (or it seems potentially interesting to you), feedback
+would be very much appreciated, either using the
+[GitHub issue tracker](https://github.com/OxfordIonTrapGroup/ndscan/issues)
+or via email at david.nadlinger@physics.ox.ac.uk.
