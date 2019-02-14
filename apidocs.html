@@ -37,17 +37,194 @@
 <h1>API documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="fragments">
 <h2>Fragments<a class="headerlink" href="#fragments" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="ndscan-fragment-module">
-<h3><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.fragment</span></code> module<a class="headerlink" href="#ndscan-fragment-module" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="module-ndscan.fragment">
+<span id="ndscan-fragment-module"></span><h3><a class="reference internal" href="#module-ndscan.fragment" title="ndscan.fragment"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.fragment</span></code></a> module<a class="headerlink" href="#module-ndscan.fragment" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="ndscan.fragment.ExpFragment">
+<em class="property">class </em><code class="descclassname">ndscan.fragment.</code><code class="descname">ExpFragment</code><span class="sig-paren">(</span><em>managers_or_parent</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/fragment.html#ExpFragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.fragment.ExpFragment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ndscan.fragment.Fragment">
+<em class="property">class </em><code class="descclassname">ndscan.fragment.</code><code class="descname">Fragment</code><span class="sig-paren">(</span><em>managers_or_parent</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/fragment.html#Fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.fragment.Fragment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main building block.</p>
+<dl class="method">
+<dt id="ndscan.fragment.Fragment.build">
+<code class="descname">build</code><span class="sig-paren">(</span><em>fragment_path: List[str], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/fragment.html#Fragment.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.fragment.Fragment.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should be implemented by the user to request arguments.</p>
+<p>Other initialization steps such as requesting devices may also be
+performed here.</p>
+<p>There are two situations where the requested devices are replaced by
+<code class="docutils literal notranslate"><span class="pre">DummyDevice()</span></code> and arguments are set to their defaults (or <code class="docutils literal notranslate"><span class="pre">None</span></code>)
+instead: when the repository is scanned to build the list of
+available experiments and when the dataset browser <code class="docutils literal notranslate"><span class="pre">artiq_browser</span></code>
+is used to open or run the analysis stage of an experiment. Do not
+rely on being able to operate on devices or arguments in <a class="reference internal" href="#ndscan.fragment.Fragment.build" title="ndscan.fragment.Fragment.build"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build()</span></code></a>.</p>
+<p>Datasets are read-only in this method.</p>
+<p>Leftover positional and keyword arguments from the constructor are
+forwarded to this method. This is intended for experiments that are
+only meant to be executed programmatically (not from the GUI).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.fragment.Fragment.host_setup">
+<code class="descname">host_setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/fragment.html#Fragment.host_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.fragment.Fragment.host_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before kernel is entered for the first time.</p>
+<p>TODO: Define semantics for multiple invocations.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.fragment.Fragment.init_params">
+<code class="descname">init_params</code><span class="sig-paren">(</span><em>overrides: Dict[str</em>, <em>List[dict]] = {}</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/fragment.html#Fragment.init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.fragment.Fragment.init_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialise free parameters of this fragment and all its subfragments.</p>
+<p>If a relevant override is given, the specified ParamStore is used.
+Otherwise, the default value is evaluated and a new store created.</p>
+<p>This method should be called after <a class="reference internal" href="#ndscan.fragment.Fragment.build" title="ndscan.fragment.Fragment.build"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build()</span></code></a>, but before any of the
+fragment’s user-defined functions are used.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">ndscan.experiment.FragmentScanExperiment</span></code> takes care of this, but the
+function can be called manually if fragments are to be used in other contexts,
+e.g. from a standalone <code class="docutils literal notranslate"><span class="pre">artiq.language.environment.EnvExperiment</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.fragment.Fragment.override_param">
+<code class="descname">override_param</code><span class="sig-paren">(</span><em>param_name: str</em>, <em>initial_value: Any = None</em><span class="sig-paren">)</span> &#x2192; Tuple[Any, ndscan.parameters.ParamStore]<a class="reference internal" href="_modules/ndscan/fragment.html#Fragment.override_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.fragment.Fragment.override_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override the parameter with the given name and set it to the provided value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>param_name</strong> – The name of the parameter.</li>
+<li><strong>initial_value</strong> – The initial value for the parameter. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+default from the parameter schema is used.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A tuple <code class="docutils literal notranslate"><span class="pre">(param,</span> <span class="pre">store)</span></code> of the parameter metadata and the newly
+created <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamStore</span></code> instance that the parameter handles are now
+bound to.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="scan-execution">
 <h2>Scan execution<a class="headerlink" href="#scan-execution" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="ndscan-scan-runner-module">
-<h3><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.scan_runner</span></code> module<a class="headerlink" href="#ndscan-scan-runner-module" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="module-ndscan.scan_runner">
+<span id="ndscan-scan-runner-module"></span><h3><a class="reference internal" href="#module-ndscan.scan_runner" title="ndscan.scan_runner"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.scan_runner</span></code></a> module<a class="headerlink" href="#module-ndscan.scan_runner" title="Permalink to this headline">¶</a></h3>
+<dl class="exception">
+<dt id="ndscan.scan_runner.ScanFinished">
+<em class="property">exception </em><code class="descclassname">ndscan.scan_runner.</code><code class="descname">ScanFinished</code><a class="reference internal" href="_modules/ndscan/scan_runner.html#ScanFinished"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.scan_runner.ScanFinished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used internally to signal that a scan has been successfully completed (points
+exhausted).</p>
+<p>This is a kludge to work around a bug where tuples of empty lists crash the ARTIQ
+RPC code (kernel aborts), and should never be visible to the user.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="ndscan.scan_runner.ScanRunner">
+<em class="property">class </em><code class="descclassname">ndscan.scan_runner.</code><code class="descname">ScanRunner</code><span class="sig-paren">(</span><em>managers_or_parent</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/scan_runner.html#ScanRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.scan_runner.ScanRunner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the actual loop that executes an <code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code> for a specified list
+of scan axes (on either the host or core device, as appropriate).</p>
+<p>Integrates with the ARTIQ scheduler to pause/terminate execution as requested.</p>
+<p>Conceptually, this is only a single function (<code class="docutils literal notranslate"><span class="pre">run()</span></code>), but is wrapped in a class
+to follow the idiomatic ARTIQ kernel/<code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> integration style.</p>
+<dl class="method">
+<dt id="ndscan.scan_runner.ScanRunner.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>fragment: ndscan.fragment.ExpFragment, scan: ndscan.scan_generator.ScanSpec, axis_sinks: List[ndscan.result_channels.ResultSink]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/scan_runner.html#ScanRunner.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.scan_runner.ScanRunner.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a scan of the given fragment, with axes as specified.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fragment</strong> – The fragment to iterate.</li>
+<li><strong>scan</strong> – The specification of scan axis ranges and parameters.</li>
+<li><strong>axis_sinks</strong> – A list of <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultSink</span></code> instances to push the
+coordinates for each scan point to, matching <code class="docutils literal notranslate"><span class="pre">scan.axes</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="ndscan-subscan-module">
-<h3><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.subscan</span></code> module<a class="headerlink" href="#ndscan-subscan-module" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="module-ndscan.subscan">
+<span id="ndscan-subscan-module"></span><h3><a class="reference internal" href="#module-ndscan.subscan" title="ndscan.subscan"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.subscan</span></code></a> module<a class="headerlink" href="#module-ndscan.subscan" title="Permalink to this headline">¶</a></h3>
+<p>Implements subscans, that is, the ability for an <a class="reference internal" href="#ndscan.fragment.ExpFragment" title="ndscan.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">fragment.ExpFragment</span></code></a> to scan
+another child fragment as part of its execution.</p>
+<dl class="class">
+<dt id="ndscan.subscan.Subscan">
+<em class="property">class </em><code class="descclassname">ndscan.subscan.</code><code class="descname">Subscan</code><span class="sig-paren">(</span><em>run_fn: Callable[[ndscan.scan_generator.ScanSpec, List[ndscan.result_channels.ArraySink]], None], possible_axes: Dict[ndscan.parameters.ParamHandle, Tuple[ndscan.scan_generator.ScanAxis]], child_result_sinks: Dict[ndscan.result_channels.ResultChannel, ndscan.result_channels.ArraySink], aggregate_result_channels: Dict[ndscan.result_channels.ResultChannel, ndscan.result_channels.ResultChannel]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/subscan.html#Subscan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.subscan.Subscan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle returned by <a class="reference internal" href="#ndscan.subscan.setattr_subscan" title="ndscan.subscan.setattr_subscan"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a>, allowing the subscan to actually be
+executed.</p>
+<dl class="method">
+<dt id="ndscan.subscan.Subscan.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>generators: List[Tuple[ndscan.parameters.ParamHandle, ndscan.scan_generator.ScanGenerator]], **scan_options</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[ndscan.parameters.ParamHandle, list], Dict[ndscan.result_channels.ResultChannel, list]]<a class="reference internal" href="_modules/ndscan/subscan.html#Subscan.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.subscan.Subscan.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the subscan with the given axis iteration specifications, and return the
+data point coordinates/result channel values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>generators</strong> – The list of scan axes (dimensions). Each element is a tuple
+of parameter to scan (handle must have been passed to
+<a class="reference internal" href="#ndscan.subscan.setattr_subscan" title="ndscan.subscan.setattr_subscan"><code class="xref py py-func docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a> to set up), and the <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanGenerator</span></code> to use
+to generate the points.</li>
+<li><strong>scan_options</strong> – Any extra options to pass to <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanSpec</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A tuple <code class="docutils literal notranslate"><span class="pre">(coordinates,</span> <span class="pre">values)</span></code>, each a dictionary mapping parameter
+handles resp. result channels to their values.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ndscan.subscan.setattr_subscan">
+<code class="descclassname">ndscan.subscan.</code><code class="descname">setattr_subscan</code><span class="sig-paren">(</span><em>owner: ndscan.fragment.Fragment, scan_name: str, fragment: ndscan.fragment.ExpFragment, axis_params: List[Tuple[ndscan.fragment.Fragment, str]], save_results_by_default: bool = True</em><span class="sig-paren">)</span> &#x2192; ndscan.subscan.Subscan<a class="reference internal" href="_modules/ndscan/subscan.html#setattr_subscan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.subscan.setattr_subscan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up a scan for the given subfragment.</p>
+<p>Result channels are set up to expose the scan data in the owning fragment for
+introspectability.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>owner</strong> – The fragment to add the subscan to.</li>
+<li><strong>scan_name</strong> – Name of the scan; appears in result channel names, and the
+<a class="reference internal" href="#ndscan.subscan.Subscan" title="ndscan.subscan.Subscan"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subscan</span></code></a> instance will be available as <code class="docutils literal notranslate"><span class="pre">owner.&lt;scan_name&gt;</span></code>.</li>
+<li><strong>fragment</strong> – The runnable fragment to iterate over in the scan. Must be a
+subfragment of <code class="docutils literal notranslate"><span class="pre">owner</span></code>.</li>
+<li><strong>axis_params</strong> – List of <cite>(fragment, param_name)</cite> tuples defining the axes to be
+scanned. It is possible to specify more axes than are actually used; they will
+be overridden and set to their default values.</li>
+<li><strong>save_results_by_default</strong> – Passed on to all derived result channels.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#ndscan.subscan.Subscan" title="ndscan.subscan.Subscan"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subscan</span></code></a> instance to use to actually execute the scan.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 </div>
 </div>
