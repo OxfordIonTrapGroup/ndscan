@@ -1,0 +1,20 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: dnadlinger/docker-oitg-artiq@sha256:3ef8dcb89e08f063602c2fc677c2a68e1eada4036cdc995dbddc4a92bfaf4925
+
+    # The container is set up such that the correct Conda environment gets
+    # activated in ~/.bashrc, but CircleCI seems to override it when not
+    # explicitly asked to pick it up:
+    environment:
+       BASH_ENV: ~/.bashrc
+
+    steps:
+      - checkout
+      - run:
+          name: Verify that Flake8 passes
+          command: flake8 examples ndscan test
+      - run:
+          name: Check that YAPF doesn't change formatting
+          command: yapf -d -r examples ndscan test
