@@ -13,6 +13,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Run unit tests
+          command: python -m unittest discover -v test
+      - run:
           name: Verify that Flake8 passes
           command: flake8 examples ndscan test
       - run:
