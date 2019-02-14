@@ -1,0 +1,6 @@
+version: 1
+merge:
+  whitelist:
+    labels: ["auto-merge"]
+  method: rebase
+  delete_after_merge: true
