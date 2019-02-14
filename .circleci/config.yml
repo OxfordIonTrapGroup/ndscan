@@ -47,8 +47,8 @@ jobs:
           name: Install and configure dependencies
           command: |
             npm install -g --silent gh-pages@2.0.1
-            git config user.email "david.nadlinger@physics.ox.ac.uk"
-            git config user.name "CircleCI builder"
+            git config --global user.email "david.nadlinger@physics.ox.ac.uk"
+            git config --global user.name "CircleCI builder"
       - add_ssh_keys:
           fingerprints:
             - "f4:33:74:aa:c3:35:f4:49:34:00:01:32:f2:0c:7f:33"
