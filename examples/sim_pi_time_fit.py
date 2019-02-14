@@ -1,4 +1,3 @@
-from artiq.language import *
 from ndscan.experiment import make_fragment_scan_exp
 from ndscan.fragment import ExpFragment
 from ndscan.scan_generator import LinearGenerator
