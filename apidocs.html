@@ -86,6 +86,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#fragments">Fragments</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-ndscan.fragment"><code class="docutils literal notranslate"><span class="pre">ndscan.fragment</span></code> module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-ndscan.parameters"><code class="docutils literal notranslate"><span class="pre">ndscan.parameters</span></code> module</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#scan-execution">Scan execution</a><ul>
@@ -238,6 +239,61 @@ bound to.</p>
 </table>
 </dd></dl>
 
+</dd></dl>
+
+</div>
+<div class="section" id="module-ndscan.parameters">
+<span id="ndscan-parameters-module"></span><h3><a class="reference internal" href="#module-ndscan.parameters" title="ndscan.parameters"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.parameters</span></code></a> module<a class="headerlink" href="#module-ndscan.parameters" title="Permalink to this headline">¶</a></h3>
+<p>Fragment-side parameter containers.</p>
+<p>The ARTIQ compiler does not support templates or generics (neither in the sense
+of typing.Generic, nor any other), yet requires the inferred types/signatures
+of fields to match across all instances of a class. Hence, we have no option
+but to hang our heads in shame and manually instantiate the parameter handling
+machinery for all the value types.</p>
+<dl class="class">
+<dt id="ndscan.parameters.FloatParamStore">
+<em class="property">class </em><code class="descclassname">ndscan.parameters.</code><code class="descname">FloatParamStore</code><span class="sig-paren">(</span><em>identity: Tuple[str, str], value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/parameters.html#FloatParamStore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.parameters.FloatParamStore" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ndscan.parameters.IntParamStore">
+<em class="property">class </em><code class="descclassname">ndscan.parameters.</code><code class="descname">IntParamStore</code><span class="sig-paren">(</span><em>identity: Tuple[str, str], value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/parameters.html#IntParamStore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.parameters.IntParamStore" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="exception">
+<dt id="ndscan.parameters.InvalidDefaultError">
+<em class="property">exception </em><code class="descclassname">ndscan.parameters.</code><code class="descname">InvalidDefaultError</code><a class="reference internal" href="_modules/ndscan/parameters.html#InvalidDefaultError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.parameters.InvalidDefaultError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when a default value is outside the specified range of valid parameter
+values.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="ndscan.parameters.ParamStore">
+<em class="property">class </em><code class="descclassname">ndscan.parameters.</code><code class="descname">ParamStore</code><span class="sig-paren">(</span><em>identity: Tuple[str, str], value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/parameters.html#ParamStore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.parameters.ParamStore" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>identity</strong> – <code class="docutils literal notranslate"><span class="pre">(fqn,</span> <span class="pre">path_spec)</span></code> pair representing the identity of this param
+store, i.e. the override/default value it was created for.</li>
+<li><strong>value</strong> – The initial value.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="ndscan.parameters.StringParamStore">
+<em class="property">class </em><code class="descclassname">ndscan.parameters.</code><code class="descname">StringParamStore</code><span class="sig-paren">(</span><em>identity: Tuple[str, str], value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/parameters.html#StringParamStore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.parameters.StringParamStore" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ndscan.parameters.type_string_to_param">
+<code class="descclassname">ndscan.parameters.</code><code class="descname">type_string_to_param</code><span class="sig-paren">(</span><em>name: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/parameters.html#type_string_to_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.parameters.type_string_to_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolves param schema type strings to Param implementations.</p>
 </dd></dl>
 
 </div>
