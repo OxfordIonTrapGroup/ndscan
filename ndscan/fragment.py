@@ -42,7 +42,7 @@ class Fragment(HasEnvironment):
         self.fqn = mod + "." + klass.__qualname__
 
         # Mangle the arguments into the FQN, so they can be used to parametrise
-        # the parameter definitions.=
+        # the parameter definitions.
         # TODO: Also handle kwargs, make sure this generates valid identifiers.
         for a in args:
             self.fqn += "_"
@@ -73,7 +73,7 @@ class Fragment(HasEnvironment):
                                   "override it to add parameters/result channels.")
 
     def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args,
-                         **kwargs) -> Type["Fragment"]:
+                         **kwargs) -> "Fragment":
         assert self._building, ("Can only call setattr_fragment() "
                                 "during build_fragment()")
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
@@ -100,7 +100,7 @@ class Fragment(HasEnvironment):
 
     def setattr_param_rebind(self,
                              name: str,
-                             original_owner: Type["Fragment"],
+                             original_owner: "Fragment",
                              original_name: str = None,
                              **kwargs) -> ParamHandle:
         assert (self._building
@@ -175,7 +175,7 @@ class Fragment(HasEnvironment):
 
         :param params: Dictionary to write the list of FQNs for each fragment to,
             indexed by the fragment path in string form.
-        :param schemeta: Dictionary to write the schemata for each parameter to,
+        :param schemata: Dictionary to write the schemata for each parameter to,
             indexed by FQN.
         """
         path = "/".join(self._fragment_path)
@@ -228,7 +228,7 @@ class Fragment(HasEnvironment):
     def _get_all_handles_for_param(self, name: str) -> List[ParamHandle]:
         return [getattr(self, name)] + self._rebound_subfragment_params.get(name, [])
 
-    def _get_always_shown_params(self) -> List[str]:
+    def _get_always_shown_params(self) -> List[Tuple[str, str]]:
         return [(p.fqn, self._stringize_path()) for p in self._free_params.values()]
 
     def _stringize_path(self) -> str:

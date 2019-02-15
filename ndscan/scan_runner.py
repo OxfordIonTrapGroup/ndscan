@@ -1,7 +1,7 @@
 from artiq.language import *
 from contextlib import suppress
 from itertools import islice
-from typing import List
+from typing import List, Iterator, Tuple
 from .fragment import ExpFragment
 from .parameters import type_string_to_param
 from .result_channels import ResultSink
@@ -62,7 +62,7 @@ class ScanRunner(HasEnvironment):
             self._fragment.run_once) else self._run_scan_on_host
         run_impl(points, scan.axes, axis_sinks)
 
-    def _run_scan_on_host(self, points: list, axes: List[ScanAxis],
+    def _run_scan_on_host(self, points: Iterator[Tuple], axes: List[ScanAxis],
                           axis_sinks: List[ResultSink]) -> None:
         while True:
             axis_values = next(points, None)

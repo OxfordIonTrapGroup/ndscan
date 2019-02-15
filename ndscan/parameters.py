@@ -272,7 +272,7 @@ class IntParam:
             return eval_param_default(self.default, get_dataset)
         return self.default
 
-    def make_store(self, identity: Tuple[str, str], value: int) -> FloatParamStore:
+    def make_store(self, identity: Tuple[str, str], value: int) -> IntParamStore:
         if self.min is not None and value < self.min:
             raise InvalidDefaultError("Value {} below minimum of {}".format(
                 value, self.min))
@@ -300,5 +300,5 @@ class StringParam:
     def eval_default(self, get_dataset: Callable) -> str:
         return eval_param_default(self.default, get_dataset)
 
-    def make_store(self, identity: Tuple[str, str], value: str) -> FloatParamStore:
+    def make_store(self, identity: Tuple[str, str], value: str) -> StringParamStore:
         return StringParamStore(identity, value)
