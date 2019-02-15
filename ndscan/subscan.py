@@ -9,8 +9,8 @@ from typing import Callable, Dict, List, Tuple
 from .fragment import ExpFragment, Fragment
 from .parameters import ParamHandle
 from .result_channels import ArraySink, OpaqueChannel, ResultChannel
-from .scan_generator import ScanAxis, ScanGenerator, ScanSpec
-from .scan_runner import ScanRunner
+from .scan_generator import ScanGenerator, ScanOptions
+from .scan_runner import ScanAxis, ScanRunner, ScanSpec
 from .utils import shorten_to_unambiguous_suffixes
 
 
@@ -20,24 +20,26 @@ class Subscan:
     """
 
     def __init__(self, run_fn: Callable[[ScanSpec, List[ArraySink]], None],
-                 possible_axes: Dict[ParamHandle, Tuple[ScanAxis]],
+                 possible_axes: Dict[ParamHandle, ScanAxis],
                  child_result_sinks: Dict[ResultChannel, ArraySink],
                  aggregate_result_channels: Dict[ResultChannel, ResultChannel]):
         self._run_fn = run_fn
+        self._possible_axes = possible_axes
         self._child_result_sinks = child_result_sinks
         self._aggregate_result_channels = aggregate_result_channels
-        self._possible_axes = possible_axes
 
-    def run(self, generators: List[Tuple[ParamHandle, ScanGenerator]], **scan_options
+    def run(self,
+            axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
+            options=ScanOptions()
             ) -> Tuple[Dict[ParamHandle, list], Dict[ResultChannel, list]]:
         """Run the subscan with the given axis iteration specifications, and return the
         data point coordinates/result channel values.
 
-        :param generators: The list of scan axes (dimensions). Each element is a tuple
+        :param axes: The list of scan axes (dimensions). Each element is a tuple
             of parameter to scan (handle must have been passed to
             :func:`setattr_subscan` to set up), and the :class:`ScanGenerator` to use
             to generate the points.
-        :param scan_options: Any extra options to pass to :class:`ScanSpec`.
+        :param options: Scan options to pass to :class:`ScanSpec`.
 
         :return: A tuple ``(coordinates, values)``, each a dictionary mapping parameter
             handles resp. result channels to their values.
@@ -46,25 +48,18 @@ class Subscan:
         for sink in self._child_result_sinks.values():
             sink.clear()
 
-        scan_axes = []
+        axes = []
+        generators = []
         coordinate_sinks = OrderedDict()
 
-        for param_handle, generator in generators:
+        for param_handle, generator in axis_generators:
             axis = self._possible_axes.get(param_handle, None)
             assert axis is not None, "Axis not registered in setattr_subscan()"
-            axis.generator = generator
-            scan_axes.append(axis)
+            axes.append(axis)
+            generators.append(generator)
             coordinate_sinks[param_handle] = ArraySink()
 
-        # FIXME: Find a better abstraction for this, e.g. a ScanOptions class.
-        options = {
-            "num_repeats": 1,
-            "continuous_without_axes": False,
-            "randomise_order_globally": False,
-            "seed": None
-        }
-        options.update(scan_options)
-        spec = ScanSpec(scan_axes, **options)
+        spec = ScanSpec(axes, generators, options)
         self._run_fn(spec, list(coordinate_sinks.values()))
 
         values = {}
@@ -113,9 +108,8 @@ def setattr_subscan(owner: Fragment,
         handle = getattr(param_owner, name)
         param, store = param_owner.override_param(name)
 
-        # FIXME: Refactor this so we don't needlessly pass None here.
-        axes[handle] = ScanAxis(param.describe(), param_owner._fragment_path, store,
-                                None)
+        axes[handle] = ScanAxis(param.describe(), "/".join(param_owner._fragment_path),
+                                store)
 
         # We simply generate sequential result channels to be sure we have enough.
         # Alternatives:

@@ -1,11 +1,11 @@
 from artiq.language import *
 from contextlib import suppress
 from itertools import islice
-from typing import List, Iterator, Tuple
+from typing import Any, Dict, List, Iterator, Tuple
 from .fragment import ExpFragment
-from .parameters import type_string_to_param
+from .parameters import ParamStore, type_string_to_param
 from .result_channels import ResultSink
-from .scan_generator import generate_points, ScanAxis, ScanSpec
+from .scan_generator import generate_points, ScanGenerator, ScanOptions
 from .utils import will_spawn_kernel
 
 
@@ -17,6 +17,22 @@ class ScanFinished(Exception):
     RPC code (kernel aborts), and should never be visible to the user.
     """
     pass
+
+
+class ScanAxis:
+    def __init__(self, param_schema: Dict[str, Any], path: str,
+                 param_store: ParamStore):
+        self.param_schema = param_schema
+        self.path = path
+        self.param_store = param_store
+
+
+class ScanSpec:
+    def __init__(self, axes: List[ScanAxis], generators: List[ScanGenerator],
+                 options: ScanOptions):
+        self.axes = axes
+        self.generators = generators
+        self.options = options
 
 
 class ScanRunner(HasEnvironment):
@@ -39,12 +55,12 @@ class ScanRunner(HasEnvironment):
         self.setattr_device("core")
         self.setattr_device("scheduler")
 
-    def run(self, fragment: ExpFragment, scan: ScanSpec,
+    def run(self, fragment: ExpFragment, spec: ScanSpec,
             axis_sinks: List[ResultSink]) -> None:
         """Run a scan of the given fragment, with axes as specified.
 
         :param fragment: The fragment to iterate.
-        :param scan: The specification of scan axis ranges and parameters.
+        :param options: The options for the scan generator.
         :param axis_sinks: A list of :class:`ResultSink` instances to push the
             coordinates for each scan point to, matching ``scan.axes``.
         """
@@ -56,11 +72,11 @@ class ScanRunner(HasEnvironment):
         # TODO: Handle parameters requiring host setup.
         self._fragment.host_setup()
 
-        points = generate_points(scan)
+        points = generate_points(spec.generators, spec.options)
 
         run_impl = self._run_scan_on_core_device if will_spawn_kernel(
             self._fragment.run_once) else self._run_scan_on_host
-        run_impl(points, scan.axes, axis_sinks)
+        run_impl(points, spec.axes, axis_sinks)
 
     def _run_scan_on_host(self, points: Iterator[Tuple], axes: List[ScanAxis],
                           axis_sinks: List[ResultSink]) -> None:
