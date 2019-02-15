@@ -10,6 +10,12 @@ Fragments
 .. automodule:: ndscan.fragment
     :members:
 
+:mod:`ndscan.parameters` module
++++++++++++++++++++++++++++++++
+
+.. automodule:: ndscan.parameters
+    :members:
+
 
 Scan execution
 --------------

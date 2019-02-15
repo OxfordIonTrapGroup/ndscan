@@ -16,20 +16,25 @@ from .utils import eval_param_default
 
 
 def type_string_to_param(name: str):
-    """Resolves param schema type strings to *Param implementations."""
+    """Resolves param schema type strings to Param implementations."""
     return {"float": FloatParam, "int": IntParam, "string": StringParam}[name]
 
 
 class InvalidDefaultError(ValueError):
+    """Raised when a default value is outside the specified range of valid parameter
+    values."""
     pass
 
 
 class ParamStore:
+    """
+    :param identity: ``(fqn, path_spec)`` pair representing the identity of this param
+        store, i.e. the override/default value it was created for.
+    :param value: The initial value.
+    """
+
     def __init__(self, identity: Tuple[str, str], value):
         self.identity = identity
-        """(fqn, path_spec) pair representing the identity of this param store,
-        i.e. the override/default value it was created for.
-        """
 
         # KLUDGE: Work around type inference failing for empty lists.
         self._handles = []
