@@ -1,8 +1,8 @@
 from artiq.language import units
-from typing import Callable, List
+from typing import Any, Callable, Dict, List
 
 
-def path_matches_spec(path: List[str], spec: str):
+def path_matches_spec(path: List[str], spec: str) -> bool:
     # TODO: Think about how we want to match.
     if spec == "*":
         return True
@@ -12,21 +12,21 @@ def path_matches_spec(path: List[str], spec: str):
     return "/".join(path) == spec
 
 
-def strip_prefix(string: str, prefix: str):
+def strip_prefix(string: str, prefix: str) -> str:
     if string.startswith(prefix):
         return string[len(prefix):]
     return string
 
 
-def will_spawn_kernel(func):
+def will_spawn_kernel(func) -> bool:
     if not hasattr(func, "artiq_embedded"):
         return False
     meta = func.artiq_embedded
     return meta.core_name is not None and not meta.portable
 
 
-def shorten_to_unambiguous_suffixes(fqns: List[str],
-                                    get_last_n_parts: Callable[[str, int], str]):
+def shorten_to_unambiguous_suffixes(
+        fqns: List[str], get_last_n_parts: Callable[[str, int], str]) -> Dict[str, str]:
     short_to_fqns = dict()
     shortened_fqns = dict()
 
@@ -56,7 +56,7 @@ def shorten_to_unambiguous_suffixes(fqns: List[str],
     return shortened_fqns
 
 
-def eval_param_default(value: str, get_dataset: Callable):
+def eval_param_default(value: str, get_dataset: Callable) -> Any:
     env = {name: getattr(units, name) for name in units.__all__}
     env.update({"dataset": get_dataset})
     return eval(value, env)

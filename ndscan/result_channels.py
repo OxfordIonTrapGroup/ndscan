@@ -1,6 +1,6 @@
 from artiq.language import *
 import artiq.language.units
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 class ResultSink:
@@ -55,7 +55,7 @@ class ScalarDatasetSink(ResultSink, HasEnvironment):
 
 class ResultChannel:
     def __init__(self,
-                 path: List[str],
+                 path: str,
                  description: str = "",
                  display_hints: Dict[str, Any] = {},
                  save_by_default: bool = True):
@@ -98,7 +98,7 @@ class ResultChannel:
 
 class NumericChannel(ResultChannel):
     def __init__(self,
-                 path: List[str],
+                 path: str,
                  description: str = "",
                  display_hints: Dict[str, Any] = {},
                  min=None,

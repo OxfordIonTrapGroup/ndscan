@@ -303,8 +303,8 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
                         continue
                     if spec["data"]["y"] != "channel_" + name:
                         continue
-                    e = spec["data"].get("y_err", None)
-                    if e and e != ("channel_" + error_bar_name):
+                    err = spec["data"].get("y_err", None)
+                    if err and err != ("channel_" + error_bar_name):
                         continue
 
                     fit_spec = spec

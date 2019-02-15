@@ -11,7 +11,7 @@ class ScanGenerator:
     def points_for_level(self, level: int, rng=None) -> List[Any]:
         raise NotImplementedError
 
-    def describe_limits(self, target: Dict[str, any]) -> None:
+    def describe_limits(self, target: Dict[str, Any]) -> None:
         raise NotImplementedError
 
 
@@ -37,7 +37,7 @@ class RefiningGenerator(ScanGenerator):
 
         return points
 
-    def describe_limits(self, target: Dict[str, any]) -> None:
+    def describe_limits(self, target: Dict[str, Any]) -> None:
         target["min"] = self.lower
         target["max"] = self.upper
 
@@ -62,7 +62,7 @@ class LinearGenerator(ScanGenerator):
             rng.shuffle(points)
         return points
 
-    def describe_limits(self, target: Dict[str, any]) -> None:
+    def describe_limits(self, target: Dict[str, Any]) -> None:
         target["min"] = min(self.start, self.stop)
         target["max"] = max(self.start, self.stop)
         target["increment"] = abs(self.stop - self.start) / (self.num_points - 1)
@@ -84,7 +84,7 @@ class ListGenerator(ScanGenerator):
             rng.shuffle(values)
         return values
 
-    def describe_limits(self, target: Dict[str, any]) -> None:
+    def describe_limits(self, target: Dict[str, Any]) -> None:
         values = np.array(self.values)
         if np.issubdtype(values.dtype, np.number):
             target["min"] = np.min(values)
@@ -99,7 +99,7 @@ GENERATORS = {
 
 
 class ScanAxis:
-    def __init__(self, param_schema: str, path: str, param_store,
+    def __init__(self, param_schema: Dict[str, Any], path: str, param_store,
                  generator: ScanGenerator):
         self.param_schema = param_schema
         self.path = path
