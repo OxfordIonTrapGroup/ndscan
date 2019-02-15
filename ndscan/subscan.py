@@ -162,3 +162,4 @@ def setattr_subscan(owner: Fragment,
     run_fn = partial(ScanRunner(owner).run, fragment)
     subscan = Subscan(run_fn, axes, result_array_sinks, result_array_channels)
     setattr(owner, scan_name, subscan)
+    return subscan
