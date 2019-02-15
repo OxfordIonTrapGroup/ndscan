@@ -98,31 +98,12 @@ GENERATORS = {
 }
 
 
-class ScanAxis:
-    def __init__(self, param_schema: Dict[str, Any], path: str, param_store,
-                 generator: ScanGenerator):
-        self.param_schema = param_schema
-        self.path = path
-        self.generator = generator
-        self.param_store = param_store
-
-    def describe(self) -> Dict[str, Any]:
-        result = {
-            "param": self.param_schema,
-            "path": self.path,
-        }
-        self.generator.describe_limits(result)
-        return result
-
-
-class ScanSpec:
+class ScanOptions:
     def __init__(self,
-                 axes: List[ScanAxis],
-                 num_repeats: int,
-                 continuous_without_axes: bool,
-                 randomise_order_globally: bool,
+                 num_repeats: int = 1,
+                 continuous_without_axes: bool = False,
+                 randomise_order_globally: bool = False,
                  seed=None):
-        self.axes = axes
         self.num_repeats = num_repeats
         self.continuous_without_axes = continuous_without_axes
         self.randomise_order_globally = randomise_order_globally
@@ -132,20 +113,19 @@ class ScanSpec:
         self.seed = seed
 
 
-def generate_points(scan: ScanSpec):
-    rng = np.random.RandomState(scan.seed)
+def generate_points(axis_generators: List[ScanGenerator], options: ScanOptions):
+    rng = np.random.RandomState(options.seed)
 
     # Stores computed coordinates for each axis, indexed first by
     # axis order, then by level.
-    axis_level_points = [[] for _ in scan.axes]
+    axis_level_points = [[] for _ in axis_generators]
 
     max_level = 0
     while True:
         found_new_levels = False
-        for i, a in enumerate(scan.axes[::-1]):
-            if a.generator.has_level(max_level):
-                axis_level_points[i].append(
-                    a.generator.points_for_level(max_level, rng))
+        for i, a in enumerate(axis_generators[::-1]):
+            if a.has_level(max_level):
+                axis_level_points[i].append(a.points_for_level(max_level, rng))
                 found_new_levels = True
 
         if not found_new_levels:
@@ -161,8 +141,8 @@ def generate_points(scan: ScanSpec):
             tp = product(*(p[l] for (l, p) in zip(axis_levels, axis_level_points)))
             points.extend(tp)
 
-        for _ in range(scan.num_repeats):
-            if scan.randomise_order_globally:
+        for _ in range(options.num_repeats):
+            if options.randomise_order_globally:
                 rng.shuffle(points)
 
             for p in points:

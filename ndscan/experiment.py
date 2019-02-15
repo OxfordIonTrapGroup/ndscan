@@ -8,8 +8,8 @@ from typing import Callable, Type
 from .fragment import ExpFragment
 from .parameters import type_string_to_param
 from .result_channels import AppendingDatasetSink, ScalarDatasetSink
-from .scan_generator import GENERATORS, ScanAxis, ScanSpec
-from .scan_runner import ScanRunner
+from .scan_generator import GENERATORS, ScanOptions
+from .scan_runner import ScanAxis, ScanRunner, ScanSpec
 from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
@@ -64,6 +64,7 @@ class FragmentScanExperiment(EnvExperiment):
 
         scan = self._params.get("scan", {})
 
+        generators = []
         axes = []
         for axspec in scan["axes"]:
             generator_class = GENERATORS.get(axspec["type"], None)
@@ -71,6 +72,7 @@ class FragmentScanExperiment(EnvExperiment):
                 raise ScanSpecError("Axis type '{}' not implemented".format(
                     axspec["type"]))
             generator = generator_class(**axspec["range"])
+            generators.append(generator)
 
             fqn = axspec["fqn"]
             pathspec = axspec["path"]
@@ -79,14 +81,12 @@ class FragmentScanExperiment(EnvExperiment):
             store = store_type((fqn, pathspec),
                                generator.points_for_level(0, random)[0])
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
-            axes.append(ScanAxis(self.schemata[fqn], pathspec, store, generator))
+            axes.append(ScanAxis(self.schemata[fqn], pathspec, store))
 
-        num_repeats = scan.get("num_repeats", 1)
-        continuous_without_axes = scan.get("continuous_without_axes", True)
-        randomise_order_globally = scan.get("randomise_order_globally", False)
-
-        self._scan = ScanSpec(axes, num_repeats, continuous_without_axes,
-                              randomise_order_globally)
+        options = ScanOptions(
+            scan.get("num_repeats", 1), scan.get("continuous_without_axes", True),
+            scan.get("randomise_order_globally", False))
+        self._scan = ScanSpec(axes, generators, options)
 
         self.fragment.init_params(param_stores)
 
@@ -144,7 +144,7 @@ class FragmentScanExperiment(EnvExperiment):
                         self.core.comm.close()
                     else:
                         self._continuous_loop()
-                    if not self._scan.continuous_without_axes:
+                    if not self._scan.options.continuous_without_axes:
                         return
                     self.scheduler.pause()
         finally:
@@ -166,7 +166,7 @@ class FragmentScanExperiment(EnvExperiment):
                 self.fragment.device_reset()
             self.fragment.run_once()
             self._broadcast_point_phase()
-            if not self._scan.continuous_without_axes:
+            if not self._scan.options.continuous_without_axes:
                 return
 
     def _set_completed(self):
@@ -180,10 +180,16 @@ class FragmentScanExperiment(EnvExperiment):
         set("rid", self.scheduler.rid)
         set("completed", False)
 
-        axes = [ax.describe() for ax in self._scan.axes]
-        set("axes", json.dumps(axes))
+        axis_specs = [{
+            "param": ax.param_schema,
+            "path": ax.path,
+        } for ax in self._scan.axes]
+        for ax, gen in zip(axis_specs, self._scan.generators):
+            gen.describe_limits(ax)
 
-        set("seed", self._scan.seed)
+        set("axes", json.dumps(axis_specs))
+
+        set("seed", self._scan.options.seed)
 
         # KLDUGE: Broadcast auto_fit before channels to allow simpler implementation
         # in current fit applet. As the applet implementation grows more sophisticated
