@@ -149,11 +149,11 @@
 <span></span><span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">suppress</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">islice</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">.fragment</span> <span class="k">import</span> <span class="n">ExpFragment</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">type_string_to_param</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">type_string_to_param</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="n">ResultSink</span>
-<span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">generate_points</span><span class="p">,</span> <span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanSpec</span>
+<span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">generate_points</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">will_spawn_kernel</span>
 
 
@@ -165,6 +165,22 @@
 <span class="sd">    RPC code (kernel aborts), and should never be visible to the user.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span></div>
+
+
+<span class="k">class</span> <span class="nc">ScanAxis</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_schema</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">param_store</span><span class="p">:</span> <span class="n">ParamStore</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_schema</span> <span class="o">=</span> <span class="n">param_schema</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_store</span> <span class="o">=</span> <span class="n">param_store</span>
+
+
+<span class="k">class</span> <span class="nc">ScanSpec</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span> <span class="n">generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanGenerator</span><span class="p">],</span>
+                 <span class="n">options</span><span class="p">:</span> <span class="n">ScanOptions</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generators</span> <span class="o">=</span> <span class="n">generators</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">options</span>
 
 
 <div class="viewcode-block" id="ScanRunner"><a class="viewcode-back" href="../../apidocs.html#ndscan.scan_runner.ScanRunner">[docs]</a><span class="k">class</span> <span class="nc">ScanRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
@@ -187,12 +203,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;scheduler&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ScanRunner.run"><a class="viewcode-back" href="../../apidocs.html#ndscan.scan_runner.ScanRunner.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">scan</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span>
+<div class="viewcode-block" id="ScanRunner.run"><a class="viewcode-back" href="../../apidocs.html#ndscan.scan_runner.ScanRunner.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span>
             <span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Run a scan of the given fragment, with axes as specified.</span>
 
 <span class="sd">        :param fragment: The fragment to iterate.</span>
-<span class="sd">        :param scan: The specification of scan axis ranges and parameters.</span>
+<span class="sd">        :param options: The options for the scan generator.</span>
 <span class="sd">        :param axis_sinks: A list of :class:`ResultSink` instances to push the</span>
 <span class="sd">            coordinates for each scan point to, matching ``scan.axes``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -204,11 +220,11 @@
         <span class="c1"># TODO: Handle parameters requiring host setup.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
 
-        <span class="n">points</span> <span class="o">=</span> <span class="n">generate_points</span><span class="p">(</span><span class="n">scan</span><span class="p">)</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">generate_points</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">generators</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
         <span class="n">run_impl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_core_device</span> <span class="k">if</span> <span class="n">will_spawn_kernel</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_host</span>
-        <span class="n">run_impl</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">scan</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">)</span></div>
+        <span class="n">run_impl</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_run_scan_on_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">],</span> <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
                           <span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
