@@ -13,7 +13,8 @@ from mock_environment import ExpFragmentCase
 class Scan1DFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("child", EchoFragment)
-        setattr_subscan(self, "scan", self.child, [(self.child, "value")])
+        scan = setattr_subscan(self, "scan", self.child, [(self.child, "value")])
+        assert self.scan == scan
 
     def run_once(self):
         return self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))])
