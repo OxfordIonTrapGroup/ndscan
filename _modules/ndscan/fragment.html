@@ -190,7 +190,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">fqn</span> <span class="o">=</span> <span class="n">mod</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">klass</span><span class="o">.</span><span class="vm">__qualname__</span>
 
         <span class="c1"># Mangle the arguments into the FQN, so they can be used to parametrise</span>
-        <span class="c1"># the parameter definitions.=</span>
+        <span class="c1"># the parameter definitions.</span>
         <span class="c1"># TODO: Also handle kwargs, make sure this generates valid identifiers.</span>
         <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fqn</span> <span class="o">+=</span> <span class="s2">&quot;_&quot;</span>
@@ -221,7 +221,7 @@
                                   <span class="s2">&quot;override it to add parameters/result channels.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">setattr_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">]:</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">:</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Can only call setattr_fragment() &quot;</span>
                                 <span class="s2">&quot;during build_fragment()&quot;</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="s2">&quot;Subfragment name must be valid Python identifier&quot;</span>
@@ -248,7 +248,7 @@
 
     <span class="k">def</span> <span class="nf">setattr_param_rebind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                             <span class="n">original_owner</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">],</span>
+                             <span class="n">original_owner</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span>
                              <span class="n">original_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                              <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamHandle</span><span class="p">:</span>
         <span class="k">assert</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_building</span>
@@ -323,7 +323,7 @@
 
 <span class="sd">        :param params: Dictionary to write the list of FQNs for each fragment to,</span>
 <span class="sd">            indexed by the fragment path in string form.</span>
-<span class="sd">        :param schemeta: Dictionary to write the schemata for each parameter to,</span>
+<span class="sd">        :param schemata: Dictionary to write the schemata for each parameter to,</span>
 <span class="sd">            indexed by FQN.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">)</span>
@@ -376,7 +376,7 @@
     <span class="k">def</span> <span class="nf">_get_all_handles_for_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span>
 
-    <span class="k">def</span> <span class="nf">_get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">_get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
         <span class="k">return</span> <span class="p">[(</span><span class="n">p</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
 
     <span class="k">def</span> <span class="nf">_stringize_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
