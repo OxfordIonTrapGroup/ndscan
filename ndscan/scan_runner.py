@@ -6,7 +6,7 @@ from .fragment import ExpFragment
 from .parameters import ParamStore, type_string_to_param
 from .result_channels import ResultSink
 from .scan_generator import generate_points, ScanGenerator, ScanOptions
-from .utils import will_spawn_kernel
+from .utils import is_kernel
 
 
 class ScanFinished(Exception):
@@ -74,7 +74,7 @@ class ScanRunner(HasEnvironment):
 
         points = generate_points(spec.generators, spec.options)
 
-        run_impl = self._run_scan_on_core_device if will_spawn_kernel(
+        run_impl = self._run_scan_on_core_device if is_kernel(
             self._fragment.run_once) else self._run_scan_on_host
         run_impl(points, spec.axes, axis_sinks)
 
