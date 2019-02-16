@@ -10,7 +10,7 @@ from .parameters import type_string_to_param
 from .result_channels import AppendingDatasetSink, ScalarDatasetSink
 from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import ScanAxis, ScanRunner, ScanSpec
-from .utils import shorten_to_unambiguous_suffixes, will_spawn_kernel
+from .utils import shorten_to_unambiguous_suffixes, is_kernel
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
 # class discovery.
@@ -139,7 +139,7 @@ class FragmentScanExperiment(EnvExperiment):
                 while True:
                     self.fragment.host_setup()
                     self._point_phase = False
-                    if will_spawn_kernel(self.fragment.run_once):
+                    if is_kernel(self.fragment.run_once):
                         self._run_continuous_kernel()
                         self.core.comm.close()
                     else:

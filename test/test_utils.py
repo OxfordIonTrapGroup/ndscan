@@ -31,7 +31,7 @@ def _kernel_free_function():
     pass
 
 
-class WillSpawnKernelTest(unittest.TestCase):
+class IsKernelTest(unittest.TestCase):
     def _regular_method(self):
         pass
 
@@ -40,9 +40,9 @@ class WillSpawnKernelTest(unittest.TestCase):
         pass
 
     def test_free_function(self):
-        self.assertFalse(will_spawn_kernel(_regular_free_function))
-        self.assertTrue(will_spawn_kernel(_kernel_free_function))
+        self.assertFalse(is_kernel(_regular_free_function))
+        self.assertTrue(is_kernel(_kernel_free_function))
 
     def test_method(self):
-        self.assertFalse(will_spawn_kernel(self._regular_method))
-        self.assertTrue(will_spawn_kernel(self._kernel_method))
+        self.assertFalse(is_kernel(self._regular_method))
+        self.assertTrue(is_kernel(self._kernel_method))

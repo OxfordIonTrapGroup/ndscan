@@ -18,7 +18,7 @@ def strip_prefix(string: str, prefix: str) -> str:
     return string
 
 
-def will_spawn_kernel(func) -> bool:
+def is_kernel(func) -> bool:
     if not hasattr(func, "artiq_embedded"):
         return False
     meta = func.artiq_embedded
