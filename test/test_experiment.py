@@ -4,15 +4,16 @@ Tests for ndscan.experiment top-level runners.
 
 import json
 from ndscan.experiment import make_fragment_scan_exp
-from fixtures import AddOneFragment
+from fixtures import AddOneFragment, ReboundAddOneFragment
 from mock_environment import HasEnvironmentCase
 
-ScanEchoExp = make_fragment_scan_exp(AddOneFragment)
+ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
+ScanReboundAddOneExp = make_fragment_scan_exp(ReboundAddOneFragment)
 
 
 class FragmentScanExpCase(HasEnvironmentCase):
     def test_run_trivial_scan(self):
-        exp = self.create(ScanEchoExp)
+        exp = self.create(ScanAddOneExp)
         exp._params["scan"]["continuous_without_axes"] = False
         exp.prepare()
         exp.run()
@@ -25,8 +26,14 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("rid"), 0)
 
     def test_run_1d_scan(self):
-        exp = self.create(ScanEchoExp)
-        fqn = "fixtures.AddOneFragment.value"
+        self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
+
+    def test_run_rebound_1d_scan(self):
+        self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment")
+
+    def _test_run_1d(self, klass, fragment_fqn):
+        exp = self.create(klass)
+        fqn = fragment_fqn + ".value"
         exp._params["scan"]["axes"].append({
             "type": "linear",
             "range": {
@@ -63,5 +70,5 @@ class FragmentScanExpCase(HasEnvironmentCase):
             }])
         self.assertEqual(d("points.axis_0"), [0, 1, 2])
         self.assertEqual(d("points.channel_result"), [1, 2, 3])
-        self.assertEqual(d("fragment_fqn"), "fixtures.AddOneFragment")
+        self.assertEqual(d("fragment_fqn"), fragment_fqn)
         self.assertEqual(d("rid"), 0)
