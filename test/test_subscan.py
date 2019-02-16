@@ -6,13 +6,13 @@ from ndscan.fragment import *
 from ndscan.scan_generator import LinearGenerator
 from ndscan.subscan import setattr_subscan
 
-from fixtures import EchoFragment
+from fixtures import AddOneFragment
 from mock_environment import ExpFragmentCase
 
 
 class Scan1DFragment(ExpFragment):
     def build_fragment(self):
-        self.setattr_fragment("child", EchoFragment)
+        self.setattr_fragment("child", AddOneFragment)
         scan = setattr_subscan(self, "scan", self.child, [(self.child, "value")])
         assert self.scan == scan
 
@@ -29,3 +29,4 @@ class SubscanCase(ExpFragmentCase):
         expected_results = [v + 1 for v in expected_values]
         self.assertEqual(coords, {parent.child.value: expected_values})
         self.assertEqual(values, {parent.child.result: expected_results})
+

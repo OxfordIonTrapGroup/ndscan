@@ -5,7 +5,7 @@ Common fragments/… for unit tests.
 from ndscan.fragment import *
 
 
-class EchoFragment(ExpFragment):
+class AddOneFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_param("value", FloatParam, "Value to return", 0.0)
         self.setattr_result("result", FloatChannel)
