@@ -154,7 +154,7 @@
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">type_string_to_param</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="n">ResultSink</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">generate_points</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">will_spawn_kernel</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">is_kernel</span>
 
 
 <div class="viewcode-block" id="ScanFinished"><a class="viewcode-back" href="../../apidocs.html#ndscan.scan_runner.ScanFinished">[docs]</a><span class="k">class</span> <span class="nc">ScanFinished</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -222,7 +222,7 @@
 
         <span class="n">points</span> <span class="o">=</span> <span class="n">generate_points</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">generators</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
-        <span class="n">run_impl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_core_device</span> <span class="k">if</span> <span class="n">will_spawn_kernel</span><span class="p">(</span>
+        <span class="n">run_impl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_core_device</span> <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_host</span>
         <span class="n">run_impl</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">)</span></div>
 
