@@ -169,10 +169,12 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ScanSpec</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ArraySink</span><span class="p">]],</span> <span class="kc">None</span><span class="p">],</span>
                  <span class="n">possible_axes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ScanAxis</span><span class="p">],</span>
+                 <span class="n">coordinate_channels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">],</span>
                  <span class="n">child_result_sinks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ArraySink</span><span class="p">],</span>
                  <span class="n">aggregate_result_channels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_fn</span> <span class="o">=</span> <span class="n">run_fn</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_possible_axes</span> <span class="o">=</span> <span class="n">possible_axes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_channels</span> <span class="o">=</span> <span class="n">coordinate_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span> <span class="o">=</span> <span class="n">child_result_sinks</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_aggregate_result_channels</span> <span class="o">=</span> <span class="n">aggregate_result_channels</span>
 
@@ -209,6 +211,9 @@
 
         <span class="n">spec</span> <span class="o">=</span> <span class="n">ScanSpec</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_fn</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+
+        <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_channels</span><span class="p">,</span> <span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span>
 
         <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">chan</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -252,6 +257,7 @@
     <span class="c1"># Override target parameter stores with newly created stores.</span>
     <span class="c1"># TODO: Potentially make handles have identity and accept them directly.</span>
     <span class="n">axes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">coordinate_channels</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">param_owner</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axis_params</span><span class="p">):</span>
         <span class="n">handle</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">param_owner</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="n">param</span><span class="p">,</span> <span class="n">store</span> <span class="o">=</span> <span class="n">param_owner</span><span class="o">.</span><span class="n">override_param</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -264,10 +270,11 @@
         <span class="c1">#  - Require the actually used axes to be given in axis_params (which will be</span>
         <span class="c1">#    the most common use case anyway).</span>
         <span class="c1">#  - Serialise the scan point coordinates into the scan spec.</span>
-        <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
-            <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
-            <span class="n">OpaqueChannel</span><span class="p">,</span>
-            <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span><span class="p">)</span>
+        <span class="n">coordinate_channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
+                <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+                <span class="n">OpaqueChannel</span><span class="p">,</span>
+                <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span><span class="p">))</span>
 
     <span class="c1"># Instead of letting our parent directly manage the subfragment result channels,</span>
     <span class="c1"># we redirect the results to ArraySinks…</span>
@@ -275,11 +282,11 @@
     <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">original_channels</span><span class="p">)</span>
     <span class="n">owner</span><span class="o">.</span><span class="n">_absorbed_results_subfragments</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
 
-    <span class="n">result_array_sinks</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">child_result_sinks</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">original_channels</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
         <span class="n">sink</span> <span class="o">=</span> <span class="n">ArraySink</span><span class="p">()</span>
         <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span>
-        <span class="n">result_array_sinks</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">sink</span>
+        <span class="n">child_result_sinks</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">sink</span>
 
     <span class="c1"># … and re-export result channels that the collected data will be pushed to.</span>
     <span class="n">SCAN_SPEC_NAME</span> <span class="o">=</span> <span class="s2">&quot;spec&quot;</span>
@@ -287,13 +294,13 @@
         <span class="nb">list</span><span class="p">(</span><span class="n">original_channels</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span>
         <span class="p">[</span><span class="n">SCAN_SPEC_NAME</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span>
     <span class="k">del</span> <span class="n">channel_name_map</span><span class="p">[</span><span class="n">SCAN_SPEC_NAME</span><span class="p">]</span>
-    <span class="n">result_array_channels</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">aggregate_result_channels</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">full_name</span><span class="p">,</span> <span class="n">short_name</span> <span class="ow">in</span> <span class="n">channel_name_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">channel</span> <span class="o">=</span> <span class="n">original_channels</span><span class="p">[</span><span class="n">full_name</span><span class="p">]</span>
 
         <span class="c1"># TODO: Implement ArrayChannel to represent a variable number of dimensions</span>
         <span class="c1"># around a scalar channel so we can keep the schema information here.</span>
-        <span class="n">result_array_channels</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
+        <span class="n">aggregate_result_channels</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
             <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">short_name</span><span class="p">,</span>
             <span class="n">OpaqueChannel</span><span class="p">,</span>
             <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span> <span class="ow">and</span> <span class="n">channel</span><span class="o">.</span><span class="n">save_by_default</span><span class="p">)</span>
@@ -302,7 +309,8 @@
     <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span><span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">SCAN_SPEC_NAME</span><span class="p">,</span> <span class="n">OpaqueChannel</span><span class="p">)</span>
 
     <span class="n">run_fn</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">ScanRunner</span><span class="p">(</span><span class="n">owner</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">fragment</span><span class="p">)</span>
-    <span class="n">subscan</span> <span class="o">=</span> <span class="n">Subscan</span><span class="p">(</span><span class="n">run_fn</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="n">result_array_sinks</span><span class="p">,</span> <span class="n">result_array_channels</span><span class="p">)</span>
+    <span class="n">subscan</span> <span class="o">=</span> <span class="n">Subscan</span><span class="p">(</span><span class="n">run_fn</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="n">coordinate_channels</span><span class="p">,</span> <span class="n">child_result_sinks</span><span class="p">,</span>
+                      <span class="n">aggregate_result_channels</span><span class="p">)</span>
     <span class="nb">setattr</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">,</span> <span class="n">subscan</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">subscan</span></div>
 </pre></div>

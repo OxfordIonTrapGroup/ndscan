@@ -354,12 +354,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="s2">&quot;ndscan.completed&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_broadcast_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="s2">&quot;ndscan.&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;fragment_fqn&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="p">)</span>
-        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;rid&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">)</span>
-        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;fragment_fqn&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="p">)</span>
+        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;rid&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">)</span>
+        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 
         <span class="n">axis_specs</span> <span class="o">=</span> <span class="p">[{</span>
             <span class="s2">&quot;param&quot;</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">param_schema</span><span class="p">,</span>
@@ -368,9 +368,9 @@
         <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">gen</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">generators</span><span class="p">):</span>
             <span class="n">gen</span><span class="o">.</span><span class="n">describe_limits</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
 
-        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;axes&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">))</span>
+        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;axes&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">))</span>
 
-        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
 
         <span class="c1"># KLDUGE: Broadcast auto_fit before channels to allow simpler implementation</span>
         <span class="c1"># in current fit applet. As the applet implementation grows more sophisticated</span>
@@ -385,13 +385,13 @@
                         <span class="k">lambda</span> <span class="n">identity</span><span class="p">:</span> <span class="s2">&quot;axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                             <span class="n">axis_identities</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">identity</span><span class="p">)),</span> <span class="k">lambda</span> <span class="n">path</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span>
                         <span class="n">_channel_dataset_names</span><span class="p">[</span><span class="n">path</span><span class="p">]))</span>
-        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fits</span><span class="p">))</span>
+        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fits</span><span class="p">))</span>
 
         <span class="n">channels</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">name</span><span class="p">:</span> <span class="n">channel</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
             <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span>
-        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;channels&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">channels</span><span class="p">))</span>
+        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;channels&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">channels</span><span class="p">))</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span> <span class="nf">_broadcast_point_phase</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
