@@ -1,6 +1,13 @@
 r"""
 Top-level functions for launching :class:`.ExpFragment`\ s and their scans from the rest
 of the ARTIQ ``HasEnvironment`` universe.
+
+The two main entry points into the :class:`.ExpFragment` universe are
+
+ - scans (with axes and overrides set from the dashboard UI) via
+    :meth:`make_fragment_scan_exp`, and
+ - manually launched fragments from vanilla ARTIQ ``EnvExperiment``\ s using
+    :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.
 """
 
 from artiq.language import *
@@ -8,11 +15,12 @@ from contextlib import suppress
 import json
 import logging
 import random
-from typing import Callable, Type
+from typing import Any, Callable, Dict, Type
 
 from .fragment import ExpFragment
 from .parameters import type_string_to_param
-from .result_channels import AppendingDatasetSink, ScalarDatasetSink
+from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
+                              ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import ScanAxis, ScanRunner, ScanSpec
 from .utils import shorten_to_unambiguous_suffixes, is_kernel
@@ -23,7 +31,7 @@ __all__ = ["make_fragment_scan_exp", "PARAMS_ARG_KEY"]
 
 #: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the
 #: list of available parameters to the dashboard plugin, and to pass the information
-#: about scanned and overriden parameters to the :class:`FragmentScanExperiment`
+#: about scanned and overridden parameters to the :class:`FragmentScanExperiment`
 #: when it is launched.
 #:
 #: Users should not need to directly interface with this.
@@ -257,20 +265,21 @@ class FragmentScanExperiment(EnvExperiment):
             is_transient=True)
 
 
-def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):
+def make_fragment_scan_exp(
+        fragment_class: Type[ExpFragment]) -> Type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
 
     This is the default way of creating scan experiments::
 
-        class MyExperiment(ExpFragment):
+        class MyExpFragment(ExpFragment):
             def build_fragment(self):
                 # ...
 
             def run_once(self):
                 # ...
 
-        MyExperimentScan = make_fragment_scan_exp(MyExperiment)
+        MyExpFragmentScan = make_fragment_scan_exp(MyExpFragment)
     """
 
     class FragmentScanShim(FragmentScanExperiment):
@@ -284,3 +293,68 @@ def make_fragment_scan_exp(fragment_class: Type[ExpFragment]):
     FragmentScanShim.__doc__ = fragment_class.__doc__
 
     return FragmentScanShim
+
+
+def run_fragment_once(fragment: ExpFragment) -> Dict[ResultChannel, Any]:
+    """Initialise the passed fragment and run it once, capturing and returning the
+    values from any result channels.
+
+    :return: A dictionary mapping :class:`ResultChannel` instances to their values
+        (or ``None`` if not pushed to).
+    """
+
+    channel_dict = {}
+    fragment._collect_result_channels(channel_dict)
+    sinks = {channel: LastValueSink() for channel in channel_dict.values()}
+    for channel, sink in sinks.items():
+        channel.set_sink(sink)
+
+    fragment.init_params()
+    fragment.host_setup()
+    if is_kernel(fragment.run_once):
+        # Run device_setup()/run_once() in a single kernel invocation.
+        class FragmentRunner(HasEnvironment):
+            def build(self, fragment):
+                self.setattr_device("core")
+                self.fragment = fragment
+
+            @kernel
+            def run(self):
+                self.fragment.device_setup()
+                self.fragment.run_once()
+
+        FragmentRunner(fragment, fragment).run()
+    else:
+        fragment.device_setup()
+        fragment.run_once()
+
+    return {channel: sink.get_last() for channel, sink in sinks.items()}
+
+
+def create_and_run_fragment_once(env: HasEnvironment, fragment_class: Type[ExpFragment],
+                                 *args, **kwargs) -> Dict[ResultChannel, Any]:
+    """Create an instance of the passed :class:`.ExpFragment` type and runs it once,
+    returning the values pushed to any result channels.
+
+    Example::
+
+        class MyExpFragment(ExpFragment):
+            def build_fragment(self):
+                # ...
+
+            def run_once(self):
+                # ...
+
+        class MyEnvExperiment(EnvExperiment):
+            def run(self):
+                results = create_and_run_once(self, MyExpFragment)
+                print(results)
+
+    :param env: The ``HasEnvironment`` to use.
+    :param fragment_class: The :class:`.ExpFragment` class to instantiate.
+    :param args: Any arguments to forward to ``build_fragment()``.
+    :param kwargs: Any keyword arguments to forward to ``build_fragment()``.
+    :return: A dictionary mapping :class:`ResultChannel` instances to their values
+        (or ``None`` if not pushed to).
+    """
+    return run_fragment_once(fragment_class(env, [], *args, **kwargs))

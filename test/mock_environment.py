@@ -56,11 +56,13 @@ class HasEnvironmentCase(unittest.TestCase):
         self.dataset_mgr = DatasetManager(self.dataset_db)
         self.device_db = MockDeviceDB()
         self.ccb = unittest.mock.Mock()
+        self.core = unittest.mock.Mock()
         self.scheduler = MockScheduler()
         self.device_mgr = DeviceManager(
             self.device_db,
             virtual_devices={
                 "ccb": self.ccb,
+                "core": self.core,
                 "scheduler": self.scheduler
             })
 

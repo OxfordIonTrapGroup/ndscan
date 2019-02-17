@@ -317,7 +317,7 @@ class Fragment(HasEnvironment):
     def _stringize_path(self) -> str:
         return "/".join(self._fragment_path)
 
-    def _collect_result_channels(self, channels: dict) -> None:
+    def _collect_result_channels(self, channels: Dict[str, ResultChannel]) -> None:
         channels.update(self._result_channels)
         for s in self._subfragments:
             if s in self._absorbed_results_subfragments:

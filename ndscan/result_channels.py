@@ -15,6 +15,20 @@ class ResultSink:
         raise NotImplementedError
 
 
+class LastValueSink(ResultSink):
+    """Sink that stores the last-pushed value."""
+
+    def __init__(self):
+        self.value = None
+
+    def push(self, value: Any) -> None:
+        self.value = value
+
+    def get_last(self) -> Any:
+        """Return the last-pushed value, or ``None`` if none yet."""
+        return self.value
+
+
 class ArraySink(ResultSink):
     """Sink that stores all pushed values in a list."""
 

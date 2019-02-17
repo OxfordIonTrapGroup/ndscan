@@ -3,8 +3,8 @@ Tests for ndscan.experiment top-level runners.
 """
 
 import json
-from ndscan.experiment import make_fragment_scan_exp
-from fixtures import AddOneFragment, ReboundAddOneFragment
+from ndscan.experiment import make_fragment_scan_exp, run_fragment_once
+from fixtures import AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
@@ -72,3 +72,14 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("points.channel_result"), [1, 2, 3])
         self.assertEqual(d("fragment_fqn"), fragment_fqn)
         self.assertEqual(d("rid"), 0)
+
+
+class RunOnceCase(HasEnvironmentCase):
+    def test_run_once_host(self):
+        fragment = self.create(AddOneFragment, [])
+        self.assertEqual(run_fragment_once(fragment), {fragment.result: 1.0})
+
+    def test_run_once_kernel(self):
+        fragment = self.create(TrivialKernelFragment, [])
+        run_fragment_once(fragment)
+        self.assertEqual(self.core.run.call_count, 1)
