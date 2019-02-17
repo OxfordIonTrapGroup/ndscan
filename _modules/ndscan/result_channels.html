@@ -152,6 +152,7 @@
 
 <span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">rpc</span>
 <span class="kn">import</span> <span class="nn">artiq.language.units</span>
+<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
 
 
@@ -359,6 +360,19 @@
         <span class="c1"># Just pass through values, leaving it to the user to choose something</span>
         <span class="c1"># HD5- and PYON-compatible.</span>
         <span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="SubscanChannel"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.SubscanChannel">[docs]</a><span class="k">class</span> <span class="nc">SubscanChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Channel that stores the scan metadata for a subscan.</span>
+
+<span class="sd">    Serialised as a JSON string for HDF5 compatibility.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;subscan&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_coerce_to_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
