@@ -16,6 +16,8 @@ class ResultSink:
 
 
 class ArraySink(ResultSink):
+    """Sink that stores all pushed values in a list."""
+
     def __init__(self):
         self.data = []
 
@@ -23,9 +25,11 @@ class ArraySink(ResultSink):
         self.data.append(value)
 
     def get_all(self) -> List[Any]:
+        """Return a list of all previously pushed values."""
         return self.data
 
     def clear(self) -> None:
+        """Clear the list of previously pushed values."""
         self.data = []
 
 
@@ -48,6 +52,7 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
         self.append_to_dataset(self.key, value)
 
     def get_all(self) -> List[Any]:
+        """Read back the previously pushed values from the target dataset (if any)."""
         return self.get_dataset(self.key) if self.has_pushed else []
 
 
