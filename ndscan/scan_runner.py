@@ -4,7 +4,7 @@ from itertools import islice
 from typing import Any, Dict, List, Iterator, Tuple
 from .fragment import ExpFragment
 from .parameters import ParamStore, type_string_to_param
-from .result_channels import ResultSink
+from .result_channels import ResultChannel, ResultSink
 from .scan_generator import generate_points, ScanGenerator, ScanOptions
 from .utils import is_kernel
 
@@ -204,3 +204,43 @@ class ScanRunner(HasEnvironment):
         values = self._kscan_current_chunk.pop(0)
         for value, sink in zip(values, self._kscan_axis_sinks):
             sink.push(value)
+
+
+def describe_scan(spec: ScanSpec, fragment: ExpFragment,
+                  results_by_short_name: Dict[str, ResultChannel],
+                  result_key_names_by_path: Dict[str, str]):
+    """Return metadata for the given spec in stringly typed dictionary form.
+
+    :param spec: :class:`ScanSpec` describing the scan.
+    :param fragment: Fragment being scanned.
+    :param results_by_short_name: Map from short result names to channel objects.
+    :param result_key_names_by_path: Map from result channel path to name of result key
+        ("channel_…").
+    """
+    desc = {}
+
+    desc["fragment_fqn"] = fragment.fqn
+    axis_specs = [{
+        "param": ax.param_schema,
+        "path": ax.path,
+    } for ax in spec.axes]
+    for ax, gen in zip(axis_specs, spec.generators):
+        gen.describe_limits(ax)
+
+    desc["axes"] = axis_specs
+    desc["seed"] = spec.options.seed
+    desc["channels"] = {
+        name: channel.describe()
+        for (name, channel) in results_by_short_name.items()
+    }
+
+    desc["auto_fit"] = []
+    axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
+    for f in fragment.get_default_fits():
+        if f.has_data(axis_identities):
+            desc["auto_fit"].append(
+                f.describe(
+                    lambda identity: "axis_{}".format(axis_identities.index(identity)),
+                    lambda path: result_key_names_by_path[path]))
+
+    return desc
