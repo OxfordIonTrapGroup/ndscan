@@ -1,5 +1,5 @@
 from artiq.language import units
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, Iterable, List
 
 
 def path_matches_spec(path: List[str], spec: str) -> bool:
@@ -26,7 +26,8 @@ def is_kernel(func) -> bool:
 
 
 def shorten_to_unambiguous_suffixes(
-        fqns: List[str], get_last_n_parts: Callable[[str, int], str]) -> Dict[str, str]:
+        fqns: Iterable[str],
+        get_last_n_parts: Callable[[str, int], str]) -> Dict[str, str]:
     short_to_fqns = dict()
     shortened_fqns = dict()
 
