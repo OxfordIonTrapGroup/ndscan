@@ -87,7 +87,7 @@ class AutoFitSpec:
         return True
 
     def describe(self, get_axis_name: Callable[[Tuple[str, str]], str],
-                 get_channel_name: Callable[[str], str]) -> Dict[str, Any]:
+                 get_channel_name: Callable[[ResultChannel], str]) -> Dict[str, Any]:
         """Serialise information about this fit to stringly typed metadata.
 
         :param get_axis_name: Callable to resolve axis identity to the string to use
@@ -102,7 +102,7 @@ class AutoFitSpec:
             if isinstance(obj, ParamHandle):
                 return get_axis_name(obj._store.identity)
             elif isinstance(obj, ResultChannel):
-                return get_channel_name(obj.path)
+                return get_channel_name(obj)
             else:
                 raise ValueError("Invalid fit argument source: {}".format(obj))
 

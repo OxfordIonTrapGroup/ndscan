@@ -24,7 +24,7 @@ class Subscan:
                  coordinate_channels: List[ResultChannel],
                  child_result_sinks: Dict[ResultChannel, ArraySink],
                  aggregate_result_channels: Dict[ResultChannel, ResultChannel],
-                 child_channels_by_name: Dict[str, ResultChannel]):
+                 short_child_channel_names: Dict[str, ResultChannel]):
         self._run_fn = run_fn
         self._fragment = fragment
         self._schema_channel = schema_channel
@@ -32,7 +32,7 @@ class Subscan:
         self._coordinate_channels = coordinate_channels
         self._child_result_sinks = child_result_sinks
         self._aggregate_result_channels = aggregate_result_channels
-        self._child_channels_by_name = child_channels_by_name
+        self._short_child_channel_names = short_child_channel_names
 
     def run(self,
             axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
@@ -68,14 +68,8 @@ class Subscan:
         spec = ScanSpec(axes, generators, options)
         self._run_fn(self._fragment, spec, list(coordinate_sinks.values()))
 
-        # Names referenced in auto_fit specs.
-        dataset_names = {
-            channel.path: "channel_" + short_name
-            for short_name, channel in self._child_channels_by_name.items()
-        }
         self._schema_channel.push(
-            describe_scan(spec, self._fragment, self._child_channels_by_name,
-                          dataset_names))
+            describe_scan(spec, self._fragment, self._short_child_channel_names))
 
         for channel, sink in zip(self._coordinate_channels, coordinate_sinks.values()):
             channel.push(sink.get_all())
@@ -157,10 +151,10 @@ def setattr_subscan(owner: Fragment,
     channel_name_map = shorten_to_unambiguous_suffixes(
         original_channels.keys(), lambda fqn, n: "/".join(fqn.split("/")[-n:]))
     aggregate_result_channels = {}
-    channels_by_name = {}
+    short_child_channel_names = {}
     for full_name, short_name in channel_name_map.items():
         channel = original_channels[full_name]
-        channels_by_name[short_name] = channel
+        short_child_channel_names[channel] = short_name
 
         # TODO: Implement ArrayChannel to represent a variable number of dimensions
         # around a scalar channel so we can keep the schema information here.
@@ -174,6 +168,6 @@ def setattr_subscan(owner: Fragment,
 
     subscan = Subscan(
         ScanRunner(owner).run, fragment, axes, spec_channel, coordinate_channels,
-        child_result_sinks, aggregate_result_channels, channels_by_name)
+        child_result_sinks, aggregate_result_channels, short_child_channel_names)
     setattr(owner, scan_name, subscan)
     return subscan
