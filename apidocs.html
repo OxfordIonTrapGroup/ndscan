@@ -465,9 +465,34 @@ store, i.e. the override/default value it was created for.</li>
 <dd></dd></dl>
 
 <dl class="class">
+<dt id="ndscan.result_channels.LastValueSink">
+<em class="property">class </em><code class="descclassname">ndscan.result_channels.</code><code class="descname">LastValueSink</code><a class="reference internal" href="_modules/ndscan/result_channels.html#LastValueSink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.result_channels.LastValueSink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sink that stores the last-pushed value.</p>
+<dl class="method">
+<dt id="ndscan.result_channels.LastValueSink.get_last">
+<code class="descname">get_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Any<a class="reference internal" href="_modules/ndscan/result_channels.html#LastValueSink.get_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.result_channels.LastValueSink.get_last" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the last-pushed value, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if none yet.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="ndscan.result_channels.ArraySink">
 <em class="property">class </em><code class="descclassname">ndscan.result_channels.</code><code class="descname">ArraySink</code><a class="reference internal" href="_modules/ndscan/result_channels.html#ArraySink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.result_channels.ArraySink" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sink that stores all pushed values in a list.</p>
+<dl class="method">
+<dt id="ndscan.result_channels.ArraySink.get_all">
+<code class="descname">get_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Any]<a class="reference internal" href="_modules/ndscan/result_channels.html#ArraySink.get_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.result_channels.ArraySink.get_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of all previously pushed values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.result_channels.ArraySink.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/result_channels.html#ArraySink.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.result_channels.ArraySink.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear the list of previously pushed values.</p>
+</dd></dl>
+
+</dd></dl>
 
 <dl class="class">
 <dt id="ndscan.result_channels.AppendingDatasetSink">
@@ -488,6 +513,12 @@ and subsequently appended to.</li>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.result_channels.AppendingDatasetSink.get_all">
+<code class="descname">get_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Any]<a class="reference internal" href="_modules/ndscan/result_channels.html#AppendingDatasetSink.get_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.result_channels.AppendingDatasetSink.get_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read back the previously pushed values from the target dataset (if any).</p>
 </dd></dl>
 
 </dd></dl>
@@ -773,20 +804,35 @@ to use to describe them.</li>
 <span id="ndscan-experiment-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment" title="ndscan.experiment"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment" title="Permalink to this headline">¶</a></h3>
 <p>Top-level functions for launching <a class="reference internal" href="#ndscan.fragment.ExpFragment" title="ndscan.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>s and their scans from the rest
 of the ARTIQ <code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> universe.</p>
+<p>The two main entry points into the <a class="reference internal" href="#ndscan.fragment.ExpFragment" title="ndscan.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> universe are</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>scans (with axes and overrides set from the dashboard UI) via</dt>
+<dd><a class="reference internal" href="#ndscan.experiment.make_fragment_scan_exp" title="ndscan.experiment.make_fragment_scan_exp"><code class="xref py py-meth docutils literal notranslate"><span class="pre">make_fragment_scan_exp()</span></code></a>, and</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>manually launched fragments from vanilla ARTIQ <code class="docutils literal notranslate"><span class="pre">EnvExperiment</span></code>s using</dt>
+<dd><a class="reference internal" href="#ndscan.experiment.run_fragment_once" title="ndscan.experiment.run_fragment_once"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run_fragment_once()</span></code></a> or <a class="reference internal" href="#ndscan.experiment.create_and_run_fragment_once" title="ndscan.experiment.create_and_run_fragment_once"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_and_run_fragment_once()</span></code></a>.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
 <dl class="function">
 <dt id="ndscan.experiment.make_fragment_scan_exp">
-<code class="descclassname">ndscan.experiment.</code><code class="descname">make_fragment_scan_exp</code><span class="sig-paren">(</span><em>fragment_class: Type[ndscan.fragment.ExpFragment]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment.html#make_fragment_scan_exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.make_fragment_scan_exp" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ndscan.experiment.</code><code class="descname">make_fragment_scan_exp</code><span class="sig-paren">(</span><em>fragment_class: Type[ndscan.fragment.ExpFragment]</em><span class="sig-paren">)</span> &#x2192; Type[ndscan.experiment.FragmentScanExperiment]<a class="reference internal" href="_modules/ndscan/experiment.html#make_fragment_scan_exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.make_fragment_scan_exp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a <a class="reference internal" href="#ndscan.experiment.FragmentScanExperiment" title="ndscan.experiment.FragmentScanExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code></a> subclass that scans the given
 <a class="reference internal" href="#ndscan.fragment.ExpFragment" title="ndscan.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>, ready to be picked up by the ARTIQ explorer/…</p>
 <p>This is the default way of creating scan experiments:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyExperiment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># ...</span>
 
     <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># ...</span>
 
-<span class="n">MyExperimentScan</span> <span class="o">=</span> <span class="n">make_fragment_scan_exp</span><span class="p">(</span><span class="n">MyExperiment</span><span class="p">)</span>
+<span class="n">MyExpFragmentScan</span> <span class="o">=</span> <span class="n">make_fragment_scan_exp</span><span class="p">(</span><span class="n">MyExpFragment</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -840,9 +886,64 @@ for the given fragment.</p>
 <code class="descclassname">ndscan.experiment.</code><code class="descname">PARAMS_ARG_KEY</code><em class="property"> = 'ndscan_params'</em><a class="headerlink" href="#ndscan.experiment.PARAMS_ARG_KEY" title="Permalink to this definition">¶</a></dt>
 <dd><p>Name of the <code class="docutils literal notranslate"><span class="pre">artiq.language.HasEnvironment</span></code> argument that is used to confer the
 list of available parameters to the dashboard plugin, and to pass the information
-about scanned and overriden parameters to the <a class="reference internal" href="#ndscan.experiment.FragmentScanExperiment" title="ndscan.experiment.FragmentScanExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code></a>
+about scanned and overridden parameters to the <a class="reference internal" href="#ndscan.experiment.FragmentScanExperiment" title="ndscan.experiment.FragmentScanExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code></a>
 when it is launched.</p>
 <p>Users should not need to directly interface with this.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ndscan.experiment.run_fragment_once">
+<code class="descclassname">ndscan.experiment.</code><code class="descname">run_fragment_once</code><span class="sig-paren">(</span><em>fragment: ndscan.fragment.ExpFragment</em><span class="sig-paren">)</span> &#x2192; Dict[ndscan.result_channels.ResultChannel, Any]<a class="reference internal" href="_modules/ndscan/experiment.html#run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.run_fragment_once" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialise the passed fragment and run it once, capturing and returning the
+values from any result channels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A dictionary mapping <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultChannel</span></code> instances to their values
+(or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not pushed to).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ndscan.experiment.create_and_run_fragment_once">
+<code class="descclassname">ndscan.experiment.</code><code class="descname">create_and_run_fragment_once</code><span class="sig-paren">(</span><em>env: artiq.language.environment.HasEnvironment, fragment_class: Type[ndscan.fragment.ExpFragment], *args, **kwargs</em><span class="sig-paren">)</span> &#x2192; Dict[ndscan.result_channels.ResultChannel, Any]<a class="reference internal" href="_modules/ndscan/experiment.html#create_and_run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.create_and_run_fragment_once" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an instance of the passed <a class="reference internal" href="#ndscan.fragment.ExpFragment" title="ndscan.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> type and runs it once,
+returning the values pushed to any result channels.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># ...</span>
+
+    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># ...</span>
+
+<span class="k">class</span> <span class="nc">MyEnvExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">create_and_run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MyExpFragment</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>env</strong> – The <code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> to use.</li>
+<li><strong>fragment_class</strong> – The <a class="reference internal" href="#ndscan.fragment.ExpFragment" title="ndscan.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> class to instantiate.</li>
+<li><strong>args</strong> – Any arguments to forward to <code class="docutils literal notranslate"><span class="pre">build_fragment()</span></code>.</li>
+<li><strong>kwargs</strong> – Any keyword arguments to forward to <code class="docutils literal notranslate"><span class="pre">build_fragment()</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A dictionary mapping <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultChannel</span></code> instances to their values
+(or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not pushed to).</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>

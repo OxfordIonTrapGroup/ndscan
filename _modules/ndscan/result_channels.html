@@ -163,18 +163,36 @@
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
+<div class="viewcode-block" id="LastValueSink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.LastValueSink">[docs]</a><span class="k">class</span> <span class="nc">LastValueSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sink that stores the last-pushed value.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="LastValueSink.get_last"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.LastValueSink.get_last">[docs]</a>    <span class="k">def</span> <span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return the last-pushed value, or ``None`` if none yet.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span></div></div>
+
+
 <div class="viewcode-block" id="ArraySink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ArraySink">[docs]</a><span class="k">class</span> <span class="nc">ArraySink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sink that stores all pushed values in a list.&quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+<div class="viewcode-block" id="ArraySink.get_all"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ArraySink.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of all previously pushed values.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span></div>
 
-    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span></div>
+<div class="viewcode-block" id="ArraySink.clear"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ArraySink.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Clear the list of previously pushed values.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span></div></div>
 
 
 <div class="viewcode-block" id="AppendingDatasetSink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.AppendingDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">AppendingDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
@@ -195,8 +213,9 @@
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">append_to_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="k">else</span> <span class="p">[]</span></div>
+<div class="viewcode-block" id="AppendingDatasetSink.get_all"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.AppendingDatasetSink.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Read back the previously pushed values from the target dataset (if any).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="k">else</span> <span class="p">[]</span></div></div>
 
 
 <div class="viewcode-block" id="ScalarDatasetSink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ScalarDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">ScalarDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>

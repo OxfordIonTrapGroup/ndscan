@@ -149,6 +149,13 @@
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Top-level functions for launching :class:`.ExpFragment`\ s and their scans from the rest</span>
 <span class="sd">of the ARTIQ ``HasEnvironment`` universe.</span>
+
+<span class="sd">The two main entry points into the :class:`.ExpFragment` universe are</span>
+
+<span class="sd"> - scans (with axes and overrides set from the dashboard UI) via</span>
+<span class="sd">    :meth:`make_fragment_scan_exp`, and</span>
+<span class="sd"> - manually launched fragments from vanilla ARTIQ ``EnvExperiment``\ s using</span>
+<span class="sd">    :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
@@ -156,11 +163,12 @@
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Type</span>
 
 <span class="kn">from</span> <span class="nn">.fragment</span> <span class="k">import</span> <span class="n">ExpFragment</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">type_string_to_param</span>
-<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="n">AppendingDatasetSink</span><span class="p">,</span> <span class="n">ScalarDatasetSink</span>
+<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="p">(</span><span class="n">AppendingDatasetSink</span><span class="p">,</span> <span class="n">LastValueSink</span><span class="p">,</span> <span class="n">ScalarDatasetSink</span><span class="p">,</span>
+                              <span class="n">ResultChannel</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="k">import</span> <span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">,</span> <span class="n">is_kernel</span>
@@ -171,7 +179,7 @@
 
 <span class="c1">#: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the</span>
 <span class="c1">#: list of available parameters to the dashboard plugin, and to pass the information</span>
-<span class="c1">#: about scanned and overriden parameters to the :class:`FragmentScanExperiment`</span>
+<span class="c1">#: about scanned and overridden parameters to the :class:`FragmentScanExperiment`</span>
 <span class="c1">#: when it is launched.</span>
 <span class="c1">#:</span>
 <span class="c1">#: Users should not need to directly interface with this.</span>
@@ -405,20 +413,21 @@
             <span class="n">is_transient</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">]):</span>
+<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span>
+        <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FragmentScanExperiment</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Create a :class:`FragmentScanExperiment` subclass that scans the given</span>
 <span class="sd">    :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…</span>
 
 <span class="sd">    This is the default way of creating scan experiments::</span>
 
-<span class="sd">        class MyExperiment(ExpFragment):</span>
+<span class="sd">        class MyExpFragment(ExpFragment):</span>
 <span class="sd">            def build_fragment(self):</span>
 <span class="sd">                # ...</span>
 
 <span class="sd">            def run_once(self):</span>
 <span class="sd">                # ...</span>
 
-<span class="sd">        MyExperimentScan = make_fragment_scan_exp(MyExperiment)</span>
+<span class="sd">        MyExpFragmentScan = make_fragment_scan_exp(MyExpFragment)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">class</span> <span class="nc">FragmentScanShim</span><span class="p">(</span><span class="n">FragmentScanExperiment</span><span class="p">):</span>
@@ -432,6 +441,71 @@
     <span class="n">FragmentScanShim</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">fragment_class</span><span class="o">.</span><span class="vm">__doc__</span>
 
     <span class="k">return</span> <span class="n">FragmentScanShim</span></div>
+
+
+<div class="viewcode-block" id="run_fragment_once"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">run_fragment_once</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Initialise the passed fragment and run it once, capturing and returning the</span>
+<span class="sd">    values from any result channels.</span>
+
+<span class="sd">    :return: A dictionary mapping :class:`ResultChannel` instances to their values</span>
+<span class="sd">        (or ``None`` if not pushed to).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">channel_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">channel_dict</span><span class="p">)</span>
+    <span class="n">sinks</span> <span class="o">=</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="n">LastValueSink</span><span class="p">()</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">channel_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
+    <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">sinks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span>
+
+    <span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">()</span>
+    <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+        <span class="c1"># Run device_setup()/run_once() in a single kernel invocation.</span>
+        <span class="k">class</span> <span class="nc">FragmentRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
+
+            <span class="nd">@kernel</span>
+            <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+
+        <span class="n">FragmentRunner</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">fragment</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+        <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
+
+
+<div class="viewcode-block" id="create_and_run_fragment_once"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.create_and_run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
+                                 <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
+<span class="sd">    returning the values pushed to any result channels.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        class MyExpFragment(ExpFragment):</span>
+<span class="sd">            def build_fragment(self):</span>
+<span class="sd">                # ...</span>
+
+<span class="sd">            def run_once(self):</span>
+<span class="sd">                # ...</span>
+
+<span class="sd">        class MyEnvExperiment(EnvExperiment):</span>
+<span class="sd">            def run(self):</span>
+<span class="sd">                results = create_and_run_once(self, MyExpFragment)</span>
+<span class="sd">                print(results)</span>
+
+<span class="sd">    :param env: The ``HasEnvironment`` to use.</span>
+<span class="sd">    :param fragment_class: The :class:`.ExpFragment` class to instantiate.</span>
+<span class="sd">    :param args: Any arguments to forward to ``build_fragment()``.</span>
+<span class="sd">    :param kwargs: Any keyword arguments to forward to ``build_fragment()``.</span>
+<span class="sd">    :return: A dictionary mapping :class:`ResultChannel` instances to their values</span>
+<span class="sd">        (or ``None`` if not pushed to).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">run_fragment_once</span><span class="p">(</span><span class="n">fragment_class</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
 </pre></div>
 
            </div>
