@@ -134,11 +134,11 @@ def setattr_subscan(owner: Fragment,
     fragment._collect_result_channels(original_channels)
     owner._absorbed_results_subfragments.add(fragment)
 
-    result_array_sinks = {}
+    child_result_sinks = {}
     for channel in original_channels.values():
         sink = ArraySink()
         channel.set_sink(sink)
-        result_array_sinks[channel] = sink
+        child_result_sinks[channel] = sink
 
     # … and re-export result channels that the collected data will be pushed to.
     SCAN_SPEC_NAME = "spec"
@@ -146,13 +146,13 @@ def setattr_subscan(owner: Fragment,
         list(original_channels.keys()) +
         [SCAN_SPEC_NAME], lambda fqn, n: "/".join(fqn.split("/")[-n:]))
     del channel_name_map[SCAN_SPEC_NAME]
-    result_array_channels = {}
+    aggregate_result_channels = {}
     for full_name, short_name in channel_name_map.items():
         channel = original_channels[full_name]
 
         # TODO: Implement ArrayChannel to represent a variable number of dimensions
         # around a scalar channel so we can keep the schema information here.
-        result_array_channels[channel] = owner.setattr_result(
+        aggregate_result_channels[channel] = owner.setattr_result(
             scan_name + "_" + short_name,
             OpaqueChannel,
             save_by_default=save_results_by_default and channel.save_by_default)
@@ -161,7 +161,7 @@ def setattr_subscan(owner: Fragment,
     owner.setattr_result(scan_name + "_" + SCAN_SPEC_NAME, OpaqueChannel)
 
     run_fn = partial(ScanRunner(owner).run, fragment)
-    subscan = Subscan(run_fn, axes, coordinate_channels, result_array_sinks,
-                      result_array_channels)
+    subscan = Subscan(run_fn, axes, coordinate_channels, child_result_sinks,
+                      aggregate_result_channels)
     setattr(owner, scan_name, subscan)
     return subscan
