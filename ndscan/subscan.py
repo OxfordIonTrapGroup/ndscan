@@ -21,10 +21,12 @@ class Subscan:
 
     def __init__(self, run_fn: Callable[[ScanSpec, List[ArraySink]], None],
                  possible_axes: Dict[ParamHandle, ScanAxis],
+                 coordinate_channels: List[ResultChannel],
                  child_result_sinks: Dict[ResultChannel, ArraySink],
                  aggregate_result_channels: Dict[ResultChannel, ResultChannel]):
         self._run_fn = run_fn
         self._possible_axes = possible_axes
+        self._coordinate_channels = coordinate_channels
         self._child_result_sinks = child_result_sinks
         self._aggregate_result_channels = aggregate_result_channels
 
@@ -61,6 +63,9 @@ class Subscan:
 
         spec = ScanSpec(axes, generators, options)
         self._run_fn(spec, list(coordinate_sinks.values()))
+
+        for channel, sink in zip(self._coordinate_channels, coordinate_sinks.values()):
+            channel.push(sink.get_all())
 
         values = {}
         for chan, sink in self._child_result_sinks.items():
@@ -104,6 +109,7 @@ def setattr_subscan(owner: Fragment,
     # Override target parameter stores with newly created stores.
     # TODO: Potentially make handles have identity and accept them directly.
     axes = {}
+    coordinate_channels = []
     for i, (param_owner, name) in enumerate(axis_params):
         handle = getattr(param_owner, name)
         param, store = param_owner.override_param(name)
@@ -116,10 +122,11 @@ def setattr_subscan(owner: Fragment,
         #  - Require the actually used axes to be given in axis_params (which will be
         #    the most common use case anyway).
         #  - Serialise the scan point coordinates into the scan spec.
-        owner.setattr_result(
-            scan_name + "axis_{}".format(i),
-            OpaqueChannel,
-            save_by_default=save_results_by_default)
+        coordinate_channels.append(
+            owner.setattr_result(
+                scan_name + "_axis_{}".format(i),
+                OpaqueChannel,
+                save_by_default=save_results_by_default))
 
     # Instead of letting our parent directly manage the subfragment result channels,
     # we redirect the results to ArraySinks…
@@ -154,6 +161,7 @@ def setattr_subscan(owner: Fragment,
     owner.setattr_result(scan_name + "_" + SCAN_SPEC_NAME, OpaqueChannel)
 
     run_fn = partial(ScanRunner(owner).run, fragment)
-    subscan = Subscan(run_fn, axes, result_array_sinks, result_array_channels)
+    subscan = Subscan(run_fn, axes, coordinate_channels, result_array_sinks,
+                      result_array_channels)
     setattr(owner, scan_name, subscan)
     return subscan
