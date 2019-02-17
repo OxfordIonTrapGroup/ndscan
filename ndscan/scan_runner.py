@@ -207,15 +207,12 @@ class ScanRunner(HasEnvironment):
 
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,
-                  results_by_short_name: Dict[str, ResultChannel],
-                  result_key_names_by_path: Dict[str, str]):
+                  short_result_names: Dict[ResultChannel, str]):
     """Return metadata for the given spec in stringly typed dictionary form.
 
     :param spec: :class:`ScanSpec` describing the scan.
     :param fragment: Fragment being scanned.
-    :param results_by_short_name: Map from short result names to channel objects.
-    :param result_key_names_by_path: Map from result channel path to name of result key
-        ("channel_…").
+    :param short_result_names: Map from result channel objects to shortened names.
     """
     desc = {}
 
@@ -231,7 +228,7 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
     desc["seed"] = spec.options.seed
     desc["channels"] = {
         name: channel.describe()
-        for (name, channel) in results_by_short_name.items()
+        for (channel, name) in short_result_names.items()
     }
 
     desc["auto_fit"] = []
@@ -241,6 +238,6 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
             desc["auto_fit"].append(
                 f.describe(
                     lambda identity: "axis_{}".format(axis_identities.index(identity)),
-                    lambda path: result_key_names_by_path[path]))
+                    lambda channel: "channel_" + short_result_names[channel]))
 
     return desc

@@ -132,20 +132,16 @@ class FragmentScanExperiment(EnvExperiment):
 
         chan_name_map = _shorten_result_channel_names(chan_dict.keys())
 
-        self.channels = {}
-        self._channel_dataset_names = {}
+        self._short_child_channel_names = {}
         for path, channel in chan_dict.items():
             if not channel.save_by_default:
                 continue
             name = chan_name_map[path].replace("/", "_")
-            self.channels[name] = channel
+            self._short_child_channel_names[channel] = name
 
             if self._scan.axes:
-                dataset = "channel_{}".format(name)
-                self._channel_dataset_names[path] = dataset
-                sink = AppendingDatasetSink(self, "ndscan.points." + dataset)
+                sink = AppendingDatasetSink(self, "ndscan.points.channel_" + name)
             else:
-                self._channel_dataset_names[path] = name
                 sink = ScalarDatasetSink(self, "ndscan.point." + name)
             channel.set_sink(sink)
 
@@ -212,8 +208,8 @@ class FragmentScanExperiment(EnvExperiment):
         push("rid", self.scheduler.rid)
         push("completed", False)
 
-        scan_desc = describe_scan(self._scan, self.fragment, self.channels,
-                                  self._channel_dataset_names)
+        scan_desc = describe_scan(self._scan, self.fragment,
+                                  self._short_child_channel_names)
 
         # KLDUGE: Broadcast auto_fit before channels to allow simpler implementation
         # in current fit applet. As the applet implementation grows more sophisticated
