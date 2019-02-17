@@ -206,12 +206,12 @@ class FragmentScanExperiment(EnvExperiment):
         self.set_dataset("ndscan.completed", True, broadcast=True)
 
     def _broadcast_metadata(self):
-        def set(name, value):
+        def push(name, value):
             self.set_dataset("ndscan." + name, value, broadcast=True)
 
-        set("fragment_fqn", self.fragment.fqn)
-        set("rid", self.scheduler.rid)
-        set("completed", False)
+        push("fragment_fqn", self.fragment.fqn)
+        push("rid", self.scheduler.rid)
+        push("completed", False)
 
         axis_specs = [{
             "param": ax.param_schema,
@@ -220,9 +220,9 @@ class FragmentScanExperiment(EnvExperiment):
         for ax, gen in zip(axis_specs, self._scan.generators):
             gen.describe_limits(ax)
 
-        set("axes", json.dumps(axis_specs))
+        push("axes", json.dumps(axis_specs))
 
-        set("seed", self._scan.options.seed)
+        push("seed", self._scan.options.seed)
 
         # KLDUGE: Broadcast auto_fit before channels to allow simpler implementation
         # in current fit applet. As the applet implementation grows more sophisticated
@@ -237,13 +237,13 @@ class FragmentScanExperiment(EnvExperiment):
                         lambda identity: "axis_{}".format(
                             axis_identities.index(identity)), lambda path: self.
                         _channel_dataset_names[path]))
-        set("auto_fit", json.dumps(fits))
+        push("auto_fit", json.dumps(fits))
 
         channels = {
             name: channel.describe()
             for (name, channel) in self.channels.items()
         }
-        set("channels", json.dumps(channels))
+        push("channels", json.dumps(channels))
 
     @rpc(flags={"async"})
     def _broadcast_point_phase(self):
