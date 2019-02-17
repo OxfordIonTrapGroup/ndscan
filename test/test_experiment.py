@@ -3,7 +3,9 @@ Tests for ndscan.experiment top-level runners.
 """
 
 import json
-from ndscan.experiment import make_fragment_scan_exp, run_fragment_once
+from artiq.language import HasEnvironment
+from ndscan.experiment import (make_fragment_scan_exp, run_fragment_once,
+                               create_and_run_fragment_once)
 from fixtures import AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment
 from mock_environment import HasEnvironmentCase
 
@@ -83,3 +85,8 @@ class RunOnceCase(HasEnvironmentCase):
         fragment = self.create(TrivialKernelFragment, [])
         run_fragment_once(fragment)
         self.assertEqual(self.core.run.call_count, 1)
+
+    def test_create_and_run_once(self):
+        self.assertEqual(
+            create_and_run_fragment_once(self.create(HasEnvironment), AddOneFragment),
+            {"result": 1.0})

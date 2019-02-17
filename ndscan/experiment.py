@@ -15,7 +15,7 @@ from contextlib import suppress
 import json
 import logging
 import random
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Dict, Iterable, Type
 
 from .fragment import ExpFragment
 from .parameters import type_string_to_param
@@ -130,8 +130,7 @@ class FragmentScanExperiment(EnvExperiment):
         chan_dict = {}
         self.fragment._collect_result_channels(chan_dict)
 
-        chan_name_map = shorten_to_unambiguous_suffixes(
-            chan_dict.keys(), lambda fqn, n: "/".join(fqn.split("/")[-n:]))
+        chan_name_map = _shorten_result_channel_names(chan_dict.keys())
 
         self.channels = {}
         self._channel_dataset_names = {}
@@ -265,6 +264,11 @@ class FragmentScanExperiment(EnvExperiment):
             is_transient=True)
 
 
+def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
+    return shorten_to_unambiguous_suffixes(
+        full_names, lambda fqn, n: "/".join(fqn.split("/")[-n:]))
+
+
 def make_fragment_scan_exp(
         fragment_class: Type[ExpFragment]) -> Type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
@@ -332,7 +336,7 @@ def run_fragment_once(fragment: ExpFragment) -> Dict[ResultChannel, Any]:
 
 
 def create_and_run_fragment_once(env: HasEnvironment, fragment_class: Type[ExpFragment],
-                                 *args, **kwargs) -> Dict[ResultChannel, Any]:
+                                 *args, **kwargs) -> Dict[str, Any]:
     """Create an instance of the passed :class:`.ExpFragment` type and runs it once,
     returning the values pushed to any result channels.
 
@@ -341,6 +345,7 @@ def create_and_run_fragment_once(env: HasEnvironment, fragment_class: Type[ExpFr
         class MyExpFragment(ExpFragment):
             def build_fragment(self):
                 # ...
+                self.setattr_result("foo")
 
             def run_once(self):
                 # ...
@@ -348,13 +353,16 @@ def create_and_run_fragment_once(env: HasEnvironment, fragment_class: Type[ExpFr
         class MyEnvExperiment(EnvExperiment):
             def run(self):
                 results = create_and_run_once(self, MyExpFragment)
-                print(results)
+                print(results["foo"])
 
     :param env: The ``HasEnvironment`` to use.
     :param fragment_class: The :class:`.ExpFragment` class to instantiate.
     :param args: Any arguments to forward to ``build_fragment()``.
     :param kwargs: Any keyword arguments to forward to ``build_fragment()``.
-    :return: A dictionary mapping :class:`ResultChannel` instances to their values
-        (or ``None`` if not pushed to).
+    :return: A dictionary mapping result channel names to their values (or ``None`` if
+        not pushed to).
     """
-    return run_fragment_once(fragment_class(env, [], *args, **kwargs))
+    results = run_fragment_once(fragment_class(env, [], *args, **kwargs))
+    shortened_names = _shorten_result_channel_names(
+        channel.path for channel in results.keys())
+    return {shortened_names[channel.path]: value for channel, value in results.items()}
