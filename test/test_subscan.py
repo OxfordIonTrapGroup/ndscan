@@ -2,6 +2,7 @@
 Tests for subscan functionality.
 """
 
+from ndscan.experiment import run_fragment_once
 from ndscan.fragment import *
 from ndscan.scan_generator import LinearGenerator
 from ndscan.subscan import setattr_subscan
@@ -36,3 +37,12 @@ class SubscanCase(ExpFragmentCase):
         expected_results = [v + 1 for v in expected_values]
         self.assertEqual(coords, {parent.child.value: expected_values})
         self.assertEqual(values, {result_channel: expected_results})
+
+    def test_1d_result_channels(self):
+        parent = self.create(Scan1DFragment, AddOneFragment)
+        results = run_fragment_once(parent)
+
+        expected_values = [float(n) for n in range(0, 4)]
+        expected_results = [v + 1 for v in expected_values]
+        self.assertEqual(results[parent.scan_axis_0], expected_values)
+        self.assertEqual(results[parent.scan_result], expected_results)
