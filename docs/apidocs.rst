@@ -63,3 +63,7 @@ Experiment entry points
         :members:
 
     .. autodata:: ndscan.experiment.PARAMS_ARG_KEY
+
+    .. autofunction:: ndscan.experiment.run_fragment_once
+
+    .. autofunction:: ndscan.experiment.create_and_run_fragment_once

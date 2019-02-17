@@ -2,6 +2,7 @@
 Common fragments/… for unit tests.
 """
 
+from artiq.experiment import *
 from ndscan.fragment import *
 
 
@@ -36,3 +37,16 @@ class ReboundAddOneFragment(ExpFragment):
 
     def run_once(self):
         self.add_one.run_once()
+
+
+class TrivialKernelFragment(ExpFragment):
+    def build_fragment(self):
+        pass
+
+    @kernel
+    def device_setup(self):
+        pass
+
+    @kernel
+    def run_once(self):
+        pass
