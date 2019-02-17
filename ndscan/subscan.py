@@ -42,7 +42,7 @@ class Subscan:
         :param options: Scan options to pass to :class:`ScanSpec`.
 
         :return: A tuple ``(coordinates, values)``, each a dictionary mapping parameter
-            handles resp. result channels to their values.
+            handles resp. result channels to lists of their values.
         """
 
         for sink in self._child_result_sinks.values():
