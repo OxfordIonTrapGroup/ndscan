@@ -1,10 +1,17 @@
-from artiq.language import *
+"""
+Result handling building blocks.
+"""
+
+from artiq.language import HasEnvironment, rpc
 import artiq.language.units
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 class ResultSink:
-    def push(self, value):
+    """
+    """
+
+    def push(self, value: Any) -> None:
         raise NotImplementedError
 
 
@@ -12,48 +19,64 @@ class ArraySink(ResultSink):
     def __init__(self):
         self.data = []
 
-    def push(self, value):
+    def push(self, value: Any) -> None:
         self.data.append(value)
 
-    def get_all(self):
+    def get_all(self) -> List[Any]:
         return self.data
 
-    def clear(self):
+    def clear(self) -> None:
         self.data = []
 
 
 class AppendingDatasetSink(ResultSink, HasEnvironment):
-    def build(self, key, broadcast=True):
+    def build(self, key: str, broadcast: bool = True) -> None:
+        """
+        :param key: Dataset key to store results in. Set to an array on the first push,
+            and subsequently appended to.
+        :param broadcast: Whether to set the dataset in broadcast mode.
+        """
         self.key = key
         self.broadcast = broadcast
         self.has_pushed = False
 
-    def push(self, value):
+    def push(self, value: Any) -> None:
         if not self.has_pushed:
             self.set_dataset(self.key, [value], broadcast=self.broadcast)
             self.has_pushed = True
             return
         self.append_to_dataset(self.key, value)
 
-    def get_all(self):
+    def get_all(self) -> List[Any]:
         return self.get_dataset(self.key) if self.has_pushed else []
 
 
 class ScalarDatasetSink(ResultSink, HasEnvironment):
-    def build(self, key, broadcast=True):
+    """Sink that writes pushed results to a dataset, overwriting its previous value
+    if any."""
+
+    def build(self, key: str, broadcast: bool = True) -> None:
+        """
+        :param key: Dataset key to write the value to.
+        :param broadcast: Whether to set the dataset in broadcast mode.
+        """
         self.key = key
         self.broadcast = broadcast
         self.has_pushed = False
 
-    def push(self, value):
+    def push(self, value: Any) -> None:
         self.set_dataset(self.key, value, broadcast=self.broadcast)
         self.has_pushed = True
 
-    def get_last(self):
+    def get_last(self) -> Any:
+        """Return the last pushed value, or ``None`` if none yet."""
         return self.get_dataset(self.key) if self.has_pushed else None
 
 
 class ResultChannel:
+    """
+    """
+
     def __init__(self,
                  path: str,
                  description: str = "",
@@ -66,6 +89,8 @@ class ResultChannel:
         self.sink = None
 
     def describe(self) -> Dict[str, Any]:
+        """
+        """
         desc = {
             "path": self.path,
             "description": self.description,
@@ -77,14 +102,20 @@ class ResultChannel:
         return desc
 
     def is_muted(self) -> bool:
+        """
+        """
         # TODO: Implement muting interface?
         return self.sink is not None
 
-    def set_sink(self, sink: ResultSink):
+    def set_sink(self, sink: ResultSink) -> None:
+        """
+        """
         self.sink = sink
 
     @rpc(flags={"async"})
-    def push(self, raw_value):
+    def push(self, raw_value) -> None:
+        """
+        """
         value = self._coerce_to_type(raw_value)
         if self.sink:
             self.sink.push(value)
@@ -97,6 +128,9 @@ class ResultChannel:
 
 
 class NumericChannel(ResultChannel):
+    """Base class for channels of numerical results, with scale/unit semantics and
+    optional range limits."""
+
     def __init__(self,
                  path: str,
                  description: str = "",
@@ -122,6 +156,7 @@ class NumericChannel(ResultChannel):
         self.unit = unit
 
     def describe(self) -> Dict[str, Any]:
+        """"""
         result = super().describe()
         result["scale"] = self.scale
         if self.min is not None:

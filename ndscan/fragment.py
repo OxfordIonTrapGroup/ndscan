@@ -16,6 +16,20 @@ class Fragment(HasEnvironment):
     """Main building block."""
 
     def build(self, fragment_path: List[str], *args, **kwargs):
+        """Initialise this fragment instance; called from the ``HasEnvironment``
+        constructor.
+
+        This sets up the machinery for registering parameters and result channels with
+        the fragment tree, and then calls :meth:`build_fragment` to actually perform the
+        fragment-specific setup. This method should not typically be overwritten.
+
+        :params fragment_path: Full path of the fragment, as a list starting from the
+            root. For instance, ``[]`` for the top-level fragment, or ``["foo", "bar"]``
+            for a subfragment created by ``setattr_fragment("bar", …)`` in a fragment
+            created by ``setattr_fragment("foo", …)``.
+        :params args: Arguments to be forwarded to :meth:`build_fragment`.
+        :params kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.
+        """
         self._fragment_path = fragment_path
         self._subfragments = []
         self._free_params = OrderedDict()
@@ -53,10 +67,7 @@ class Fragment(HasEnvironment):
         self._building = False
 
     def host_setup(self):
-        """Called before kernel is entered for the first time.
-
-        TODO: Define semantics for multiple invocations.
-        """
+        """Called on the host, before the kernel is entered."""
         pass
 
     @portable
@@ -69,11 +80,37 @@ class Fragment(HasEnvironment):
         self.device_setup()
 
     def build_fragment(self, *args, **kwargs) -> None:
+        """Performs initialisation specific to this fragment type.
+
+        Like ``build()`` for a bare ``HasEnvironment``, this is where all of the
+        user-specified initialisation should take place (rather than, say, the
+        constructor, or ``build()``).
+
+        While this method executes, the various ``setattr_*()`` functions can be used
+        to create subfragments, parameters, and result channels.
+
+        :param args: Any extra arguments passed to the ``HasEnvironment`` constructor.
+        :param kwargs: Any extra keyword arguments passed to the ``HasEnvironment``
+            constructor.
+        """
         raise NotImplementedError("build_fragment() not implemented; "
                                   "override it to add parameters/result channels.")
 
     def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args,
                          **kwargs) -> "Fragment":
+        """Create a subfragment of the given name and type.
+
+        Can only be called during :meth:`build_fragment`.
+
+        :param name: The fragment name; part of the fragment path. Must be a valid
+            Python identifier; the fragment will be accessible as ``self.<name>``.
+        :param fragment_class: The type of the subfragment to instantiate.
+        :param args: Any extra arguments to forward to the subfragment
+            ``build_fragment()`` call.
+        :param kwargs: Any extra keyword arguments to forward to the subfragment
+            ``build_fragment()`` call.
+        :return: The newly created fragment instance.
+        """
         assert self._building, ("Can only call setattr_fragment() "
                                 "during build_fragment()")
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
@@ -87,6 +124,19 @@ class Fragment(HasEnvironment):
 
     def setattr_param(self, name: str, param_class: Type, description: str, *args,
                       **kwargs) -> ParamHandle:
+        """Create a parameter of the given name and type.
+
+        Can only be called during :meth:`build_fragment`.
+
+        :param name: The parameter name, to be part of its FQN. Must be a valid Python
+            identifier; the parameter handle will be accessible as ``self.<name>``.
+        :param param_class: The type of parameter to instantiate.
+        :param description: The human-readable parameter name.
+        :param args: Any extra arguments to pass to the ``param_class`` constructor.
+        :param kwargs: Any extra keyword arguments to pass to the the ``param_class``
+            constructor.
+        :return: The newly created parameter handle.
+        """
         assert self._building, "Can only call setattr_param() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
@@ -101,8 +151,28 @@ class Fragment(HasEnvironment):
     def setattr_param_rebind(self,
                              name: str,
                              original_owner: "Fragment",
-                             original_name: str = None,
+                             original_name: Union[str, None] = None,
                              **kwargs) -> ParamHandle:
+        """Create a parameter that overrides the value of a subfragment parameter.
+
+        The most common use case for this is to specialise the operation of a generic
+        subfragment. For example, there might be a fragment ``Fluoresce`` that drives
+        a cycling transition in an ion with parameters for intensity and detuning.
+        Higher-level fragments for Doppler cooling, readout, etc. might then use
+        ``Fluoresce``, rebinding its intensity and detuning parameters to values and
+        defaults appropriate for those particular tasks.
+
+        Can only be called during :meth:`build_fragment`.
+
+        :param name: The parameter name, to be part of its FQN. Must be a valid Python
+            identifier; the parameter handle will be accessible as ``self.<name>``.
+        :param original_owner: The fragment owning the parameter to rebind.
+        :param original_name: The name of the original parameter (i.e.
+            ``<original_owner>.<original_name>``). If ``None``, defaults to ``name``.
+        :param kwargs: Any attributes to override in the parameter metadata, which
+            defaults to that of the original parameter.
+        :return: The newly created parameter handle.
+        """
         assert (self._building
                 ), "Can only call setattr_param_rebind() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
@@ -134,6 +204,19 @@ class Fragment(HasEnvironment):
                        channel_class: Type[ResultChannel] = FloatChannel,
                        *args,
                        **kwargs) -> ResultChannel:
+        """Create a result channel of the given name and type.
+
+        Can only be called during :meth:`build_fragment`.
+
+        :param name: The result channel name, to be part of its full path. Must be a
+            valid Python identifier. The channel instance will be accessible as
+            ``self.<name>``.
+        :param channel_class: The type of result channel to instantiate.
+        :param args: Any extra arguments to pass to the ``channel_class`` constructor.
+        :param kwargs: Any extra keyword arguments to pass to the the ``channel_class``
+            constructor.
+        :return: The newly created result channel instance.
+        """
         assert self._building, "Can only call setattr_result() during build_fragment()"
         assert name.isidentifier(), ("Result channel name must be a valid "
                                      "Python identifier")
@@ -251,7 +334,11 @@ class Fragment(HasEnvironment):
 
 
 class ExpFragment(Fragment):
+    """Fragment that supports the notion of being run to produce results."""
+
     def run_once(self):
+        """Execute the experiment described by the fragment once with the current
+        parameters, producing one set of results (if any)."""
         pass
 
     def get_default_fits(self) -> List[AutoFitSpec]:
