@@ -2,9 +2,10 @@
 Tests for subscan functionality.
 """
 
+import json
 from ndscan.experiment import run_fragment_once
 from ndscan.fragment import *
-from ndscan.scan_generator import LinearGenerator
+from ndscan.scan_generator import LinearGenerator, ScanOptions
 from ndscan.subscan import setattr_subscan
 
 from fixtures import AddOneFragment, ReboundAddOneFragment
@@ -18,7 +19,8 @@ class Scan1DFragment(ExpFragment):
         assert self.scan == scan
 
     def run_once(self):
-        return self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))])
+        return self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))],
+                             ScanOptions(seed=1234))
 
 
 class SubscanCase(ExpFragmentCase):
@@ -45,4 +47,44 @@ class SubscanCase(ExpFragmentCase):
         expected_values = [float(n) for n in range(0, 4)]
         expected_results = [v + 1 for v in expected_values]
         self.assertEqual(results[parent.scan_axis_0], expected_values)
-        self.assertEqual(results[parent.scan_result], expected_results)
+        self.assertEqual(results[parent.scan_channel_result], expected_results)
+
+        spec = json.loads(results[parent.scan_spec])
+        self.assertEqual(spec["fragment_fqn"], "fixtures.AddOneFragment")
+        self.assertEqual(spec["seed"], 1234)
+        self.assertEqual(spec["auto_fit"], [{
+            "data": {
+                "x": "axis_0",
+                "y": "channel_result"
+            },
+            "fit_type": "lorentzian",
+            "pois": [{
+                "x": "x0"
+            }]
+        }])
+        self.assertEqual(
+            spec["channels"], {
+                "result": {
+                    "description": "",
+                    "scale": 1.0,
+                    "path": "child/result",
+                    "type": "float",
+                    "unit": ""
+                }
+            })
+        self.assertEqual(spec["axes"], [{
+            "min": 0,
+            "max": 3,
+            "path": "child",
+            "param": {
+                "description": "Value to return",
+                "default": "0.0",
+                "fqn": "fixtures.AddOneFragment.value",
+                "spec": {
+                    "scale": 1.0,
+                    "step": 0.1
+                },
+                "type": "float"
+            },
+            "increment": 1.0
+        }])

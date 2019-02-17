@@ -4,13 +4,12 @@ another child fragment as part of its execution.
 """
 
 from collections import OrderedDict
-from functools import partial
 from typing import Callable, Dict, List, Tuple
 from .fragment import ExpFragment, Fragment
 from .parameters import ParamHandle
-from .result_channels import ArraySink, OpaqueChannel, ResultChannel
+from .result_channels import ArraySink, OpaqueChannel, ResultChannel, SubscanChannel
 from .scan_generator import ScanGenerator, ScanOptions
-from .scan_runner import ScanAxis, ScanRunner, ScanSpec
+from .scan_runner import ScanAxis, ScanRunner, ScanSpec, describe_scan
 from .utils import shorten_to_unambiguous_suffixes
 
 
@@ -19,16 +18,21 @@ class Subscan:
     executed.
     """
 
-    def __init__(self, run_fn: Callable[[ScanSpec, List[ArraySink]], None],
-                 possible_axes: Dict[ParamHandle, ScanAxis],
+    def __init__(self, run_fn: Callable[[ExpFragment, ScanSpec, List[ArraySink]], None],
+                 fragment: ExpFragment, possible_axes: Dict[ParamHandle, ScanAxis],
+                 schema_channel: SubscanChannel,
                  coordinate_channels: List[ResultChannel],
                  child_result_sinks: Dict[ResultChannel, ArraySink],
-                 aggregate_result_channels: Dict[ResultChannel, ResultChannel]):
+                 aggregate_result_channels: Dict[ResultChannel, ResultChannel],
+                 child_channels_by_name: Dict[str, ResultChannel]):
         self._run_fn = run_fn
+        self._fragment = fragment
+        self._schema_channel = schema_channel
         self._possible_axes = possible_axes
         self._coordinate_channels = coordinate_channels
         self._child_result_sinks = child_result_sinks
         self._aggregate_result_channels = aggregate_result_channels
+        self._child_channels_by_name = child_channels_by_name
 
     def run(self,
             axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
@@ -62,7 +66,16 @@ class Subscan:
             coordinate_sinks[param_handle] = ArraySink()
 
         spec = ScanSpec(axes, generators, options)
-        self._run_fn(spec, list(coordinate_sinks.values()))
+        self._run_fn(self._fragment, spec, list(coordinate_sinks.values()))
+
+        # Names referenced in auto_fit specs.
+        dataset_names = {
+            channel.path: "channel_" + short_name
+            for short_name, channel in self._child_channels_by_name.items()
+        }
+        self._schema_channel.push(
+            describe_scan(spec, self._fragment, self._child_channels_by_name,
+                          dataset_names))
 
         for channel, sink in zip(self._coordinate_channels, coordinate_sinks.values()):
             channel.push(sink.get_all())
@@ -141,27 +154,26 @@ def setattr_subscan(owner: Fragment,
         child_result_sinks[channel] = sink
 
     # … and re-export result channels that the collected data will be pushed to.
-    SCAN_SPEC_NAME = "spec"
     channel_name_map = shorten_to_unambiguous_suffixes(
-        list(original_channels.keys()) +
-        [SCAN_SPEC_NAME], lambda fqn, n: "/".join(fqn.split("/")[-n:]))
-    del channel_name_map[SCAN_SPEC_NAME]
+        original_channels.keys(), lambda fqn, n: "/".join(fqn.split("/")[-n:]))
     aggregate_result_channels = {}
+    channels_by_name = {}
     for full_name, short_name in channel_name_map.items():
         channel = original_channels[full_name]
+        channels_by_name[short_name] = channel
 
         # TODO: Implement ArrayChannel to represent a variable number of dimensions
         # around a scalar channel so we can keep the schema information here.
         aggregate_result_channels[channel] = owner.setattr_result(
-            scan_name + "_" + short_name,
+            scan_name + "_channel_" + short_name,
             OpaqueChannel,
             save_by_default=save_results_by_default and channel.save_by_default)
 
     # TODO: Actually write scan metadata to this.
-    owner.setattr_result(scan_name + "_" + SCAN_SPEC_NAME, OpaqueChannel)
+    spec_channel = owner.setattr_result(scan_name + "_spec", SubscanChannel)
 
-    run_fn = partial(ScanRunner(owner).run, fragment)
-    subscan = Subscan(run_fn, axes, coordinate_channels, child_result_sinks,
-                      aggregate_result_channels)
+    subscan = Subscan(
+        ScanRunner(owner).run, fragment, axes, spec_channel, coordinate_channels,
+        child_result_sinks, aggregate_result_channels, channels_by_name)
     setattr(owner, scan_name, subscan)
     return subscan

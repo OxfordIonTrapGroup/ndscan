@@ -4,6 +4,7 @@ Result handling building blocks.
 
 from artiq.language import HasEnvironment, rpc
 import artiq.language.units
+import json
 from typing import Any, Dict, List
 
 
@@ -211,3 +212,16 @@ class OpaqueChannel(ResultChannel):
         # Just pass through values, leaving it to the user to choose something
         # HD5- and PYON-compatible.
         return value
+
+
+class SubscanChannel(ResultChannel):
+    """Channel that stores the scan metadata for a subscan.
+
+    Serialised as a JSON string for HDF5 compatibility.
+    """
+
+    def _get_type_string(self):
+        return "subscan"
+
+    def _coerce_to_type(self, value):
+        return json.dumps(value)

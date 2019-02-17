@@ -22,7 +22,7 @@ from .parameters import type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
-from .scan_runner import ScanAxis, ScanRunner, ScanSpec
+from .scan_runner import ScanAxis, ScanRunner, ScanSpec, describe_scan
 from .utils import shorten_to_unambiguous_suffixes, is_kernel
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
@@ -209,41 +209,24 @@ class FragmentScanExperiment(EnvExperiment):
         def push(name, value):
             self.set_dataset("ndscan." + name, value, broadcast=True)
 
-        push("fragment_fqn", self.fragment.fqn)
         push("rid", self.scheduler.rid)
         push("completed", False)
 
-        axis_specs = [{
-            "param": ax.param_schema,
-            "path": ax.path,
-        } for ax in self._scan.axes]
-        for ax, gen in zip(axis_specs, self._scan.generators):
-            gen.describe_limits(ax)
-
-        push("axes", json.dumps(axis_specs))
-
-        push("seed", self._scan.options.seed)
+        scan_desc = describe_scan(self._scan, self.fragment, self.channels,
+                                  self._channel_dataset_names)
 
         # KLDUGE: Broadcast auto_fit before channels to allow simpler implementation
         # in current fit applet. As the applet implementation grows more sophisticated
         # (hiding axes, etc.), it should be easy to relax this requirement.
+        push("auto_fit", json.dumps(scan_desc["auto_fit"]))
+        del scan_desc["auto_fit"]
 
-        fits = []
-        axis_identities = [(s.param_schema["fqn"], s.path) for s in self._scan.axes]
-        for f in self.fragment.get_default_fits():
-            if f.has_data(axis_identities):
-                fits.append(
-                    f.describe(
-                        lambda identity: "axis_{}".format(
-                            axis_identities.index(identity)), lambda path: self.
-                        _channel_dataset_names[path]))
-        push("auto_fit", json.dumps(fits))
-
-        channels = {
-            name: channel.describe()
-            for (name, channel) in self.channels.items()
-        }
-        push("channels", json.dumps(channels))
+        for name, value in scan_desc.items():
+            # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
+            if isinstance(value, str) or isinstance(value, int):
+                push(name, value)
+            else:
+                push(name, json.dumps(value))
 
     @rpc(flags={"async"})
     def _broadcast_point_phase(self):
