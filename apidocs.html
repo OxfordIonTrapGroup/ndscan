@@ -909,13 +909,14 @@ values from any result channels.</p>
 
 <dl class="function">
 <dt id="ndscan.experiment.create_and_run_fragment_once">
-<code class="descclassname">ndscan.experiment.</code><code class="descname">create_and_run_fragment_once</code><span class="sig-paren">(</span><em>env: artiq.language.environment.HasEnvironment, fragment_class: Type[ndscan.fragment.ExpFragment], *args, **kwargs</em><span class="sig-paren">)</span> &#x2192; Dict[ndscan.result_channels.ResultChannel, Any]<a class="reference internal" href="_modules/ndscan/experiment.html#create_and_run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.create_and_run_fragment_once" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ndscan.experiment.</code><code class="descname">create_and_run_fragment_once</code><span class="sig-paren">(</span><em>env: artiq.language.environment.HasEnvironment, fragment_class: Type[ndscan.fragment.ExpFragment], *args, **kwargs</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="_modules/ndscan/experiment.html#create_and_run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.create_and_run_fragment_once" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create an instance of the passed <a class="reference internal" href="#ndscan.fragment.ExpFragment" title="ndscan.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> type and runs it once,
 returning the values pushed to any result channels.</p>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># ...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># ...</span>
@@ -923,7 +924,7 @@ returning the values pushed to any result channels.</p>
 <span class="k">class</span> <span class="nc">MyEnvExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">results</span> <span class="o">=</span> <span class="n">create_and_run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MyExpFragment</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;foo&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -938,8 +939,8 @@ returning the values pushed to any result channels.</p>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A dictionary mapping <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultChannel</span></code> instances to their values
-(or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not pushed to).</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A dictionary mapping result channel names to their values (or <code class="docutils literal notranslate"><span class="pre">None</span></code> if
+not pushed to).</p>
 </td>
 </tr>
 </tbody>
