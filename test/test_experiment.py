@@ -24,6 +24,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
             return self.dataset_db.get("ndscan." + key)
 
         self.assertEqual(json.loads(d("axes")), [])
+        self.assertEqual(d("completed"), True)
         self.assertEqual(d("fragment_fqn"), "fixtures.AddOneFragment")
         self.assertEqual(d("rid"), 0)
 
@@ -70,6 +71,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
                 },
                 "path": "*"
             }])
+        self.assertEqual(d("completed"), True)
         self.assertEqual(d("points.axis_0"), [0, 1, 2])
         self.assertEqual(d("points.channel_result"), [1, 2, 3])
         self.assertEqual(d("fragment_fqn"), fragment_fqn)
