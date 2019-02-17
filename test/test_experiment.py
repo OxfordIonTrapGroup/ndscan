@@ -30,6 +30,17 @@ class FragmentScanExpCase(HasEnvironmentCase):
 
     def test_run_1d_scan(self):
         self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
+        self.assertEqual(
+            json.loads(self.dataset_db.get("ndscan.auto_fit")), [{
+                "data": {
+                    "x": "axis_0",
+                    "y": "channel_result"
+                },
+                "fit_type": "lorentzian",
+                "pois": [{
+                    "x": "x0"
+                }]
+            }])
 
     def test_run_rebound_1d_scan(self):
         self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment")

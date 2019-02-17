@@ -23,6 +23,10 @@ class AddOneFragment(ExpFragment):
     def run_once(self):
         self.result.push(self.value.get() + 1)
 
+    def get_default_fits(self):
+        # Nonsensical fit spec to exercise serialisation code.
+        return [AutoFitSpec("lorentzian", {"x": self.value, "y": self.result})]
+
 
 class ReboundAddOneFragment(ExpFragment):
     def build_fragment(self):
