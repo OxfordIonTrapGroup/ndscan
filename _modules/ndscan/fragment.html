@@ -164,6 +164,20 @@
     <span class="sd">&quot;&quot;&quot;Main building block.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Fragment.build"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_path</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialise this fragment instance; called from the ``HasEnvironment``</span>
+<span class="sd">        constructor.</span>
+
+<span class="sd">        This sets up the machinery for registering parameters and result channels with</span>
+<span class="sd">        the fragment tree, and then calls :meth:`build_fragment` to actually perform the</span>
+<span class="sd">        fragment-specific setup. This method should not typically be overwritten.</span>
+
+<span class="sd">        :params fragment_path: Full path of the fragment, as a list starting from the</span>
+<span class="sd">            root. For instance, ``[]`` for the top-level fragment, or ``[&quot;foo&quot;, &quot;bar&quot;]``</span>
+<span class="sd">            for a subfragment created by ``setattr_fragment(&quot;bar&quot;, …)`` in a fragment</span>
+<span class="sd">            created by ``setattr_fragment(&quot;foo&quot;, …)``.</span>
+<span class="sd">        :params args: Arguments to be forwarded to :meth:`build_fragment`.</span>
+<span class="sd">        :params kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">=</span> <span class="n">fragment_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
@@ -201,10 +215,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_building</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 <div class="viewcode-block" id="Fragment.host_setup"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.host_setup">[docs]</a>    <span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Called before kernel is entered for the first time.</span>
-
-<span class="sd">        TODO: Define semantics for multiple invocations.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Called on the host, before the kernel is entered.&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
     <span class="nd">@portable</span>
@@ -216,12 +227,38 @@
         <span class="c1"># By default, just completely reinitialize.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;build_fragment() not implemented; &quot;</span>
-                                  <span class="s2">&quot;override it to add parameters/result channels.&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="Fragment.build_fragment"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.build_fragment">[docs]</a>    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Performs initialisation specific to this fragment type.</span>
 
-    <span class="k">def</span> <span class="nf">setattr_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+<span class="sd">        Like ``build()`` for a bare ``HasEnvironment``, this is where all of the</span>
+<span class="sd">        user-specified initialisation should take place (rather than, say, the</span>
+<span class="sd">        constructor, or ``build()``).</span>
+
+<span class="sd">        While this method executes, the various ``setattr_*()`` functions can be used</span>
+<span class="sd">        to create subfragments, parameters, and result channels.</span>
+
+<span class="sd">        :param args: Any extra arguments passed to the ``HasEnvironment`` constructor.</span>
+<span class="sd">        :param kwargs: Any extra keyword arguments passed to the ``HasEnvironment``</span>
+<span class="sd">            constructor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;build_fragment() not implemented; &quot;</span>
+                                  <span class="s2">&quot;override it to add parameters/result channels.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fragment.setattr_fragment"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.setattr_fragment">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                          <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a subfragment of the given name and type.</span>
+
+<span class="sd">        Can only be called during :meth:`build_fragment`.</span>
+
+<span class="sd">        :param name: The fragment name; part of the fragment path. Must be a valid</span>
+<span class="sd">            Python identifier; the fragment will be accessible as ``self.&lt;name&gt;``.</span>
+<span class="sd">        :param fragment_class: The type of the subfragment to instantiate.</span>
+<span class="sd">        :param args: Any extra arguments to forward to the subfragment</span>
+<span class="sd">            ``build_fragment()`` call.</span>
+<span class="sd">        :param kwargs: Any extra keyword arguments to forward to the subfragment</span>
+<span class="sd">            ``build_fragment()`` call.</span>
+<span class="sd">        :return: The newly created fragment instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Can only call setattr_fragment() &quot;</span>
                                 <span class="s2">&quot;during build_fragment()&quot;</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="s2">&quot;Subfragment name must be valid Python identifier&quot;</span>
@@ -231,10 +268,23 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frag</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">frag</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">frag</span>
+        <span class="k">return</span> <span class="n">frag</span></div>
 
-    <span class="k">def</span> <span class="nf">setattr_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">param_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+<div class="viewcode-block" id="Fragment.setattr_param"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.setattr_param">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">param_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                       <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamHandle</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a parameter of the given name and type.</span>
+
+<span class="sd">        Can only be called during :meth:`build_fragment`.</span>
+
+<span class="sd">        :param name: The parameter name, to be part of its FQN. Must be a valid Python</span>
+<span class="sd">            identifier; the parameter handle will be accessible as ``self.&lt;name&gt;``.</span>
+<span class="sd">        :param param_class: The type of parameter to instantiate.</span>
+<span class="sd">        :param description: The human-readable parameter name.</span>
+<span class="sd">        :param args: Any extra arguments to pass to the ``param_class`` constructor.</span>
+<span class="sd">        :param kwargs: Any extra keyword arguments to pass to the the ``param_class``</span>
+<span class="sd">            constructor.</span>
+<span class="sd">        :return: The newly created parameter handle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="s2">&quot;Can only call setattr_param() during build_fragment()&quot;</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="s2">&quot;Parameter name must be valid Python identifier&quot;</span>
         <span class="k">assert</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -244,13 +294,33 @@
 
         <span class="n">handle</span> <span class="o">=</span> <span class="n">param_class</span><span class="o">.</span><span class="n">HandleType</span><span class="p">()</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">handle</span>
+        <span class="k">return</span> <span class="n">handle</span></div>
 
-    <span class="k">def</span> <span class="nf">setattr_param_rebind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="Fragment.setattr_param_rebind"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.setattr_param_rebind">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_param_rebind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                              <span class="n">original_owner</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span>
-                             <span class="n">original_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="n">original_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                              <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamHandle</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a parameter that overrides the value of a subfragment parameter.</span>
+
+<span class="sd">        The most common use case for this is to specialise the operation of a generic</span>
+<span class="sd">        subfragment. For example, there might be a fragment ``Fluoresce`` that drives</span>
+<span class="sd">        a cycling transition in an ion with parameters for intensity and detuning.</span>
+<span class="sd">        Higher-level fragments for Doppler cooling, readout, etc. might then use</span>
+<span class="sd">        ``Fluoresce``, rebinding its intensity and detuning parameters to values and</span>
+<span class="sd">        defaults appropriate for those particular tasks.</span>
+
+<span class="sd">        Can only be called during :meth:`build_fragment`.</span>
+
+<span class="sd">        :param name: The parameter name, to be part of its FQN. Must be a valid Python</span>
+<span class="sd">            identifier; the parameter handle will be accessible as ``self.&lt;name&gt;``.</span>
+<span class="sd">        :param original_owner: The fragment owning the parameter to rebind.</span>
+<span class="sd">        :param original_name: The name of the original parameter (i.e.</span>
+<span class="sd">            ``&lt;original_owner&gt;.&lt;original_name&gt;``). If ``None``, defaults to ``name``.</span>
+<span class="sd">        :param kwargs: Any attributes to override in the parameter metadata, which</span>
+<span class="sd">            defaults to that of the original parameter.</span>
+<span class="sd">        :return: The newly created parameter handle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_building</span>
                 <span class="p">),</span> <span class="s2">&quot;Can only call setattr_param_rebind() during build_fragment()&quot;</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="s2">&quot;Parameter name must be valid Python identifier&quot;</span>
@@ -275,13 +345,26 @@
         <span class="n">original_handle</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">original_owner</span><span class="p">,</span> <span class="n">original_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">original_handle</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">handle</span>
+        <span class="k">return</span> <span class="n">handle</span></div>
 
-    <span class="k">def</span> <span class="nf">setattr_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="Fragment.setattr_result"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.setattr_result">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                        <span class="n">channel_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">]</span> <span class="o">=</span> <span class="n">FloatChannel</span><span class="p">,</span>
                        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                        <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResultChannel</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a result channel of the given name and type.</span>
+
+<span class="sd">        Can only be called during :meth:`build_fragment`.</span>
+
+<span class="sd">        :param name: The result channel name, to be part of its full path. Must be a</span>
+<span class="sd">            valid Python identifier. The channel instance will be accessible as</span>
+<span class="sd">            ``self.&lt;name&gt;``.</span>
+<span class="sd">        :param channel_class: The type of result channel to instantiate.</span>
+<span class="sd">        :param args: Any extra arguments to pass to the ``channel_class`` constructor.</span>
+<span class="sd">        :param kwargs: Any extra keyword arguments to pass to the the ``channel_class``</span>
+<span class="sd">            constructor.</span>
+<span class="sd">        :return: The newly created result channel instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="s2">&quot;Can only call setattr_result() during build_fragment()&quot;</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="p">(</span><span class="s2">&quot;Result channel name must be a valid &quot;</span>
                                      <span class="s2">&quot;Python identifier&quot;</span><span class="p">)</span>
@@ -292,7 +375,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">channel</span>
+        <span class="k">return</span> <span class="n">channel</span></div>
 
 <div class="viewcode-block" id="Fragment.override_param"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.override_param">[docs]</a>    <span class="k">def</span> <span class="nf">override_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                        <span class="n">initial_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]:</span>
@@ -399,8 +482,12 @@
 
 
 <div class="viewcode-block" id="ExpFragment"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.ExpFragment">[docs]</a><span class="k">class</span> <span class="nc">ExpFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span>
+    <span class="sd">&quot;&quot;&quot;Fragment that supports the notion of being run to produce results.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ExpFragment.run_once"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.ExpFragment.run_once">[docs]</a>    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Execute the experiment described by the fragment once with the current</span>
+<span class="sd">        parameters, producing one set of results (if any).&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
 
     <span class="k">def</span> <span class="nf">get_default_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">AutoFitSpec</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[]</span></div>

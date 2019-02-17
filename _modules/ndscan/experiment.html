@@ -1,0 +1,476 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ndscan.experiment &mdash; ndscan  documentation</title>
+  
+
+  
+  
+  
+  
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment.html"/>
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> ndscan
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../apidocs.html">API documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ndscan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>ndscan.experiment</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ndscan.experiment</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Top-level functions for launching :class:`.ExpFragment`\ s and their scans from the rest</span>
+<span class="sd">of the ARTIQ ``HasEnvironment`` universe.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">suppress</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Type</span>
+
+<span class="kn">from</span> <span class="nn">.fragment</span> <span class="k">import</span> <span class="n">ExpFragment</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">type_string_to_param</span>
+<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="n">AppendingDatasetSink</span><span class="p">,</span> <span class="n">ScalarDatasetSink</span>
+<span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">ScanOptions</span>
+<span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="k">import</span> <span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">,</span> <span class="n">is_kernel</span>
+
+<span class="c1"># We don&#39;t want to export FragmentScanExperiment to hide it from experiment</span>
+<span class="c1"># class discovery.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;PARAMS_ARG_KEY&quot;</span><span class="p">]</span>
+
+<span class="c1">#: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the</span>
+<span class="c1">#: list of available parameters to the dashboard plugin, and to pass the information</span>
+<span class="c1">#: about scanned and overriden parameters to the :class:`FragmentScanExperiment`</span>
+<span class="c1">#: when it is launched.</span>
+<span class="c1">#:</span>
+<span class="c1">#: Users should not need to directly interface with this.</span>
+<span class="n">PARAMS_ARG_KEY</span> <span class="o">=</span> <span class="s2">&quot;ndscan_params&quot;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ScanSpecError"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.ScanSpecError">[docs]</a><span class="k">class</span> <span class="nc">ScanSpecError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when the scan specification passed in :data:`PARAMS_ARG_KEY` is not valid</span>
+<span class="sd">    for the given fragment.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="FragmentScanExperiment"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment">[docs]</a><span class="k">class</span> <span class="nc">FragmentScanExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Implements possibly (trivial) scans of an :class:`.ExpFragment`, with overrides</span>
+<span class="sd">    and scan axes as specified by the :data:`PARAMS_ARG_KEY` dataset, and result</span>
+<span class="sd">    channels being broadcasted to datasets.</span>
+
+<span class="sd">    See :meth:`make_fragment_scan_exp` for a convenience method to create subclasses for</span>
+<span class="sd">    a specific :class:`.ExpFragment`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">argument_ui</span> <span class="o">=</span> <span class="s2">&quot;ndscan&quot;</span>
+
+<div class="viewcode-block" id="FragmentScanExperiment.build"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">ExpFragment</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param fragment_init: Callable to create the top-level :meth:`ExpFragment`</span>
+<span class="sd">            instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;ccb&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;scheduler&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment_init</span><span class="p">()</span>
+
+        <span class="n">instances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schemata</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">)</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;instances&quot;</span><span class="p">:</span> <span class="n">instances</span><span class="p">,</span>
+            <span class="s2">&quot;schemata&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">,</span>
+            <span class="s2">&quot;always_shown&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">_get_always_shown_params</span><span class="p">(),</span>
+            <span class="s2">&quot;overrides&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;scan&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;axes&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;num_repeats&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;continuous_without_axes&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;randomise_order_globally&quot;</span><span class="p">:</span> <span class="kc">False</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">PYONValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">desc</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="FragmentScanExperiment.prepare"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Collect parameters to set from both scan axes and simple overrides, and</span>
+<span class="sd">        initialise result channels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Create scan and parameter overrides.</span>
+        <span class="n">param_stores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">specs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;overrides&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
+            <span class="n">param_stores</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;store&quot;</span><span class="p">:</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]),</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])</span>
+            <span class="p">}</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">]</span>
+
+        <span class="n">scan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="n">generators</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">axspec</span> <span class="ow">in</span> <span class="n">scan</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]:</span>
+            <span class="n">generator_class</span> <span class="o">=</span> <span class="n">GENERATORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">generator_class</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ScanSpecError</span><span class="p">(</span><span class="s2">&quot;Axis type &#39;</span><span class="si">{}</span><span class="s2">&#39; not implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]))</span>
+            <span class="n">generator</span> <span class="o">=</span> <span class="n">generator_class</span><span class="p">(</span><span class="o">**</span><span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;range&quot;</span><span class="p">])</span>
+            <span class="n">generators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">generator</span><span class="p">)</span>
+
+            <span class="n">fqn</span> <span class="o">=</span> <span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">]</span>
+            <span class="n">pathspec</span> <span class="o">=</span> <span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span>
+
+            <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
+            <span class="n">store</span> <span class="o">=</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">pathspec</span><span class="p">),</span>
+                               <span class="n">generator</span><span class="o">.</span><span class="n">points_for_level</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">random</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">param_stores</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">fqn</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">pathspec</span><span class="p">,</span> <span class="s2">&quot;store&quot;</span><span class="p">:</span> <span class="n">store</span><span class="p">})</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ScanAxis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">],</span> <span class="n">pathspec</span><span class="p">,</span> <span class="n">store</span><span class="p">))</span>
+
+        <span class="n">options</span> <span class="o">=</span> <span class="n">ScanOptions</span><span class="p">(</span>
+            <span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_repeats&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;continuous_without_axes&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+            <span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;randomise_order_globally&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span> <span class="o">=</span> <span class="n">ScanSpec</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">(</span><span class="n">param_stores</span><span class="p">)</span>
+
+        <span class="c1"># Initialise result channels.</span>
+        <span class="n">chan_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">chan_dict</span><span class="p">)</span>
+
+        <span class="n">chan_name_map</span> <span class="o">=</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">(</span>
+            <span class="n">chan_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="k">lambda</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_dataset_names</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">chan_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">channel</span><span class="o">.</span><span class="n">save_by_default</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">chan_name_map</span><span class="p">[</span><span class="n">path</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="s2">&quot;channel_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_channel_dataset_names</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span>
+                <span class="n">sink</span> <span class="o">=</span> <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.points.&quot;</span> <span class="o">+</span> <span class="n">dataset</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_channel_dataset_names</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="n">sink</span> <span class="o">=</span> <span class="n">ScalarDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.point.&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run the (possibly trivial) scan.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_metadata</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_issue_ccb</span><span class="p">()</span>
+
+        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_run_single</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">runner</span> <span class="o">=</span> <span class="n">ScanRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">axis_sinks</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.points.axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
+                <span class="p">]</span>
+                <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_run_single</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
+                <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">continuous_without_axes</span><span class="p">:</span>
+                        <span class="k">return</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span> <span class="nf">_run_continuous_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
+
+    <span class="nd">@portable</span>
+    <span class="k">def</span> <span class="nf">_continuous_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">first</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                <span class="n">first</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_reset</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_point_phase</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">continuous_without_axes</span><span class="p">:</span>
+                <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">_set_completed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="s2">&quot;ndscan.completed&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_broadcast_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="s2">&quot;ndscan.&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;fragment_fqn&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="p">)</span>
+        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;rid&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">)</span>
+        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">axis_specs</span> <span class="o">=</span> <span class="p">[{</span>
+            <span class="s2">&quot;param&quot;</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">param_schema</span><span class="p">,</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+        <span class="p">}</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">gen</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">generators</span><span class="p">):</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">describe_limits</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;axes&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">))</span>
+
+        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+
+        <span class="c1"># KLDUGE: Broadcast auto_fit before channels to allow simpler implementation</span>
+        <span class="c1"># in current fit applet. As the applet implementation grows more sophisticated</span>
+        <span class="c1"># (hiding axes, etc.), it should be easy to relax this requirement.</span>
+
+        <span class="n">fits</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">axis_identities</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">s</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">get_default_fits</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">has_data</span><span class="p">(</span><span class="n">axis_identities</span><span class="p">):</span>
+                <span class="n">fits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span>
+                        <span class="k">lambda</span> <span class="n">identity</span><span class="p">:</span> <span class="s2">&quot;axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">axis_identities</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">identity</span><span class="p">)),</span> <span class="k">lambda</span> <span class="n">path</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span>
+                        <span class="n">_channel_dataset_names</span><span class="p">[</span><span class="n">path</span><span class="p">]))</span>
+        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fits</span><span class="p">))</span>
+
+        <span class="n">channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">channel</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;channels&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">channels</span><span class="p">))</span>
+
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="k">def</span> <span class="nf">_broadcast_point_phase</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="s2">&quot;ndscan.point_phase&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_issue_ccb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;$</span><span class="si">{python}</span><span class="s2"> -m ndscan.applet &quot;</span>
+               <span class="s2">&quot;--server=$</span><span class="si">{server}</span><span class="s2"> &quot;</span>
+               <span class="s2">&quot;--port=$</span><span class="si">{port_notify}</span><span class="s2"> &quot;</span>
+               <span class="s2">&quot;--port-control=$</span><span class="si">{port_control}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">+=</span> <span class="s2">&quot; --rid=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ccb</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span>
+            <span class="s2">&quot;create_applet&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ndscan: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span>
+            <span class="n">cmd</span><span class="p">,</span>
+            <span class="n">group</span><span class="o">=</span><span class="s2">&quot;ndscan&quot;</span><span class="p">,</span>
+            <span class="n">is_transient</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Create a :class:`FragmentScanExperiment` subclass that scans the given</span>
+<span class="sd">    :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…</span>
+
+<span class="sd">    This is the default way of creating scan experiments::</span>
+
+<span class="sd">        class MyExperiment(ExpFragment):</span>
+<span class="sd">            def build_fragment(self):</span>
+<span class="sd">                # ...</span>
+
+<span class="sd">            def run_once(self):</span>
+<span class="sd">                # ...</span>
+
+<span class="sd">        MyExperimentScan = make_fragment_scan_exp(MyExperiment)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">class</span> <span class="nc">FragmentScanShim</span><span class="p">(</span><span class="n">FragmentScanExperiment</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">fragment_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[]))</span>
+
+    <span class="c1"># Take on the name of the fragment class to keep result file names informative.</span>
+    <span class="n">FragmentScanShim</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fragment_class</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="c1"># Use the fragment class docstring to display in the experiment explorer UI.</span>
+    <span class="n">FragmentScanShim</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">fragment_class</span><span class="o">.</span><span class="vm">__doc__</span>
+
+    <span class="k">return</span> <span class="n">FragmentScanShim</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, David Nadlinger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
