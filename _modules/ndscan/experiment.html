@@ -280,20 +280,16 @@
 
         <span class="n">chan_name_map</span> <span class="o">=</span> <span class="n">_shorten_result_channel_names</span><span class="p">(</span><span class="n">chan_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_dataset_names</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">chan_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">channel</span><span class="o">.</span><span class="n">save_by_default</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">chan_name_map</span><span class="p">[</span><span class="n">path</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
-                <span class="n">dataset</span> <span class="o">=</span> <span class="s2">&quot;channel_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_channel_dataset_names</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span>
-                <span class="n">sink</span> <span class="o">=</span> <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.points.&quot;</span> <span class="o">+</span> <span class="n">dataset</span><span class="p">)</span>
+                <span class="n">sink</span> <span class="o">=</span> <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.points.channel_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_channel_dataset_names</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
                 <span class="n">sink</span> <span class="o">=</span> <span class="n">ScalarDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.point.&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
             <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span></div>
 
@@ -360,8 +356,8 @@
         <span class="n">push</span><span class="p">(</span><span class="s2">&quot;rid&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">)</span>
         <span class="n">push</span><span class="p">(</span><span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 
-        <span class="n">scan_desc</span> <span class="o">=</span> <span class="n">describe_scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">_channel_dataset_names</span><span class="p">)</span>
+        <span class="n">scan_desc</span> <span class="o">=</span> <span class="n">describe_scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">)</span>
 
         <span class="c1"># KLDUGE: Broadcast auto_fit before channels to allow simpler implementation</span>
         <span class="c1"># in current fit applet. As the applet implementation grows more sophisticated</span>
