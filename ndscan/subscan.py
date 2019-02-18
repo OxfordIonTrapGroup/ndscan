@@ -163,7 +163,6 @@ def setattr_subscan(owner: Fragment,
             OpaqueChannel,
             save_by_default=save_results_by_default and channel.save_by_default)
 
-    # TODO: Actually write scan metadata to this.
     spec_channel = owner.setattr_result(scan_name + "_spec", SubscanChannel)
 
     subscan = Subscan(
