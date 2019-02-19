@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterable, Union
 import json
 from .model import *
 from ..utils import strip_prefix
@@ -18,7 +18,7 @@ class SubscriberRoot(Root):
         self._title_set = False
         self._axes_initialised = False
 
-    def data_changed(self, data, mods):
+    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
         def d(name):
             return data.get("ndscan." + name, (False, None))[1]
 
@@ -69,7 +69,7 @@ class SubscriberContinuousScanModel(ContinuousScanModel):
             raise ValueError("No complete point yet")
         return self._current_point
 
-    def data_changed(self, data, mods):
+    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
         if not self._series_initialised:
             channels_json = data.get("ndscan.channels", (False, None))[1]
             if not channels_json:
@@ -100,7 +100,7 @@ class SubscriberDimensionalScanModel(DimensionalScanModel):
         self._channel_schemata = None
         self._point_data = {}
 
-    def data_changed(self, data, mods):
+    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
         if not self._series_initialised:
             channels_json = data.get("ndscan.channels", (False, None))[1]
             if not channels_json:

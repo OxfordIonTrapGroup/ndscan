@@ -5,6 +5,7 @@ import asyncio
 import logging
 import pyqtgraph
 from quamash import QtWidgets
+from typing import Any, Dict, Iterable
 
 from .plots.container import PlotContainerWidget
 from .plots.model import Context
@@ -38,7 +39,7 @@ class _MainWidget(QtWidgets.QWidget):
 
         self.plot_container = None
 
-    def data_changed(self, data, mods):
+    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
         self.root.data_changed(data, mods)
 
     def _create_plot(self):
