@@ -1,6 +1,6 @@
 import h5py
 import json
-from typing import Any, Dict, Union
+from typing import Any, Dict
 from PyQt5 import QtCore
 from .model import *
 
@@ -23,7 +23,7 @@ class HDF5Root(Root):
             self._model = HDF5DimensionalScanModel(axes, datasets, context)
         emit_later(self.model_changed)
 
-    def get_model(self) -> Union[ContinuousScanModel, DimensionalScanModel]:
+    def get_model(self) -> ScanModel:
         return self._model
 
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Union
+from typing import Any, Dict, Iterable
 import json
 from .model import *
 from ..utils import strip_prefix
@@ -45,7 +45,7 @@ class SubscriberRoot(Root):
 
         self._model.data_changed(data, mods)
 
-    def get_model(self) -> Union[ContinuousScanModel, DimensionalScanModel]:
+    def get_model(self) -> ScanModel:
         if self._model is None:
             raise ValueError("Model not yet set")
         return self._model

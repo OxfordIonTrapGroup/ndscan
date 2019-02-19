@@ -1,14 +1,13 @@
 from quamash import QtWidgets
-from typing import Union
 
-from .model import ContinuousScanModel, DimensionalScanModel
+from .model import ContinuousScanModel, ScanModel
 from .image_2d import Image2DPlotWidget
 from .rolling_1d import Rolling1DPlotWidget
 from .xy_1d import XY1DPlotWidget
 
 
 class PlotContainerWidget(QtWidgets.QWidget):
-    def __init__(self, model: Union[ContinuousScanModel, DimensionalScanModel]):
+    def __init__(self, model: ScanModel):
         super().__init__()
 
         self.model = model

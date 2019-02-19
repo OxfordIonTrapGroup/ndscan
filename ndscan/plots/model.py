@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict
 from quamash import QtCore
 
 
@@ -22,9 +22,8 @@ class Context(QtCore.QObject):
         self.set_dataset(key, value)
 
 
-class ContinuousScanModel(QtCore.QObject):
+class ScanModel(QtCore.QObject):
     channel_schemata_changed = QtCore.pyqtSignal(dict)
-    new_point_complete = QtCore.pyqtSignal(dict)
 
     def __init__(self, context: Context):
         super().__init__()
@@ -33,22 +32,21 @@ class ContinuousScanModel(QtCore.QObject):
     def get_channel_schemata(self) -> Dict[str, Any]:
         raise NotImplementedError
 
+
+class ContinuousScanModel(ScanModel):
+    new_point_complete = QtCore.pyqtSignal(dict)
+
     def get_current_point(self) -> Dict[str, Any]:
         raise NotImplementedError
 
 
-class DimensionalScanModel(QtCore.QObject):
-    channel_schemata_changed = QtCore.pyqtSignal(dict)
+class DimensionalScanModel(ScanModel):
     points_rewritten = QtCore.pyqtSignal(dict)
     points_appended = QtCore.pyqtSignal(dict)
 
     def __init__(self, axes: list, context: Context):
-        super().__init__()
+        super().__init__(context)
         self.axes = axes
-        self.context = context
-
-    def get_channel_schemata(self) -> Dict[str, Any]:
-        raise NotImplementedError
 
     def get_points(self) -> Dict[str, Any]:
         raise NotImplementedError
@@ -57,5 +55,5 @@ class DimensionalScanModel(QtCore.QObject):
 class Root(QtCore.QObject):
     model_changed = QtCore.pyqtSignal()
 
-    def get_model(self) -> Union[ContinuousScanModel, DimensionalScanModel]:
+    def get_model(self) -> ScanModel:
         raise NotImplementedError
