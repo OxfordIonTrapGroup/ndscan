@@ -7,7 +7,8 @@ import pyqtgraph
 from quamash import QtWidgets
 
 from .plots.container import PlotContainerWidget
-from .plots.model import Context, SubscriberRoot
+from .plots.model import Context
+from .plots.model_subscriber import SubscriberRoot
 
 logger = logging.getLogger(__name__)
 
