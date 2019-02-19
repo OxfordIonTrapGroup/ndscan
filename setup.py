@@ -9,6 +9,7 @@ setup(
     author="David Nadlinger",
     packages=find_packages(),
     package_data={"ndscan": ["icons/*.png", "icons/*.svg"]},
+    entry_points={"gui_scripts": ["ndscan_show = ndscan.show:main"]},
     # KLUDGE: ARTIQ dependency is not explicitly listed for now to avoid
     # problems with the ion trap group's Conda setup.
     # install_requires=["artiq"]

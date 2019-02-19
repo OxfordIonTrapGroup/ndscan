@@ -334,7 +334,9 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
 
     def _update_points(self, points):
         x_data = points["axis_0"]
-        if not x_data:
+        # Compare length to zero instead of using `not x_data` for NumPy array
+        # compatibility.
+        if len(x_data) == 0:
             return
 
         for s in self.series:

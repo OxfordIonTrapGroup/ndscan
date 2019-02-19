@@ -74,6 +74,7 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
         self.model.new_point_complete.connect(self._append_point)
 
         self.series = []
+        self.num_history_box = None
 
         self.showGrid(x=True, y=True)
 
@@ -99,9 +100,12 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
             error_bar_item = pyqtgraph.ErrorBarItem(
                 pen=color) if error_bar_name else None
 
+            history_length = 1024
+            if self.num_history_box:
+                history_length = self.num_history_box.value()
             self.series.append(
                 _Series(self, data_name, data_item, error_bar_name, error_bar_item,
-                        self.num_history_box.value()))
+                        history_length))
 
         if len(data_names) == 1:
             # If there is only one series, set label/scaling accordingly.
@@ -124,6 +128,12 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
             s.set_history_length(n)
 
     def _install_context_menu(self):
+        if not self.model.context.is_online_master():
+            # If no new data points are coming in, setting the history size wouldn't do
+            # anything.
+            # TODO: is_online_master() should really be something like
+            # ContinuousScanModel.ever_updates().
+            return
         self.num_history_box = QtWidgets.QSpinBox()
         self.num_history_box.setMinimum(1)
         self.num_history_box.setMaximum(2**16)
