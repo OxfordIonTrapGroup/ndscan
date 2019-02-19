@@ -2,14 +2,12 @@ from artiq.applets.simple import SimpleApplet
 from artiq.protocols.pc_rpc import AsyncioClient
 from artiq.protocols.sync_struct import Subscriber
 import asyncio
-import json
 import logging
 import pyqtgraph
 from quamash import QtWidgets
 
-from .plots.rolling_1d import Rolling1DPlotWidget
-from .plots.xy_1d import XY1DPlotWidget
-from .plots.image_2d import Image2DPlotWidget
+from .plots.container import PlotContainerWidget
+from .plots.model import Context, SubscriberRoot
 
 logger = logging.getLogger(__name__)
 
@@ -32,52 +30,24 @@ class _MainWidget(QtWidgets.QWidget):
         self.widget_stack.addWidget(self.message_label)
         self.layout.addWidget(self.widget_stack)
 
-        self.title_set = False
-        self.plot_initialised = False
+        self.context = Context(self.set_dataset)
+        self.context.title_changed.connect(self._set_window_title)
+        self.root = SubscriberRoot(self.context)
+        self.root.model_changed.connect(self._create_plot)
+
+        self.plot_container = None
 
     def data_changed(self, data, mods):
-        def d(name):
-            return data.get("ndscan." + name, (False, None))[1]
+        self.root.data_changed(data, mods)
 
-        if not self.title_set:
-            fqn = d("fragment_fqn")
-            if not fqn:
-                return
-            self.setWindowTitle("{} – ndscan".format(fqn))
-            self.title_set = True
+    def _create_plot(self):
+        self.plot_container = PlotContainerWidget(self.root.get_model())
+        self.widget_stack.addWidget(self.plot_container)
+        self.widget_stack.setCurrentIndex(
+            self.widget_stack.indexOf(self.plot_container))
 
-        if not self.plot_initialised:
-            axes_json = d("axes")
-            if not axes_json:
-                return
-            axes = json.loads(axes_json)
-            dim = len(axes)
-            if dim == 0:
-                self.plot = Rolling1DPlotWidget()
-            elif dim == 1:
-                self.plot = XY1DPlotWidget(*axes, self.set_dataset)
-            elif dim == 2:
-                self.plot = Image2DPlotWidget(*axes, self.set_dataset)
-            else:
-                self.message_label.setText(
-                    "{}-dimensional scans are not yet supported".format(dim))
-                self._show(self.message_label)
-                return
-
-            self.plot.error.connect(self._show_error)
-            self.widget_stack.addWidget(self.plot)
-            self._show(self.plot)
-
-            self.plot_initialised = True
-
-        self.plot.data_changed(data, mods)
-
-    def _show(self, widget):
-        self.widget_stack.setCurrentIndex(self.widget_stack.indexOf(widget))
-
-    def _show_error(self, message):
-        self.message_label.setText("Error: " + message)
-        self._show(self.message_label)
+    def _set_window_title(self, title):
+        self.setWindowTitle("{} – ndscan".format(title))
 
     def set_dataset(self, key, value):
         asyncio.ensure_future(self._set_dataset_impl(key, value))

@@ -1,7 +1,6 @@
 """Pseudocolor 2D plot for equidistant data."""
 
 from itertools import chain, repeat
-import json
 import logging
 import numpy as np
 import pyqtgraph
@@ -10,6 +9,7 @@ from typing import Dict, Union
 
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
+from .model import DimensionalScanModel
 from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item)
 
 logger = logging.getLogger(__name__)
@@ -76,23 +76,26 @@ class _ImagePlot:
 
     def activate_channel(self, channel_name: str):
         self.active_channel_name = channel_name
-        self.num_shown = 0
-        self.current_z_limits = None
+        self._invalidate_current()
         self._update()
 
-    def data_changed(self, datasets):
-        self.datasets = datasets
+    def data_changed(self, points, invalidate_previous: bool = False):
+        self.points = points
+        if invalidate_previous:
+            self._invalidate_current()
         self._update()
+
+    def _invalidate_current(self):
+        self.num_shown = 0
+        self.current_z_limits = None
 
     def _get_display_hints(self):
         return self.hints_for_channels[self.active_channel_name]
 
     def _update(self):
-        def d(name):
-            return self.datasets.get("ndscan.points." + name, (False, []))[1]
-
-        x_data, y_data = d("axis_0"), d("axis_1")
-        z_data = d("channel_" + self.active_channel_name)
+        x_data = self.points["axis_0"]
+        y_data = self.points["axis_1"]
+        z_data = self.points["channel_" + self.active_channel_name]
 
         # Figure out how many complete data points we have, and whether there are any
         # not already shown.
@@ -160,13 +163,17 @@ class _ImagePlot:
 
 class Image2DPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
+    ready = QtCore.pyqtSignal()
 
-    def __init__(self, x_schema, y_schema, set_dataset):
+    def __init__(self, model: DimensionalScanModel):
         super().__init__()
-        self.x_schema = x_schema
-        self.y_schema = y_schema
 
-        self.set_dataset = set_dataset
+        self.model = model
+        self.model.channel_schemata_changed.connect(self._initialise_series)
+        self.model.points_appended.connect(lambda p: self._update_points(p, False))
+        self.model.points_rewritten.connect(lambda p: self._update_points(p, True))
+
+        self.x_schema, self.y_schema = self.model.axes
         self.plot = None
 
         def setup_axis(schema, location):
@@ -179,70 +186,68 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
                 schema["param"]["spec"])
 
         self.x_unit_suffix, self.x_data_to_display_scale = \
-            setup_axis(x_schema, "bottom")
+            setup_axis(self.x_schema, "bottom")
         self.y_unit_suffix, self.y_data_to_display_scale = \
-            setup_axis(y_schema, "left")
+            setup_axis(self.y_schema, "left")
 
         self.crosshair = LabeledCrosshairCursor(
             self, self, self.x_unit_suffix, self.x_data_to_display_scale,
             self.y_unit_suffix, self.y_data_to_display_scale)
         self.showGrid(x=True, y=True)
 
-    def data_changed(self, datasets, mods):
-        def d(name):
-            return datasets.get("ndscan." + name, (False, None))[1]
+    def _initialise_series(self, channels):
+        if self.plot is not None:
+            self.removeItem(self.plot.image_item)
+            self.plot = None
 
-        if not self.plot:
-            channels_json = d("channels")
-            if not channels_json:
-                return
+        try:
+            data_names, _ = extract_scalar_channels(channels)
+        except ValueError as e:
+            self.error.emit(str(e))
 
-            channels = json.loads(channels_json)
+        if not data_names:
+            self.error.emit("No scalar result channels to display")
 
-            try:
-                data_names, _ = extract_scalar_channels(channels)
-            except ValueError as e:
-                self.error.emit(str(e))
+        hints_for_channels = {
+            name: channels[name].get("display_hints", {})
+            for name in data_names
+        }
+        self._install_context_menu(data_names)
 
-            if not data_names:
-                self.error.emit("No scalar result channels to display")
+        def bounds(schema):
+            return (schema.get(n, None) for n in ("min", "max", "increment"))
 
-            hints_for_channels = {
-                name: channels[name].get("display_hints", {})
-                for name in data_names
-            }
-            self._install_context_menu(data_names)
+        image_item = pyqtgraph.ImageItem()
+        self.addItem(image_item)
+        self.plot = _ImagePlot(image_item, data_names[0], *bounds(self.x_schema),
+                               *bounds(self.y_schema), hints_for_channels)
+        self.ready.emit()
 
-            def bounds(schema):
-                return (schema.get(n, None) for n in ("min", "max", "increment"))
-
-            image_item = pyqtgraph.ImageItem()
-            self.addItem(image_item)
-            self.plot = _ImagePlot(image_item, data_names[0], *bounds(self.x_schema),
-                                   *bounds(self.y_schema), hints_for_channels)
-
-        self.plot.data_changed(datasets)
+    def _update_points(self, points, invalidate):
+        if self.plot:
+            self.plot.data_changed(points, invalidate_previous=invalidate)
 
     def _install_context_menu(self, data_names):
         entries = []
 
-        x_datasets = extract_linked_datasets(self.x_schema["param"])
-        y_datasets = extract_linked_datasets(self.y_schema["param"])
-        for d, axis in chain(
-                zip(x_datasets, repeat("x")), zip(y_datasets, repeat("y"))):
-            action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
-            action.triggered.connect(lambda *a, d=d: self._set_dataset_from_crosshair(
-                d, axis))
-            entries.append(action)
-        if len(x_datasets) == 1 and len(y_datasets) == 1:
-            action = QtWidgets.QAction("Set both from crosshair".format(d), self)
+        if self.model.context.is_online_master():
+            x_datasets = extract_linked_datasets(self.x_schema["param"])
+            y_datasets = extract_linked_datasets(self.y_schema["param"])
+            for d, axis in chain(
+                    zip(x_datasets, repeat("x")), zip(y_datasets, repeat("y"))):
+                action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
+                action.triggered.connect(lambda *a, d=d: self.
+                                         _set_dataset_from_crosshair(d, axis))
+                entries.append(action)
+            if len(x_datasets) == 1 and len(y_datasets) == 1:
+                action = QtWidgets.QAction("Set both from crosshair".format(d), self)
 
-            def set_both():
-                self._set_dataset_from_crosshair(x_datasets[0], "x")
-                self._set_dataset_from_crosshair(y_datasets[0], "y")
+                def set_both():
+                    self._set_dataset_from_crosshair(x_datasets[0], "x")
+                    self._set_dataset_from_crosshair(y_datasets[0], "y")
 
-            action.triggered.connect(set_both)
-            entries.append(action)
+                action.triggered.connect(set_both)
+                entries.append(action)
 
         def append_separator():
             separator = QtWidgets.QAction("", self)
@@ -273,5 +278,5 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
         if not self.crosshair:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.set_dataset(
+        self.model.context.set_dataset(
             dataset, self.crosshair.last_x if axis == "x" else self.crosshair.last_y)

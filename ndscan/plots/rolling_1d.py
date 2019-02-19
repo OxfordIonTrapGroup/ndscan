@@ -1,8 +1,8 @@
-import json
 import numpy as np
 import pyqtgraph
 from quamash import QtWidgets, QtCore
 
+from .model import ContinuousScanModel
 from .utils import extract_scalar_channels, setup_axis_item, SERIES_COLORS
 
 
@@ -19,9 +19,9 @@ class _Series:
         self.set_history_length(history_length)
 
     def append(self, data):
-        new_data = data["ndscan.point." + self.data_name][1]
+        new_data = data[self.data_name]
         if self.error_bar_item:
-            new_error_bar = data["ndscan.point." + self.error_bar_name][1]
+            new_error_bar = data[self.error_bar_name]
 
         p = [new_data, 2 * new_error_bar] if self.error_bar_item else [new_data]
 
@@ -48,6 +48,13 @@ class _Series:
             if self.error_bar_item:
                 self.plot.addItem(self.error_bar_item)
 
+    def remove_items(self):
+        if self.values.shape[0] == 0:
+            return
+        self.plot.removeItem(self.data_item)
+        if self.error_bar_item:
+            self.plot.removeItem(self.error_bar_item)
+
     def set_history_length(self, n):
         assert n > 0, "Invalid history length"
         self.x_indices = np.arange(-n, 0)
@@ -57,66 +64,60 @@ class _Series:
 
 class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
+    ready = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, model: ContinuousScanModel):
         super().__init__()
 
-        self.series_initialised = False
-        self.series = []
+        self.model = model
+        self.model.channel_schemata_changed.connect(self._initialise_series)
+        self.model.new_point_complete.connect(self._append_point)
 
-        self.point_phase = None
+        self.series = []
 
         self.showGrid(x=True, y=True)
 
         self._install_context_menu()
 
-    def data_changed(self, data, mods):
-        def d(name):
-            return data.get("ndscan." + name, (False, None))[1]
+    def _initialise_series(self):
+        for s in self.series:
+            s.remove_items()
+        self.series.clear()
 
-        if not self.series_initialised:
-            channels_json = d("channels")
-            if not channels_json:
-                return
+        channels = self.model.get_channel_schemata()
+        try:
+            data_names, error_bar_names = extract_scalar_channels(channels)
+        except ValueError as e:
+            self.error.emit(str(e))
+            return
 
-            channels = json.loads(channels_json)
+        for i, data_name in enumerate(data_names):
+            color = SERIES_COLORS[i % len(SERIES_COLORS)]
+            data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
 
-            try:
-                data_names, error_bar_names = extract_scalar_channels(channels)
-            except ValueError as e:
-                self.error.emit(str(e))
+            error_bar_name = error_bar_names.get(data_name, None)
+            error_bar_item = pyqtgraph.ErrorBarItem(
+                pen=color) if error_bar_name else None
 
-            for i, data_name in enumerate(data_names):
-                color = SERIES_COLORS[i % len(SERIES_COLORS)]
-                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
+            self.series.append(
+                _Series(self, data_name, data_item, error_bar_name, error_bar_item,
+                        self.num_history_box.value()))
 
-                error_bar_name = error_bar_names.get(data_name, None)
-                error_bar_item = pyqtgraph.ErrorBarItem(
-                    pen=color) if error_bar_name else None
+        if len(data_names) == 1:
+            # If there is only one series, set label/scaling accordingly.
+            # TODO: Add multiple y axis for additional channels.
+            c = channels[data_names[0]]
 
-                self.series.append(
-                    _Series(self, data_name, data_item, error_bar_name, error_bar_item,
-                            self.num_history_box.value()))
+            label = c["description"]
+            if not label:
+                label = c["path"].split("/")[-1]
+            setup_axis_item(self.getAxis("left"), label, c["path"], c)
 
-            if len(data_names) == 1:
-                # If there is only one series, set label/scaling accordingly.
-                # TODO: Add multiple y axis for additional channels.
-                c = channels[data_names[0]]
+        self.ready.emit()
 
-                label = c["description"]
-                if not label:
-                    label = c["path"].split("/")[-1]
-                setup_axis_item(self.getAxis("left"), label, c["path"], c)
-
-            self.series_initialised = True
-
-        # FIXME: Phase check will miss points when using mod buffering - need to
-        # directly read all the data from mods.
-        phase = d("point_phase")
-        if phase is not None and phase != self.point_phase:
-            for s in self.series:
-                s.append(data)
-            self.point_phase = phase
+    def _append_point(self, point):
+        for s in self.series:
+            s.append(point)
 
     def set_history_length(self, n):
         for s in self.series:

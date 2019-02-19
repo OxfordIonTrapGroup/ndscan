@@ -1,6 +1,5 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
-import json
 import logging
 import numpy as np
 from oitg import uncertainty_to_string
@@ -9,6 +8,7 @@ from quamash import QtWidgets, QtCore
 
 from ndscan.auto_fit import FIT_OBJECTS
 from .cursor import LabeledCrosshairCursor
+from .model import DimensionalScanModel
 from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
 
@@ -36,13 +36,14 @@ class _XYSeries(QtCore.QObject):
         self.plot_left_to_right = plot_left_to_right
         self.num_current_points = 0
         self.fit_obj = None
+        self.fit_item = None
 
         if fit_spec:
             self._install_fit(fit_spec, fit_item, fit_pois)
 
     def update(self, x_data, data):
         def channel(name):
-            return data.get("ndscan.points.channel_" + name, (False, []))[1]
+            return data.get("channel_" + name, [])
 
         y_data = channel(self.data_name)
         num_to_show = min(len(x_data), len(y_data))
@@ -87,6 +88,16 @@ class _XYSeries(QtCore.QObject):
         if self.fit_obj and self.num_current_points >= len(
                 self.fit_obj.parameter_names):
             self._trigger_recompute_fit.emit()
+
+    def remove_items(self):
+        if self.num_current_points == 0:
+            return
+
+        self.plot.removeItem(self.data_item)
+        if self.error_bar_item:
+            self.plot.removeItem(self.error_bar_item)
+        if self.fit_item:
+            self.plot.removeItem(self.fit_item)
 
     _trigger_recompute_fit = QtCore.pyqtSignal()
 
@@ -245,15 +256,21 @@ def _run_fit(fit_type, xs, ys, y_errs=None):
 
 class XY1DPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
+    ready = QtCore.pyqtSignal()
 
-    def __init__(self, x_schema, set_dataset):
+    def __init__(self, model: DimensionalScanModel):
         super().__init__()
 
-        self.set_dataset = set_dataset
+        self.model = model
+        self.model.channel_schemata_changed.connect(self._initialise_series)
+        self.model.points_appended.connect(self._update_points)
 
-        self.series_initialised = False
+        # FIXME: Just re-set values instead of throwing away everything.
+        self.model.points_rewritten.connect(self._initialise_series)
+
         self.series = []
 
+        x_schema = self.model.axes[0]
         path = x_schema["path"]
         if not path:
             path = "/"
@@ -266,101 +283,71 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
         self.crosshair = None
         self.showGrid(x=True, y=True)
 
-    def data_changed(self, data, mods):
-        def d(name):
-            return data.get("ndscan." + name, (False, None))[1]
+    def _initialise_series(self, channels):
+        for s in self.series:
+            s.remove_items()
+        self.series.clear()
 
-        if not self.series_initialised:
-            channels_json = d("channels")
-            if not channels_json:
-                return
+        try:
+            data_names, error_bar_names = extract_scalar_channels(channels)
+        except ValueError as e:
+            self.error.emit(str(e))
+            return
 
-            channels = json.loads(channels_json)
+        for i, name in enumerate(data_names):
+            color = SERIES_COLORS[i % len(SERIES_COLORS)]
+            data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
 
-            try:
-                data_names, error_bar_names = extract_scalar_channels(channels)
-            except ValueError as e:
-                self.error.emit(str(e))
+            error_bar_name = error_bar_names.get(name, None)
+            error_bar_item = pyqtgraph.ErrorBarItem(
+                pen=color) if error_bar_name else None
 
-            # KLUDGE: We rely on fit specs to be set before channels in order
-            # for them to be displayed at all.
-            fit_specs = json.loads(d("auto_fit") or "[]")
+            # FIXME: Reimplement fits.
+            fit_spec = None
+            fit_item = None
+            fit_pois = None
+            self.series.append(
+                _XYSeries(self, name, data_item, error_bar_name, error_bar_item, False,
+                          fit_spec, fit_item, fit_pois))
 
-            for i, name in enumerate(data_names):
-                color = SERIES_COLORS[i % len(SERIES_COLORS)]
-                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
+        if len(data_names) == 1:
+            # If there is only one series, set label/scaling accordingly.
+            # TODO: Add multiple y axis for additional channels.
+            c = channels[data_names[0]]
 
-                error_bar_name = error_bar_names.get(name, None)
-                error_bar_item = pyqtgraph.ErrorBarItem(
-                    pen=color) if error_bar_name else None
+            label = c["description"]
+            if not label:
+                label = c["path"].split("/")[-1]
 
-                # TODO: Multiple fit specs, error bars from other channels.
-                fit_spec = None
-                fit_item = None
-                fit_pois = []
-                for spec in fit_specs:
-                    if spec["data"]["x"] != "axis_0":
-                        continue
-                    if spec["data"]["y"] != "channel_" + name:
-                        continue
-                    err = spec["data"].get("y_err", None)
-                    if err and err != ("channel_" + error_bar_name):
-                        continue
+            # TODO: Change result channel schema and move properties accessed here
+            # into "spec" field to match parameters?
+            self.y_unit_suffix, self.y_data_to_display_scale = setup_axis_item(
+                self.getAxis("left"), label, c["path"], c)
+        else:
+            self.y_unit_suffix = ""
+            self.y_data_to_display_scale = 1.0
 
-                    fit_spec = spec
-                    fit_color = FIT_COLORS[i % len(FIT_COLORS)]
-                    pen = pyqtgraph.mkPen(fit_color, width=3)
-                    fit_item = pyqtgraph.PlotCurveItem(pen=pen)
+        self.crosshair = LabeledCrosshairCursor(
+            self, self, self.x_unit_suffix, self.x_data_to_display_scale,
+            self.y_unit_suffix, self.y_data_to_display_scale)
+        self.ready.emit()
 
-                    for p in spec.get("pois", []):
-                        # TODO: Support horizontal lines, points, ...
-                        if p.get("x", None):
-                            fit_pois.append(
-                                _VLineFitPOI(p["x"], fit_color,
-                                             self.x_data_to_display_scale,
-                                             self.x_unit_suffix))
-                    break
-
-                self.series.append(
-                    _XYSeries(self, name, data_item, error_bar_name, error_bar_item,
-                              False, fit_spec, fit_item, fit_pois))
-
-            if len(data_names) == 1:
-                # If there is only one series, set label/scaling accordingly.
-                # TODO: Add multiple y axis for additional channels.
-                c = channels[data_names[0]]
-
-                label = c["description"]
-                if not label:
-                    label = c["path"].split("/")[-1]
-
-                # TODO: Change result channel schema and move properties accessed here
-                # into "spec" field to match parameters?
-                self.y_unit_suffix, self.y_data_to_display_scale = setup_axis_item(
-                    self.getAxis("left"), label, c["path"], c)
-            else:
-                self.y_unit_suffix = ""
-                self.y_data_to_display_scale = 1.0
-
-            self.crosshair = LabeledCrosshairCursor(
-                self, self, self.x_unit_suffix, self.x_data_to_display_scale,
-                self.y_unit_suffix, self.y_data_to_display_scale)
-            self.series_initialised = True
-
-        x_data = d("points.axis_0")
+    def _update_points(self, points):
+        x_data = points["axis_0"]
         if not x_data:
             return
 
         for s in self.series:
-            s.update(x_data, data)
+            s.update(x_data, points)
 
     def _install_context_menu(self, x_schema):
         entries = []
 
-        for d in extract_linked_datasets(x_schema["param"]):
-            action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
-            action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
-            entries.append(action)
+        if self.model.context.is_online_master():
+            for d in extract_linked_datasets(x_schema["param"]):
+                action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
+                action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
+                entries.append(action)
 
         if entries:
             separator = QtWidgets.QAction("", self)
@@ -369,8 +356,8 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
 
         self.plotItem.getContextMenus = lambda ev: entries
 
-    def _set_dataset_from_crosshair_x(self, dataset):
+    def _set_dataset_from_crosshair_x(self, dataset_key):
         if not self.crosshair:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.set_dataset(dataset, self.crosshair.last_x)
+        self.model.context.set_dataset(dataset_key, self.crosshair.last_x)
