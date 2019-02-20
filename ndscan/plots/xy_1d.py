@@ -8,7 +8,7 @@ from quamash import QtWidgets, QtCore
 
 from ndscan.auto_fit import FIT_OBJECTS
 from .cursor import LabeledCrosshairCursor
-from .model import DimensionalScanModel
+from .model import ScanModel
 from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
 
@@ -258,7 +258,7 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
-    def __init__(self, model: DimensionalScanModel):
+    def __init__(self, model: ScanModel):
         super().__init__()
 
         self.model = model
@@ -266,7 +266,11 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
         self.model.points_appended.connect(self._update_points)
 
         # FIXME: Just re-set values instead of throwing away everything.
-        self.model.points_rewritten.connect(self._initialise_series)
+        def rewritten(points):
+            self._initialise_series(self.model.get_channel_schemata())
+            self._update_points(points)
+
+        self.model.points_rewritten.connect(rewritten)
 
         self.series = []
 

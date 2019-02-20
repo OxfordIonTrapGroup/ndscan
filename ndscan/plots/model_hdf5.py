@@ -20,14 +20,14 @@ class HDF5Root(Root):
         if dim == 0:
             self._model = HDF5SingleShotModel(datasets, context)
         else:
-            self._model = HDF5DimensionalScanModel(axes, datasets, context)
-        emit_later(self.model_changed)
+            self._model = HDF5ScanModel(axes, datasets, context)
+        emit_later(self.model_changed, self._model)
 
-    def get_model(self) -> ScanModel:
+    def get_model(self) -> Model:
         return self._model
 
 
-class HDF5SingleShotModel(ContinuousScanModel):
+class HDF5SingleShotModel(SinglePointModel):
     def __init__(self, datasets: h5py.Group, context: Context):
         super().__init__(context)
 
@@ -37,17 +37,18 @@ class HDF5SingleShotModel(ContinuousScanModel):
         self._point = {}
         for key in self._channel_schemata:
             self._point[key] = datasets["ndscan.point." + key][()]
-        emit_later(self.new_point_complete, self._point)
+        emit_later(self.point_changed, self._point)
 
     def get_channel_schemata(self) -> Dict[str, Any]:
         return self._channel_schemata
 
-    def get_current_point(self) -> Dict[str, Any]:
+    def get_point(self) -> Dict[str, Any]:
         return self._point
 
 
-class HDF5DimensionalScanModel(DimensionalScanModel):
-    def __init__(self, axes: list, datasets: h5py.Group, context: Context):
+class HDF5ScanModel(ScanModel):
+    def __init__(self, axes: List[Dict[str, Any]], datasets: h5py.Group,
+                 context: Context):
         super().__init__(axes, context)
 
         self._channel_schemata = json.loads(datasets["ndscan.channels"][()])

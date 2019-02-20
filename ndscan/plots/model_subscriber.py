@@ -18,7 +18,8 @@ class SubscriberRoot(Root):
         self._title_set = False
         self._axes_initialised = False
 
-    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
+    def data_changed(self, data: Dict[str, Any],
+                     mods: Iterable[Dict[str, Any]]) -> None:
         def d(name):
             return data.get("ndscan." + name, (False, None))[1]
 
@@ -36,22 +37,22 @@ class SubscriberRoot(Root):
 
             dim = len(axes)
             if dim == 0:
-                self._model = SubscriberContinuousScanModel(self._context)
+                self._model = SubscriberSinglePointModel(self._context)
             else:
-                self._model = SubscriberDimensionalScanModel(axes, self._context)
+                self._model = SubscriberScanModel(axes, self._context)
 
             self._axes_initialised = True
-            self.model_changed.emit()
+            self.model_changed.emit(self._model)
 
         self._model.data_changed(data, mods)
 
-    def get_model(self) -> ScanModel:
+    def get_model(self) -> Model:
         if self._model is None:
             raise ValueError("Model not yet set")
         return self._model
 
 
-class SubscriberContinuousScanModel(ContinuousScanModel):
+class SubscriberSinglePointModel(SinglePointModel):
     def __init__(self, context: Context):
         super().__init__(context)
         self._series_initialised = False
@@ -64,12 +65,13 @@ class SubscriberContinuousScanModel(ContinuousScanModel):
             raise ValueError("No complete point yet")
         return self._channel_schemata
 
-    def get_current_point(self) -> Dict[str, Any]:
+    def get_point(self) -> Dict[str, Any]:
         if self._current_point is None:
             raise ValueError("No complete point yet")
         return self._current_point
 
-    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
+    def data_changed(self, data: Dict[str, Any],
+                     mods: Iterable[Dict[str, Any]]) -> None:
         if not self._series_initialised:
             channels_json = data.get("ndscan.channels", (False, None))[1]
             if not channels_json:
@@ -90,17 +92,18 @@ class SubscriberContinuousScanModel(ContinuousScanModel):
         if len(self._next_point) == len(self._channel_schemata):
             self._current_point = self._next_point
             self._next_point = {}
-            self.new_point_complete.emit(self._current_point)
+            self.point_changed.emit(self._current_point)
 
 
-class SubscriberDimensionalScanModel(DimensionalScanModel):
-    def __init__(self, axes: list, context: Context):
+class SubscriberScanModel(ScanModel):
+    def __init__(self, axes: List[Dict[str, Any]], context: Context):
         super().__init__(axes, context)
         self._series_initialised = False
         self._channel_schemata = None
         self._point_data = {}
 
-    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
+    def data_changed(self, data: Dict[str, Any],
+                     mods: Iterable[Dict[str, Any]]) -> None:
         if not self._series_initialised:
             channels_json = data.get("ndscan.channels", (False, None))[1]
             if not channels_json:

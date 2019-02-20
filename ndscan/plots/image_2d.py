@@ -9,7 +9,7 @@ from typing import Dict, Union
 
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
-from .model import DimensionalScanModel
+from .model import ScanModel
 from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item)
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
-    def __init__(self, model: DimensionalScanModel):
+    def __init__(self, model: ScanModel):
         super().__init__()
 
         self.model = model

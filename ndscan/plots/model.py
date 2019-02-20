@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 from quamash import QtCore
 
 
@@ -22,7 +22,14 @@ class Context(QtCore.QObject):
         self.set_dataset(key, value)
 
 
-class ScanModel(QtCore.QObject):
+class Root(QtCore.QObject):
+    model_changed = QtCore.pyqtSignal(object)
+
+    def get_model(self) -> "Model":
+        raise NotImplementedError
+
+
+class Model(QtCore.QObject):
     channel_schemata_changed = QtCore.pyqtSignal(dict)
 
     def __init__(self, context: Context):
@@ -33,27 +40,20 @@ class ScanModel(QtCore.QObject):
         raise NotImplementedError
 
 
-class ContinuousScanModel(ScanModel):
-    new_point_complete = QtCore.pyqtSignal(dict)
+class SinglePointModel(Model):
+    point_changed = QtCore.pyqtSignal(dict)
 
-    def get_current_point(self) -> Dict[str, Any]:
+    def get_point(self) -> Dict[str, Any]:
         raise NotImplementedError
 
 
-class DimensionalScanModel(ScanModel):
+class ScanModel(Model):
     points_rewritten = QtCore.pyqtSignal(dict)
     points_appended = QtCore.pyqtSignal(dict)
 
-    def __init__(self, axes: list, context: Context):
+    def __init__(self, axes: List[Dict[str, Any]], context: Context):
         super().__init__(context)
         self.axes = axes
 
     def get_points(self) -> Dict[str, Any]:
-        raise NotImplementedError
-
-
-class Root(QtCore.QObject):
-    model_changed = QtCore.pyqtSignal()
-
-    def get_model(self) -> ScanModel:
         raise NotImplementedError

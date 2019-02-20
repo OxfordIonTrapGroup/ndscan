@@ -2,7 +2,7 @@ import numpy as np
 import pyqtgraph
 from quamash import QtWidgets, QtCore
 
-from .model import ContinuousScanModel
+from .model import SinglePointModel
 from .utils import extract_scalar_channels, setup_axis_item, SERIES_COLORS
 
 
@@ -66,12 +66,12 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
-    def __init__(self, model: ContinuousScanModel):
+    def __init__(self, model: SinglePointModel):
         super().__init__()
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
-        self.model.new_point_complete.connect(self._append_point)
+        self.model.point_changed.connect(self._append_point)
 
         self.series = []
         self.num_history_box = None
@@ -132,7 +132,7 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
             # If no new data points are coming in, setting the history size wouldn't do
             # anything.
             # TODO: is_online_master() should really be something like
-            # ContinuousScanModel.ever_updates().
+            # SinglePointModel.ever_updates().
             return
         self.num_history_box = QtWidgets.QSpinBox()
         self.num_history_box.setMinimum(1)
