@@ -180,10 +180,11 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
             path = schema["path"]
             if not path:
                 path = "/"
-            identity_string = schema["param"]["fqn"] + "@" + path
+            param = schema["param"]
+            identity_string = param["fqn"] + "@" + path
             return setup_axis_item(
-                self.getAxis(location), schema["param"]["description"], identity_string,
-                schema["param"]["spec"])
+                self.getAxis(location),
+                [(param["description"], identity_string, None, param["spec"])])
 
         self.x_unit_suffix, self.x_data_to_display_scale = \
             setup_axis(self.x_schema, "bottom")

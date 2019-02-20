@@ -1,4 +1,5 @@
 from ndscan.utils import eval_param_default
+from typing import Any, Dict, List, Tuple
 
 # ColorBrewer-inspired to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = [
@@ -55,20 +56,35 @@ def extract_linked_datasets(param_schema):
     return datasets
 
 
-def setup_axis_item(axis_item, description, identity_string, spec):
+def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]]):
+    def label_html(description, identity_string, color, spec):
+        result = ""
+        if color is not None:
+            # KLUDGE: Truncate alpha, as it renders in weird colors (RGBA vs. ARGB)?
+            color = color[:7]
+            result += "<span style='color: \"{}\"'>".format(color)
+        unit = spec.get("unit", "")
+        if unit:
+            unit = "/ " + unit + " "
+        result += "<b>{} {}</b>".format(description, unit)
+        if identity_string:
+            result += "<i>({})</i>".format(identity_string)
+        if color is not None:
+            result += "</span>"
+        return result
+
+    axis_item.setLabel("<br>".join(label_html(*a) for a in axes))
+
+    if len(axes) != 1:
+        return "", 1.0
+
+    _, _, _, spec = axes[0]
     unit_suffix = ""
     unit = spec.get("unit", "")
     if unit:
         unit_suffix = " " + unit
-        unit = "/ " + unit + " "
-
-    label = "<b>{} {}</b>".format(description, unit)
-    if identity_string:
-        label += "<i>({})</i>".format(identity_string)
-    axis_item.setLabel(label)
 
     data_to_display_scale = 1 / spec["scale"]
     axis_item.setScale(data_to_display_scale)
     axis_item.autoSIPrefix = False
-
     return unit_suffix, data_to_display_scale
