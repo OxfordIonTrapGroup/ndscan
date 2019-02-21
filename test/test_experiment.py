@@ -35,7 +35,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
             "kind": "computed_curve",
             "parameters": {
                 "function_name": "lorentzian",
-                "associated_channel": "channel_result"
+                "associated_channels": ["channel_result"]
             },
             "data": {
                 "x0": {

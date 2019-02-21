@@ -169,9 +169,9 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
             item.remove()
         self.annotation_items.clear()
 
-        def series_idx(data_name):
+        def series_idx(ref):
             for i, s in enumerate(self.series):
-                if s.data_name == data_name:
+                if "channel_" + s.data_name == ref:
                     return i
             return 0
 
@@ -179,8 +179,10 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
         for a in annotations:
             if a.kind == "location":
                 if set(a.coordinates.keys()) == set(["axis_0"]):
-                    color = FIT_COLORS[series_idx(
-                        a.parameters.get("associated_channel")) % len(FIT_COLORS)]
+                    idx = max(
+                        series_idx(chan)
+                        for chan in a.parameters.get("associated_channels", [None]))
+                    color = FIT_COLORS[idx % len(FIT_COLORS)]
                     line = VLineItem(a.coordinates["axis_0"],
                                      a.data.get("axis_0_error",
                                                 None), self.getPlotItem(), color,
@@ -189,14 +191,14 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
                     continue
 
             if a.kind == "curve":
-                series = None
-                for series_idx, s in enumerate(self.series):
+                idx = None
+                for i, s in enumerate(self.series):
                     match_coords = set(["axis_0", "channel_" + s.data_name])
                     if set(a.coordinates.keys()) == match_coords:
-                        series = s
+                        idx = i
                         break
-                if series is not None:
-                    color = FIT_COLORS[series_idx % len(FIT_COLORS)]
+                if idx is not None:
+                    color = FIT_COLORS[idx % len(FIT_COLORS)]
                     pen = pyqtgraph.mkPen(color, width=3)
                     curve = pyqtgraph.PlotCurveItem(pen=pen)
 
@@ -209,7 +211,9 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
             if a.kind == "computed_curve":
                 function_name = a.parameters.get("function_name", None)
                 if ComputedCurveItem.is_function_supported(function_name):
-                    idx = series_idx(a.parameters.get("associated_channel"))
+                    idx = max(
+                        series_idx(chan)
+                        for chan in a.parameters.get("associated_channels", []))
                     color = FIT_COLORS[idx % len(FIT_COLORS)]
                     pen = pyqtgraph.mkPen(color, width=3)
                     curve = pyqtgraph.PlotCurveItem(pen=pen)

@@ -135,8 +135,12 @@ class OnlineFit(DefaultAnalysis):
         annotation_descs = [{
             "kind": "computed_curve",
             "parameters": {
-                "function_name": self.fit_type,
-                "associated_channel": argument_name(self.data["y"])
+                "function_name":
+                self.fit_type,
+                "associated_channels": [
+                    get_channel_name(v) for v in self.data.values()
+                    if isinstance(v, ResultChannel)
+                ]
             },
             "data": {
                 k: analysis_result_desc(k)
