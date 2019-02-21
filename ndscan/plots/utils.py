@@ -1,5 +1,5 @@
 import pyqtgraph
-from PyQt5 import QtCore, QtWidgets
+from quamash import QtCore, QtWidgets
 from typing import Any, Dict, List, Tuple
 from ..utils import eval_param_default
 

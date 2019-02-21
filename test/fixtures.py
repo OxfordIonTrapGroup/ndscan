@@ -4,6 +4,7 @@ Common fragments/… for unit tests.
 
 from artiq.experiment import *
 from ndscan.fragment import *
+from ndscan.default_analysis import OnlineFit
 
 
 class AddOneFragment(ExpFragment):
@@ -23,9 +24,9 @@ class AddOneFragment(ExpFragment):
     def run_once(self):
         self.result.push(self.value.get() + 1)
 
-    def get_default_fits(self):
+    def get_default_analyses(self):
         # Nonsensical fit spec to exercise serialisation code.
-        return [AutoFitSpec("lorentzian", {"x": self.value, "y": self.result})]
+        return [OnlineFit("lorentzian", {"x": self.value, "y": self.result})]
 
 
 class ReboundAddOneFragment(ExpFragment):

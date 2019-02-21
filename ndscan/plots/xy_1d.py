@@ -1,13 +1,13 @@
 import logging
 import numpy as np
-from oitg import uncertainty_to_string
 import pyqtgraph
 from quamash import QtCore
 
+from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
 from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
-                    AlternateMenuPlotWidget, SERIES_COLORS)
+                    AlternateMenuPlotWidget, FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
@@ -78,76 +78,6 @@ class _XYSeries(QtCore.QObject):
         self.num_current_points = 0
 
 
-class _VLineFitPOI:
-    def __init__(self, fit_param_name, base_color, x_data_to_display_scale,
-                 x_unit_suffix):
-        self.fit_param_name = fit_param_name
-        self.x_data_to_display_scale = x_data_to_display_scale
-        self.x_unit_suffix = x_unit_suffix
-
-        self.left_line = pyqtgraph.InfiniteLine(
-            movable=False,
-            angle=90,
-            pen={
-                "color": base_color,
-                "style": QtCore.Qt.DotLine
-            })
-        self.center_line = pyqtgraph.InfiniteLine(
-            movable=False,
-            angle=90,
-            label="",
-            labelOpts={
-                "position": 0.97,
-                "color": base_color,
-                "movable": True
-            },
-            pen={
-                "color": base_color,
-                "style": QtCore.Qt.SolidLine
-            })
-        self.right_line = pyqtgraph.InfiniteLine(
-            movable=False,
-            angle=90,
-            pen={
-                "color": base_color,
-                "style": QtCore.Qt.DotLine
-            })
-
-        self.has_warned = False
-
-    def add_to_plot(self, plot):
-        plot.addItem(self.left_line, ignoreBounds=True)
-        plot.addItem(self.center_line, ignoreBounds=True)
-        plot.addItem(self.right_line, ignoreBounds=True)
-
-    def update(self, fit_minimizers, fit_minimizer_errors):
-        try:
-            x = fit_minimizers[self.fit_param_name]
-            delta_x = fit_minimizer_errors[self.fit_param_name]
-        except KeyError as e:
-            if not self.has_warned:
-                logger.warn(
-                    "Unknown reference to fit parameter '%s' in point of interest",
-                    str(e))
-                self.has_warned = True
-            # TODO: Remove POI.
-            return
-
-        if np.isnan(delta_x) or delta_x == 0.0:
-            # If the covariance extraction failed, just don't display the
-            # confidence interval at all.
-            delta_x = 0.0
-            label = str(x)
-        else:
-            label = uncertainty_to_string(x * self.x_data_to_display_scale,
-                                          delta_x * self.x_data_to_display_scale)
-        self.center_line.label.setFormat(label + self.x_unit_suffix)
-
-        self.left_line.setPos(x - delta_x)
-        self.center_line.setPos(x)
-        self.right_line.setPos(x + delta_x)
-
-
 class XY1DPlotWidget(AlternateMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
@@ -158,6 +88,9 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(self._update_points)
+        self.model.annotations_changed.connect(self._update_annotations)
+
+        self.annotation_items = []
 
         # FIXME: Just re-set values instead of throwing away everything.
         def rewritten(points):
@@ -230,6 +163,63 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
 
         for s in self.series:
             s.update(x_data, points)
+
+    def _update_annotations(self):
+        for item in self.annotation_items:
+            item.remove()
+        self.annotation_items.clear()
+
+        def series_idx(data_name):
+            for i, s in enumerate(self.series):
+                if s.data_name == data_name:
+                    return i
+            return 0
+
+        annotations = self.model.get_annotations()
+        for a in annotations:
+            if a.kind == "location":
+                if set(a.coordinates.keys()) == set(["axis_0"]):
+                    color = FIT_COLORS[series_idx(
+                        a.parameters.get("associated_channel")) % len(FIT_COLORS)]
+                    line = VLineItem(a.coordinates["axis_0"],
+                                     a.data.get("axis_0_error",
+                                                None), self.getPlotItem(), color,
+                                     self.x_data_to_display_scale, self.x_unit_suffix)
+                    self.annotation_items.append(line)
+                    continue
+
+            if a.kind == "curve":
+                series = None
+                for series_idx, s in enumerate(self.series):
+                    match_coords = set(["axis_0", "channel_" + s.data_name])
+                    if set(a.coordinates.keys()) == match_coords:
+                        series = s
+                        break
+                if series is not None:
+                    color = FIT_COLORS[series_idx % len(FIT_COLORS)]
+                    pen = pyqtgraph.mkPen(color, width=3)
+                    curve = pyqtgraph.PlotCurveItem(pen=pen)
+
+                    item = CurveItem(a.coordinates["axis_0"],
+                                     a.coordinates["channel_" + s.data_name],
+                                     self.getPlotItem(), curve)
+                    self.annotation_items.append(item)
+                    continue
+
+            if a.kind == "computed_curve":
+                function_name = a.parameters.get("function_name", None)
+                if ComputedCurveItem.is_function_supported(function_name):
+                    idx = series_idx(a.parameters.get("associated_channel"))
+                    color = FIT_COLORS[idx % len(FIT_COLORS)]
+                    pen = pyqtgraph.mkPen(color, width=3)
+                    curve = pyqtgraph.PlotCurveItem(pen=pen)
+                    item = ComputedCurveItem(function_name, a.data, self.getPlotItem(),
+                                             curve)
+                    self.annotation_items.append(item)
+                    continue
+
+            logger.info("Ignoring annotation of kind '%s' with coordinates %s", a.kind,
+                        list(a.coordinates.keys()))
 
     def build_context_menu(self, builder):
         x_schema = self.model.axes[0]

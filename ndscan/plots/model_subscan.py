@@ -1,6 +1,6 @@
 import json
 from typing import Any, Dict
-from PyQt5 import QtCore
+from quamash import QtCore
 from .model import *
 
 
@@ -41,18 +41,22 @@ class SubscanModel(ScanModel):
         super().__init__(schema["axes"], parent.context)
 
         self._channel_schemata = schema["channels"]
+
         self._result_prefix = result_prefix
         self._point_data = {}
         parent.point_changed.connect(self._update)
 
         _call_later(lambda: self.channel_schemata_changed.emit(self._channel_schemata))
+        _call_later(lambda: self._set_online_analyses(
+            schema.get("online_analyses", {})))
+        _call_later(lambda: self._set_annotation_schemata(
+            schema.get("annotations", [])))
         _call_later(lambda: self._update(parent.get_point()))
 
     def _update(self, parent_data: Dict[str, Any]) -> None:
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
             self._point_data[name] = parent_data[self._result_prefix + name]
-
         self.points_rewritten.emit(self._point_data)
 
     def get_channel_schemata(self) -> Dict[str, Any]:

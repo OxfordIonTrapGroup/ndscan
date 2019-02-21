@@ -99,7 +99,10 @@ class SubscriberScanModel(ScanModel):
     def __init__(self, axes: List[Dict[str, Any]], context: Context):
         super().__init__(axes, context)
         self._series_initialised = False
+        self._online_analyses_initialised = False
         self._channel_schemata = None
+        self._annotation_json = None
+        self._annotations = []
         self._point_data = {}
 
     def data_changed(self, data: Dict[str, Any],
@@ -112,11 +115,26 @@ class SubscriberScanModel(ScanModel):
             self._series_initialised = True
             self.channel_schemata_changed.emit(self._channel_schemata)
 
+        if not self._online_analyses_initialised:
+            analyses_json = data.get("ndscan.online_analyses", (False, None))[1]
+            if not analyses_json:
+                return
+            self._set_online_analyses(json.loads(analyses_json))
+            self._online_analyses_initialised = True
+
+        annotation_json = data.get("ndscan.annotations", (False, None))[1]
+        if annotation_json != self._annotation_json:
+            self._set_annotation_schemata(json.loads(annotation_json))
+            self._annotation_json = annotation_json
+
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
             self._point_data[name] = data.get("ndscan.points." + name, (False, []))[1]
 
         self.points_appended.emit(self._point_data)
+
+    def get_annotations(self) -> List[Annotation]:
+        return self._annotations
 
     def get_channel_schemata(self) -> Dict[str, Any]:
         return self._channel_schemata

@@ -208,7 +208,8 @@ class ScanRunner(HasEnvironment):
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,
                   short_result_names: Dict[ResultChannel, str]):
-    """Return metadata for the given spec in stringly typed dictionary form.
+    """Return metadata for the given spec in stringly typed dictionary form, executing
+    any default analyses as necessary.
 
     :param spec: :class:`ScanSpec` describing the scan.
     :param fragment: Fragment being scanned.
@@ -231,13 +232,19 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
         for (channel, name) in short_result_names.items()
     }
 
-    desc["auto_fit"] = []
+    desc["annotations"] = []
+    desc["online_analyses"] = {}
     axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
-    for f in fragment.get_default_fits():
-        if f.has_data(axis_identities):
-            desc["auto_fit"].append(
-                f.describe(
-                    lambda identity: "axis_{}".format(axis_identities.index(identity)),
-                    lambda channel: "channel_" + short_result_names[channel]))
+    for analysis in fragment.get_default_analyses():
+        if analysis.has_data(axis_identities):
+            annotations, online_analyses = analysis.describe_online_analyses(
+                lambda identity: "axis_{}".format(axis_identities.index(identity)),
+                lambda channel: "channel_" + short_result_names[channel])
+            desc["annotations"].extend(annotations)
+            for name, spec in online_analyses.items():
+                if name in desc["online_analyses"]:
+                    raise ValueError(
+                        "An online analysis with name '{}' already exists".format(name))
+                desc["online_analyses"][name] = spec
 
     return desc

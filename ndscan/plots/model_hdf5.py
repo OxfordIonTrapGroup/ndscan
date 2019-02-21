@@ -1,7 +1,7 @@
 import h5py
 import json
 from typing import Any, Dict
-from PyQt5 import QtCore
+from quamash import QtCore
 from .model import *
 
 
@@ -53,6 +53,9 @@ class HDF5ScanModel(ScanModel):
 
         self._channel_schemata = json.loads(datasets["ndscan.channels"][()])
         emit_later(self.channel_schemata_changed, self._channel_schemata)
+
+        self._set_online_analyses(
+            json.loads(datasets.get("ndscan.online_analyses", "{}")))
 
         self._point_data = {}
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +

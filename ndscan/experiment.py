@@ -210,13 +210,6 @@ class FragmentScanExperiment(EnvExperiment):
 
         scan_desc = describe_scan(self._scan, self.fragment,
                                   self._short_child_channel_names)
-
-        # KLDUGE: Broadcast auto_fit before channels to allow simpler implementation
-        # in current fit applet. As the applet implementation grows more sophisticated
-        # (hiding axes, etc.), it should be easy to relax this requirement.
-        push("auto_fit", json.dumps(scan_desc["auto_fit"]))
-        del scan_desc["auto_fit"]
-
         for name, value in scan_desc.items():
             # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
             if isinstance(value, str) or isinstance(value, int):

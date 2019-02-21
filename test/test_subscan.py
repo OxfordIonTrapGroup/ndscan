@@ -52,16 +52,65 @@ class SubscanCase(ExpFragmentCase):
         spec = json.loads(results[parent.scan_spec])
         self.assertEqual(spec["fragment_fqn"], "fixtures.AddOneFragment")
         self.assertEqual(spec["seed"], 1234)
-        self.assertEqual(spec["auto_fit"], [{
-            "data": {
-                "x": "axis_0",
-                "y": "channel_result"
+
+        curve_annotation = {
+            "kind": "computed_curve",
+            "parameters": {
+                "function_name": "lorentzian",
+                "associated_channel": "channel_result"
             },
-            "fit_type": "lorentzian",
-            "pois": [{
-                "x": "x0"
-            }]
-        }])
+            "data": {
+                "x0": {
+                    "kind": "analysis_result",
+                    "analysis_name": "fit_lorentzian",
+                    "result_key": "x0"
+                },
+                "fwhm": {
+                    "kind": "analysis_result",
+                    "analysis_name": "fit_lorentzian",
+                    "result_key": "fwhm"
+                },
+                "y0": {
+                    "kind": "analysis_result",
+                    "analysis_name": "fit_lorentzian",
+                    "result_key": "y0"
+                },
+                "a": {
+                    "kind": "analysis_result",
+                    "analysis_name": "fit_lorentzian",
+                    "result_key": "a"
+                }
+            }
+        }
+        location_annotation = {
+            "kind": "location",
+            "coordinates": {
+                "axis_0": {
+                    "kind": "analysis_result",
+                    "analysis_name": "fit_lorentzian",
+                    "result_key": "x0"
+                }
+            },
+            "data": {
+                "axis_0_error": {
+                    "kind": "analysis_result",
+                    "analysis_name": "fit_lorentzian",
+                    "result_key": "x0_error"
+                }
+            }
+        }
+        self.assertEqual(spec["annotations"], [curve_annotation, location_annotation])
+        self.assertEqual(
+            spec["online_analyses"], {
+                "fit_lorentzian": {
+                    "data": {
+                        "y": "channel_result",
+                        "x": "axis_0"
+                    },
+                    "fit_type": "lorentzian",
+                    "kind": "named_fit"
+                }
+            })
         self.assertEqual(
             spec["channels"], {
                 "result": {
