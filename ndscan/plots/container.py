@@ -3,7 +3,7 @@ from collections import OrderedDict
 from quamash import QtWidgets
 
 from .model import Model, SinglePointModel, ScanModel
-from .model_subscan import SubscanRoot
+from .model.subscan import SubscanRoot
 from .image_2d import Image2DPlotWidget
 from .rolling_1d import Rolling1DPlotWidget
 from .xy_1d import XY1DPlotWidget

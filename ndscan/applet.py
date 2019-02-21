@@ -9,7 +9,7 @@ from typing import Any, Dict, Iterable
 
 from .plots.container import PlotContainerWidget
 from .plots.model import Context
-from .plots.model_subscriber import SubscriberRoot
+from .plots.model.subscriber import SubscriberRoot
 
 logger = logging.getLogger(__name__)
 

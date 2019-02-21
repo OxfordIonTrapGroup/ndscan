@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pyqtgraph import SignalProxy
 from quamash import QtCore
 from typing import Any, Dict
-from ..default_analysis import FIT_OBJECTS
+from ...default_analysis import FIT_OBJECTS
 
 
 class OnlineAnalysis(QtCore.QObject):

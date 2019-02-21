@@ -1,7 +1,7 @@
 from typing import Any, Dict, Iterable
 import json
-from .model import *
-from ..utils import strip_prefix
+from . import *
+from ...utils import strip_prefix
 
 
 class SubscriberRoot(Root):

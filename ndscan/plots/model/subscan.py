@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict
 from quamash import QtCore
-from .model import *
+from . import *
 
 
 class SubscanRoot(Root):

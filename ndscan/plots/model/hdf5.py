@@ -2,7 +2,7 @@ import h5py
 import json
 from typing import Any, Dict
 from quamash import QtCore
-from .model import *
+from . import *
 
 
 def emit_later(signal, *args):
