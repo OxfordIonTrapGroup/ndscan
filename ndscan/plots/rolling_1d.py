@@ -3,7 +3,8 @@ import pyqtgraph
 from quamash import QtWidgets, QtCore
 
 from .model import SinglePointModel
-from .utils import extract_scalar_channels, setup_axis_item, SERIES_COLORS
+from .utils import (extract_scalar_channels, setup_axis_item, AlternateMenuPlotWidget,
+                    SERIES_COLORS)
 
 
 class _Series:
@@ -62,23 +63,22 @@ class _Series:
             self.values = self.values[-n:, :]
 
 
-class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
+class Rolling1DPlotWidget(AlternateMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
+    alternate_plot_requested = QtCore.pyqtSignal(str)
 
-    def __init__(self, model: SinglePointModel):
-        super().__init__()
+    def __init__(self, model: SinglePointModel, get_alternate_plot_names):
+        super().__init__(get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.point_changed.connect(self._append_point)
 
         self.series = []
-        self.num_history_box = None
+        self._history_length = 1024
 
         self.showGrid(x=True, y=True)
-
-        self._install_context_menu()
 
     def _initialise_series(self):
         for s in self.series:
@@ -100,12 +100,9 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
             error_bar_item = pyqtgraph.ErrorBarItem(
                 pen=color) if error_bar_name else None
 
-            history_length = 1024
-            if self.num_history_box:
-                history_length = self.num_history_box.value()
             self.series.append(
                 _Series(self, data_name, data_item, error_bar_name, error_bar_item,
-                        history_length))
+                        self._history_length))
 
         def axis_info(i):
             # If there is only one series, set label/scaling accordingly.
@@ -126,36 +123,34 @@ class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
             s.append(point)
 
     def set_history_length(self, n):
+        self._history_length = n
         for s in self.series:
             s.set_history_length(n)
 
-    def _install_context_menu(self):
-        if not self.model.context.is_online_master():
+    def build_context_menu(self, builder):
+        if self.model.context.is_online_master():
             # If no new data points are coming in, setting the history size wouldn't do
             # anything.
             # TODO: is_online_master() should really be something like
             # SinglePointModel.ever_updates().
-            return
-        self.num_history_box = QtWidgets.QSpinBox()
-        self.num_history_box.setMinimum(1)
-        self.num_history_box.setMaximum(2**16)
-        self.num_history_box.setValue(100)
-        self.num_history_box.valueChanged.connect(self.set_history_length)
 
-        container = QtWidgets.QWidget()
+            num_history_box = QtWidgets.QSpinBox()
+            num_history_box.setMinimum(1)
+            num_history_box.setMaximum(2**16)
+            num_history_box.setValue(self._history_length)
+            num_history_box.valueChanged.connect(self.set_history_length)
 
-        layout = QtWidgets.QHBoxLayout()
-        container.setLayout(layout)
+            container = QtWidgets.QWidget()
 
-        label = QtWidgets.QLabel("N: ")
-        layout.addWidget(label)
+            layout = QtWidgets.QHBoxLayout()
+            container.setLayout(layout)
 
-        layout.addWidget(self.num_history_box)
+            label = QtWidgets.QLabel("N: ")
+            layout.addWidget(label)
 
-        action = QtWidgets.QWidgetAction(self)
-        action.setDefaultWidget(container)
+            layout.addWidget(num_history_box)
 
-        separator = QtWidgets.QAction("", self)
-        separator.setSeparator(True)
-        entries = [action, separator]
-        self.plotItem.getContextMenus = lambda ev: entries
+            action = builder.append_widget_action()
+            action.setDefaultWidget(container)
+        builder.ensure_separator()
+        super().build_context_menu(builder)

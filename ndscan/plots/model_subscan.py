@@ -18,6 +18,7 @@ class SubscanRoot(Root):
     def _update_schema(self, schema_str: str) -> None:
         if schema_str == self._schema_str:
             return
+        self._schema_str = schema_str
         self._schema = json.loads(schema_str)
 
         SUFFIX = "spec"

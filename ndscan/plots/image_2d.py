@@ -10,7 +10,8 @@ from typing import Dict, Union
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
-from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item)
+from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
+                    AlternateMenuPlotWidget)
 
 logger = logging.getLogger(__name__)
 
@@ -161,17 +162,20 @@ class _ImagePlot:
             self.image_item.setRect(self.image_rect)
 
 
-class Image2DPlotWidget(pyqtgraph.PlotWidget):
+class Image2DPlotWidget(AlternateMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
+    alternate_plot_requested = QtCore.pyqtSignal(str)
 
-    def __init__(self, model: ScanModel):
-        super().__init__()
+    def __init__(self, model: ScanModel, get_alternate_plot_names):
+        super().__init__(get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(lambda p: self._update_points(p, False))
         self.model.points_rewritten.connect(lambda p: self._update_points(p, True))
+
+        self.data_names = []
 
         self.x_schema, self.y_schema = self.model.axes
         self.plot = None
@@ -192,7 +196,7 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
             setup_axis(self.y_schema, "left")
 
         self.crosshair = LabeledCrosshairCursor(
-            self, self, self.x_unit_suffix, self.x_data_to_display_scale,
+            self, self.getPlotItem(), self.x_unit_suffix, self.x_data_to_display_scale,
             self.y_unit_suffix, self.y_data_to_display_scale)
         self.showGrid(x=True, y=True)
 
@@ -202,25 +206,24 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
             self.plot = None
 
         try:
-            data_names, _ = extract_scalar_channels(channels)
+            self.data_names, _ = extract_scalar_channels(channels)
         except ValueError as e:
             self.error.emit(str(e))
 
-        if not data_names:
+        if not self.data_names:
             self.error.emit("No scalar result channels to display")
 
         hints_for_channels = {
             name: channels[name].get("display_hints", {})
-            for name in data_names
+            for name in self.data_names
         }
-        self._install_context_menu(data_names)
 
         def bounds(schema):
             return (schema.get(n, None) for n in ("min", "max", "increment"))
 
         image_item = pyqtgraph.ImageItem()
         self.addItem(image_item)
-        self.plot = _ImagePlot(image_item, data_names[0], *bounds(self.x_schema),
+        self.plot = _ImagePlot(image_item, self.data_names[0], *bounds(self.x_schema),
                                *bounds(self.y_schema), hints_for_channels)
         self.ready.emit()
 
@@ -228,52 +231,36 @@ class Image2DPlotWidget(pyqtgraph.PlotWidget):
         if self.plot:
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
-    def _install_context_menu(self, data_names):
-        entries = []
-
+    def build_context_menu(self, builder):
         if self.model.context.is_online_master():
             x_datasets = extract_linked_datasets(self.x_schema["param"])
             y_datasets = extract_linked_datasets(self.y_schema["param"])
             for d, axis in chain(
                     zip(x_datasets, repeat("x")), zip(y_datasets, repeat("y"))):
-                action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
+                action = builder.append_action("Set '{}' from crosshair".format(d))
                 action.triggered.connect(lambda *a, d=d: self.
                                          _set_dataset_from_crosshair(d, axis))
-                entries.append(action)
             if len(x_datasets) == 1 and len(y_datasets) == 1:
-                action = QtWidgets.QAction("Set both from crosshair".format(d), self)
+                action = builder.append_action("Set both from crosshair".format(d))
 
                 def set_both():
                     self._set_dataset_from_crosshair(x_datasets[0], "x")
                     self._set_dataset_from_crosshair(y_datasets[0], "y")
 
                 action.triggered.connect(set_both)
-                entries.append(action)
-
-        def append_separator():
-            separator = QtWidgets.QAction("", self)
-            separator.setSeparator(True)
-            entries.append(separator)
-
-        if entries:
-            append_separator()
+        builder.ensure_separator()
 
         self.channel_menu_group = QtWidgets.QActionGroup(self)
-        first_action = None
-        for name in data_names:
-            action = QtWidgets.QAction(name, self)
-            if not first_action:
-                first_action = action
+        for name in self.data_names:
+            action = builder.append_action(name)
             action.setCheckable(True)
             action.setActionGroup(self.channel_menu_group)
+            action.setChecked(name == self.plot.active_channel_name)
             action.triggered.connect(lambda *a, name=name: self.plot.activate_channel(
                 name))
-            entries.append(action)
-        if first_action:
-            first_action.setChecked(True)
-        append_separator()
+        builder.ensure_separator()
 
-        self.plotItem.getContextMenus = lambda ev: entries
+        super().build_context_menu(builder)
 
     def _set_dataset_from_crosshair(self, dataset, axis):
         if not self.crosshair:

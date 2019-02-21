@@ -1,31 +1,20 @@
-import asyncio
-from concurrent.futures import ProcessPoolExecutor
 import logging
 import numpy as np
 from oitg import uncertainty_to_string
 import pyqtgraph
-from quamash import QtWidgets, QtCore
+from quamash import QtCore
 
-from ndscan.auto_fit import FIT_OBJECTS
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
 from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
-                    FIT_COLORS, SERIES_COLORS)
+                    AlternateMenuPlotWidget, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
 
 class _XYSeries(QtCore.QObject):
-    def __init__(self,
-                 plot,
-                 data_name,
-                 data_item,
-                 error_bar_name,
-                 error_bar_item,
-                 plot_left_to_right,
-                 fit_spec=None,
-                 fit_item=None,
-                 fit_pois=[]):
+    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item,
+                 plot_left_to_right):
         super().__init__(plot)
 
         self.plot = plot
@@ -35,11 +24,6 @@ class _XYSeries(QtCore.QObject):
         self.error_bar_name = error_bar_name
         self.plot_left_to_right = plot_left_to_right
         self.num_current_points = 0
-        self.fit_obj = None
-        self.fit_item = None
-
-        if fit_spec:
-            self._install_fit(fit_spec, fit_item, fit_pois)
 
     def update(self, x_data, data):
         def channel(name):
@@ -85,91 +69,13 @@ class _XYSeries(QtCore.QObject):
 
         self.num_current_points = num_to_show
 
-        if self.fit_obj and self.num_current_points >= len(
-                self.fit_obj.parameter_names):
-            self._trigger_recompute_fit.emit()
-
     def remove_items(self):
         if self.num_current_points == 0:
             return
-
         self.plot.removeItem(self.data_item)
         if self.error_bar_item:
             self.plot.removeItem(self.error_bar_item)
-        if self.fit_item:
-            self.plot.removeItem(self.fit_item)
-
-    _trigger_recompute_fit = QtCore.pyqtSignal()
-
-    def _install_fit(self, spec, item, pois):
-        self.fit_type = spec["fit_type"]
-        self.fit_obj = FIT_OBJECTS[self.fit_type]
-        self.fit_item = item
-        self.fit_pois = pois
-        self.fit_item_added = False
-
-        self.last_fit_params = None
-
-        self.recompute_fit_limiter = pyqtgraph.SignalProxy(
-            self._trigger_recompute_fit,
-            slot=lambda: asyncio.ensure_future(self._recompute_fit()),
-            rateLimit=30)
-        self.recompute_in_progress = False
-        self.fit_executor = ProcessPoolExecutor(max_workers=1)
-
-        self.redraw_fit_limiter = pyqtgraph.SignalProxy(
-            self.plot.getPlotItem().getViewBox().sigXRangeChanged,
-            slot=self._redraw_fit,
-            rateLimit=30)
-
-    async def _recompute_fit(self):
-        if self.recompute_in_progress:
-            # Run at most one fit computation at a time. To make sure we don't
-            # leave a few final data points completely disregarded, just
-            # re-emit the signal – even for long fits, repeated checks aren't
-            # expensive, as long as the SignalProxy rate is slow enough.
-            self._trigger_recompute_fit.emit()
-            return
-
-        self.recompute_in_progress = True
-
-        xs, ys = self.data_item.getData()
-        y_errs = None
-        if self.error_bar_item:
-            y_errs = self.error_bar_item.opts['height'] / 2
-
-        loop = asyncio.get_event_loop()
-        self.last_fit_params, self.last_fit_errors = await loop.run_in_executor(
-            self.fit_executor, _run_fit, self.fit_type, xs, ys, y_errs)
-        self.redraw_fit_limiter.signalReceived()
-
-        self.recompute_in_progress = False
-
-    def _redraw_fit(self, *args):
-        if not self.last_fit_params:
-            return
-
-        if not self.fit_item_added:
-            self.plot.addItem(self.fit_item, ignoreBounds=True)
-            for f in self.fit_pois:
-                f.add_to_plot(self.plot)
-            self.fit_item_added = True
-
-        # Choose horizontal range based on currently visible area.
-        view_box = self.plot.getPlotItem().getViewBox()
-        x_range, _ = view_box.state["viewRange"]
-        ext = (x_range[1] - x_range[0]) / 10
-        x_lims = (x_range[0] - ext, x_range[1] + ext)
-
-        # Choose number of points based on width of plot on screen (in pixels).
-        fit_xs = np.linspace(*x_lims, view_box.width())
-
-        fit_ys = self.fit_obj.fitting_function(fit_xs, self.last_fit_params)
-
-        self.fit_item.setData(fit_xs, fit_ys)
-
-        for f in self.fit_pois:
-            f.update(self.last_fit_params, self.last_fit_errors)
+        self.num_current_points = 0
 
 
 class _VLineFitPOI:
@@ -242,24 +148,12 @@ class _VLineFitPOI:
         self.right_line.setPos(x + delta_x)
 
 
-def _run_fit(fit_type, xs, ys, y_errs=None):
-    """Fits the given data with the chosen method.
-
-    This function is intended to be executed on a worker process, hence the
-    primitive API.
-    """
-    try:
-        return FIT_OBJECTS[fit_type].fit(xs, ys, y_errs)
-    except Exception:
-        return None, None
-
-
-class XY1DPlotWidget(pyqtgraph.PlotWidget):
+class XY1DPlotWidget(AlternateMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
-    def __init__(self, model: ScanModel):
-        super().__init__()
+    def __init__(self, model: ScanModel, get_alternate_plot_names):
+        super().__init__(get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
@@ -282,8 +176,6 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
         self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
             self.getAxis("bottom"), [(x_schema["param"]["description"], identity_string,
                                       None, x_schema["param"]["spec"])])
-
-        self._install_context_menu(x_schema)
         self.crosshair = None
         self.showGrid(x=True, y=True)
 
@@ -306,13 +198,8 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
             error_bar_item = pyqtgraph.ErrorBarItem(
                 pen=color) if error_bar_name else None
 
-            # FIXME: Reimplement fits.
-            fit_spec = None
-            fit_item = None
-            fit_pois = None
             self.series.append(
-                _XYSeries(self, name, data_item, error_bar_name, error_bar_item, False,
-                          fit_spec, fit_item, fit_pois))
+                _XYSeries(self, name, data_item, error_bar_name, error_bar_item, False))
 
         # If there is only one series, set unit/scale accordingly.
         # TODO: Add multiple y axes for additional channels.
@@ -326,9 +213,12 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
         self.y_unit_suffix, self.y_data_to_display_scale = setup_axis_item(
             self.getAxis("left"), [axis_info(i) for i in range(len(data_names))])
 
-        self.crosshair = LabeledCrosshairCursor(
-            self, self, self.x_unit_suffix, self.x_data_to_display_scale,
-            self.y_unit_suffix, self.y_data_to_display_scale)
+        if self.crosshair is None:
+            # FIXME: Reinitialise crosshair as necessary on schema changes.
+            self.crosshair = LabeledCrosshairCursor(
+                self, self.getPlotItem(), self.x_unit_suffix,
+                self.x_data_to_display_scale, self.y_unit_suffix,
+                self.y_data_to_display_scale)
         self.ready.emit()
 
     def _update_points(self, points):
@@ -341,21 +231,16 @@ class XY1DPlotWidget(pyqtgraph.PlotWidget):
         for s in self.series:
             s.update(x_data, points)
 
-    def _install_context_menu(self, x_schema):
-        entries = []
+    def build_context_menu(self, builder):
+        x_schema = self.model.axes[0]
 
         if self.model.context.is_online_master():
             for d in extract_linked_datasets(x_schema["param"]):
-                action = QtWidgets.QAction("Set '{}' from crosshair".format(d), self)
+                action = builder.append_action("Set '{}' from crosshair".format(d))
                 action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
-                entries.append(action)
 
-        if entries:
-            separator = QtWidgets.QAction("", self)
-            separator.setSeparator(True)
-            entries.append(separator)
-
-        self.plotItem.getContextMenus = lambda ev: entries
+        builder.ensure_separator()
+        super().build_context_menu(builder)
 
     def _set_dataset_from_crosshair_x(self, dataset_key):
         if not self.crosshair:

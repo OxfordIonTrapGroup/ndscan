@@ -1,7 +1,8 @@
 import logging
+from collections import OrderedDict
 from quamash import QtWidgets
 
-from .model import SinglePointModel, ScanModel, Model
+from .model import Model, SinglePointModel, ScanModel
 from .model_subscan import SubscanRoot
 from .image_2d import Image2DPlotWidget
 from .rolling_1d import Rolling1DPlotWidget
@@ -10,12 +11,12 @@ from .xy_1d import XY1DPlotWidget
 logger = logging.getLogger(__name__)
 
 
-def _make_dimensional_plot(model: ScanModel):
+def _make_dimensional_plot(model: ScanModel, get_alternate_names):
     dim = len(model.axes)
     if dim == 1:
-        return XY1DPlotWidget(model)
+        return XY1DPlotWidget(model, get_alternate_names)
     if dim == 2:
-        return Image2DPlotWidget(model)
+        return Image2DPlotWidget(model, get_alternate_names)
     raise NotImplementedError(
         "Plots for {}-dimensional data are not yet implemented".format(dim))
 
@@ -24,9 +25,9 @@ class PlotContainerWidget(QtWidgets.QWidget):
     def __init__(self, model: Model):
         super().__init__()
 
-        self.model = model
+        self._alternate_plots = OrderedDict()
 
-        self._alternate_plots = {}
+        self.model = model
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -38,20 +39,26 @@ class PlotContainerWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.widget_stack)
 
         if isinstance(self.model, SinglePointModel):
-            self.plot = Rolling1DPlotWidget(self.model)
+            self.plot = Rolling1DPlotWidget(self.model, self._get_alternate_names)
             self.model.channel_schemata_changed.connect(self._create_subscan_roots)
         else:
             try:
-                self.plot = _make_dimensional_plot(self.model)
+                self.plot = _make_dimensional_plot(self.model,
+                                                   self._get_alternate_names)
             except NotImplementedError as err:
                 self._show_error(str(err))
                 return
         self.widget_stack.addWidget(self.plot)
+        self._alternate_plots["main plot"] = self.plot
         self.plot.error.connect(self._show_error)
         self.plot.ready.connect(lambda: self._show(self.plot))
+        self.plot.alternate_plot_requested.connect(self._show_alternate_plot)
 
     def _show(self, widget):
         self.widget_stack.setCurrentIndex(self.widget_stack.indexOf(widget))
+
+    def _show_alternate_plot(self, name):
+        self._show(self._alternate_plots[name])
 
     def _show_error(self, message):
         self.message_label.setText("Error: " + message)
@@ -66,16 +73,21 @@ class PlotContainerWidget(QtWidgets.QWidget):
                 continue
             root = SubscanRoot(self.model, name)
             root.model_changed.connect(lambda model: self._add_subscan_plot(
-                "subscan '{}'".format(name), model))
+                name, model))
 
     def _add_subscan_plot(self, name, model):
-        try:
-            plot = _make_dimensional_plot(model)
-        except NotImplementedError as err:
-            logger.info("Ignoring subscan '%s': %s", name, str(err))
         old_plot = self._alternate_plots.get(name, None)
         if old_plot:
             self.widget_stack.removeWidget(old_plot)
-        self._alternate_plots[name] = plot
+
+        try:
+            plot = _make_dimensional_plot(model, self._get_alternate_names)
+        except NotImplementedError as err:
+            logger.info("Ignoring subscan '%s': %s", name, str(err))
+        self._alternate_plots["subscan '{}'".format(name)] = plot
         self.widget_stack.addWidget(plot)
-        self._show(plot)
+        plot.error.connect(self._show_error)
+        plot.alternate_plot_requested.connect(self._show_alternate_plot)
+
+    def _get_alternate_names(self):
+        return list(self._alternate_plots.keys())

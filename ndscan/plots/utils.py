@@ -1,5 +1,7 @@
-from ndscan.utils import eval_param_default
+import pyqtgraph
+from PyQt5 import QtCore, QtWidgets
 from typing import Any, Dict, List, Tuple
+from ..utils import eval_param_default
 
 # ColorBrewer-inspired to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = [
@@ -88,3 +90,90 @@ def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]])
     axis_item.setScale(data_to_display_scale)
     axis_item.autoSIPrefix = False
     return unit_suffix, data_to_display_scale
+
+
+class ContextMenuBuilder:
+    def __init__(self, target_menu):
+        self._last_was_no_separator = False
+        self._entries = []
+        self._target_menu = target_menu
+
+    def finish(self) -> List[QtWidgets.QAction]:
+        return self._entries
+
+    def ensure_separator(self):
+        if self._last_was_no_separator:
+            separator = self.append_action("")
+            separator.setSeparator(True)
+            self._last_was_no_separator = False
+
+    def append_action(self, title) -> QtWidgets.QAction:
+        action = QtWidgets.QAction(title, self._target_menu)
+        self._append(action)
+        return action
+
+    def append_widget_action(self) -> QtWidgets.QWidgetAction:
+        action = QtWidgets.QWidgetAction(self._target_menu)
+        self._append(action)
+        return action
+
+    def _append(self, action):
+        self._last_was_no_separator = True
+        self._entries.append(action)
+
+
+class ContextMenuPlotWidget(pyqtgraph.PlotWidget):
+    """PlotWidget with support for dynamically populated context menus."""
+
+    def __init__(self):
+        super().__init__()
+        self._monkey_patch_context_menu()
+
+    def _monkey_patch_context_menu(self):
+        # The pyqtgraph getContextMenus() mechanism by default isn't very useful –
+        # returned entries are appended to the menu every time the function is called.
+        # This just happens to work out in the most common case where menus are static,
+        # as QMenu ignores appended actions that are already part of the menu.
+        #
+        # To make menus with dynamic entries work, we monkey-patch the ViewBox
+        # raiseContextMenu() implementation to create a new QMenu (ViewBoxMenu) instance
+        # every time. This is slightly wasteful, but context menus should be created
+        # seldomly enough for the slight increase in latency not to matter.
+        self.plotItem.getContextMenus = self._get_context_menus
+
+        vb = self.plotItem.getViewBox()
+        orig_raise_context_menu = vb.raiseContextMenu
+
+        def raiseContextMenu(ev):
+            vb.menu = pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu.ViewBoxMenu(vb)
+            return orig_raise_context_menu(ev)
+
+        vb.raiseContextMenu = raiseContextMenu
+
+    def _get_context_menus(self, event):
+        builder = ContextMenuBuilder(self.plotItem.getViewBox().menu)
+        self.build_context_menu(builder)
+        return builder.finish()
+
+    def build_context_menu(self, builder: ContextMenuBuilder) -> None:
+        pass
+
+
+class AlternateMenuPlotWidget(ContextMenuPlotWidget):
+    """PlotWidget with context menu for integration with the
+    .container.PlotContainerWidget alternate plot switching functionality."""
+
+    alternate_plot_requested = QtCore.pyqtSignal(str)
+
+    def __init__(self, get_alternate_plot_names):
+        super().__init__()
+        self._get_alternate_plot_names = get_alternate_plot_names
+
+    def build_context_menu(self, builder: ContextMenuBuilder) -> None:
+        alternate_plot_names = self._get_alternate_plot_names()
+        if len(alternate_plot_names) > 1:
+            for name in alternate_plot_names:
+                action = builder.append_action("Show " + name)
+                action.triggered.connect(lambda *args, name=name: self.
+                                         alternate_plot_requested.emit(name))
+        builder.ensure_separator()

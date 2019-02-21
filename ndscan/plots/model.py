@@ -55,5 +55,5 @@ class ScanModel(Model):
         super().__init__(context)
         self.axes = axes
 
-    def get_points(self) -> Dict[str, Any]:
+    def get_point_data(self) -> Dict[str, Any]:
         raise NotImplementedError
