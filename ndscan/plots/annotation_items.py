@@ -15,6 +15,7 @@ class AnnotationItem:
 
 
 class ComputedCurveItem(AnnotationItem):
+    @staticmethod
     def is_function_supported(function_name: str) -> bool:
         return function_name in FIT_OBJECTS
 
