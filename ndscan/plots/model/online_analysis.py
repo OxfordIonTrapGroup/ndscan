@@ -37,6 +37,8 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         self._model.points_rewritten.connect(self._update)
         self._model.points_appended.connect(self._update)
 
+        self._update()
+
     def stop(self):
         self._model.points_rewritten.disconnect(self._update)
         self._model.points_appended.disconnect(self._update)
@@ -89,6 +91,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         loop = asyncio.get_event_loop()
         self._last_fit_params, self._last_fit_errors = await loop.run_in_executor(
             self._fit_executor, _run_fit, self._fit_type, xs, ys, y_errs)
+
         self._recompute_in_progress = False
         self.updated.emit()
 
