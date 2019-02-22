@@ -167,7 +167,6 @@ class FragmentScanExperiment(EnvExperiment):
             with suppress(TerminationRequested):
                 while True:
                     self.fragment.host_setup()
-                    self._point_phase = False
                     if is_kernel(self.fragment.run_once):
                         self._run_continuous_kernel()
                         self.core.comm.close()
@@ -194,7 +193,6 @@ class FragmentScanExperiment(EnvExperiment):
             else:
                 self.fragment.device_reset()
             self.fragment.run_once()
-            self._broadcast_point_phase()
             if not self._scan.options.continuous_without_axes:
                 return
 
@@ -216,11 +214,6 @@ class FragmentScanExperiment(EnvExperiment):
                 push(name, value)
             else:
                 push(name, json.dumps(value))
-
-    @rpc(flags={"async"})
-    def _broadcast_point_phase(self):
-        self._point_phase = not self._point_phase
-        self.set_dataset("ndscan.point_phase", self._point_phase, broadcast=True)
 
     def _issue_ccb(self):
         cmd = ("${python} -m ndscan.applet "
