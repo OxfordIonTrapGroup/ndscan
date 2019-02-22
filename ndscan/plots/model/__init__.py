@@ -11,7 +11,7 @@ class Context(QtCore.QObject):
 
     def __init__(self, set_dataset: Callable[[str, Any], None] = None):
         super().__init__()
-        self.set_dataset = set_dataset
+        self._set_dataset = set_dataset
         self.title = ""
 
     def set_title(self, title: str) -> None:
@@ -23,7 +23,7 @@ class Context(QtCore.QObject):
         return self.set_dataset is not None
 
     def set_dataset(self, key: str, value: Any) -> None:
-        self.set_dataset(key, value)
+        self._set_dataset(key, value)
 
 
 class AnnotationDataSource(QtCore.QObject):

@@ -36,7 +36,7 @@ class SubscanRoot(Root):
 
 
 class SubscanModel(ScanModel):
-    def __init__(self, schema: List[Dict[str, Any]], parent: SinglePointModel,
+    def __init__(self, schema: Dict[str, Any], parent: SinglePointModel,
                  result_prefix: str):
         super().__init__(schema["axes"], parent.context)
 
