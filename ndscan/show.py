@@ -1,5 +1,6 @@
 """Standalone tool to show ndscan plots from ARTIQ HDF5 results files."""
 
+import asyncio
 import argparse
 import h5py
 import os
@@ -7,8 +8,8 @@ import sys
 
 from .plots.container import PlotContainerWidget
 from .plots.model import Context
-from .plots.model_hdf5 import HDF5Root
-from PyQt5 import QtWidgets
+from .plots.model.hdf5 import HDF5Root
+from quamash import QEventLoop, QtWidgets
 
 
 def get_argparser():
@@ -22,6 +23,8 @@ def main():
     args = get_argparser().parse_args()
 
     app = QtWidgets.QApplication(sys.argv)
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
 
     file = h5py.File(args.path, "r")
     try:
