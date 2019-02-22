@@ -1,12 +1,8 @@
 import h5py
 import json
 from typing import Any, Dict
-from quamash import QtCore
 from . import *
-
-
-def emit_later(signal, *args):
-    QtCore.QTimer.singleShot(0, lambda: signal.emit(*args))
+from .utils import call_later, emit_later
 
 
 class HDF5Root(Root):
@@ -54,8 +50,10 @@ class HDF5ScanModel(ScanModel):
         self._channel_schemata = json.loads(datasets["ndscan.channels"][()])
         emit_later(self.channel_schemata_changed, self._channel_schemata)
 
-        self._set_online_analyses(
-            json.loads(datasets.get("ndscan.online_analyses", "{}")))
+        call_later(lambda: self._set_online_analyses(
+            json.loads(datasets["ndscan.online_analyses"][()])))
+        call_later(lambda: self._set_annotation_schemata(
+            json.loads(datasets["ndscan.annotations"][()])))
 
         self._point_data = {}
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +

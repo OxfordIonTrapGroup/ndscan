@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict
-from quamash import QtCore
 from . import *
+from .utils import call_later, emit_later
 
 
 class SubscanRoot(Root):
@@ -46,12 +46,10 @@ class SubscanModel(ScanModel):
         self._point_data = {}
         parent.point_changed.connect(self._update)
 
-        _call_later(lambda: self.channel_schemata_changed.emit(self._channel_schemata))
-        _call_later(lambda: self._set_online_analyses(
-            schema.get("online_analyses", {})))
-        _call_later(lambda: self._set_annotation_schemata(
-            schema.get("annotations", [])))
-        _call_later(lambda: self._update(parent.get_point()))
+        emit_later(self.channel_schemata_changed, self._channel_schemata)
+        call_later(lambda: self._set_online_analyses(schema.get("online_analyses", {})))
+        call_later(lambda: self._set_annotation_schemata(schema.get("annotations", [])))
+        call_later(lambda: self._update(parent.get_point()))
 
     def _update(self, parent_data: Dict[str, Any]) -> None:
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
@@ -64,7 +62,3 @@ class SubscanModel(ScanModel):
 
     def get_point_data(self) -> Dict[str, Any]:
         return self._point_data
-
-
-def _call_later(func):
-    QtCore.QTimer.singleShot(0, func)
