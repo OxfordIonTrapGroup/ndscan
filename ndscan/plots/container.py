@@ -89,5 +89,8 @@ class PlotContainerWidget(QtWidgets.QWidget):
         plot.error.connect(self._show_error)
         plot.alternate_plot_requested.connect(self._show_alternate_plot)
 
+        # TODO: Heuristics for choosing which one to display by default.
+        self._show(plot)
+
     def _get_alternate_names(self):
         return list(self._alternate_plots.keys())
