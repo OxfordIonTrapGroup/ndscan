@@ -7,7 +7,14 @@ from ..default_analysis import FIT_OBJECTS
 from .model import AnnotationDataSource
 
 
-class ComputedCurveItem:
+class AnnotationItem:
+    def remove(self) -> None:
+        """Remove any pyqtgraph graphics items from target plot and stop listening to
+        changes."""
+        raise NotImplementedError
+
+
+class ComputedCurveItem(AnnotationItem):
     def is_function_supported(function_name: str) -> bool:
         return function_name in FIT_OBJECTS
 
@@ -60,7 +67,7 @@ class ComputedCurveItem:
         self._curve_item.setData(fn_xs, fn_ys)
 
 
-class CurveItem:
+class CurveItem(AnnotationItem):
     def __init__(self, x_source: AnnotationDataSource, y_source: AnnotationDataSource,
                  plot, curve_item):
         self._x_source = x_source
@@ -90,7 +97,7 @@ class CurveItem:
         self._curve_item.setData(xs, ys)
 
 
-class VLineItem:
+class VLineItem(AnnotationItem):
     """Vertical line marking a given x coordinate, with optional confidence interval."""
 
     def __init__(self, position_source: AnnotationDataSource,
