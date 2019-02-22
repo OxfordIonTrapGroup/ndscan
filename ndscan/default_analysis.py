@@ -86,12 +86,16 @@ class OnlineFit(DefaultAnalysis):
         given in the form of a dictionary mapping (arbitrary) identifiers to
         dictionaries mapping coordinate names to fit result names. If ``None``,
         :data:`DEFAULT_FIT_ANNOTATIONS` will be queried.
+    :param analysis_identifier: Optional explicit name to use for online analysis.
+        Defaults to ``fit_<fit_type>``, but can be set explicitly to allow more than one
+        fit of a given type at a time.
     """
 
     def __init__(self,
                  fit_type: str,
                  data: Dict[str, Union[ParamHandle, ResultChannel]],
-                 annotations: Union[None, Dict[str, Dict[str, Any]]] = None):
+                 annotations: Union[None, Dict[str, Dict[str, Any]]] = None,
+                 analysis_identifier: str = None):
         self.fit_type = fit_type
         if fit_type not in FIT_OBJECTS:
             logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
@@ -99,6 +103,9 @@ class OnlineFit(DefaultAnalysis):
         if annotations is None:
             annotations = DEFAULT_FIT_ANNOTATIONS.get(fit_type, {})
         self.annotations = annotations
+        if analysis_identifier is None:
+            analysis_identifier = "fit_" + fit_type
+        self.analysis_identifier = analysis_identifier
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]):
         for arg in self.data.values():
@@ -121,13 +128,10 @@ class OnlineFit(DefaultAnalysis):
             else:
                 raise ValueError("Invalid fit argument source: {}".format(obj))
 
-        # FIXME: Allow more than one fit per type.
-        fit_analysis_name = "fit_" + self.fit_type
-
         def analysis_result_desc(key):
             return {
                 "kind": "analysis_result",
-                "analysis_name": fit_analysis_name,
+                "analysis_name": self.analysis_identifier,
                 "result_key": key
             }
 
@@ -163,7 +167,7 @@ class OnlineFit(DefaultAnalysis):
                 })
 
         return annotation_descs, {
-            fit_analysis_name: {
+            self.analysis_identifier: {
                 "kind": "named_fit",
                 "fit_type": self.fit_type,
                 "data": {name: argument_name(obj)
