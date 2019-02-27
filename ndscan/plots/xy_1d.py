@@ -175,6 +175,11 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
                     return i
             return 0
 
+        def make_curve_item(series_idx):
+            color = FIT_COLORS[series_idx % len(FIT_COLORS)]
+            pen = pyqtgraph.mkPen(color, width=3)
+            return pyqtgraph.PlotCurveItem(pen=pen)
+
         annotations = self.model.get_annotations()
         for a in annotations:
             if a.kind == "location":
@@ -198,10 +203,7 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
                         idx = i
                         break
                 if idx is not None:
-                    color = FIT_COLORS[idx % len(FIT_COLORS)]
-                    pen = pyqtgraph.mkPen(color, width=3)
-                    curve = pyqtgraph.PlotCurveItem(pen=pen)
-
+                    curve = make_curve_item(idx)
                     item = CurveItem(a.coordinates["axis_0"],
                                      a.coordinates["channel_" + s.data_name],
                                      self.getPlotItem(), curve)
@@ -214,9 +216,8 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
                     idx = max(
                         series_idx(chan)
                         for chan in a.parameters.get("associated_channels", []))
-                    color = FIT_COLORS[idx % len(FIT_COLORS)]
-                    pen = pyqtgraph.mkPen(color, width=3)
-                    curve = pyqtgraph.PlotCurveItem(pen=pen)
+
+                    curve = make_curve_item(idx)
                     item = ComputedCurveItem(function_name, a.data, self.getPlotItem(),
                                              curve)
                     self.annotation_items.append(item)
