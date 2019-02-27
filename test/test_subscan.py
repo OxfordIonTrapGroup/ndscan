@@ -59,42 +59,44 @@ class SubscanCase(ExpFragmentCase):
                 "function_name": "lorentzian",
                 "associated_channels": ["channel_result"]
             },
+            "coordinates": {},
             "data": {
-                "x0": {
-                    "kind": "analysis_result",
+                "a": {
                     "analysis_name": "fit_lorentzian",
-                    "result_key": "x0"
+                    "kind": "analysis_result",
+                    "result_key": "a"
                 },
                 "fwhm": {
-                    "kind": "analysis_result",
                     "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
                     "result_key": "fwhm"
                 },
-                "y0": {
-                    "kind": "analysis_result",
+                "x0": {
                     "analysis_name": "fit_lorentzian",
-                    "result_key": "y0"
+                    "kind": "analysis_result",
+                    "result_key": "x0"
                 },
-                "a": {
-                    "kind": "analysis_result",
+                "y0": {
                     "analysis_name": "fit_lorentzian",
-                    "result_key": "a"
+                    "kind": "analysis_result",
+                    "result_key": "y0"
                 }
             }
         }
         location_annotation = {
             "kind": "location",
+            "parameters": {},
             "coordinates": {
                 "axis_0": {
-                    "kind": "analysis_result",
                     "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
                     "result_key": "x0"
                 }
             },
             "data": {
                 "axis_0_error": {
-                    "kind": "analysis_result",
                     "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
                     "result_key": "x0_error"
                 }
             }

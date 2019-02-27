@@ -2,6 +2,7 @@ from artiq.language import *
 from contextlib import suppress
 from itertools import islice
 from typing import Any, Dict, List, Iterator, Tuple
+from .default_analysis import AnnotationContext
 from .fragment import ExpFragment
 from .parameters import ParamStore, type_string_to_param
 from .result_channels import ResultChannel, ResultSink
@@ -232,14 +233,16 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
         for (channel, name) in short_result_names.items()
     }
 
+    context = AnnotationContext(
+        lambda handle: str(axis_identities.index(handle._store.identity)), lambda
+        channel: short_result_names[channel])
+
     desc["annotations"] = []
     desc["online_analyses"] = {}
     axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
     for analysis in fragment.get_default_analyses():
         if analysis.has_data(axis_identities):
-            annotations, online_analyses = analysis.describe_online_analyses(
-                lambda identity: "axis_{}".format(axis_identities.index(identity)),
-                lambda channel: "channel_" + short_result_names[channel])
+            annotations, online_analyses = analysis.describe_online_analyses(context)
             desc["annotations"].extend(annotations)
             for name, spec in online_analyses.items():
                 if name in desc["online_analyses"]:
