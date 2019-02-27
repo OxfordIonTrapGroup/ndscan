@@ -150,6 +150,7 @@
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">suppress</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">islice</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="k">import</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">DefaultAnalysis</span>
 <span class="kn">from</span> <span class="nn">.fragment</span> <span class="k">import</span> <span class="n">ExpFragment</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">type_string_to_param</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ResultSink</span>
@@ -354,9 +355,20 @@
             <span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 
+<span class="k">def</span> <span class="nf">filter_default_analyses</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
+                            <span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">axis_identities</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">s</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">analysis</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">analysis</span><span class="o">.</span><span class="n">has_data</span><span class="p">(</span><span class="n">axis_identities</span><span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
 <div class="viewcode-block" id="describe_scan"><a class="viewcode-back" href="../../apidocs.html#ndscan.scan_runner.describe_scan">[docs]</a><span class="k">def</span> <span class="nf">describe_scan</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
                   <span class="n">short_result_names</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;Return metadata for the given spec in stringly typed dictionary form.</span>
+    <span class="sd">&quot;&quot;&quot;Return metadata for the given spec in stringly typed dictionary form, executing</span>
+<span class="sd">    any default analyses as necessary.</span>
 
 <span class="sd">    :param spec: :class:`ScanSpec` describing the scan.</span>
 <span class="sd">    :param fragment: Fragment being scanned.</span>
@@ -379,14 +391,21 @@
         <span class="k">for</span> <span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">in</span> <span class="n">short_result_names</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
     <span class="p">}</span>
 
-    <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">axis_identities</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">s</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_fits</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">has_data</span><span class="p">(</span><span class="n">axis_identities</span><span class="p">):</span>
-            <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span>
-                    <span class="k">lambda</span> <span class="n">identity</span><span class="p">:</span> <span class="s2">&quot;axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">axis_identities</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">identity</span><span class="p">)),</span>
-                    <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="s2">&quot;channel_&quot;</span> <span class="o">+</span> <span class="n">short_result_names</span><span class="p">[</span><span class="n">channel</span><span class="p">]))</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">AnnotationContext</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">handle</span><span class="p">:</span> <span class="n">axis_identities</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span>
+        <span class="n">short_result_names</span><span class="p">[</span><span class="n">channel</span><span class="p">])</span>
+
+    <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;online_analyses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">analysis</span> <span class="ow">in</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">):</span>
+        <span class="n">annotations</span><span class="p">,</span> <span class="n">online_analyses</span> <span class="o">=</span> <span class="n">analysis</span><span class="o">.</span><span class="n">describe_online_analyses</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">online_analyses</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;online_analyses&quot;</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;An online analysis with name &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;online_analyses&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span>
 
     <span class="k">return</span> <span class="n">desc</span></div>
 </pre></div>

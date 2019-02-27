@@ -150,9 +150,9 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span>
 
-<span class="kn">from</span> <span class="nn">.auto_fit</span> <span class="k">import</span> <span class="n">AutoFitSpec</span>
+<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="k">import</span> <span class="n">DefaultAnalysis</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">path_matches_spec</span><span class="p">,</span> <span class="n">strip_prefix</span>
@@ -489,7 +489,7 @@
 <span class="sd">        parameters, producing one set of results (if any).&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-    <span class="k">def</span> <span class="nf">get_default_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">AutoFitSpec</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[]</span></div>
 </pre></div>
 

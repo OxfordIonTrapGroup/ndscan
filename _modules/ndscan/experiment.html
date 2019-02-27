@@ -165,12 +165,14 @@
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span>
 
+<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="k">import</span> <span class="n">AnnotationContext</span>
 <span class="kn">from</span> <span class="nn">.fragment</span> <span class="k">import</span> <span class="n">ExpFragment</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">type_string_to_param</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="p">(</span><span class="n">AppendingDatasetSink</span><span class="p">,</span> <span class="n">LastValueSink</span><span class="p">,</span> <span class="n">ScalarDatasetSink</span><span class="p">,</span>
                               <span class="n">ResultChannel</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">ScanOptions</span>
-<span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="k">import</span> <span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">describe_scan</span>
+<span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="k">import</span> <span class="p">(</span><span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">describe_scan</span><span class="p">,</span>
+                          <span class="n">filter_default_analyses</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">,</span> <span class="n">is_kernel</span>
 
 <span class="c1"># We don&#39;t want to export FragmentScanExperiment to hide it from experiment</span>
@@ -230,7 +232,11 @@
                 <span class="s2">&quot;randomise_order_globally&quot;</span><span class="p">:</span> <span class="kc">False</span>
             <span class="p">}</span>
         <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">PYONValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">desc</span><span class="p">))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">PYONValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">desc</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan_desc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span> <span class="o">=</span> <span class="p">{}</span></div>
 
 <div class="viewcode-block" id="FragmentScanExperiment.prepare"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Collect parameters to set from both scan axes and simple overrides, and</span>
@@ -291,7 +297,8 @@
                 <span class="n">sink</span> <span class="o">=</span> <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.points.channel_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">sink</span> <span class="o">=</span> <span class="n">ScalarDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.point.&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
-            <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span></div>
+            <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">sink</span></div>
 
 <div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run the (possibly trivial) scan.&quot;&quot;&quot;</span>
@@ -303,19 +310,53 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_run_single</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">runner</span> <span class="o">=</span> <span class="n">ScanRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-                <span class="n">axis_sinks</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.points.axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
                     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
                 <span class="p">]</span>
-                <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">)</span>
+                <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span><span class="p">)</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FragmentScanExperiment.analyze"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">analyses</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">axis_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">axis_indices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">sink</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span><span class="p">)):</span>
+            <span class="n">identity</span> <span class="o">=</span> <span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">axis_data</span><span class="p">[</span><span class="n">identity</span><span class="p">]</span> <span class="o">=</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
+            <span class="n">axis_indices</span><span class="p">[</span><span class="n">identity</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+
+        <span class="n">result_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">chan</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">chan</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="n">context</span> <span class="o">=</span> <span class="n">AnnotationContext</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">handle</span><span class="p">:</span> <span class="n">axis_indices</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span>
+            <span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">])</span>
+
+        <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">analyses</span><span class="p">:</span>
+            <span class="n">annotations</span> <span class="o">+=</span> <span class="n">a</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">annotations</span><span class="p">:</span>
+            <span class="c1"># Replace existing (online-fit) annotations if any analysis produced custom</span>
+            <span class="c1"># ones. This could be made configurable in the future.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span>
+                <span class="s2">&quot;ndscan.annotations&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">annotations</span><span class="p">),</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_run_single</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
                 <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
                     <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -342,7 +383,6 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_reset</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_point_phase</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">continuous_without_axes</span><span class="p">:</span>
                 <span class="k">return</span>
 
@@ -356,26 +396,14 @@
         <span class="n">push</span><span class="p">(</span><span class="s2">&quot;rid&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">)</span>
         <span class="n">push</span><span class="p">(</span><span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 
-        <span class="n">scan_desc</span> <span class="o">=</span> <span class="n">describe_scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">)</span>
-
-        <span class="c1"># KLDUGE: Broadcast auto_fit before channels to allow simpler implementation</span>
-        <span class="c1"># in current fit applet. As the applet implementation grows more sophisticated</span>
-        <span class="c1"># (hiding axes, etc.), it should be easy to relax this requirement.</span>
-        <span class="n">push</span><span class="p">(</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">scan_desc</span><span class="p">[</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">]))</span>
-        <span class="k">del</span> <span class="n">scan_desc</span><span class="p">[</span><span class="s2">&quot;auto_fit&quot;</span><span class="p">]</span>
-
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">scan_desc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan_desc</span> <span class="o">=</span> <span class="n">describe_scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_desc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="c1"># Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
                 <span class="n">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
-
-    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
-    <span class="k">def</span> <span class="nf">_broadcast_point_phase</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="s2">&quot;ndscan.point_phase&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_issue_ccb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;$</span><span class="si">{python}</span><span class="s2"> -m ndscan.applet &quot;</span>

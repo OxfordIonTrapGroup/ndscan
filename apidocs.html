@@ -93,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#scan-execution">Scan execution</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-ndscan.scan_runner"><code class="docutils literal notranslate"><span class="pre">ndscan.scan_runner</span></code> module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-ndscan.subscan"><code class="docutils literal notranslate"><span class="pre">ndscan.subscan</span></code> module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-ndscan.auto_fit"><code class="docutils literal notranslate"><span class="pre">ndscan.auto_fit</span></code> module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ndscan-auto-fit-module"><code class="docutils literal notranslate"><span class="pre">ndscan.auto_fit</span></code> module</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#experiment-entry-points">Experiment entry points</a><ul>
@@ -655,7 +655,8 @@ coordinates for each scan point to, matching <code class="docutils literal notra
 <dl class="function">
 <dt id="ndscan.scan_runner.describe_scan">
 <code class="descclassname">ndscan.scan_runner.</code><code class="descname">describe_scan</code><span class="sig-paren">(</span><em>spec: ndscan.scan_runner.ScanSpec, fragment: ndscan.fragment.ExpFragment, short_result_names: Dict[ndscan.result_channels.ResultChannel, str]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/scan_runner.html#describe_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.scan_runner.describe_scan" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return metadata for the given spec in stringly typed dictionary form.</p>
+<dd><p>Return metadata for the given spec in stringly typed dictionary form, executing
+any default analyses as necessary.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -683,7 +684,7 @@ another child fragment as part of its execution.</p>
 executed.</p>
 <dl class="method">
 <dt id="ndscan.subscan.Subscan.run">
-<code class="descname">run</code><span class="sig-paren">(</span><em>axis_generators: List[Tuple[ndscan.parameters.ParamHandle, ndscan.scan_generator.ScanGenerator]], options=&lt;ndscan.scan_generator.ScanOptions object&gt;</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[ndscan.parameters.ParamHandle, list], Dict[ndscan.result_channels.ResultChannel, list]]<a class="reference internal" href="_modules/ndscan/subscan.html#Subscan.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.subscan.Subscan.run" title="Permalink to this definition">¶</a></dt>
+<code class="descname">run</code><span class="sig-paren">(</span><em>axis_generators: List[Tuple[ndscan.parameters.ParamHandle, ndscan.scan_generator.ScanGenerator]], options=&lt;ndscan.scan_generator.ScanOptions object&gt;, execute_default_analyses=True</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[ndscan.parameters.ParamHandle, list], Dict[ndscan.result_channels.ResultChannel, list]]<a class="reference internal" href="_modules/ndscan/subscan.html#Subscan.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.subscan.Subscan.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the subscan with the given axis iteration specifications, and return the
 data point coordinates/result channel values.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -740,88 +741,8 @@ be overridden and set to their default values.</li>
 </dd></dl>
 
 </div>
-<div class="section" id="module-ndscan.auto_fit">
-<span id="ndscan-auto-fit-module"></span><h3><a class="reference internal" href="#module-ndscan.auto_fit" title="ndscan.auto_fit"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.auto_fit</span></code></a> module<a class="headerlink" href="#module-ndscan.auto_fit" title="Permalink to this headline">¶</a></h3>
-<p>Declarative fits, to be excecuted locally by the user interface displaying the data as
-it comes in.</p>
-<dl class="data">
-<dt id="ndscan.auto_fit.FIT_OBJECTS">
-<code class="descclassname">ndscan.auto_fit.</code><code class="descname">FIT_OBJECTS</code><em class="property"> = {'exponential_decay': &lt;oitg.fitting.FitBase.FitBase object&gt;, 'lorentzian': &lt;oitg.fitting.FitBase.FitBase object&gt;, 'parabola': &lt;oitg.fitting.FitBase.FitBase object&gt;, 'rabi_flop': &lt;oitg.fitting.FitBase.FitBase object&gt;}</em><a class="headerlink" href="#ndscan.auto_fit.FIT_OBJECTS" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registry of well-known fit procecure names.</p>
-</dd></dl>
-
-<dl class="data">
-<dt id="ndscan.auto_fit.DEFAULT_POIS">
-<code class="descclassname">ndscan.auto_fit.</code><code class="descname">DEFAULT_POIS</code><em class="property"> = {'exponential_decay': {'t_1_e': {'x': 't_1_e'}}, 'lorentzian': {'extremum': {'x': 'x0'}}, 'parabola': {'extremum': {'x': 'position'}}, 'rabi_flop': {'pi_time': {'x': 't_pi'}}}</em><a class="headerlink" href="#ndscan.auto_fit.DEFAULT_POIS" title="Permalink to this definition">¶</a></dt>
-<dd><p>Default points of interest for various fit types (e.g. highlighting the π time for a
-Rabi flop fit, or the extremum of a parabola.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="ndscan.auto_fit.AutoFitSpec">
-<em class="property">class </em><code class="descclassname">ndscan.auto_fit.</code><code class="descname">AutoFitSpec</code><span class="sig-paren">(</span><em>fit_type: str, data: Dict[str, Union[ndscan.parameters.ParamHandle, ndscan.result_channels.ResultChannel]], points_of_interest: Union[None, Dict[str, Dict[str, Any]]] = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/auto_fit.html#AutoFitSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.auto_fit.AutoFitSpec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Describes an automatically executed fit for a given combination of scan axes
-and result channels.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>fit_type</strong> – Fitting procedure name, per <a class="reference internal" href="#ndscan.auto_fit.FIT_OBJECTS" title="ndscan.auto_fit.FIT_OBJECTS"><code class="xref py py-data docutils literal notranslate"><span class="pre">FIT_OBJECTS</span></code></a>.</li>
-<li><strong>data</strong> – Maps fit data axis names (<code class="docutils literal notranslate"><span class="pre">&quot;x&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>) to parameter handles or
-result channels that supply the respective data.</li>
-<li><strong>points_of_interest</strong> – Any points of interest to highlight in the fit results,
-given in the form of a dictionary mapping (arbitrary) identifiers to
-dictionaries mapping coordinate names to fit result names. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
-<a class="reference internal" href="#ndscan.auto_fit.DEFAULT_POIS" title="ndscan.auto_fit.DEFAULT_POIS"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_POIS</span></code></a> will be queried.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="ndscan.auto_fit.AutoFitSpec.has_data">
-<code class="descname">has_data</code><span class="sig-paren">(</span><em>scanned_axes: List[Tuple[str, str]]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/auto_fit.html#AutoFitSpec.has_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.auto_fit.AutoFitSpec.has_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return whether the scanned axes contain the data necessary for this fit to be
-applicable.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scanned_axes</strong> – A list of axis identities, i.e. <code class="docutils literal notranslate"><span class="pre">(fqn,</span> <span class="pre">path_spec)</span></code>
-tuples, being scanned over.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Whether this fit applies or not.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ndscan.auto_fit.AutoFitSpec.describe">
-<code class="descname">describe</code><span class="sig-paren">(</span><em>get_axis_name: Callable[Tuple[str, str], str], get_channel_name: Callable[ndscan.result_channels.ResultChannel, str]</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="_modules/ndscan/auto_fit.html#AutoFitSpec.describe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.auto_fit.AutoFitSpec.describe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Serialise information about this fit to stringly typed metadata.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>get_axis_name</strong> – Callable to resolve axis identity to the string to use
-to describe them.</li>
-<li><strong>get_channel_name</strong> – Callable to resolve result channel path to the string
-to use to describe them.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A string dictionary representation of this fit specification.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="ndscan-auto-fit-module">
+<h3><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.auto_fit</span></code> module<a class="headerlink" href="#ndscan-auto-fit-module" title="Permalink to this headline">¶</a></h3>
 </div>
 </div>
 <div class="section" id="experiment-entry-points">
@@ -896,6 +817,18 @@ initialise result channels.</p>
 <dt id="ndscan.experiment.FragmentScanExperiment.run">
 <code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment.html#FragmentScanExperiment.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.FragmentScanExperiment.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the (possibly trivial) scan.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.experiment.FragmentScanExperiment.analyze">
+<code class="descname">analyze</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment.html#FragmentScanExperiment.analyze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.FragmentScanExperiment.analyze" title="Permalink to this definition">¶</a></dt>
+<dd><p>Entry point for analyzing the results of the experiment.</p>
+<p>This method may be overloaded by the user to implement the analysis
+phase of the experiment, for example fitting curves.</p>
+<p>Splitting this phase from <a class="reference internal" href="#ndscan.experiment.FragmentScanExperiment.run" title="ndscan.experiment.FragmentScanExperiment.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a> enables tweaking the analysis
+algorithm on pre-existing data, and CPU-bound analyses to be run
+overlapped with the next experiment in a pipelined manner.</p>
+<p>This method must not interact with the hardware.</p>
 </dd></dl>
 
 </dd></dl>
