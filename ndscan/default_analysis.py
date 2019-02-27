@@ -149,6 +149,9 @@ class CustomAnalysis(DefaultAnalysis):
         for name, handle in self._required_axis_handles.items():
             user_axis_data[name] = axis_data[handle._store.identity]
         annotations = self._analyze_fn(user_axis_data, result_data)
+        if annotations is None:
+            # Tolerate the user forgetting the return statement.
+            annotations = []
         return [a.describe(context) for a in annotations]
 
 
