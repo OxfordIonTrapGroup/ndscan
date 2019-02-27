@@ -25,14 +25,14 @@ class AnnotationValueRef:
 
 
 class AnnotationContext:
-    def __init__(self, name_axis: Callable[[ParamHandle], str],
+    def __init__(self, get_axis_index: Callable[[ParamHandle], int],
                  name_channel: Callable[[ResultChannel], str]):
-        self._name_axis = name_axis
+        self._get_axis_index = get_axis_index
         self._name_channel = name_channel
 
     def describe_coordinate(self, obj) -> str:
         if isinstance(obj, ParamHandle):
-            return "axis_" + self._name_axis(obj)
+            return "axis_{}".format(self._get_axis_index(obj))
         if isinstance(obj, ResultChannel):
             return "channel_" + self._name_channel(obj)
         return obj

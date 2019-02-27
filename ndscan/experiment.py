@@ -191,15 +191,15 @@ class FragmentScanExperiment(EnvExperiment):
         }
 
         context = AnnotationContext(
-            lambda handle: str(axis_indices[handle._store.identity]), lambda channel:
-            self._short_child_channel_names[channel])
+            lambda handle: axis_indices[handle._store.identity], lambda channel: self.
+            _short_child_channel_names[channel])
 
         annotations = []
         for a in analyses:
             annotations += a.execute(axis_data, result_data, context)
 
         if annotations:
-            # Replace existing (auto-fit) annotations if any analysis produced custom
+            # Replace existing (online-fit) annotations if any analysis produced custom
             # ones. This could be made configurable in the future.
             self.set_dataset(
                 "ndscan.annotations", json.dumps(annotations), broadcast=True)

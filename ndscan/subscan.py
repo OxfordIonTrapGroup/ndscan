@@ -5,11 +5,13 @@ another child fragment as part of its execution.
 
 from collections import OrderedDict
 from typing import Callable, Dict, List, Tuple
+from .default_analysis import AnnotationContext
 from .fragment import ExpFragment, Fragment
 from .parameters import ParamHandle
 from .result_channels import ArraySink, OpaqueChannel, ResultChannel, SubscanChannel
 from .scan_generator import ScanGenerator, ScanOptions
-from .scan_runner import ScanAxis, ScanRunner, ScanSpec, describe_scan
+from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
+                          filter_default_analyses)
 from .utils import shorten_to_unambiguous_suffixes
 
 
@@ -36,7 +38,8 @@ class Subscan:
 
     def run(self,
             axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
-            options=ScanOptions()
+            options=ScanOptions(),
+            execute_default_analyses=True
             ) -> Tuple[Dict[ParamHandle, list], Dict[ResultChannel, list]]:
         """Run the subscan with the given axis iteration specifications, and return the
         data point coordinates/result channel values.
@@ -68,8 +71,41 @@ class Subscan:
         spec = ScanSpec(axes, generators, options)
         self._run_fn(self._fragment, spec, list(coordinate_sinks.values()))
 
-        self._schema_channel.push(
-            describe_scan(spec, self._fragment, self._short_child_channel_names))
+        scan_schema = describe_scan(spec, self._fragment,
+                                    self._short_child_channel_names)
+
+        if execute_default_analyses:
+            analyses = filter_default_analyses(self._fragment, spec)
+            if analyses:
+                axis_data = {
+                    handle._store.identity: sink.get_all()
+                    for handle, sink in coordinate_sinks.items()
+                }
+
+                result_data = {
+                    chan: sink.get_all()
+                    for chan, sink in self._child_result_sinks.items()
+                }
+
+                def get_axis_index(handle):
+                    for i, h in enumerate(coordinate_sinks.keys()):
+                        if handle == h:
+                            return i
+                    assert False
+
+                context = AnnotationContext(
+                    get_axis_index, lambda channel: self._short_child_channel_names[
+                        channel])
+
+                annotations = []
+                for a in analyses:
+                    annotations += a.execute(axis_data, result_data, context)
+                if annotations:
+                    # Replace existing (online-fit) annotations if any analysis produced
+                    # custom ones. This could be made configurable in the future.
+                    scan_schema["annotations"] = annotations
+
+        self._schema_channel.push(scan_schema)
 
         for channel, sink in zip(self._coordinate_channels, coordinate_sinks.values()):
             channel.push(sink.get_all())

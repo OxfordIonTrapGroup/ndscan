@@ -8,7 +8,7 @@ from ndscan.fragment import *
 from ndscan.scan_generator import LinearGenerator, ScanOptions
 from ndscan.subscan import setattr_subscan
 
-from fixtures import AddOneFragment, ReboundAddOneFragment
+from fixtures import AddOneFragment, ReboundAddOneFragment, AddOneCustomAnalysisFragment
 from mock_environment import ExpFragmentCase
 
 
@@ -139,3 +139,33 @@ class SubscanCase(ExpFragmentCase):
             },
             "increment": 1.0
         }])
+
+    def test_1d_custom_analysis(self):
+        parent = self.create(Scan1DFragment, AddOneCustomAnalysisFragment)
+        results = run_fragment_once(parent)
+        annotations = json.loads(results[parent.scan_spec])["annotations"]
+        x_location = {
+            'coordinates': {
+                'axis_0': {
+                    'kind': 'fixed',
+                    'value': 1.5
+                }
+            },
+            'data': {},
+            'kind': 'location',
+            'parameters': {}
+        }
+        y_location = {
+            'coordinates': {
+                'channel_result': {
+                    'kind': 'fixed',
+                    'value': 2.5
+                }
+            },
+            'data': {},
+            'kind': 'location',
+            'parameters': {}
+        }
+        # FIXME: This should probably use fuzzy comparison for the floating point
+        # values.
+        self.assertEqual(annotations, [x_location, y_location])

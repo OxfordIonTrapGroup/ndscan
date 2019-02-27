@@ -245,8 +245,8 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
 
     axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
     context = AnnotationContext(
-        lambda handle: str(axis_identities.index(handle._store.identity)), lambda
-        channel: short_result_names[channel])
+        lambda handle: axis_identities.index(handle._store.identity), lambda channel:
+        short_result_names[channel])
 
     desc["annotations"] = []
     desc["online_analyses"] = {}
