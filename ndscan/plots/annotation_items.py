@@ -33,6 +33,8 @@ class ComputedCurveItem(AnnotationItem):
         for source in self._data_sources.values():
             source.changed.connect(self.redraw_limiter.signalReceived)
 
+        self.redraw_limiter.signalReceived()
+
     def remove(self):
         for source in self._data_sources.values():
             source.changed.disconnect(self.redraw_limiter.signalReceived)
@@ -79,6 +81,8 @@ class CurveItem(AnnotationItem):
 
         for source in [self._x_source, self.y_source]:
             source.changed.connect(self._redraw)
+
+        self._redraw()
 
     def remove(self):
         for source in [self._x_source, self.y_source]:
@@ -142,6 +146,8 @@ class VLineItem(AnnotationItem):
         self._position_source.changed.connect(self._redraw)
         if self._uncertainty_source:
             self._uncertainty_source.changed.connect(self._redraw)
+
+        self._redraw()
 
     def remove(self):
         self._position_source.changed.disconnect(self._redraw)
