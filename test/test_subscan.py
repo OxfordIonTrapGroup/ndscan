@@ -8,7 +8,7 @@ from ndscan.fragment import *
 from ndscan.scan_generator import LinearGenerator, ScanOptions
 from ndscan.subscan import setattr_subscan
 
-from fixtures import AddOneFragment, ReboundAddOneFragment
+from fixtures import AddOneFragment, ReboundAddOneFragment, AddOneCustomAnalysisFragment
 from mock_environment import ExpFragmentCase
 
 
@@ -52,16 +52,67 @@ class SubscanCase(ExpFragmentCase):
         spec = json.loads(results[parent.scan_spec])
         self.assertEqual(spec["fragment_fqn"], "fixtures.AddOneFragment")
         self.assertEqual(spec["seed"], 1234)
-        self.assertEqual(spec["auto_fit"], [{
-            "data": {
-                "x": "axis_0",
-                "y": "channel_result"
+
+        curve_annotation = {
+            "kind": "computed_curve",
+            "parameters": {
+                "function_name": "lorentzian",
+                "associated_channels": ["channel_result"]
             },
-            "fit_type": "lorentzian",
-            "pois": [{
-                "x": "x0"
-            }]
-        }])
+            "coordinates": {},
+            "data": {
+                "a": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "a"
+                },
+                "fwhm": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "fwhm"
+                },
+                "x0": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "x0"
+                },
+                "y0": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "y0"
+                }
+            }
+        }
+        location_annotation = {
+            "kind": "location",
+            "parameters": {},
+            "coordinates": {
+                "axis_0": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "x0"
+                }
+            },
+            "data": {
+                "axis_0_error": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "x0_error"
+                }
+            }
+        }
+        self.assertEqual(spec["annotations"], [curve_annotation, location_annotation])
+        self.assertEqual(
+            spec["online_analyses"], {
+                "fit_lorentzian": {
+                    "data": {
+                        "y": "channel_result",
+                        "x": "axis_0"
+                    },
+                    "fit_type": "lorentzian",
+                    "kind": "named_fit"
+                }
+            })
         self.assertEqual(
             spec["channels"], {
                 "result": {
@@ -88,3 +139,33 @@ class SubscanCase(ExpFragmentCase):
             },
             "increment": 1.0
         }])
+
+    def test_1d_custom_analysis(self):
+        parent = self.create(Scan1DFragment, AddOneCustomAnalysisFragment)
+        results = run_fragment_once(parent)
+        annotations = json.loads(results[parent.scan_spec])["annotations"]
+        x_location = {
+            'coordinates': {
+                'axis_0': {
+                    'kind': 'fixed',
+                    'value': 1.5
+                }
+            },
+            'data': {},
+            'kind': 'location',
+            'parameters': {}
+        }
+        y_location = {
+            'coordinates': {
+                'channel_result': {
+                    'kind': 'fixed',
+                    'value': 2.5
+                }
+            },
+            'data': {},
+            'kind': 'location',
+            'parameters': {}
+        }
+        # FIXME: This should probably use fuzzy comparison for the floating point
+        # values.
+        self.assertEqual(annotations, [x_location, y_location])

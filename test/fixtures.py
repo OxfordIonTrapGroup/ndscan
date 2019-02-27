@@ -2,8 +2,10 @@
 Common fragments/… for unit tests.
 """
 
+import numpy
 from artiq.experiment import *
 from ndscan.fragment import *
+from ndscan.default_analysis import Annotation, CustomAnalysis, OnlineFit
 
 
 class AddOneFragment(ExpFragment):
@@ -23,9 +25,9 @@ class AddOneFragment(ExpFragment):
     def run_once(self):
         self.result.push(self.value.get() + 1)
 
-    def get_default_fits(self):
+    def get_default_analyses(self):
         # Nonsensical fit spec to exercise serialisation code.
-        return [AutoFitSpec("lorentzian", {"x": self.value, "y": self.result})]
+        return [OnlineFit("lorentzian", {"x": self.value, "y": self.result})]
 
 
 class ReboundAddOneFragment(ExpFragment):
@@ -41,6 +43,18 @@ class ReboundAddOneFragment(ExpFragment):
 
     def run_once(self):
         self.add_one.run_once()
+
+
+class AddOneCustomAnalysisFragment(AddOneFragment):
+    def get_default_analyses(self):
+        return [CustomAnalysis({"x": self.value}, self._analyze)]
+
+    def _analyze(self, axis_values, result_values):
+        return [
+            Annotation("location", {self.value: numpy.mean(axis_values["x"])}),
+            Annotation("location",
+                       {self.result: numpy.mean(result_values[self.result])})
+        ]
 
 
 class TrivialKernelFragment(ExpFragment):

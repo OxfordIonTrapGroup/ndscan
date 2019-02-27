@@ -17,12 +17,14 @@ import logging
 import random
 from typing import Any, Callable, Dict, Iterable, Type
 
+from .default_analysis import AnnotationContext
 from .fragment import ExpFragment
 from .parameters import type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
-from .scan_runner import ScanAxis, ScanRunner, ScanSpec, describe_scan
+from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
+                          filter_default_analyses)
 from .utils import shorten_to_unambiguous_suffixes, is_kernel
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
@@ -84,6 +86,10 @@ class FragmentScanExperiment(EnvExperiment):
         }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
+        self._scan_desc = None
+        self._scan_axis_sinks = None
+        self._scan_result_sinks = {}
+
     def prepare(self):
         """Collect parameters to set from both scan axes and simple overrides, and
         initialise result channels.
@@ -144,6 +150,7 @@ class FragmentScanExperiment(EnvExperiment):
             else:
                 sink = ScalarDatasetSink(self, "ndscan.point." + name)
             channel.set_sink(sink)
+            self._scan_result_sinks[channel] = sink
 
     def run(self):
         """Run the (possibly trivial) scan."""
@@ -155,19 +162,53 @@ class FragmentScanExperiment(EnvExperiment):
                 self._run_single()
             else:
                 runner = ScanRunner(self)
-                axis_sinks = [
+                self._scan_axis_sinks = [
                     AppendingDatasetSink(self, "ndscan.points.axis_{}".format(i))
                     for i in range(len(self._scan.axes))
                 ]
-                runner.run(self.fragment, self._scan, axis_sinks)
+                runner.run(self.fragment, self._scan, self._scan_axis_sinks)
+
             self._set_completed()
+
+    def analyze(self):
+        if not self._scan_axis_sinks:
+            return
+
+        analyses = filter_default_analyses(self.fragment, self._scan)
+        if not analyses:
+            return
+
+        axis_data = {}
+        axis_indices = {}
+        for i, (axis, sink) in enumerate(zip(self._scan.axes, self._scan_axis_sinks)):
+            identity = (axis.param_schema["fqn"], axis.path)
+            axis_data[identity] = sink.get_all()
+            axis_indices[identity] = i
+
+        result_data = {
+            chan: sink.get_all()
+            for chan, sink in self._scan_result_sinks.items()
+        }
+
+        context = AnnotationContext(
+            lambda handle: axis_indices[handle._store.identity], lambda channel: self.
+            _short_child_channel_names[channel])
+
+        annotations = []
+        for a in analyses:
+            annotations += a.execute(axis_data, result_data, context)
+
+        if annotations:
+            # Replace existing (online-fit) annotations if any analysis produced custom
+            # ones. This could be made configurable in the future.
+            self.set_dataset(
+                "ndscan.annotations", json.dumps(annotations), broadcast=True)
 
     def _run_single(self):
         try:
             with suppress(TerminationRequested):
                 while True:
                     self.fragment.host_setup()
-                    self._point_phase = False
                     if is_kernel(self.fragment.run_once):
                         self._run_continuous_kernel()
                         self.core.comm.close()
@@ -194,7 +235,6 @@ class FragmentScanExperiment(EnvExperiment):
             else:
                 self.fragment.device_reset()
             self.fragment.run_once()
-            self._broadcast_point_phase()
             if not self._scan.options.continuous_without_axes:
                 return
 
@@ -208,26 +248,14 @@ class FragmentScanExperiment(EnvExperiment):
         push("rid", self.scheduler.rid)
         push("completed", False)
 
-        scan_desc = describe_scan(self._scan, self.fragment,
-                                  self._short_child_channel_names)
-
-        # KLDUGE: Broadcast auto_fit before channels to allow simpler implementation
-        # in current fit applet. As the applet implementation grows more sophisticated
-        # (hiding axes, etc.), it should be easy to relax this requirement.
-        push("auto_fit", json.dumps(scan_desc["auto_fit"]))
-        del scan_desc["auto_fit"]
-
-        for name, value in scan_desc.items():
+        self._scan_desc = describe_scan(self._scan, self.fragment,
+                                        self._short_child_channel_names)
+        for name, value in self._scan_desc.items():
             # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
             if isinstance(value, str) or isinstance(value, int):
                 push(name, value)
             else:
                 push(name, json.dumps(value))
-
-    @rpc(flags={"async"})
-    def _broadcast_point_phase(self):
-        self._point_phase = not self._point_phase
-        self.set_dataset("ndscan.point_phase", self._point_phase, broadcast=True)
 
     def _issue_ccb(self):
         cmd = ("${python} -m ndscan.applet "

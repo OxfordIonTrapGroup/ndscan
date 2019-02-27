@@ -30,17 +30,70 @@ class FragmentScanExpCase(HasEnvironmentCase):
 
     def test_run_1d_scan(self):
         self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
-        self.assertEqual(
-            json.loads(self.dataset_db.get("ndscan.auto_fit")), [{
-                "data": {
-                    "x": "axis_0",
-                    "y": "channel_result"
+
+        curve_annotation = {
+            "kind": "computed_curve",
+            "parameters": {
+                "function_name": "lorentzian",
+                "associated_channels": ["channel_result"]
+            },
+            "coordinates": {},
+            "data": {
+                "a": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "a"
                 },
-                "fit_type": "lorentzian",
-                "pois": [{
-                    "x": "x0"
-                }]
-            }])
+                "fwhm": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "fwhm"
+                },
+                "x0": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "x0"
+                },
+                "y0": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "y0"
+                }
+            }
+        }
+        location_annotation = {
+            "kind": "location",
+            "parameters": {},
+            "coordinates": {
+                "axis_0": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "x0"
+                }
+            },
+            "data": {
+                "axis_0_error": {
+                    "analysis_name": "fit_lorentzian",
+                    "kind": "analysis_result",
+                    "result_key": "x0_error"
+                }
+            }
+        }
+        self.assertEqual(
+            json.loads(self.dataset_db.get("ndscan.annotations")),
+            [curve_annotation, location_annotation])
+
+        self.assertEqual(
+            json.loads(self.dataset_db.get("ndscan.online_analyses")), {
+                "fit_lorentzian": {
+                    "data": {
+                        "y": "channel_result",
+                        "x": "axis_0"
+                    },
+                    "fit_type": "lorentzian",
+                    "kind": "named_fit"
+                }
+            })
 
     def test_run_rebound_1d_scan(self):
         self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment")

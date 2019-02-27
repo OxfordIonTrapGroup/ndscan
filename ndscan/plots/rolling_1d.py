@@ -1,9 +1,10 @@
-import json
 import numpy as np
 import pyqtgraph
 from quamash import QtWidgets, QtCore
 
-from .utils import extract_scalar_channels, setup_axis_item, SERIES_COLORS
+from .model import SinglePointModel
+from .utils import (extract_scalar_channels, setup_axis_item, AlternateMenuPlotWidget,
+                    SERIES_COLORS)
 
 
 class _Series:
@@ -19,9 +20,9 @@ class _Series:
         self.set_history_length(history_length)
 
     def append(self, data):
-        new_data = data["ndscan.point." + self.data_name][1]
+        new_data = data[self.data_name]
         if self.error_bar_item:
-            new_error_bar = data["ndscan.point." + self.error_bar_name][1]
+            new_error_bar = data[self.error_bar_name]
 
         p = [new_data, 2 * new_error_bar] if self.error_bar_item else [new_data]
 
@@ -48,6 +49,13 @@ class _Series:
             if self.error_bar_item:
                 self.plot.addItem(self.error_bar_item)
 
+    def remove_items(self):
+        if self.values.shape[0] == 0:
+            return
+        self.plot.removeItem(self.data_item)
+        if self.error_bar_item:
+            self.plot.removeItem(self.error_bar_item)
+
     def set_history_length(self, n):
         assert n > 0, "Invalid history length"
         self.x_indices = np.arange(-n, 0)
@@ -55,94 +63,94 @@ class _Series:
             self.values = self.values[-n:, :]
 
 
-class Rolling1DPlotWidget(pyqtgraph.PlotWidget):
+class Rolling1DPlotWidget(AlternateMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
+    ready = QtCore.pyqtSignal()
+    alternate_plot_requested = QtCore.pyqtSignal(str)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model: SinglePointModel, get_alternate_plot_names):
+        super().__init__(get_alternate_plot_names)
 
-        self.series_initialised = False
+        self.model = model
+        self.model.channel_schemata_changed.connect(self._initialise_series)
+        self.model.point_changed.connect(self._append_point)
+
         self.series = []
-
-        self.point_phase = None
+        self._history_length = 1024
 
         self.showGrid(x=True, y=True)
 
-        self._install_context_menu()
+    def _initialise_series(self):
+        for s in self.series:
+            s.remove_items()
+        self.series.clear()
 
-    def data_changed(self, data, mods):
-        def d(name):
-            return data.get("ndscan." + name, (False, None))[1]
+        channels = self.model.get_channel_schemata()
+        try:
+            data_names, error_bar_names = extract_scalar_channels(channels)
+        except ValueError as e:
+            self.error.emit(str(e))
+            return
 
-        if not self.series_initialised:
-            channels_json = d("channels")
-            if not channels_json:
-                return
+        colors = [SERIES_COLORS[i % len(SERIES_COLORS)] for i in range(len(data_names))]
+        for i, (data_name, color) in enumerate(zip(data_names, colors)):
+            data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
 
-            channels = json.loads(channels_json)
+            error_bar_name = error_bar_names.get(data_name, None)
+            error_bar_item = pyqtgraph.ErrorBarItem(
+                pen=color) if error_bar_name else None
 
-            try:
-                data_names, error_bar_names = extract_scalar_channels(channels)
-            except ValueError as e:
-                self.error.emit(str(e))
+            self.series.append(
+                _Series(self, data_name, data_item, error_bar_name, error_bar_item,
+                        self._history_length))
 
-            for i, data_name in enumerate(data_names):
-                color = SERIES_COLORS[i % len(SERIES_COLORS)]
-                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
+        def axis_info(i):
+            # If there is only one series, set label/scaling accordingly.
+            # TODO: Add multiple y axis for additional channels.
+            c = channels[data_names[i]]
+            label = c["description"]
+            if not label:
+                label = c["path"].split("/")[-1]
+            return label, c["path"], colors[i], c
 
-                error_bar_name = error_bar_names.get(data_name, None)
-                error_bar_item = pyqtgraph.ErrorBarItem(
-                    pen=color) if error_bar_name else None
+        setup_axis_item(
+            self.getAxis("left"), [axis_info(i) for i in range(len(data_names))])
 
-                self.series.append(
-                    _Series(self, data_name, data_item, error_bar_name, error_bar_item,
-                            self.num_history_box.value()))
+        self.ready.emit()
 
-            if len(data_names) == 1:
-                # If there is only one series, set label/scaling accordingly.
-                # TODO: Add multiple y axis for additional channels.
-                c = channels[data_names[0]]
-
-                label = c["description"]
-                if not label:
-                    label = c["path"].split("/")[-1]
-                setup_axis_item(self.getAxis("left"), label, c["path"], c)
-
-            self.series_initialised = True
-
-        # FIXME: Phase check will miss points when using mod buffering - need to
-        # directly read all the data from mods.
-        phase = d("point_phase")
-        if phase is not None and phase != self.point_phase:
-            for s in self.series:
-                s.append(data)
-            self.point_phase = phase
+    def _append_point(self, point):
+        for s in self.series:
+            s.append(point)
 
     def set_history_length(self, n):
+        self._history_length = n
         for s in self.series:
             s.set_history_length(n)
 
-    def _install_context_menu(self):
-        self.num_history_box = QtWidgets.QSpinBox()
-        self.num_history_box.setMinimum(1)
-        self.num_history_box.setMaximum(2**16)
-        self.num_history_box.setValue(100)
-        self.num_history_box.valueChanged.connect(self.set_history_length)
+    def build_context_menu(self, builder):
+        if self.model.context.is_online_master():
+            # If no new data points are coming in, setting the history size wouldn't do
+            # anything.
+            # TODO: is_online_master() should really be something like
+            # SinglePointModel.ever_updates().
 
-        container = QtWidgets.QWidget()
+            num_history_box = QtWidgets.QSpinBox()
+            num_history_box.setMinimum(1)
+            num_history_box.setMaximum(2**16)
+            num_history_box.setValue(self._history_length)
+            num_history_box.valueChanged.connect(self.set_history_length)
 
-        layout = QtWidgets.QHBoxLayout()
-        container.setLayout(layout)
+            container = QtWidgets.QWidget()
 
-        label = QtWidgets.QLabel("N: ")
-        layout.addWidget(label)
+            layout = QtWidgets.QHBoxLayout()
+            container.setLayout(layout)
 
-        layout.addWidget(self.num_history_box)
+            label = QtWidgets.QLabel("N: ")
+            layout.addWidget(label)
 
-        action = QtWidgets.QWidgetAction(self)
-        action.setDefaultWidget(container)
+            layout.addWidget(num_history_box)
 
-        separator = QtWidgets.QAction("", self)
-        separator.setSeparator(True)
-        entries = [action, separator]
-        self.plotItem.getContextMenus = lambda ev: entries
+            action = builder.append_widget_action()
+            action.setDefaultWidget(container)
+        builder.ensure_separator()
+        super().build_context_menu(builder)

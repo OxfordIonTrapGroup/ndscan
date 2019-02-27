@@ -2,9 +2,9 @@ from artiq.language import *
 from collections import OrderedDict
 from copy import deepcopy
 import logging
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Iterable, Type
 
-from .auto_fit import AutoFitSpec
+from .default_analysis import DefaultAnalysis
 from .parameters import *
 from .result_channels import *
 from .utils import path_matches_spec, strip_prefix
@@ -341,5 +341,5 @@ class ExpFragment(Fragment):
         parameters, producing one set of results (if any)."""
         pass
 
-    def get_default_fits(self) -> List[AutoFitSpec]:
+    def get_default_analyses(self) -> Iterable[DefaultAnalysis]:
         return []

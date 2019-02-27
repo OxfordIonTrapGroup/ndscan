@@ -1,6 +1,8 @@
 from artiq.language import *
 from ndscan.experiment import *
 from ndscan.fragment import *
+from ndscan.default_analysis import OnlineFit
+from oitg.errorbars import binom_onesided
 import random
 import numpy as np
 import time
@@ -33,14 +35,12 @@ class Readout(Fragment):
             counts[i] = np.random.poisson(mean)
         self.counts.push(counts)
 
-        p = 0.0
+        num_brights = 0
         for c in counts:
             if c >= self.threshold.get():
-                p += 1.0
-        p /= num_shots
+                num_brights += 1
 
-        p_err = np.sqrt(p * (1 - p) / num_shots)
-
+        p, p_err = binom_onesided(num_brights, num_shots)
         self.p.push(p)
         self.p_err.push(p_err)
 
@@ -64,9 +64,23 @@ class RabiFlopSim(ExpFragment):
         omega0 = 2 * np.pi * self.rabi_freq.get()
         delta = 2 * np.pi * self.detuning.get()
         omega = np.sqrt(omega0**2 + delta**2)
-        p = (omega0 / omega * np.sin(omega / 2 * self.duration.get()))**2
+        p = 1 - (omega0 / omega * np.sin(omega / 2 * self.duration.get()))**2
         self.readout.simulate_shots(p)
-        time.sleep(0.1)
+        time.sleep(0.01)
+
+    def get_default_analyses(self):
+        return [
+            OnlineFit("rabi_flop", {
+                "x": self.duration,
+                "y": self.readout.p,
+                "y_err": self.readout.p_err
+            }),
+            OnlineFit("cos", {
+                "x": self.duration,
+                "y": self.readout.z,
+                "y_err": self.readout.z_err
+            })
+        ]
 
 
 ScanRabiFlopSim = make_fragment_scan_exp(RabiFlopSim)
