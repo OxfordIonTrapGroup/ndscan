@@ -4,7 +4,7 @@ it comes in.
 """
 import logging
 import oitg.fitting
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Iterable, Tuple, Union
 
 from .parameters import ParamHandle
 from .result_channels import ResultChannel
@@ -125,17 +125,16 @@ class DefaultAnalysis:
 class CustomAnalysis(DefaultAnalysis):
     """:class:`DefaultAnalysis` that executes a user-defined analysis function."""
 
-    def __init__(self, required_axes: Dict[str, ParamHandle],
-                 analyze_fn: Callable[[Dict[str, list], Dict[ResultChannel, list]],
-                                      List[Annotation]]):
-        self._required_axis_handles = required_axes
+    def __init__(
+            self, required_axes: Iterable[ParamHandle],
+            analyze_fn: Callable[[Dict[ParamHandle, list], Dict[ResultChannel, list]],
+                                 List[Annotation]]):
+        self._required_axis_handles = set(required_axes)
         self._analyze_fn = analyze_fn
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
-        for name, handle in self._required_axis_handles.items():
-            if handle._store.identity not in scanned_axes:
-                return False
-        return True
+        return all(
+            h._store.identity in scanned_axes for h in self._required_axis_handles)
 
     def describe_online_analyses(
             self, context: AnnotationContext
@@ -146,8 +145,8 @@ class CustomAnalysis(DefaultAnalysis):
                 result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
         user_axis_data = {}
-        for name, handle in self._required_axis_handles.items():
-            user_axis_data[name] = axis_data[handle._store.identity]
+        for handle in self._required_axis_handles:
+            user_axis_data[handle] = axis_data[handle._store.identity]
         annotations = self._analyze_fn(user_axis_data, result_data)
         if annotations is None:
             # Tolerate the user forgetting the return statement.
