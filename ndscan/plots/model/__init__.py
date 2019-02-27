@@ -126,10 +126,9 @@ class ScanModel(Model):
             return {k: data_source(v) for k, v in specs.items()}
 
         for schema in schemata:
+            sources = [to_data_sources(schema.get(n)) for n in ("coordinates", "data")]
             self._annotations.append(
-                Annotation(schema["kind"], schema.get("parameters", {}),
-                           to_data_sources(schema.get("coordinates", {})),
-                           to_data_sources(schema.get("data", {}))))
+                Annotation(schema["kind"], schema.get("parameters", {}), *sources))
         self.annotations_changed.emit(self._annotations)
 
     def _set_online_analyses(self,
