@@ -85,13 +85,13 @@ class CurveItem(AnnotationItem):
         self._curve_item = curve_item
         self._curve_item_added = False
 
-        for source in [self._x_source, self.y_source]:
+        for source in [self._x_source, self._y_source]:
             source.changed.connect(self._redraw)
 
         self._redraw()
 
     def remove(self):
-        for source in [self._x_source, self.y_source]:
+        for source in [self._x_source, self._y_source]:
             source.changed.disconnect(self._redraw)
         if self._curve_item_added:
             self._plot.removeItem(self._curve_item)
