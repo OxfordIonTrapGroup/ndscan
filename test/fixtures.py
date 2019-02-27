@@ -47,11 +47,11 @@ class ReboundAddOneFragment(ExpFragment):
 
 class AddOneCustomAnalysisFragment(AddOneFragment):
     def get_default_analyses(self):
-        return [CustomAnalysis({"x": self.value}, self._analyze)]
+        return [CustomAnalysis({self.value}, self._analyze)]
 
     def _analyze(self, axis_values, result_values):
         return [
-            Annotation("location", {self.value: numpy.mean(axis_values["x"])}),
+            Annotation("location", {self.value: numpy.mean(axis_values[self.value])}),
             Annotation("location",
                        {self.result: numpy.mean(result_values[self.result])})
         ]

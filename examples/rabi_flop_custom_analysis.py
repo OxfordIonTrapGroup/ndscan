@@ -11,10 +11,10 @@ class RabiFlopWithAnalysis(RabiFlopSim):
     """
 
     def get_default_analyses(self):
-        return [CustomAnalysis({"t": self.duration}, self._analyse_time_scan)]
+        return [CustomAnalysis([self.duration], self._analyse_time_scan)]
 
     def _analyse_time_scan(self, axis_values, result_values):
-        x = axis_values["t"]
+        x = axis_values[self.duration]
         y = result_values[self.readout.p]
         y_err = result_values[self.readout.p_err]
         fit_results, fit_errs, fit_xs, fit_ys, = oitg.fitting.rabi_flop.fit(
