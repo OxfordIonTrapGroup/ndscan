@@ -47,10 +47,10 @@ and launch the dashboard with the ndscan plugin loaded
 
     (artiq) $ artiq_dashboard -p ndscan.dashboard_plugin
 
-Now, navigate to the `examples/sim_rabi_flop.py` file in the experiment
-explorer, and you should be able to play around with the scan interface.
-(Applets are created automatically; you might want to set the CCB mode to
-"Create and enable/disable applets" in the applets dock.)
+Now, navigate to the `examples/flop.py` file in the experiment explorer, and
+you should be able to play around with the scan interface. (Applets are created
+automatically; you might want to set the CCB mode to "Create and enable/disable
+applets" in the applets dock.)
 
 
 Developer notes
