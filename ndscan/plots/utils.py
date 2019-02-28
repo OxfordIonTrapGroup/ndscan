@@ -177,3 +177,37 @@ class AlternateMenuPlotWidget(ContextMenuPlotWidget):
                 action.triggered.connect(lambda *args, name=name: self.
                                          alternate_plot_requested.emit(name))
         builder.ensure_separator()
+
+
+class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
+    def __init__(self, context, get_alternate_plot_names):
+        super().__init__(get_alternate_plot_names)
+        self._context = context
+
+        #: Maps subplot names to active plot widgets.
+        self.subplots = {}
+
+        #: Maps subscan names to model Root instances.
+        self.subscan_roots = {}
+
+    def build_context_menu(self, builder: ContextMenuBuilder) -> None:
+        for name in self.subscan_roots.keys():
+            action = builder.append_action("Open subscan '{}'".format(name))
+            action.triggered.connect(lambda *args, name=name: self.open_subplot(name))
+        builder.ensure_separator()
+        super().build_context_menu(builder)
+
+    def open_subplot(self, name: str):
+        widget = self.subplots.get(name, None)
+        if widget is not None:
+            widget.show()
+            widget.activateWindow()
+            return
+
+        import ndscan.plots.container
+        widget = ndscan.plots.container.RootWidget(self.subscan_roots[name],
+                                                   self._context)
+        self.subplots[name] = widget
+        # TODO: Save window geometry.
+        widget.resize(600, 400)
+        widget.show()

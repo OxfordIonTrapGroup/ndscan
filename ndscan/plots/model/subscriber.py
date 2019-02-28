@@ -46,9 +46,7 @@ class SubscriberRoot(Root):
 
         self._model.data_changed(data, mods)
 
-    def get_model(self) -> Model:
-        if self._model is None:
-            raise ValueError("Model not yet set")
+    def get_model(self) -> Union[Model, None]:
         return self._model
 
 
@@ -65,7 +63,7 @@ class SubscriberSinglePointModel(SinglePointModel):
             raise ValueError("No complete point yet")
         return self._channel_schemata
 
-    def get_point(self) -> Dict[str, Any]:
+    def get_point(self) -> Union[None, Dict[str, Any]]:
         if self._current_point is None:
             raise ValueError("No complete point yet")
         return self._current_point

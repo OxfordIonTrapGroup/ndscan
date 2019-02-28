@@ -3,7 +3,7 @@ from collections import OrderedDict
 from quamash import QtWidgets
 
 from .model import Context, Model, Root, SinglePointModel, ScanModel
-from .model.subscan import SubscanRoot
+from .model.subscan import create_subscan_roots
 from .image_2d import Image2DPlotWidget
 from .rolling_1d import Rolling1DPlotWidget
 from .xy_1d import XY1DPlotWidget
@@ -109,14 +109,11 @@ class PlotContainerWidget(QtWidgets.QWidget):
         # TODO: Think whether it makes sense to support this more than once.
         self.model.channel_schemata_changed.disconnect(self._create_subscan_roots)
 
-        for name, schema in self.model.get_channel_schemata().items():
-            if schema["type"] != "subscan":
-                continue
-            root = SubscanRoot(self.model, name)
-            root.model_changed.connect(lambda model: self._add_subscan_plot(
+        for name, root in create_subscan_roots(self.model).items():
+            root.model_changed.connect(lambda model: self._set_subscan_plot(
                 name, model))
 
-    def _add_subscan_plot(self, name, model):
+    def _set_subscan_plot(self, name, model):
         old_plot = self._alternate_plots.get(name, None)
         if old_plot:
             self.widget_stack.removeWidget(old_plot)

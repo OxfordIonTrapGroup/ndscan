@@ -18,6 +18,12 @@ def strip_prefix(string: str, prefix: str) -> str:
     return string
 
 
+def strip_suffix(string: str, suffix: str) -> str:
+    if string.endswith(suffix):
+        return string[:-len(suffix)]
+    return string
+
+
 def is_kernel(func) -> bool:
     if not hasattr(func, "artiq_embedded"):
         return False
