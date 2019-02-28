@@ -4,52 +4,29 @@ from artiq.protocols.sync_struct import Subscriber
 import asyncio
 import logging
 import pyqtgraph
-from quamash import QtWidgets
 from typing import Any, Dict, Iterable
 
-from .plots.container import PlotContainerWidget
+from .plots.container import RootWidget
 from .plots.model import Context
 from .plots.model.subscriber import SubscriberRoot
 
 logger = logging.getLogger(__name__)
 
 
-class _MainWidget(QtWidgets.QWidget):
+class _MainWidget(RootWidget):
     def __init__(self, args):
-        super().__init__()
         self.args = args
 
-        self.setWindowTitle("ndscan plot")
+        # TODO: Consider exposing Context in Root.
+        context = Context(self.set_dataset)
+        super().__init__(SubscriberRoot(context), context)
+
+        # FIXME: See if call_later() fixes resizing on startup.
         self.resize(600, 600)
-
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self.layout)
-
-        self.widget_stack = QtWidgets.QStackedWidget()
-        self.message_label = QtWidgets.QLabel(
-            "Waiting for ndscan metadata for rid {}…".format(self.args.rid))
-        self.widget_stack.addWidget(self.message_label)
-        self.layout.addWidget(self.widget_stack)
-
-        self.context = Context(self.set_dataset)
-        self.context.title_changed.connect(self._set_window_title)
-        self.root = SubscriberRoot(self.context)
-        self.root.model_changed.connect(self._create_plot)
-
-        self.plot_container = None
+        self.setWindowTitle("ndscan plot")
 
     def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
         self.root.data_changed(data, mods)
-
-    def _create_plot(self):
-        self.plot_container = PlotContainerWidget(self.root.get_model())
-        self.widget_stack.addWidget(self.plot_container)
-        self.widget_stack.setCurrentIndex(
-            self.widget_stack.indexOf(self.plot_container))
-
-    def _set_window_title(self, title):
-        self.setWindowTitle("{} – ndscan".format(title))
 
     def set_dataset(self, key, value):
         asyncio.ensure_future(self._set_dataset_impl(key, value))
