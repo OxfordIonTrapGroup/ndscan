@@ -19,7 +19,7 @@ class HDF5Root(Root):
             self._model = HDF5ScanModel(axes, datasets, context)
         emit_later(self.model_changed, self._model)
 
-    def get_model(self) -> Model:
+    def get_model(self) -> Union[Model, None]:
         return self._model
 
 
@@ -38,7 +38,7 @@ class HDF5SingleShotModel(SinglePointModel):
     def get_channel_schemata(self) -> Dict[str, Any]:
         return self._channel_schemata
 
-    def get_point(self) -> Dict[str, Any]:
+    def get_point(self) -> Union[None, Dict[str, Any]]:
         return self._point
 
 

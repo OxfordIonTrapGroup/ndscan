@@ -1,6 +1,6 @@
 import logging
 from quamash import QtCore
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Union
 from .online_analysis import OnlineNamedFitAnalysis
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class Annotation:
 class Root(QtCore.QObject):
     model_changed = QtCore.pyqtSignal(object)
 
-    def get_model(self) -> "Model":
+    def get_model(self) -> Union["Model", None]:
         raise NotImplementedError
 
 
@@ -82,9 +82,9 @@ class Model(QtCore.QObject):
 
 
 class SinglePointModel(Model):
-    point_changed = QtCore.pyqtSignal(dict)
+    point_changed = QtCore.pyqtSignal(object)
 
-    def get_point(self) -> Dict[str, Any]:
+    def get_point(self) -> Union[None, Dict[str, Any]]:
         raise NotImplementedError
 
 

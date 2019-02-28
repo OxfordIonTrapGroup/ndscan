@@ -6,8 +6,10 @@ from quamash import QtCore
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
+from .model.select_point import SelectPointFromScanModel
+from .model.subscan import create_subscan_roots
 from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
-                    AlternateMenuPlotWidget, FIT_COLORS, SERIES_COLORS)
+                    SubplotMenuPlotWidget, FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
@@ -78,19 +80,17 @@ class _XYSeries(QtCore.QObject):
         self.num_current_points = 0
 
 
-class XY1DPlotWidget(AlternateMenuPlotWidget):
+class XY1DPlotWidget(SubplotMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: ScanModel, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
+        super().__init__(model.context, get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(self._update_points)
         self.model.annotations_changed.connect(self._update_annotations)
-
-        self.annotation_items = []
 
         # FIXME: Just re-set values instead of throwing away everything.
         def rewritten(points):
@@ -99,6 +99,10 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
 
         self.model.points_rewritten.connect(rewritten)
 
+        self.selected_point_model = SelectPointFromScanModel(self.model)
+        self.subscan_roots = {}
+
+        self.annotation_items = []
         self.series = []
 
         x_schema = self.model.axes[0]
@@ -110,7 +114,11 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
             self.getAxis("bottom"), [(x_schema["param"]["description"], identity_string,
                                       None, x_schema["param"]["spec"])])
         self.crosshair = None
+        self._highlighted_spot = None
         self.showGrid(x=True, y=True)
+
+        self.getPlotItem().getViewBox().scene().sigMouseClicked.connect(
+            self._handle_scene_click)
 
     def _initialise_series(self, channels):
         for s in self.series:
@@ -125,7 +133,8 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
 
         colors = [SERIES_COLORS[i % len(SERIES_COLORS)] for i in range(len(data_names))]
         for i, (name, color) in enumerate(zip(data_names, colors)):
-            data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
+            data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
+            data_item.sigClicked.connect(self._point_clicked)
 
             error_bar_name = error_bar_names.get(name, None)
             error_bar_item = pyqtgraph.ErrorBarItem(
@@ -152,6 +161,7 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
                 self, self.getPlotItem(), self.x_unit_suffix,
                 self.x_data_to_display_scale, self.y_unit_suffix,
                 self.y_data_to_display_scale)
+        self.subscan_roots = create_subscan_roots(self.selected_point_model)
         self.ready.emit()
 
     def _update_points(self, points):
@@ -242,3 +252,32 @@ class XY1DPlotWidget(AlternateMenuPlotWidget):
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
         self.model.context.set_dataset(dataset_key, self.crosshair.last_x)
+
+    def _highlight_spot(self, spot):
+        if self._highlighted_spot is not None:
+            self._highlighted_spot.resetPen()
+            self._highlighted_spot = None
+        if spot is not None:
+            spot.setPen("y", width=2)
+            self._highlighted_spot = spot
+
+    def _point_clicked(self, scatter_plot_item, spot_items):
+        if not spot_items:
+            # No points clicked – events don't seem to emitted in this case anyway.
+            self._background_clicked()
+            return
+
+        # Arbitrarily choose the first element in the list if multiple spots
+        # overlap; the user can always zoom in if that is undesired.
+        spot = spot_items[0]
+        self._highlight_spot(spot)
+        self.selected_point_model.set_source_index(spot.index())
+
+    def _background_clicked(self):
+        self._highlight_spot(None)
+        self.selected_point_model.set_source_index(None)
+
+    def _handle_scene_click(self, event):
+        if not event.isAccepted():
+            # Event not handled yet, so background/… was clicked instead of a point.
+            self._background_clicked()
