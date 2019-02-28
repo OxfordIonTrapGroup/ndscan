@@ -2,7 +2,7 @@ import logging
 from collections import OrderedDict
 from quamash import QtWidgets
 
-from .model import Model, SinglePointModel, ScanModel
+from .model import Context, Model, Root, SinglePointModel, ScanModel
 from .model.subscan import SubscanRoot
 from .image_2d import Image2DPlotWidget
 from .rolling_1d import Rolling1DPlotWidget
@@ -19,6 +19,47 @@ def _make_dimensional_plot(model: ScanModel, get_alternate_names):
         return Image2DPlotWidget(model, get_alternate_names)
     raise NotImplementedError(
         "Plots for {}-dimensional data are not yet implemented".format(dim))
+
+
+class RootWidget(QtWidgets.QWidget):
+    def __init__(self, root: Root, context: Context):
+        super().__init__()
+
+        self.root = root
+        self.root.model_changed.connect(self._update_plot)
+
+        self.context = context
+        self.context.title_changed.connect(self._set_window_title)
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
+
+        # TODO: Use context info/… to identify plot to user in message.
+        self.message_label = QtWidgets.QLabel("No data.")
+
+        self.widget_stack = QtWidgets.QStackedWidget()
+        self.widget_stack.addWidget(self.message_label)
+        self.layout.addWidget(self.widget_stack)
+
+        self.plot_container = None
+
+    def _set_window_title(self, title):
+        self.setWindowTitle("{} – ndscan".format(title))
+
+    def _update_plot(self):
+        if self.plot_container:
+            self.widget_stack.setCurrentIndex(
+                self.widget_stack.indexOf(self.message_label))
+            self.widget_stack.removeWidget(self.plot_container)
+            self.plot_container = None
+
+        model = self.root.get_model()
+        if model is not None:
+            self.plot_container = PlotContainerWidget(model)
+            self.widget_stack.addWidget(self.plot_container)
+            self.widget_stack.setCurrentIndex(
+                self.widget_stack.indexOf(self.plot_container))
 
 
 class PlotContainerWidget(QtWidgets.QWidget):
