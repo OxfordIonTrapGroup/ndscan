@@ -86,7 +86,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         # changed.
         xs = self._source_data["x"]
         ys = self._source_data["y"]
-        y_errs = self._source_data["y_err"]
+        y_errs = self._source_data.get("y_err", None)
 
         loop = asyncio.get_event_loop()
         self._last_fit_params, self._last_fit_errors = await loop.run_in_executor(
