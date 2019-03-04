@@ -95,6 +95,9 @@ class PlotContainerWidget(QtWidgets.QWidget):
         self.plot.ready.connect(lambda: self._show(self.plot))
         self.plot.alternate_plot_requested.connect(self._show_alternate_plot)
 
+        # All subscan roots, to keep the objects alive.
+        self._subscan_roots = None
+
     def _show(self, widget):
         self.widget_stack.setCurrentIndex(self.widget_stack.indexOf(widget))
 
@@ -109,7 +112,8 @@ class PlotContainerWidget(QtWidgets.QWidget):
         # TODO: Think whether it makes sense to support this more than once.
         self.model.channel_schemata_changed.disconnect(self._create_subscan_roots)
 
-        for name, root in create_subscan_roots(self.model).items():
+        self._subscan_roots = create_subscan_roots(self.model)
+        for name, root in self._subscan_roots.items():
             root.model_changed.connect(lambda model: self._set_subscan_plot(
                 name, model))
 
