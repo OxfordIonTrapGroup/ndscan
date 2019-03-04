@@ -108,6 +108,9 @@ class ResultChannel:
         self.save_by_default = save_by_default
         self.sink = None
 
+    def __repr__(self) -> str:
+        return "<{}@{}: {}>".format(type(self).__name__, hex(id(self)), self.path)
+
     def describe(self) -> Dict[str, Any]:
         """
         """
