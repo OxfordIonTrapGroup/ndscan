@@ -169,3 +169,26 @@ class SubscanCase(ExpFragmentCase):
         # FIXME: This should probably use fuzzy comparison for the floating point
         # values.
         self.assertEqual(annotations, [x_location, y_location])
+
+
+class RunSubscanTwiceFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("child", AddOneFragment)
+        setattr_subscan(self, "scan", self.child, [(self.child, "value")])
+
+    def run_once(self):
+        r0 = self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))])
+        r1 = self.scan.run([(self.child.value, LinearGenerator(4, 7, 4, False))])
+        return r0, r1
+
+
+class RunSubscanTwiceCase(ExpFragmentCase):
+    def test_1d_subscan_twice(self):
+        parent = self.create(RunSubscanTwiceFragment)
+        results = parent.run_once()
+
+        for base, (coords, values) in zip([0, 4], results):
+            expected_values = [float(n) for n in range(base, base + 4)]
+            expected_results = [v + 1 for v in expected_values]
+            self.assertEqual(coords, {parent.child.value: expected_values})
+            self.assertEqual(values, {parent.child.result: expected_results})
