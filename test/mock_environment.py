@@ -67,8 +67,9 @@ class HasEnvironmentCase(unittest.TestCase):
             })
 
     def create(self, klass, *args, **kwargs):
-        return klass((self.device_mgr, self.dataset_mgr, ProcessArgumentManager({})),
-                     *args, **kwargs)
+        return klass(
+            (self.device_mgr, self.dataset_mgr, ProcessArgumentManager({}), None),
+            *args, **kwargs)
 
 
 class ExpFragmentCase(HasEnvironmentCase):
