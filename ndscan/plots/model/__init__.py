@@ -20,7 +20,7 @@ class Context(QtCore.QObject):
             self.title_changed.emit(title)
 
     def is_online_master(self) -> bool:
-        return self.set_dataset is not None
+        return self._set_dataset is not None
 
     def set_dataset(self, key: str, value: Any) -> None:
         self._set_dataset(key, value)
