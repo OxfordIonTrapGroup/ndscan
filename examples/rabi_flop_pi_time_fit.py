@@ -11,7 +11,7 @@ class PiTimeFitSim(ExpFragment):
         self.setattr_fragment("flop", RabiFlopSim)
         setattr_subscan(self, "scan", self.flop, [(self.flop, "duration")])
         self.setattr_result("t_pi", unit="us")
-        self.setattr_result("t_pi_err", display_hints={"error_bar_for": "t_pi"})
+        self.setattr_result("t_pi_err", display_hints={"error_bar_for": self.t_pi.path})
         # self.scan.add_annotation()
 
     def run_once(self):

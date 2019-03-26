@@ -1,7 +1,10 @@
+import logging
 import pyqtgraph
 from quamash import QtCore, QtWidgets
 from typing import Any, Dict, List, Tuple
 from ..utils import eval_param_default
+
+logger = logging.getLogger(__name__)
 
 # ColorBrewer-inspired to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = [
@@ -16,18 +19,33 @@ def extract_scalar_channels(channels):
     data_names = set(
         name for name, spec in channels.items() if spec["type"] in ["int", "float"])
 
+    path_to_name = {channels[name]["path"]: name for name in data_names}
+
     # Build map from "primary" channel names to error bar names.
     error_bar_names = {}
     for name in data_names:
         spec = channels[name]
         display_hints = spec.get("display_hints", {})
-        eb = display_hints.get("error_bar_for", "")
-        if not eb:
+        err_path = display_hints.get("error_bar_for", "")
+        if not err_path:
             continue
-        if eb in error_bar_names:
+        if err_path not in path_to_name:
+            msg = "Error bar target '{}' does not exist".format(err_path)
+            if err_path in channels:
+                # Previously, this accepted the shortened name instead of the full path;
+                # suggest this to help users migrate.
+                msg += "; did you mean to specify the full path '{}'?".format(
+                    channels[name]["path"])
+            logger.warning(msg)
+            # Still avoid to display the error bar channel, though (key is arbitrary).
+            error_bar_names[err_path] = name
+            continue
+        err_name = path_to_name[err_path]
+        if err_name in error_bar_names:
             raise ValueError(
-                "More than one set of error bars specified for channel '{}'".format(eb))
-        error_bar_names[eb] = name
+                "More than one set of error bars specified for channel '{}'".format(
+                    err_path))
+        error_bar_names[err_name] = name
 
     data_names -= set(error_bar_names.values())
 
