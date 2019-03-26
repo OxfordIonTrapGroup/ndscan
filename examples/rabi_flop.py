@@ -19,10 +19,10 @@ class Readout(Fragment):
 
         self.setattr_result("counts", OpaqueChannel)
         self.setattr_result("p")
-        self.setattr_result("p_err", display_hints={"error_bar_for": "p"})
+        self.setattr_result("p_err", display_hints={"error_bar_for": self.p.path})
 
         self.setattr_result("z")
-        self.setattr_result("z_err", display_hints={"error_bar_for": "z"})
+        self.setattr_result("z_err", display_hints={"error_bar_for": self.z.path})
 
         self.setattr_result("half", display_hints={"priority": -1})
 
