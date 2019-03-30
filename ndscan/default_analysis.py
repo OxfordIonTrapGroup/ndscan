@@ -263,7 +263,8 @@ class OnlineFit(DefaultAnalysis):
                         data={
                             context.describe_coordinate(self.data["x"]) + "_error":
                             analysis_ref(a["x"] + "_error")
-                        }))
+                        },
+                        parameters={"associated_channels": channels}))
 
         return [a.describe(context) for a in annotations], {
             analysis_identifier: {
