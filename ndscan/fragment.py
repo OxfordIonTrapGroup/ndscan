@@ -326,10 +326,19 @@ class Fragment(HasEnvironment):
 
     def _get_dataset_or_set_default(self, key, default) -> Any:
         try:
-            return self.get_dataset(key)
-        except KeyError:
-            logger.info("Setting dataset '%s' to default value (%s)", key, default)
-            self.set_dataset(key, default, broadcast=True, persist=True)
+            try:
+                return self.get_dataset(key)
+            except KeyError:
+                logger.info("Setting dataset '%s' to default value (%s)", key, default)
+                self.set_dataset(key, default, broadcast=True, persist=True)
+                return default
+        except Exception as e:
+            # FIXME: This currently occurs when build()ing experiments with dataset
+            # defaults from within an examine worker, i.e. when scanning the repository
+            # or recomputing arguments, because datasets can't be accessed there. We
+            # should probably silently ignore missing datasets there, and set them
+            # accordingly when the experiment is actually run.
+            logger.warning("Unexpected error evaluating dataset default: %s", e)
             return default
 
 
