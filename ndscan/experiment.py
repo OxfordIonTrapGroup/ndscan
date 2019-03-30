@@ -29,7 +29,10 @@ from .utils import shorten_to_unambiguous_suffixes, is_kernel
 
 # We don't want to export FragmentScanExperiment to hide it from experiment
 # class discovery.
-__all__ = ["make_fragment_scan_exp", "PARAMS_ARG_KEY"]
+__all__ = [
+    "make_fragment_scan_exp", "PARAMS_ARG_KEY", "run_fragment_once",
+    "create_and_run_fragment_once"
+]
 
 #: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the
 #: list of available parameters to the dashboard plugin, and to pass the information
