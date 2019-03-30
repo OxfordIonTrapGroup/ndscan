@@ -85,7 +85,9 @@ class SubscanCase(ExpFragmentCase):
         }
         location_annotation = {
             "kind": "location",
-            "parameters": {},
+            "parameters": {
+                "associated_channels": ["channel_result"]
+            },
             "coordinates": {
                 "axis_0": {
                     "analysis_name": "fit_lorentzian_channel_result",
