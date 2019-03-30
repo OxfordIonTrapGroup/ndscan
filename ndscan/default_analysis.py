@@ -213,13 +213,15 @@ class OnlineFit(DefaultAnalysis):
         self.analysis_identifier = analysis_identifier
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]):
+        num_axes = 0
         for arg in self.data.values():
             if isinstance(arg, ParamHandle):
+                num_axes += 1
                 if not arg._store:
                     return False
                 if arg._store.identity not in scanned_axes:
                     return False
-        return True
+        return len(scanned_axes) == num_axes
 
     def describe_online_analyses(
             self, context: AnnotationContext
