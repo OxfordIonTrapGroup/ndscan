@@ -40,22 +40,22 @@ class FragmentScanExpCase(HasEnvironmentCase):
             "coordinates": {},
             "data": {
                 "a": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "a"
                 },
                 "fwhm": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "fwhm"
                 },
                 "x0": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "x0"
                 },
                 "y0": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "y0"
                 }
@@ -66,14 +66,14 @@ class FragmentScanExpCase(HasEnvironmentCase):
             "parameters": {},
             "coordinates": {
                 "axis_0": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "x0"
                 }
             },
             "data": {
                 "axis_0_error": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "x0_error"
                 }
@@ -85,7 +85,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
 
         self.assertEqual(
             json.loads(self.dataset_db.get("ndscan.online_analyses")), {
-                "fit_lorentzian": {
+                "fit_lorentzian_channel_result": {
                     "data": {
                         "y": "channel_result",
                         "x": "axis_0"

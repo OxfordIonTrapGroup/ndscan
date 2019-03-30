@@ -208,8 +208,6 @@ class OnlineFit(DefaultAnalysis):
         if annotations is None:
             annotations = DEFAULT_FIT_ANNOTATIONS.get(fit_type, {})
         self.annotations = annotations
-        if analysis_identifier is None:
-            analysis_identifier = "fit_" + fit_type
         self.analysis_identifier = analysis_identifier
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]):
@@ -226,17 +224,23 @@ class OnlineFit(DefaultAnalysis):
     def describe_online_analyses(
             self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
-        def analysis_ref(key):
-            return AnnotationValueRef(
-                "analysis_result",
-                analysis_name=self.analysis_identifier,
-                result_key=key)
-
         # TODO: Generalise to higher-dimensional fits.
         channels = [
             context.describe_coordinate(v) for v in self.data.values()
             if isinstance(v, ResultChannel)
         ]
+
+        analysis_identifier = self.analysis_identifier
+        if analysis_identifier is None:
+            # By default, mangle fit type and channels into a pseudo-unique identifier,
+            # which should work for the vast majority of cases (i.e. unless the user
+            # creates needlessly duplicate analyses).
+            analysis_identifier = "fit_" + self.fit_type + "_" + "_".join(channels)
+
+        def analysis_ref(key):
+            return AnnotationValueRef(
+                "analysis_result", analysis_name=analysis_identifier, result_key=key)
+
         annotations = [
             Annotation(
                 "computed_curve",
@@ -262,7 +266,7 @@ class OnlineFit(DefaultAnalysis):
                         }))
 
         return [a.describe(context) for a in annotations], {
-            self.analysis_identifier: {
+            analysis_identifier: {
                 "kind": "named_fit",
                 "fit_type": self.fit_type,
                 "data": {
@@ -275,4 +279,5 @@ class OnlineFit(DefaultAnalysis):
     def execute(self, axis_data: Dict[Tuple[str, str], list],
                 result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
+        # Nothing to do off-line for online fits.
         return []
