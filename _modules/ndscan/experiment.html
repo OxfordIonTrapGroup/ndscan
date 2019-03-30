@@ -177,7 +177,10 @@
 
 <span class="c1"># We don&#39;t want to export FragmentScanExperiment to hide it from experiment</span>
 <span class="c1"># class discovery.</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;PARAMS_ARG_KEY&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;PARAMS_ARG_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
+<span class="p">]</span>
 
 <span class="c1">#: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the</span>
 <span class="c1">#: list of available parameters to the dashboard plugin, and to pass the information</span>
