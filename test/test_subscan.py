@@ -62,22 +62,22 @@ class SubscanCase(ExpFragmentCase):
             "coordinates": {},
             "data": {
                 "a": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "a"
                 },
                 "fwhm": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "fwhm"
                 },
                 "x0": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "x0"
                 },
                 "y0": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "y0"
                 }
@@ -88,14 +88,14 @@ class SubscanCase(ExpFragmentCase):
             "parameters": {},
             "coordinates": {
                 "axis_0": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "x0"
                 }
             },
             "data": {
                 "axis_0_error": {
-                    "analysis_name": "fit_lorentzian",
+                    "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "analysis_result",
                     "result_key": "x0_error"
                 }
@@ -104,7 +104,7 @@ class SubscanCase(ExpFragmentCase):
         self.assertEqual(spec["annotations"], [curve_annotation, location_annotation])
         self.assertEqual(
             spec["online_analyses"], {
-                "fit_lorentzian": {
+                "fit_lorentzian_channel_result": {
                     "data": {
                         "y": "channel_result",
                         "x": "axis_0"
