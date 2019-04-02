@@ -126,6 +126,7 @@ class PlotContainerWidget(QtWidgets.QWidget):
             plot = _make_dimensional_plot(model, self._get_alternate_names)
         except NotImplementedError as err:
             logger.info("Ignoring subscan '%s': %s", name, str(err))
+            return
         self._alternate_plots["subscan '{}'".format(name)] = plot
         self.widget_stack.addWidget(plot)
         plot.error.connect(self._show_error)
