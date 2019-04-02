@@ -5,7 +5,7 @@ The ARTIQ compiler does not support templates or generics (neither in the sense
 of typing.Generic, nor any other), yet requires the inferred types/signatures
 of fields to match across all instances of a class. Hence, we have no option
 but to hang our heads in shame and manually instantiate the parameter handling
-machinery for all the value types.
+machinery for all supported value types.
 """
 
 from artiq.language import *
@@ -16,7 +16,7 @@ from .utils import eval_param_default
 
 
 def type_string_to_param(name: str):
-    """Resolves param schema type strings to Param implementations."""
+    """Resolve a param schema type string to the corresponding Param implementation."""
     return {"float": FloatParam, "int": IntParam, "string": StringParam}[name]
 
 
@@ -36,7 +36,9 @@ class ParamStore:
     def __init__(self, identity: Tuple[str, str], value):
         self.identity = identity
 
-        # KLUDGE: Work around type inference failing for empty lists.
+        # KLUDGE: To work around ARTIQ compiler type inference failing for empty lists,
+        # we rebind the function to notify parameter handles of changes if there are
+        # none registered.
         self._handles = []
         self._notify = self._do_nothing
 
