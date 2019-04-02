@@ -40,7 +40,7 @@ class ParamStore:
         self._handles = []
         self._notify = self._do_nothing
 
-        self.set_value(value)
+        self._value = self.coerce(value)
 
     @host_only
     def register_handle(self, handle):
@@ -71,7 +71,10 @@ class FloatParamStore(ParamStore):
 
     @portable
     def set_value(self, value):
-        self._value = self.coerce(value)
+        new_value = self.coerce(value)
+        if new_value == self._value:
+            return
+        self._value = new_value
         self._notify()
 
     @portable
@@ -86,7 +89,10 @@ class IntParamStore(ParamStore):
 
     @portable
     def set_value(self, value):
-        self._value = self.coerce(value)
+        new_value = self.coerce(value)
+        if new_value == self._value:
+            return
+        self._value = new_value
         self._notify()
 
     @portable
@@ -101,7 +107,10 @@ class StringParamStore(ParamStore):
 
     @portable
     def set_value(self, value):
-        self._value = self.coerce(value)
+        new_value = self.coerce(value)
+        if new_value == self._value:
+            return
+        self._value = new_value
         self._notify()
 
     @portable
