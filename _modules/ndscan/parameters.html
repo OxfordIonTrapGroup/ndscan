@@ -153,7 +153,7 @@
 <span class="sd">of typing.Generic, nor any other), yet requires the inferred types/signatures</span>
 <span class="sd">of fields to match across all instances of a class. Hence, we have no option</span>
 <span class="sd">but to hang our heads in shame and manually instantiate the parameter handling</span>
-<span class="sd">machinery for all the value types.</span>
+<span class="sd">machinery for all supported value types.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
@@ -164,7 +164,7 @@
 
 
 <div class="viewcode-block" id="type_string_to_param"><a class="viewcode-back" href="../../apidocs.html#ndscan.parameters.type_string_to_param">[docs]</a><span class="k">def</span> <span class="nf">type_string_to_param</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Resolves param schema type strings to Param implementations.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Resolve a param schema type string to the corresponding Param implementation.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;float&quot;</span><span class="p">:</span> <span class="n">FloatParam</span><span class="p">,</span> <span class="s2">&quot;int&quot;</span><span class="p">:</span> <span class="n">IntParam</span><span class="p">,</span> <span class="s2">&quot;string&quot;</span><span class="p">:</span> <span class="n">StringParam</span><span class="p">}[</span><span class="n">name</span><span class="p">]</span></div>
 
 
@@ -184,11 +184,13 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">identity</span> <span class="o">=</span> <span class="n">identity</span>
 
-        <span class="c1"># KLUDGE: Work around type inference failing for empty lists.</span>
+        <span class="c1"># KLUDGE: To work around ARTIQ compiler type inference failing for empty lists,</span>
+        <span class="c1"># we rebind the function to notify parameter handles of changes if there are</span>
+        <span class="c1"># none registered.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_handles</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_nothing</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@host_only</span>
     <span class="k">def</span> <span class="nf">register_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handle</span><span class="p">):</span>
@@ -219,7 +221,10 @@
 
     <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">new_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_value</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">new_value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">()</span>
 
     <span class="nd">@portable</span>
@@ -234,7 +239,10 @@
 
     <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">new_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_value</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">new_value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">()</span>
 
     <span class="nd">@portable</span>
@@ -249,7 +257,10 @@
 
     <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">new_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_value</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">new_value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">()</span>
 
     <span class="nd">@portable</span>
