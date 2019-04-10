@@ -98,8 +98,8 @@ class ScanRunner(HasEnvironment):
         # Set up members to be accessed from the kernel through the
         # _kscan_param_values_chunk RPC call later.
         self._kscan_points = points
+        self._kscan_axes = axes
         self._kscan_axis_sinks = axis_sinks
-        self._kscan_axis_coerce_fns = [a.param_store.coerce for a in axes]
 
         # Stash away points in current kernel chunk until they have been marked
         # completed as a quick shortcut to be able to resume from interruptions. This
@@ -133,6 +133,7 @@ class ScanRunner(HasEnvironment):
                 "{}-dimensional scans not supported yet".format(num_dims))
 
         with suppress(ScanFinished):
+            self._kscan_update_host_param_stores()
             while True:
                 scan_impl()
                 self.core.comm.close()
@@ -189,13 +190,13 @@ class ScanRunner(HasEnvironment):
         self._kscan_current_chunk.extend(
             islice(self._kscan_points, CHUNK_SIZE - len(self._kscan_current_chunk)))
 
-        values = tuple([] for _ in self._kscan_axis_coerce_fns)
+        values = tuple([] for _ in self._kscan_axes)
         for p in self._kscan_current_chunk:
-            for i, (value, coerce) in enumerate(zip(p, self._kscan_axis_coerce_fns)):
+            for i, (value, axis) in enumerate(zip(p, self._kscan_axes)):
                 # KLUDGE: Explicitly coerce value to the target type here so we can use
                 # the regular (float) scans for integers until proper support for int
                 # scans is implemented.
-                values[i].append(coerce(value))
+                values[i].append(axis.param_store.coerce(value))
         if not values[0]:
             raise ScanFinished
         return values
@@ -205,6 +206,31 @@ class ScanRunner(HasEnvironment):
         values = self._kscan_current_chunk.pop(0)
         for value, sink in zip(values, self._kscan_axis_sinks):
             sink.push(value)
+
+        # TODO: Warn if some result channels have not been pushed to.
+
+        self._kscan_update_host_param_stores()
+
+    @host_only
+    def _kscan_update_host_param_stores(self):
+        """Set host-side parameter stores for the scan axes to their current values,
+        i.e. as specified by the next point in the current scan chunk.
+
+        This ensures that if a parameter is scanned from a kernel scan that requires
+        a host RPC to update (e.g. a non-@kernel device_setup()), the RPC'd code will
+        execute using the expected values.
+        """
+
+        # Generate the next set of values if we are at a chunk boundary.
+        if not self._kscan_current_chunk:
+            try:
+                self._kscan_param_values_chunk()
+            except ScanFinished:
+                return
+        # Set the host-side parameter stores.
+        next_values = self._kscan_current_chunk[0]
+        for value, axis in zip(next_values, self._kscan_axes):
+            axis.param_store.set_value(value)
 
 
 def filter_default_analyses(fragment: ExpFragment,
