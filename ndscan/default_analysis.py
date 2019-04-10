@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 #: Registry of well-known fit procecure names.
 FIT_OBJECTS = {
     n: getattr(oitg.fitting, n)
-    for n in ["cos", "exponential_decay", "lorentzian", "rabi_flop"]
+    for n in ["cos", "exponential_decay", "lorentzian", "rabi_flop", "line"]
 }
 FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 
