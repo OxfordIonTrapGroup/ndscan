@@ -102,11 +102,12 @@ class ScanRunner(HasEnvironment):
         self._kscan_axis_sinks = axis_sinks
 
         # Stash away points in current kernel chunk until they have been marked
-        # completed as a quick shortcut to be able to resume from interruptions. This
-        # should be cleaned up a bit later. Alternatively, if we use an (async, but
-        # still) RPC to keep track of points completed, we might as well use it to send
-        # back all the result channel values from the core device in one go.
+        # complete so we can resume from interruptions.
         self._kscan_current_chunk = []
+
+        # Interval between scheduler.check_pause() calls on the core device (or rather,
+        # the minimum interval; calls are only made after a point has been completed).
+        self._kscan_pause_check_interval_mu = self.core.seconds_to_mu(0.2)
 
         for i, axis in enumerate(axes):
             setattr(self, "_kscan_param_setter_{}".format(i),
@@ -124,7 +125,6 @@ class ScanRunner(HasEnvironment):
             ])
         }
 
-        # TODO: Implement pausing logic.
         # FIXME: Replace this with generated code once eval_kernel() is implemented.
         num_dims = len(axes)
         scan_impl = getattr(self, "_kscan_impl_{}".format(num_dims), None)
@@ -141,17 +141,24 @@ class ScanRunner(HasEnvironment):
 
     @kernel
     def _kscan_impl_1(self):
+        last_pause_check_mu = self.core.get_rtio_counter_mu()
         while True:
             (param_values_0, ) = self._kscan_param_values_chunk()
             for i in range(len(param_values_0)):
                 self._kscan_param_setter_0(param_values_0[i])
                 self._kscan_run_fragment_once()
                 self._kscan_point_completed()
-            if self.scheduler.check_pause():
-                return
+
+                current_time_mu = self.core.get_rtio_counter_mu()
+                if (current_time_mu - last_pause_check_mu >
+                        self._kscan_pause_check_interval_mu):
+                    if self.scheduler.check_pause():
+                        return
+                    last_pause_check_mu = current_time_mu
 
     @kernel
     def _kscan_impl_2(self):
+        last_pause_check_mu = self.core.get_rtio_counter_mu()
         while True:
             param_values_0, param_values_1 = self._kscan_param_values_chunk()
             for i in range(len(param_values_0)):
@@ -159,11 +166,17 @@ class ScanRunner(HasEnvironment):
                 self._kscan_param_setter_1(param_values_1[i])
                 self._kscan_run_fragment_once()
                 self._kscan_point_completed()
-            if self.scheduler.check_pause():
-                return
+
+                current_time_mu = self.core.get_rtio_counter_mu()
+                if (current_time_mu - last_pause_check_mu >
+                        self._kscan_pause_check_interval_mu):
+                    if self.scheduler.check_pause():
+                        return
+                    last_pause_check_mu = current_time_mu
 
     @kernel
     def _kscan_impl_3(self):
+        last_pause_check_mu = self.core.get_rtio_counter_mu()
         while True:
             param_values_0, param_values_1, param_values_2 =\
                 self._kscan_param_values_chunk()
@@ -173,8 +186,13 @@ class ScanRunner(HasEnvironment):
                 self._kscan_param_setter_2(param_values_2[i])
                 self._kscan_run_fragment_once()
                 self._kscan_point_completed()
-            if self.scheduler.check_pause():
-                return
+
+                current_time_mu = self.core.get_rtio_counter_mu()
+                if (current_time_mu - last_pause_check_mu >
+                        self._kscan_pause_check_interval_mu):
+                    if self.scheduler.check_pause():
+                        return
+                    last_pause_check_mu = current_time_mu
 
     @kernel
     def _kscan_run_fragment_once(self):
@@ -182,9 +200,12 @@ class ScanRunner(HasEnvironment):
         self._fragment.run_once()
 
     def _kscan_param_values_chunk(self):
-        # Chunk size could be chosen adaptively in the future based on wall clock time
-        # per point to provide good responsitivity to pause/terminate requests while
-        # keeping RPC latency overhead low.
+        # Number of scan points to send at once. After each chunk, the kernel needs to
+        # execute a blocking RPC to fetch new points, so this should be chosen such
+        # that latency/constant overhead and throughput are balanced. 10 is an arbitrary
+        # choice based on the observation that even for fast experiments, 10 points take
+        # a good fraction of a second, while it is still low enough not to run into any
+        # memory management issues on the kernel.
         CHUNK_SIZE = 10
 
         self._kscan_current_chunk.extend(
