@@ -20,6 +20,9 @@ class FragmentScanExpCase(HasEnvironmentCase):
         exp.prepare()
         exp.run()
 
+        self.assertEqual(exp.fragment.num_host_setup_calls, 1)
+        self.assertEqual(exp.fragment.num_device_setup_calls, 1)
+
         def d(key):
             return self.dataset_db.get("ndscan." + key)
 
@@ -29,7 +32,9 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("rid"), 0)
 
     def test_run_1d_scan(self):
-        self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
+        exp = self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
+        self.assertEqual(exp.fragment.num_host_setup_calls, 3)
+        self.assertEqual(exp.fragment.num_device_setup_calls, 3)
 
         curve_annotation = {
             "kind": "computed_curve",
@@ -98,7 +103,9 @@ class FragmentScanExpCase(HasEnvironmentCase):
             })
 
     def test_run_rebound_1d_scan(self):
-        self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment")
+        exp = self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment")
+        self.assertEqual(exp.fragment.add_one.num_host_setup_calls, 3)
+        self.assertEqual(exp.fragment.add_one.num_device_setup_calls, 3)
 
     def _test_run_1d(self, klass, fragment_fqn):
         exp = self.create(klass)
@@ -142,6 +149,8 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("points.channel_result"), [1, 2, 3])
         self.assertEqual(d("fragment_fqn"), fragment_fqn)
         self.assertEqual(d("rid"), 0)
+
+        return exp
 
 
 class RunOnceCase(HasEnvironmentCase):
