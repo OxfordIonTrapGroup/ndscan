@@ -70,11 +70,9 @@ class ScanRunner(HasEnvironment):
         # reason this shouldn't just be passed along and materialised as a global.
         self._fragment = fragment
 
-        # TODO: Handle parameters requiring host setup.
-        self._fragment.host_setup()
-
         points = generate_points(spec.generators, spec.options)
 
+        # TODO: Support parameters which require host_setup() when changed.
         run_impl = self._run_scan_on_core_device if is_kernel(
             self._fragment.run_once) else self._run_scan_on_host
         run_impl(points, spec.axes, axis_sinks)
@@ -89,6 +87,7 @@ class ScanRunner(HasEnvironment):
                 axis.param_store.set_value(value)
                 sink.push(value)
 
+            self._fragment.host_setup()
             self._fragment.device_setup()
             self._fragment.run_once()
             self.scheduler.pause()
@@ -135,6 +134,7 @@ class ScanRunner(HasEnvironment):
         with suppress(ScanFinished):
             self._kscan_update_host_param_stores()
             while True:
+                self._fragment.host_setup()
                 scan_impl()
                 self.core.comm.close()
                 self.scheduler.pause()
