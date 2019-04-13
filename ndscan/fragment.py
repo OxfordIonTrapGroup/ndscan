@@ -74,11 +74,6 @@ class Fragment(HasEnvironment):
     def device_setup(self) -> None:
         pass
 
-    @portable
-    def device_reset(self) -> None:
-        # By default, just completely reinitialize.
-        self.device_setup()
-
     def build_fragment(self, *args, **kwargs) -> None:
         """Performs initialisation specific to this fragment type.
 
