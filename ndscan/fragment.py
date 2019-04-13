@@ -66,13 +66,83 @@ class Fragment(HasEnvironment):
         self.build_fragment(*args, **kwargs)
         self._building = False
 
+        # Now that we know all subfragments, synthesise code for device_setup() to
+        # forward to subfragments.
+        self._device_setup_subfragments_impl = kernel_from_string(["self"], "\n".join([
+            "self.{}.device_setup()".format(s._fragment_path[-1])
+            for s in self._subfragments
+        ]) or "pass", portable)
+
     def host_setup(self):
-        """Called on the host, before the kernel is entered."""
-        pass
+        """Perform host-side initialisation.
+
+        For fragments used as part of an on-core-device scan (i.e. with an `@kernel`
+        ``device_setup()``/``run_once()``), this will be called on the host, immediately
+        before the top-level kernel function is entered.
+
+        Typical uses include initialising member variables for latter use in `@kernel`
+        functions, and setting parameters not modifiable from kernels (e.g. because
+        modifying a parameter requires launching another experiment to effect the
+        change).
+
+        The default implementation calls ``host_setup()`` recursively on all
+        subfragments. When overriding it in a fragment with subfragments, consider
+        forwarding to the default implementation (see example).
+
+        Example::
+
+            def host_setup(self):
+                initialise_some_things()
+
+                # To continue to initialise all subfragments, invoke the parent
+                # implementation:
+                super().host_setup()
+        """
+        for s in self._subfragments:
+            s.host_setup()
 
     @portable
     def device_setup(self) -> None:
-        pass
+        """Perform device-side initialisation.
+
+        A typical implementation will make sure that any hardware state represented by
+        the fragment (e.g. some DAC voltages, DDS frequencies, etc.) is updated to
+        match the fragment parameters.
+
+        If the fragment is used as part of a scan, ``device_setup()`` will be called
+        immediately before each ``ExpFragment.run_once()`` call (and, for on-core-device
+        scans, from within the same kernel).
+
+        The default implementation calls ``device_setup_subfragments()`` to initialise
+        all subfragments. When overriding it, consider forwarding to it too unless a
+        special initialisation order, etc. is required (see example).
+
+        Example::
+
+            @kernel
+            def device_setup(self):
+                self.device_setup_subfragments()
+
+                self.core.break_realtime()
+                if self.my_frequency.changed_after_use():
+                    self.my_dds.set(self.my_frequency.use())
+                self.my_ttl.on()
+        """
+        self.device_setup_subfragments()
+
+    @portable
+    def device_setup_subfragments(self) -> None:
+        """Call ``device_setup()`` on all subfragments.
+
+        This is the default implementation for ``device_setup()``, but is kept separate
+        so that subfragments overriding ``device_setup()`` can still access it. (ARTIQ
+        Python does not support calling superclass implementations in a polymorphic
+        way – ``Fragment.device_setup(self)`` could be used from one subclass, but would
+        cause the argument type to be inferred as that subclass. Only direct member
+        function calls are special-cased to be generic on the `self` type.)
+        """
+        # Forward to implementation generated using kernel_from_string().
+        self._device_setup_subfragments_impl(self)
 
     def build_fragment(self, *args, **kwargs) -> None:
         """Initialise this fragment, building up the hierarchy of subfragments,

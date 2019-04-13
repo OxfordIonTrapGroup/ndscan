@@ -35,12 +35,6 @@ class ReboundAddOneFragment(ExpFragment):
         self.setattr_fragment("add_one", AddOneFragment)
         self.setattr_param_rebind("value", self.add_one)
 
-    def host_setup(self):
-        self.add_one.host_setup()
-
-    def device_setup(self):
-        self.add_one.device_setup()
-
     def run_once(self):
         self.add_one.run_once()
 
