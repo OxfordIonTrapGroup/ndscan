@@ -75,18 +75,19 @@ class Fragment(HasEnvironment):
         pass
 
     def build_fragment(self, *args, **kwargs) -> None:
-        """Performs initialisation specific to this fragment type.
+        """Initialise this fragment, building up the hierarchy of subfragments,
+        parameters and result channels.
 
-        Like ``build()`` for a bare ``HasEnvironment``, this is where all of the
-        user-specified initialisation should take place (rather than, say, the
-        constructor, or ``build()``).
+        This is where any constructor-type initialisation should take place, similar to
+        the role ``build()`` has for a bare ``HasEnvironment``.
 
         While this method executes, the various ``setattr_*()`` functions can be used
         to create subfragments, parameters, and result channels.
 
-        :param args: Any extra arguments passed to the ``HasEnvironment`` constructor.
-        :param kwargs: Any extra keyword arguments passed to the ``HasEnvironment``
+        :param args: Any extra arguments that were passed to the ``HasEnvironment``
             constructor.
+        :param kwargs: Any extra keyword arguments that were passed to the
+            ``HasEnvironment`` constructor.
         """
         raise NotImplementedError("build_fragment() not implemented; "
                                   "override it to add parameters/result channels.")
