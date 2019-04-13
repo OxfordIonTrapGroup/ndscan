@@ -230,13 +230,8 @@ class FragmentScanExperiment(EnvExperiment):
 
     @portable
     def _continuous_loop(self):
-        first = True
         while not self.scheduler.check_pause():
-            if first:
-                self.fragment.device_setup()
-                first = False
-            else:
-                self.fragment.device_reset()
+            self.fragment.device_setup()
             self.fragment.run_once()
             if not self._scan.options.continuous_without_axes:
                 return
