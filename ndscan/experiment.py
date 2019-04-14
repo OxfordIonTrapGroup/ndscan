@@ -155,6 +155,8 @@ class FragmentScanExperiment(EnvExperiment):
             channel.set_sink(sink)
             self._scan_result_sinks[channel] = sink
 
+        self.fragment.prepare()
+
     def run(self):
         """Run the (possibly trivial) scan."""
         self._broadcast_metadata()
@@ -319,6 +321,7 @@ def run_fragment_once(fragment: ExpFragment) -> Dict[ResultChannel, Any]:
         channel.set_sink(sink)
 
     fragment.init_params()
+    fragment.prepare()
     fragment.host_setup()
     if is_kernel(fragment.run_once):
         # Run device_setup()/run_once() in a single kernel invocation.
