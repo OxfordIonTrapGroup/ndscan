@@ -69,6 +69,7 @@ class Subscan:
             coordinate_sinks[param_handle] = ArraySink()
 
         spec = ScanSpec(axes, generators, options)
+        self._fragment.prepare()
         self._run_fn(self._fragment, spec, list(coordinate_sinks.values()))
 
         scan_schema = describe_scan(spec, self._fragment,

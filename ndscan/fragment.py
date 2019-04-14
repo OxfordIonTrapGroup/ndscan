@@ -411,6 +411,19 @@ class Fragment(HasEnvironment):
 class ExpFragment(Fragment):
     """Fragment that supports the notion of being run to produce results."""
 
+    def prepare(self):
+        """Prepare this instance for execution
+        (see ``artiq.language.environment.Experiment.prepare``).
+
+        This is invoked only once per (sub)scan, after :meth:``build_fragment()`` but
+        before :meth:``host_setup()``. At this point, parameters, datasets and devices
+        be accessed, but devices must not yet be.
+
+        For top-level scans, this can (and will) be executed in the `prepare` scheduler
+        pipeline stage.
+        """
+        pass
+
     def run_once(self):
         """Execute the experiment described by the fragment once with the current
         parameters, producing one set of results (if any)."""
