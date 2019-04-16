@@ -3,11 +3,7 @@ Tests for subscan functionality.
 """
 
 import json
-from ndscan.experiment import run_fragment_once
-from ndscan.fragment import *
-from ndscan.scan_generator import LinearGenerator, ScanOptions
-from ndscan.subscan import setattr_subscan
-
+from ndscan.experiment import *
 from fixtures import AddOneFragment, ReboundAddOneFragment, AddOneCustomAnalysisFragment
 from mock_environment import ExpFragmentCase
 

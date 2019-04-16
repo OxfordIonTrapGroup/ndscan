@@ -1,8 +1,5 @@
+from ndscan.experiment import *
 import oitg.fitting
-from ndscan.experiment import make_fragment_scan_exp
-from ndscan.fragment import ExpFragment
-from ndscan.scan_generator import LinearGenerator
-from ndscan.subscan import setattr_subscan
 from rabi_flop import RabiFlopSim
 
 
@@ -12,7 +9,6 @@ class PiTimeFitSim(ExpFragment):
         setattr_subscan(self, "scan", self.flop, [(self.flop, "duration")])
         self.setattr_result("t_pi", unit="us")
         self.setattr_result("t_pi_err", display_hints={"error_bar_for": self.t_pi.path})
-        # self.scan.add_annotation()
 
     def run_once(self):
         coords, points = self.scan.run([(self.flop.duration,

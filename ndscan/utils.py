@@ -1,15 +1,21 @@
 from artiq.language import units
-from typing import Any, Callable, Dict, Iterable, List
+import oitg.fitting
+from typing import Any, Callable, Dict, Iterable
 
+#: Registry of well-known fit procecure names.
+FIT_OBJECTS = {
+    n: getattr(oitg.fitting, n)
+    for n in ["cos", "exponential_decay", "lorentzian", "rabi_flop", "line"]
+}
+FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 
-def path_matches_spec(path: List[str], spec: str) -> bool:
-    # TODO: Think about how we want to match.
-    if spec == "*":
-        return True
-    if "*" in spec:
-        raise NotImplementedError(
-            "Non-trivial wildcard path specifications not implemented yet")
-    return "/".join(path) == spec
+#: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the
+#: list of available parameters to the dashboard plugin, and to pass the information
+#: about scanned and overridden parameters to the :class:`FragmentScanExperiment`
+#: when it is launched.
+#:
+#: Users should not need to directly interface with this.
+PARAMS_ARG_KEY = "ndscan_params"
 
 
 def strip_prefix(string: str, prefix: str) -> str:
@@ -22,13 +28,6 @@ def strip_suffix(string: str, suffix: str) -> str:
     if string.endswith(suffix):
         return string[:-len(suffix)]
     return string
-
-
-def is_kernel(func) -> bool:
-    if not hasattr(func, "artiq_embedded"):
-        return False
-    meta = func.artiq_embedded
-    return meta.core_name is not None and not meta.portable
 
 
 def shorten_to_unambiguous_suffixes(

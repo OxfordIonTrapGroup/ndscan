@@ -5,11 +5,11 @@ import argparse
 import h5py
 import os
 import sys
+from quamash import QEventLoop, QtWidgets
 
 from .plots.container import PlotContainerWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
-from quamash import QEventLoop, QtWidgets
 
 
 def get_argparser():
