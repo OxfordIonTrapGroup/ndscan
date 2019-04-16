@@ -26,7 +26,7 @@
         <script type="text/javascript" src="../../_static/jquery.js"></script>
         <script type="text/javascript" src="../../_static/underscore.js"></script>
         <script type="text/javascript" src="../../_static/doctools.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
     
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
@@ -212,34 +212,100 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_building</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">build_fragment</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_building</span> <span class="o">=</span> <span class="kc">False</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_building</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Now that we know all subfragments, synthesise code for device_setup() to</span>
+        <span class="c1"># forward to subfragments.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="s2">&quot;self.</span><span class="si">{}</span><span class="s2">.device_setup()&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span>
+        <span class="p">])</span> <span class="ow">or</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Fragment.host_setup"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.host_setup">[docs]</a>    <span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Called on the host, before the kernel is entered.&quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+        <span class="sd">&quot;&quot;&quot;Perform host-side initialisation.</span>
 
-    <span class="nd">@portable</span>
+<span class="sd">        For fragments used as part of an on-core-device scan (i.e. with an `@kernel`</span>
+<span class="sd">        ``device_setup()``/``run_once()``), this will be called on the host, immediately</span>
+<span class="sd">        before the top-level kernel function is entered.</span>
+
+<span class="sd">        Typical uses include initialising member variables for latter use in `@kernel`</span>
+<span class="sd">        functions, and setting parameters not modifiable from kernels (e.g. because</span>
+<span class="sd">        modifying a parameter requires launching another experiment to effect the</span>
+<span class="sd">        change).</span>
+
+<span class="sd">        The default implementation calls ``host_setup()`` recursively on all</span>
+<span class="sd">        subfragments. When overriding it in a fragment with subfragments, consider</span>
+<span class="sd">        forwarding to the default implementation (see example).</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            def host_setup(self):</span>
+<span class="sd">                initialise_some_things()</span>
+
+<span class="sd">                # To continue to initialise all subfragments, invoke the parent</span>
+<span class="sd">                # implementation:</span>
+<span class="sd">                super().host_setup()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Fragment.device_setup"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.device_setup">[docs]</a>    <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">pass</span>
+        <span class="sd">&quot;&quot;&quot;Perform device-side initialisation.</span>
 
-    <span class="nd">@portable</span>
-    <span class="k">def</span> <span class="nf">device_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># By default, just completely reinitialize.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+<span class="sd">        A typical implementation will make sure that any hardware state represented by</span>
+<span class="sd">        the fragment (e.g. some DAC voltages, DDS frequencies, etc.) is updated to</span>
+<span class="sd">        match the fragment parameters.</span>
+
+<span class="sd">        If the fragment is used as part of a scan, ``device_setup()`` will be called</span>
+<span class="sd">        immediately before each ``ExpFragment.run_once()`` call (and, for on-core-device</span>
+<span class="sd">        scans, from within the same kernel).</span>
+
+<span class="sd">        The default implementation calls ``device_setup_subfragments()`` to initialise</span>
+<span class="sd">        all subfragments. When overriding it, consider forwarding to it too unless a</span>
+<span class="sd">        special initialisation order, etc. is required (see example).</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            @kernel</span>
+<span class="sd">            def device_setup(self):</span>
+<span class="sd">                self.device_setup_subfragments()</span>
+
+<span class="sd">                self.core.break_realtime()</span>
+<span class="sd">                if self.my_frequency.changed_after_use():</span>
+<span class="sd">                    self.my_dds.set(self.my_frequency.use())</span>
+<span class="sd">                self.my_ttl.on()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_setup_subfragments</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Fragment.device_setup_subfragments"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.device_setup_subfragments">[docs]</a>    <span class="nd">@portable</span>
+    <span class="k">def</span> <span class="nf">device_setup_subfragments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Call ``device_setup()`` on all subfragments.</span>
+
+<span class="sd">        This is the default implementation for ``device_setup()``, but is kept separate</span>
+<span class="sd">        so that subfragments overriding ``device_setup()`` can still access it. (ARTIQ</span>
+<span class="sd">        Python does not support calling superclass implementations in a polymorphic</span>
+<span class="sd">        way – ``Fragment.device_setup(self)`` could be used from one subclass, but would</span>
+<span class="sd">        cause the argument type to be inferred as that subclass. Only direct member</span>
+<span class="sd">        function calls are special-cased to be generic on the `self` type.)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Forward to implementation generated using kernel_from_string().</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Fragment.build_fragment"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.Fragment.build_fragment">[docs]</a>    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Performs initialisation specific to this fragment type.</span>
+        <span class="sd">&quot;&quot;&quot;Initialise this fragment, building up the hierarchy of subfragments,</span>
+<span class="sd">        parameters and result channels.</span>
 
-<span class="sd">        Like ``build()`` for a bare ``HasEnvironment``, this is where all of the</span>
-<span class="sd">        user-specified initialisation should take place (rather than, say, the</span>
-<span class="sd">        constructor, or ``build()``).</span>
+<span class="sd">        This is where any constructor-type initialisation should take place, similar to</span>
+<span class="sd">        the role ``build()`` has for a bare ``HasEnvironment``.</span>
 
 <span class="sd">        While this method executes, the various ``setattr_*()`` functions can be used</span>
 <span class="sd">        to create subfragments, parameters, and result channels.</span>
 
-<span class="sd">        :param args: Any extra arguments passed to the ``HasEnvironment`` constructor.</span>
-<span class="sd">        :param kwargs: Any extra keyword arguments passed to the ``HasEnvironment``</span>
+<span class="sd">        :param args: Any extra arguments that were passed to the ``HasEnvironment``</span>
 <span class="sd">            constructor.</span>
+<span class="sd">        :param kwargs: Any extra keyword arguments that were passed to the</span>
+<span class="sd">            ``HasEnvironment`` constructor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;build_fragment() not implemented; &quot;</span>
                                   <span class="s2">&quot;override it to add parameters/result channels.&quot;</span><span class="p">)</span></div>
@@ -492,6 +558,19 @@
 
 <div class="viewcode-block" id="ExpFragment"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.ExpFragment">[docs]</a><span class="k">class</span> <span class="nc">ExpFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Fragment that supports the notion of being run to produce results.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ExpFragment.prepare"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.ExpFragment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prepare this instance for execution</span>
+<span class="sd">        (see ``artiq.language.environment.Experiment.prepare``).</span>
+
+<span class="sd">        This is invoked only once per (sub)scan, after :meth:``build_fragment()`` but</span>
+<span class="sd">        before :meth:``host_setup()``. At this point, parameters, datasets and devices</span>
+<span class="sd">        be accessed, but devices must not yet be.</span>
+
+<span class="sd">        For top-level scans, this can (and will) be executed in the `prepare` scheduler</span>
+<span class="sd">        pipeline stage.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="ExpFragment.run_once"><a class="viewcode-back" href="../../apidocs.html#ndscan.fragment.ExpFragment.run_once">[docs]</a>    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Execute the experiment described by the fragment once with the current</span>
