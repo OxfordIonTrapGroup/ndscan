@@ -8,35 +8,35 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ndscan.result_channels &mdash; ndscan  documentation</title>
+  <title>ndscan.experiment.result_channels &mdash; ndscan  documentation</title>
   
 
   
   
   
   
-    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/result_channels.html"/>
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/result_channels.html"/>
   
 
   
-  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
   
     
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../_static/language_data.js"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
     
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
     
 
   
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" /> 
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -50,7 +50,7 @@
           
 
           
-            <a href="../../index.html" class="icon icon-home"> ndscan
+            <a href="../../../index.html" class="icon icon-home"> ndscan
           
 
           
@@ -63,7 +63,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -82,7 +82,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../apidocs.html">API documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html">ndscan.experiment API</a></li>
 </ul>
 
             
@@ -97,7 +97,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">ndscan</a>
+          <a href="../../../index.html">ndscan</a>
         
       </nav>
 
@@ -126,11 +126,11 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../../index.html">Docs</a> &raquo;</li>
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
         
-          <li><a href="../index.html">Module code</a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
         
-      <li>ndscan.result_channels</li>
+      <li>ndscan.experiment.result_channels</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -145,7 +145,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <h1>Source code for ndscan.result_channels</h1><div class="highlight"><pre>
+  <h1>Source code for ndscan.experiment.result_channels</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Result handling building blocks.</span>
 <span class="sd">&quot;&quot;&quot;</span>
@@ -155,16 +155,21 @@
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
 
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span> <span class="s2">&quot;AppendingDatasetSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ScalarDatasetSink&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
+<span class="p">]</span>
 
-<div class="viewcode-block" id="ResultSink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ResultSink">[docs]</a><span class="k">class</span> <span class="nc">ResultSink</span><span class="p">:</span>
+
+<span class="k">class</span> <span class="nc">ResultSink</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
 
-<div class="viewcode-block" id="LastValueSink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.LastValueSink">[docs]</a><span class="k">class</span> <span class="nc">LastValueSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
+<div class="viewcode-block" id="LastValueSink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.LastValueSink">[docs]</a><span class="k">class</span> <span class="nc">LastValueSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sink that stores the last-pushed value.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -173,12 +178,12 @@
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
 
-<div class="viewcode-block" id="LastValueSink.get_last"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.LastValueSink.get_last">[docs]</a>    <span class="k">def</span> <span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<div class="viewcode-block" id="LastValueSink.get_last"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.LastValueSink.get_last">[docs]</a>    <span class="k">def</span> <span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return the last-pushed value, or ``None`` if none yet.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span></div></div>
 
 
-<div class="viewcode-block" id="ArraySink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ArraySink">[docs]</a><span class="k">class</span> <span class="nc">ArraySink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
+<div class="viewcode-block" id="ArraySink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ArraySink">[docs]</a><span class="k">class</span> <span class="nc">ArraySink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sink that stores all pushed values in a list.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -187,17 +192,17 @@
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ArraySink.get_all"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ArraySink.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<div class="viewcode-block" id="ArraySink.get_all"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ArraySink.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Return a list of all previously pushed values.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span></div>
 
-<div class="viewcode-block" id="ArraySink.clear"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ArraySink.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="ArraySink.clear"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ArraySink.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Clear the list of previously pushed values.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span></div></div>
 
 
-<div class="viewcode-block" id="AppendingDatasetSink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.AppendingDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">AppendingDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
-<div class="viewcode-block" id="AppendingDatasetSink.build"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.AppendingDatasetSink.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">broadcast</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="AppendingDatasetSink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.AppendingDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">AppendingDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
+<div class="viewcode-block" id="AppendingDatasetSink.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.AppendingDatasetSink.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">broadcast</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param key: Dataset key to store results in. Set to an array on the first push,</span>
 <span class="sd">            and subsequently appended to.</span>
@@ -214,16 +219,16 @@
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">append_to_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
-<div class="viewcode-block" id="AppendingDatasetSink.get_all"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.AppendingDatasetSink.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<div class="viewcode-block" id="AppendingDatasetSink.get_all"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.AppendingDatasetSink.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Read back the previously pushed values from the target dataset (if any).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="k">else</span> <span class="p">[]</span></div></div>
 
 
-<div class="viewcode-block" id="ScalarDatasetSink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ScalarDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">ScalarDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
+<div class="viewcode-block" id="ScalarDatasetSink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">ScalarDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sink that writes pushed results to a dataset, overwriting its previous value</span>
 <span class="sd">    if any.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ScalarDatasetSink.build"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ScalarDatasetSink.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">broadcast</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="ScalarDatasetSink.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">broadcast</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param key: Dataset key to write the value to.</span>
 <span class="sd">        :param broadcast: Whether to set the dataset in broadcast mode.</span>
@@ -236,12 +241,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="o">=</span> <span class="kc">True</span>
 
-<div class="viewcode-block" id="ScalarDatasetSink.get_last"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ScalarDatasetSink.get_last">[docs]</a>    <span class="k">def</span> <span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<div class="viewcode-block" id="ScalarDatasetSink.get_last"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink.get_last">[docs]</a>    <span class="k">def</span> <span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return the last pushed value, or ``None`` if none yet.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="k">else</span> <span class="kc">None</span></div></div>
 
 
-<div class="viewcode-block" id="ResultChannel"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ResultChannel">[docs]</a><span class="k">class</span> <span class="nc">ResultChannel</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">ResultChannel</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -259,7 +264,7 @@
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;&lt;</span><span class="si">{}</span><span class="s2">@</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">hex</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ResultChannel.describe"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ResultChannel.describe">[docs]</a>    <span class="k">def</span> <span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
@@ -270,35 +275,35 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_hints</span><span class="p">:</span>
             <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;display_hints&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_hints</span>
-        <span class="k">return</span> <span class="n">desc</span></div>
+        <span class="k">return</span> <span class="n">desc</span>
 
-<div class="viewcode-block" id="ResultChannel.is_muted"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ResultChannel.is_muted">[docs]</a>    <span class="k">def</span> <span class="nf">is_muted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">is_muted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># TODO: Implement muting interface?</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="ResultChannel.set_sink"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ResultChannel.set_sink">[docs]</a>    <span class="k">def</span> <span class="nf">set_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sink</span><span class="p">:</span> <span class="n">ResultSink</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">set_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sink</span><span class="p">:</span> <span class="n">ResultSink</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">sink</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">sink</span>
 
-<div class="viewcode-block" id="ResultChannel.push"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.ResultChannel.push">[docs]</a>    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coerce_to_type</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_coerce_to_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="NumericChannel"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.NumericChannel">[docs]</a><span class="k">class</span> <span class="nc">NumericChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">NumericChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Base class for channels of numerical results, with scale/unit semantics and</span>
 <span class="sd">    optional range limits.&quot;&quot;&quot;</span>
 
@@ -336,10 +341,10 @@
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
 
 
-<div class="viewcode-block" id="FloatChannel"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.FloatChannel">[docs]</a><span class="k">class</span> <span class="nc">FloatChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
+<div class="viewcode-block" id="FloatChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.FloatChannel">[docs]</a><span class="k">class</span> <span class="nc">FloatChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;float&quot;</span>
 
@@ -347,7 +352,7 @@
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="IntChannel"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.IntChannel">[docs]</a><span class="k">class</span> <span class="nc">IntChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
+<div class="viewcode-block" id="IntChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.IntChannel">[docs]</a><span class="k">class</span> <span class="nc">IntChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;int&quot;</span>
 
@@ -355,7 +360,7 @@
         <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="OpaqueChannel"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.OpaqueChannel">[docs]</a><span class="k">class</span> <span class="nc">OpaqueChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
+<div class="viewcode-block" id="OpaqueChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.OpaqueChannel">[docs]</a><span class="k">class</span> <span class="nc">OpaqueChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;opaque&quot;</span>
 
@@ -365,7 +370,7 @@
         <span class="k">return</span> <span class="n">value</span></div>
 
 
-<div class="viewcode-block" id="SubscanChannel"><a class="viewcode-back" href="../../apidocs.html#ndscan.result_channels.SubscanChannel">[docs]</a><span class="k">class</span> <span class="nc">SubscanChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">SubscanChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Channel that stores the scan metadata for a subscan.</span>
 
 <span class="sd">    Serialised as a JSON string for HDF5 compatibility.</span>
@@ -375,7 +380,7 @@
         <span class="k">return</span> <span class="s2">&quot;subscan&quot;</span>
 
     <span class="k">def</span> <span class="nf">_coerce_to_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
 
            </div>

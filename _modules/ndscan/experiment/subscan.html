@@ -8,35 +8,35 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ndscan.subscan &mdash; ndscan  documentation</title>
+  <title>ndscan.experiment.subscan &mdash; ndscan  documentation</title>
   
 
   
   
   
   
-    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/subscan.html"/>
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/subscan.html"/>
   
 
   
-  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
   
     
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../_static/language_data.js"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
     
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
     
 
   
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" /> 
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -50,7 +50,7 @@
           
 
           
-            <a href="../../index.html" class="icon icon-home"> ndscan
+            <a href="../../../index.html" class="icon icon-home"> ndscan
           
 
           
@@ -63,7 +63,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -82,7 +82,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../apidocs.html">API documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html">ndscan.experiment API</a></li>
 </ul>
 
             
@@ -97,7 +97,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">ndscan</a>
+          <a href="../../../index.html">ndscan</a>
         
       </nav>
 
@@ -126,11 +126,11 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../../index.html">Docs</a> &raquo;</li>
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
         
-          <li><a href="../index.html">Module code</a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
         
-      <li>ndscan.subscan</li>
+      <li>ndscan.experiment.subscan</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -145,9 +145,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <h1>Source code for ndscan.subscan</h1><div class="highlight"><pre>
+  <h1>Source code for ndscan.experiment.subscan</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Implements subscans, that is, the ability for an :class:`.fragment.ExpFragment` to scan</span>
+<span class="sd">Implements subscans, that is, the ability for an :class:`.ExpFragment` to scan</span>
 <span class="sd">another child fragment as part of its execution.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -160,10 +160,12 @@
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="k">import</span> <span class="p">(</span><span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">describe_scan</span><span class="p">,</span>
                           <span class="n">filter_default_analyses</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">shorten_to_unambiguous_suffixes</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="k">import</span> <span class="n">shorten_to_unambiguous_suffixes</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;setattr_subscan&quot;</span><span class="p">,</span> <span class="s2">&quot;Subscan&quot;</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="Subscan"><a class="viewcode-back" href="../../apidocs.html#ndscan.subscan.Subscan">[docs]</a><span class="k">class</span> <span class="nc">Subscan</span><span class="p">:</span>
+<div class="viewcode-block" id="Subscan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.Subscan">[docs]</a><span class="k">class</span> <span class="nc">Subscan</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handle returned by :meth:`setattr_subscan`, allowing the subscan to actually be</span>
 <span class="sd">    executed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -184,7 +186,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_aggregate_result_channels</span> <span class="o">=</span> <span class="n">aggregate_result_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span> <span class="o">=</span> <span class="n">short_child_channel_names</span>
 
-<div class="viewcode-block" id="Subscan.run"><a class="viewcode-back" href="../../apidocs.html#ndscan.subscan.Subscan.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="Subscan.run"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.Subscan.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
             <span class="n">axis_generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">]],</span>
             <span class="n">options</span><span class="o">=</span><span class="n">ScanOptions</span><span class="p">(),</span>
             <span class="n">execute_default_analyses</span><span class="o">=</span><span class="kc">True</span>
@@ -192,11 +194,13 @@
         <span class="sd">&quot;&quot;&quot;Run the subscan with the given axis iteration specifications, and return the</span>
 <span class="sd">        data point coordinates/result channel values.</span>
 
-<span class="sd">        :param axes: The list of scan axes (dimensions). Each element is a tuple</span>
-<span class="sd">            of parameter to scan (handle must have been passed to</span>
+<span class="sd">        :param axis_generators: The list of scan axes (dimensions). Each element is a</span>
+<span class="sd">            tuple of parameter to scan (handle must have been passed to</span>
 <span class="sd">            :func:`setattr_subscan` to set up), and the :class:`ScanGenerator` to use</span>
 <span class="sd">            to generate the points.</span>
-<span class="sd">        :param options: Scan options to pass to :class:`ScanSpec`.</span>
+<span class="sd">        :param options: :class:`ScanOptions` to control scan execution.</span>
+<span class="sd">        :param execute_default_analyses: Whether to run any default analyses associated</span>
+<span class="sd">            with the subfragment after the scan is complete.</span>
 
 <span class="sd">        :return: A tuple ``(coordinates, values)``, each a dictionary mapping parameter</span>
 <span class="sd">            handles resp. result channels to lists of their values.</span>
@@ -269,7 +273,7 @@
         <span class="k">return</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">values</span></div></div>
 
 
-<div class="viewcode-block" id="setattr_subscan"><a class="viewcode-back" href="../../apidocs.html#ndscan.subscan.setattr_subscan">[docs]</a><span class="k">def</span> <span class="nf">setattr_subscan</span><span class="p">(</span><span class="n">owner</span><span class="p">:</span> <span class="n">Fragment</span><span class="p">,</span>
+<div class="viewcode-block" id="setattr_subscan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.setattr_subscan">[docs]</a><span class="k">def</span> <span class="nf">setattr_subscan</span><span class="p">(</span><span class="n">owner</span><span class="p">:</span> <span class="n">Fragment</span><span class="p">,</span>
                     <span class="n">scan_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                     <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
                     <span class="n">axis_params</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Fragment</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>

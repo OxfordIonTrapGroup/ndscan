@@ -8,35 +8,35 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ndscan.experiment &mdash; ndscan  documentation</title>
+  <title>ndscan.experiment.entry_point &mdash; ndscan  documentation</title>
   
 
   
   
   
   
-    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment.html"/>
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/entry_point.html"/>
   
 
   
-  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
   
     
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../_static/language_data.js"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
     
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
     
 
   
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" /> 
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -50,7 +50,7 @@
           
 
           
-            <a href="../../index.html" class="icon icon-home"> ndscan
+            <a href="../../../index.html" class="icon icon-home"> ndscan
           
 
           
@@ -63,7 +63,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -82,7 +82,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../apidocs.html">API documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html">ndscan.experiment API</a></li>
 </ul>
 
             
@@ -97,7 +97,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">ndscan</a>
+          <a href="../../../index.html">ndscan</a>
         
       </nav>
 
@@ -126,11 +126,11 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../../index.html">Docs</a> &raquo;</li>
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
         
-          <li><a href="../index.html">Module code</a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
         
-      <li>ndscan.experiment</li>
+      <li>ndscan.experiment.entry_point</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -145,17 +145,17 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <h1>Source code for ndscan.experiment</h1><div class="highlight"><pre>
+  <h1>Source code for ndscan.experiment.entry_point</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Top-level functions for launching :class:`.ExpFragment`\ s and their scans from the rest</span>
 <span class="sd">of the ARTIQ ``HasEnvironment`` universe.</span>
 
 <span class="sd">The two main entry points into the :class:`.ExpFragment` universe are</span>
 
-<span class="sd"> - scans (with axes and overrides set from the dashboard UI) via</span>
-<span class="sd">    :meth:`make_fragment_scan_exp`, and</span>
-<span class="sd"> - manually launched fragments from vanilla ARTIQ ``EnvExperiment``\ s using</span>
-<span class="sd">    :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.</span>
+<span class="sd"> * scans (with axes and overrides set from the dashboard UI) via</span>
+<span class="sd">   :meth:`make_fragment_scan_exp`, and</span>
+<span class="sd"> * manually launched fragments from vanilla ARTIQ ``EnvExperiment``\ s using</span>
+<span class="sd">   :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
@@ -173,33 +173,23 @@
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="k">import</span> <span class="p">(</span><span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">describe_scan</span><span class="p">,</span>
                           <span class="n">filter_default_analyses</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">,</span> <span class="n">is_kernel</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">is_kernel</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="k">import</span> <span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span>
 
-<span class="c1"># We don&#39;t want to export FragmentScanExperiment to hide it from experiment</span>
-<span class="c1"># class discovery.</span>
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;PARAMS_ARG_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
+    <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span> <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
 <span class="p">]</span>
-
-<span class="c1">#: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the</span>
-<span class="c1">#: list of available parameters to the dashboard plugin, and to pass the information</span>
-<span class="c1">#: about scanned and overridden parameters to the :class:`FragmentScanExperiment`</span>
-<span class="c1">#: when it is launched.</span>
-<span class="c1">#:</span>
-<span class="c1">#: Users should not need to directly interface with this.</span>
-<span class="n">PARAMS_ARG_KEY</span> <span class="o">=</span> <span class="s2">&quot;ndscan_params&quot;</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ScanSpecError"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.ScanSpecError">[docs]</a><span class="k">class</span> <span class="nc">ScanSpecError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<div class="viewcode-block" id="ScanSpecError"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.ScanSpecError">[docs]</a><span class="k">class</span> <span class="nc">ScanSpecError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when the scan specification passed in :data:`PARAMS_ARG_KEY` is not valid</span>
 <span class="sd">    for the given fragment.&quot;&quot;&quot;</span>
     <span class="k">pass</span></div>
 
 
-<div class="viewcode-block" id="FragmentScanExperiment"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment">[docs]</a><span class="k">class</span> <span class="nc">FragmentScanExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
+<div class="viewcode-block" id="FragmentScanExperiment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment">[docs]</a><span class="k">class</span> <span class="nc">FragmentScanExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Implements possibly (trivial) scans of an :class:`.ExpFragment`, with overrides</span>
 <span class="sd">    and scan axes as specified by the :data:`PARAMS_ARG_KEY` dataset, and result</span>
 <span class="sd">    channels being broadcasted to datasets.</span>
@@ -209,7 +199,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">argument_ui</span> <span class="o">=</span> <span class="s2">&quot;ndscan&quot;</span>
 
-<div class="viewcode-block" id="FragmentScanExperiment.build"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">ExpFragment</span><span class="p">]):</span>
+<div class="viewcode-block" id="FragmentScanExperiment.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">ExpFragment</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param fragment_init: Callable to create the top-level :meth:`ExpFragment`</span>
 <span class="sd">            instance.</span>
@@ -241,7 +231,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span> <span class="o">=</span> <span class="p">{}</span></div>
 
-<div class="viewcode-block" id="FragmentScanExperiment.prepare"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FragmentScanExperiment.prepare"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Collect parameters to set from both scan axes and simple overrides, and</span>
 <span class="sd">        initialise result channels.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -305,7 +295,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run the (possibly trivial) scan.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_metadata</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_issue_ccb</span><span class="p">()</span>
@@ -323,7 +313,7 @@
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="FragmentScanExperiment.analyze"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.FragmentScanExperiment.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FragmentScanExperiment.analyze"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span><span class="p">:</span>
             <span class="k">return</span>
 
@@ -424,7 +414,7 @@
         <span class="n">full_names</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span>
 
 
-<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span>
+<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span>
         <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FragmentScanExperiment</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Create a :class:`FragmentScanExperiment` subclass that scans the given</span>
 <span class="sd">    :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…</span>
@@ -454,7 +444,7 @@
     <span class="k">return</span> <span class="n">FragmentScanShim</span></div>
 
 
-<div class="viewcode-block" id="run_fragment_once"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">run_fragment_once</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<div class="viewcode-block" id="run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">run_fragment_once</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Initialise the passed fragment and run it once, capturing and returning the</span>
 <span class="sd">    values from any result channels.</span>
 
@@ -491,7 +481,7 @@
     <span class="k">return</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
 
 
-<div class="viewcode-block" id="create_and_run_fragment_once"><a class="viewcode-back" href="../../apidocs.html#ndscan.experiment.create_and_run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
+<div class="viewcode-block" id="create_and_run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.create_and_run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
                                  <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
 <span class="sd">    returning the values pushed to any result channels.</span>
