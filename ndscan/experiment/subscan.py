@@ -1,5 +1,5 @@
 """
-Implements subscans, that is, the ability for an :class:`.fragment.ExpFragment` to scan
+Implements subscans, that is, the ability for an :class:`.ExpFragment` to scan
 another child fragment as part of its execution.
 """
 
@@ -14,7 +14,7 @@ from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           filter_default_analyses)
 from ..utils import shorten_to_unambiguous_suffixes
 
-__all__ = ["setattr_subscan"]
+__all__ = ["setattr_subscan", "Subscan"]
 
 
 class Subscan:
@@ -46,11 +46,13 @@ class Subscan:
         """Run the subscan with the given axis iteration specifications, and return the
         data point coordinates/result channel values.
 
-        :param axes: The list of scan axes (dimensions). Each element is a tuple
-            of parameter to scan (handle must have been passed to
+        :param axis_generators: The list of scan axes (dimensions). Each element is a
+            tuple of parameter to scan (handle must have been passed to
             :func:`setattr_subscan` to set up), and the :class:`ScanGenerator` to use
             to generate the points.
-        :param options: Scan options to pass to :class:`ScanSpec`.
+        :param options: :class:`ScanOptions` to control scan execution.
+        :param execute_default_analyses: Whether to run any default analyses associated
+            with the subfragment after the scan is complete.
 
         :return: A tuple ``(coordinates, values)``, each a dictionary mapping parameter
             handles resp. result channels to lists of their values.

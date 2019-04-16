@@ -307,7 +307,7 @@ class Fragment(HasEnvironment):
             default from the parameter schema is used.
 
         :return: A tuple ``(param, store)`` of the parameter metadata and the newly
-            created :class:`ParamStore` instance that the parameter handles are now
+            created :class:`.ParamStore` instance that the parameter handles are now
             bound to.
         """
         param = self._free_params.get(param_name, None)

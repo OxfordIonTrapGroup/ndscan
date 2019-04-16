@@ -37,7 +37,7 @@ class ScanSpec:
 
 
 class ScanRunner(HasEnvironment):
-    """Runs the actual loop that executes an :class:`ExpFragment` for a specified list
+    """Runs the actual loop that executes an :class:`.ExpFragment` for a specified list
     of scan axes (on either the host or core device, as appropriate).
 
     Integrates with the ARTIQ scheduler to pause/terminate execution as requested.
@@ -62,7 +62,7 @@ class ScanRunner(HasEnvironment):
 
         :param fragment: The fragment to iterate.
         :param options: The options for the scan generator.
-        :param axis_sinks: A list of :class:`ResultSink` instances to push the
+        :param axis_sinks: A list of :class:`.ResultSink` instances to push the
             coordinates for each scan point to, matching ``scan.axes``.
         """
 
@@ -269,7 +269,7 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
     """Return metadata for the given spec in stringly typed dictionary form, executing
     any default analyses as necessary.
 
-    :param spec: :class:`ScanSpec` describing the scan.
+    :param spec: :class:`.ScanSpec` describing the scan.
     :param fragment: Fragment being scanned.
     :param short_result_names: Map from result channel objects to shortened names.
     """
