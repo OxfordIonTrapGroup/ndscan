@@ -47,6 +47,10 @@ class AnnotationContext:
 
 
 class Annotation:
+    """Annotation to be displayed alongside scan result data, recording derived
+    quantities (e.g. a fit minimizer).
+    """
+
     def __init__(self,
                  kind: str,
                  coordinates: dict = {},
@@ -74,6 +78,10 @@ class Annotation:
 
 
 class DefaultAnalysis:
+    """Analysis functionality associated with an `ExpFragment` to be executed when that
+    fragment is scanned in a particular way.
+    """
+
     def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
         """Return whether the scanned axes contain the data necessary for this analysis
         to be applicable.
@@ -118,7 +126,18 @@ class DefaultAnalysis:
 
 
 class CustomAnalysis(DefaultAnalysis):
-    """:class:`DefaultAnalysis` that executes a user-defined analysis function."""
+    r""":class:`DefaultAnalysis` that executes a user-defined analysis function in the
+    `execute()` step.
+
+    No analysis is run online.
+
+    :param required_axes: List of parameters (given by their :class:`.ParamHandle`\ s)
+        required to be scanend for the analysis to be applicable.
+    :param analyze_fn: The function to invoke in the analysis step. It is passed two
+        dictionaries giving list of axis/result channel values for each point of the
+        scan to analyse. The function can return a list of :class:`Annotation`\ s to be
+        broadcast.
+    """
 
     def __init__(
             self, required_axes: Iterable[ParamHandle],
@@ -182,7 +201,7 @@ class OnlineFit(DefaultAnalysis):
     """Describes an automatically executed fit for a given combination of scan axes
     and result channels.
 
-    :param fit_type: Fitting procedure name, per :data:`FIT_OBJECTS`.
+    :param fit_type: Fitting procedure name, per :data:`.FIT_OBJECTS`.
     :param data: Maps fit data axis names (``"x"``, ``"y"``) to parameter handles or
         result channels that supply the respective data.
     :param annotations: Any points of interest to highlight in the fit results,
