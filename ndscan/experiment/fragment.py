@@ -2,12 +2,15 @@ from artiq.language import *
 from collections import OrderedDict
 from copy import deepcopy
 import logging
-from typing import Any, Dict, List, Iterable, Type
+from typing import Any, Dict, List, Iterable, Type, Tuple, Union
 
 from .default_analysis import DefaultAnalysis
-from .parameters import *
-from .result_channels import *
-from .utils import path_matches_spec, strip_prefix
+from .parameters import ParamHandle, ParamStore
+from .result_channels import ResultChannel, FloatChannel
+from .utils import path_matches_spec
+from ..utils import strip_prefix
+
+__all__ = ["Fragment", "ExpFragment"]
 
 logger = logging.getLogger(__name__)
 
@@ -352,9 +355,9 @@ class Fragment(HasEnvironment):
 
         This method should be called after :meth:`build`, but before any of the
         fragment's user-defined functions are used.
-        :class:`ndscan.experiment.FragmentScanExperiment` takes care of this, but the
-        function can be called manually if fragments are to be used in other contexts,
-        e.g. from a standalone ``artiq.language.environment.EnvExperiment``.
+        :class:`ndscan.experiment.entrypoint.FragmentScanExperiment` takes care of this,
+        but the function can be called manually if fragments are to be used in other
+        contexts, e.g. from a standalone ``artiq.language.environment.EnvExperiment``.
         """
         # TODO: Change overrides value type to a named tuple or something else
         # more appropriate than a free-form dict.

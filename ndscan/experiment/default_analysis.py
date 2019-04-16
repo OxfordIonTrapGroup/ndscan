@@ -3,20 +3,15 @@ Declarative fits, to be excecuted locally by the user interface displaying the d
 it comes in.
 """
 import logging
-import oitg.fitting
 from typing import Any, Callable, Dict, List, Iterable, Tuple, Union
 
+from ..utils import FIT_OBJECTS
 from .parameters import ParamHandle
 from .result_channels import ResultChannel
 
-logger = logging.getLogger(__name__)
+__all__ = ["Annotation", "DefaultAnalysis", "CustomAnalysis", "OnlineFit"]
 
-#: Registry of well-known fit procecure names.
-FIT_OBJECTS = {
-    n: getattr(oitg.fitting, n)
-    for n in ["cos", "exponential_decay", "lorentzian", "rabi_flop", "line"]
-}
-FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
+logger = logging.getLogger(__name__)
 
 
 class AnnotationValueRef:
@@ -133,17 +128,20 @@ class CustomAnalysis(DefaultAnalysis):
         self._analyze_fn = analyze_fn
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
+        ""
         return all(
             h._store.identity in scanned_axes for h in self._required_axis_handles)
 
     def describe_online_analyses(
             self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+        ""
         return [], {}
 
     def execute(self, axis_data: Dict[Tuple[str, str], list],
                 result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
+        ""
         user_axis_data = {}
         for handle in self._required_axis_handles:
             user_axis_data[handle] = axis_data[handle._store.identity]
@@ -211,6 +209,7 @@ class OnlineFit(DefaultAnalysis):
         self.analysis_identifier = analysis_identifier
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]):
+        ""
         num_axes = 0
         for arg in self.data.values():
             if isinstance(arg, ParamHandle):
@@ -224,6 +223,7 @@ class OnlineFit(DefaultAnalysis):
     def describe_online_analyses(
             self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+        ""
         # TODO: Generalise to higher-dimensional fits.
         channels = [
             context.describe_coordinate(v) for v in self.data.values()
@@ -280,5 +280,6 @@ class OnlineFit(DefaultAnalysis):
     def execute(self, axis_data: Dict[Tuple[str, str], list],
                 result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
+        ""
         # Nothing to do off-line for online fits.
         return []

@@ -1,5 +1,4 @@
 from ndscan.experiment import *
-from ndscan.default_analysis import *
 from rabi_flop import RabiFlopSim
 
 

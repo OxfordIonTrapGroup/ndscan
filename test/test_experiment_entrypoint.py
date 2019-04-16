@@ -4,8 +4,7 @@ Tests for ndscan.experiment top-level runners.
 
 import json
 from artiq.language import HasEnvironment
-from ndscan.experiment import (make_fragment_scan_exp, run_fragment_once,
-                               create_and_run_fragment_once)
+from ndscan.experiment import *
 from fixtures import AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment
 from mock_environment import HasEnvironmentCase
 

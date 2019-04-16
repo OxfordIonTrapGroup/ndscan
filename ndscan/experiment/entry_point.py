@@ -4,10 +4,10 @@ of the ARTIQ ``HasEnvironment`` universe.
 
 The two main entry points into the :class:`.ExpFragment` universe are
 
- - scans (with axes and overrides set from the dashboard UI) via
-    :meth:`make_fragment_scan_exp`, and
- - manually launched fragments from vanilla ARTIQ ``EnvExperiment``\ s using
-    :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.
+ * scans (with axes and overrides set from the dashboard UI) via
+   :meth:`make_fragment_scan_exp`, and
+ * manually launched fragments from vanilla ARTIQ ``EnvExperiment``\ s using
+   :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.
 """
 
 from artiq.language import *
@@ -25,22 +25,12 @@ from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDataset
 from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           filter_default_analyses)
-from .utils import shorten_to_unambiguous_suffixes, is_kernel
+from .utils import is_kernel
+from ..utils import PARAMS_ARG_KEY, shorten_to_unambiguous_suffixes
 
-# We don't want to export FragmentScanExperiment to hide it from experiment
-# class discovery.
 __all__ = [
-    "make_fragment_scan_exp", "PARAMS_ARG_KEY", "run_fragment_once",
-    "create_and_run_fragment_once"
+    "make_fragment_scan_exp", "run_fragment_once", "create_and_run_fragment_once"
 ]
-
-#: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the
-#: list of available parameters to the dashboard plugin, and to pass the information
-#: about scanned and overridden parameters to the :class:`FragmentScanExperiment`
-#: when it is launched.
-#:
-#: Users should not need to directly interface with this.
-PARAMS_ARG_KEY = "ndscan_params"
 
 logger = logging.getLogger(__name__)
 

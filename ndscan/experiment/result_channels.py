@@ -7,6 +7,11 @@ import artiq.language.units
 import json
 from typing import Any, Dict, List
 
+__all__ = [
+    "LastValueSink", "ArraySink", "AppendingDatasetSink", "ScalarDatasetSink",
+    "FloatChannel", "IntChannel", "OpaqueChannel"
+]
+
 
 class ResultSink:
     """

@@ -4,8 +4,7 @@ Common fragments/… for unit tests.
 
 import numpy
 from artiq.experiment import *
-from ndscan.fragment import *
-from ndscan.default_analysis import Annotation, CustomAnalysis, OnlineFit
+from ndscan.experiment import *
 
 
 class AddOneFragment(ExpFragment):

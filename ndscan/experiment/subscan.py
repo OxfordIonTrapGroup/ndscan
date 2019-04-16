@@ -12,7 +12,9 @@ from .result_channels import ArraySink, OpaqueChannel, ResultChannel, SubscanCha
 from .scan_generator import ScanGenerator, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           filter_default_analyses)
-from .utils import shorten_to_unambiguous_suffixes
+from ..utils import shorten_to_unambiguous_suffixes
+
+__all__ = ["setattr_subscan"]
 
 
 class Subscan:

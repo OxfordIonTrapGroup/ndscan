@@ -1,69 +1,69 @@
-API documentation
-=================
+ndscan.experiment API
+=====================
+
+.. automodule:: ndscan.experiment
 
 
 Fragments
 ---------
 
-:mod:`ndscan.fragment` module
-+++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.fragment` module
+++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.fragment
+.. automodule:: ndscan.experiment.fragment
     :members:
 
-:mod:`ndscan.parameters` module
-+++++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.parameters` module
+++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.parameters
+.. automodule:: ndscan.experiment.parameters
     :members:
 
-:mod:`ndscan.result_channels` module
-++++++++++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.result_channels` module
++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.result_channels
+.. automodule:: ndscan.experiment.result_channels
     :members:
 
 
 Scan execution
 --------------
 
-:mod:`ndscan.scan_runner` module
-++++++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.scan_runner` module
++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.scan_runner
+.. automodule:: ndscan.experiment.scan_runner
     :members:
 
-:mod:`ndscan.subscan` module
-++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.subscan` module
++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.subscan
+.. automodule:: ndscan.experiment.subscan
     :members:
 
-:mod:`ndscan.auto_fit` module
-+++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.default_analysis` module
+++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.auto_fit
+.. automodule:: ndscan.experiment.default_analysis
     :members:
 
 
 Experiment entry points
 -----------------------
 
-:mod:`ndscan.experiment` module
-+++++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.entry_point` module
++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.experiment
+.. automodule:: ndscan.experiment.entry_point
 
-    .. autofunction:: ndscan.experiment.make_fragment_scan_exp
+    .. autofunction:: ndscan.experiment.entry_point.make_fragment_scan_exp
 
-    .. autoclass:: ndscan.experiment.FragmentScanExperiment
+    .. autoclass:: ndscan.experiment.entry_point.FragmentScanExperiment
         :members:
 
     .. autoclass:: ScanSpecError
         :members:
 
-    .. autodata:: ndscan.experiment.PARAMS_ARG_KEY
+    .. autofunction:: ndscan.experiment.entry_point.run_fragment_once
 
-    .. autofunction:: ndscan.experiment.run_fragment_once
-
-    .. autofunction:: ndscan.experiment.create_and_run_fragment_once
+    .. autofunction:: ndscan.experiment.entry_point.create_and_run_fragment_once
