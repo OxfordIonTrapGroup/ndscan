@@ -1,12 +1,11 @@
+"""Fragment-side parameter containers.
 """
-Fragment-side parameter containers.
 
-The ARTIQ compiler does not support templates or generics (neither in the sense
-of typing.Generic, nor any other), yet requires the inferred types/signatures
-of fields to match across all instances of a class. Hence, we have no option
-but to hang our heads in shame and manually instantiate the parameter handling
-machinery for all supported value types.
-"""
+# The ARTIQ compiler does not support templates or generics (neither in the sense
+# of typing.Generic, nor any other), yet requires the inferred types/signatures
+# of fields to match across all instances of a class. Hence, we have no option
+# but to hang our heads in shame and manually instantiate the parameter handling
+# machinery for all supported value types.
 
 from artiq.language import *
 from artiq.language import units
