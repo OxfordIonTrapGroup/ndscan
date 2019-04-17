@@ -1,3 +1,10 @@
+"""Generic scanning loop.
+
+While :mod:`.scan_generator` describes a scan to be run in the abstract, this module
+contains the implementation to actually execute one within an ARTIQ experiment. This
+will likely be used by end users via ``FragmentScanExperiment`` or subscans.
+"""
+
 from artiq.language import *
 from contextlib import suppress
 from itertools import islice
@@ -21,6 +28,13 @@ class ScanFinished(Exception):
 
 
 class ScanAxis:
+    """Describes a single axis that is being scanned.
+
+    Apart from the metadata, this also includes the necessary information to execute the
+    scan at runtime; i.e. the :class:`.ParamStore` to modify in order to set the
+    parameter.
+    """
+
     def __init__(self, param_schema: Dict[str, Any], path: str,
                  param_store: ParamStore):
         self.param_schema = param_schema
@@ -29,6 +43,13 @@ class ScanAxis:
 
 
 class ScanSpec:
+    """Describes a single scan.
+
+    :param axes: The list of parameters that are scanned.
+    :param generators: Generators that give the points for each of the specified axes.
+    :param options: Applicable :class:`.ScanOptions`.
+    """
+
     def __init__(self, axes: List[ScanAxis], generators: List[ScanGenerator],
                  options: ScanOptions):
         self.axes = axes
@@ -256,6 +277,8 @@ class ScanRunner(HasEnvironment):
 
 def filter_default_analyses(fragment: ExpFragment,
                             spec: ScanSpec) -> List[DefaultAnalysis]:
+    """Return the default analyses of the given fragment that can be executed for the
+    given scan spec."""
     result = []
     axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
     for analysis in fragment.get_default_analyses():

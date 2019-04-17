@@ -26,13 +26,13 @@ Fragments
     :members:
 
 
-Scan execution
---------------
+Scans
+-----
 
-:mod:`ndscan.experiment.scan_runner` module
-+++++++++++++++++++++++++++++++++++++++++++
+:mod:`ndscan.experiment.scan_generator` module
+++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: ndscan.experiment.scan_runner
+.. automodule:: ndscan.experiment.scan_generator
     :members:
 
 :mod:`ndscan.experiment.subscan` module
@@ -45,6 +45,13 @@ Scan execution
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. automodule:: ndscan.experiment.default_analysis
+    :members:
+
+
+:mod:`ndscan.experiment.scan_runner` module
++++++++++++++++++++++++++++++++++++++++++++
+
+.. automodule:: ndscan.experiment.scan_runner
     :members:
 
 

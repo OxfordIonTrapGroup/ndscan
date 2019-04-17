@@ -433,4 +433,12 @@ class ExpFragment(Fragment):
         pass
 
     def get_default_analyses(self) -> Iterable[DefaultAnalysis]:
+        """Return list of :class:`.DefaultAnalysis` instances describing analyses
+        (fits, etc.) for this fragment.
+
+        Analyses are only run if the fragment is scanned along the axes required for
+        them to apply.
+
+        This is a class method in spirit, and might become one in the future.
+        """
         return []

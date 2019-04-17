@@ -4,7 +4,7 @@
 ARTIQ experiments (as opposed to submitting the experiments with certain parameters, or
 later analysing and plotting the generated data).
 
-This top-level module provides a single convenient way to import commonly used symbols
+The top-level module provides a single convenient way to import commonly used symbols
 from experiment client code, like ``artiq.experiment`` does for upstream ARTIQ::
 
     # Import commonly used symbols, including all of artiq.experiment:
