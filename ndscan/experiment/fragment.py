@@ -10,7 +10,7 @@ from .result_channels import ResultChannel, FloatChannel
 from .utils import path_matches_spec
 from ..utils import strip_prefix
 
-__all__ = ["Fragment", "ExpFragment"]
+__all__ = ["Fragment", "ExpFragment", "TransitoryError", "RestartKernelTransitoryError"]
 
 logger = logging.getLogger(__name__)
 
@@ -442,3 +442,15 @@ class ExpFragment(Fragment):
         This is a class method in spirit, and might become one in the future.
         """
         return []
+
+
+class TransitoryError(Exception):
+    """Transitory error encountered while executing a fragment, which is expected to
+    clear itself up if it is attempted again without any further changes.
+    """
+    pass
+
+
+class RestartKernelTransitoryError(TransitoryError):
+    """Transitory error where the kernel should be restarted before retrying."""
+    pass
