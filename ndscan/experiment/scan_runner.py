@@ -5,12 +5,14 @@ contains the implementation to actually execute one within an ARTIQ experiment. 
 will likely be used by end users via ``FragmentScanExperiment`` or subscans.
 """
 
+import numpy as np
+from artiq.coredevice.exceptions import RTIOUnderflow
 from artiq.language import *
 from contextlib import suppress
 from itertools import islice
 from typing import Any, Dict, List, Iterator, Tuple
 from .default_analysis import AnnotationContext, DefaultAnalysis
-from .fragment import ExpFragment
+from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore, type_string_to_param
 from .result_channels import ResultChannel, ResultSink
 from .scan_generator import generate_points, ScanGenerator, ScanOptions
@@ -57,6 +59,11 @@ class ScanSpec:
         self.options = options
 
 
+#: Number of RTIOUnderflows to tolerate per scan point (by simply trying again) before
+#: giving up.
+NUM_TOLERATED_UNDERFLOWS_PER_POINT = 3
+
+
 class ScanRunner(HasEnvironment):
     """Runs the actual loop that executes an :class:`.ExpFragment` for a specified list
     of scan axes (on either the host or core device, as appropriate).
@@ -69,8 +76,7 @@ class ScanRunner(HasEnvironment):
 
     # Note: ARTIQ Python is currently severely limited in its support for generics or
     # metaprogramming. While the interface for this class is effortlessly generic, the
-    # implementation might well be a long-forgotten ritual for invoking Cthulhu, and is
-    # special-cased for a number of low dimensions.
+    # implementation might well be a long-forgotten ritual for invoking Cthulhu.
 
     def build(self):
         ""
@@ -87,19 +93,15 @@ class ScanRunner(HasEnvironment):
             coordinates for each scan point to, matching ``scan.axes``.
         """
 
-        # Stash away _fragment in member variable to pacify ARTIQ compiler; there is no
-        # reason this shouldn't just be passed along and materialised as a global.
-        self._fragment = fragment
-
         points = generate_points(spec.generators, spec.options)
 
         # TODO: Support parameters which require host_setup() when changed.
         run_impl = self._run_scan_on_core_device if is_kernel(
-            self._fragment.run_once) else self._run_scan_on_host
-        run_impl(points, spec.axes, axis_sinks)
+            fragment.run_once) else self._run_scan_on_host
+        run_impl(fragment, points, spec.axes, axis_sinks)
 
-    def _run_scan_on_host(self, points: Iterator[Tuple], axes: List[ScanAxis],
-                          axis_sinks: List[ResultSink]) -> None:
+    def _run_scan_on_host(self, fragment: ExpFragment, points: Iterator[Tuple],
+                          axes: List[ScanAxis], axis_sinks: List[ResultSink]) -> None:
         while True:
             axis_values = next(points, None)
             if axis_values is None:
@@ -108,13 +110,18 @@ class ScanRunner(HasEnvironment):
                 axis.param_store.set_value(value)
                 sink.push(value)
 
-            self._fragment.host_setup()
-            self._fragment.device_setup()
-            self._fragment.run_once()
+            fragment.host_setup()
+            fragment.device_setup()
+            fragment.run_once()
             self.scheduler.pause()
 
-    def _run_scan_on_core_device(self, points: list, axes: List[ScanAxis],
+    def _run_scan_on_core_device(self, fragment: ExpFragment, points: list,
+                                 axes: List[ScanAxis],
                                  axis_sinks: List[ResultSink]) -> None:
+        # Stash away _ragment in member variable to pacify ARTIQ compiler; there is no
+        # reason this shouldn't just be passed along and materialised as a global.
+        self._kscan_fragment = fragment
+
         # Set up members to be accessed from the kernel through the
         # _kscan_param_values_chunk RPC call later.
         self._kscan_points = points
@@ -128,15 +135,12 @@ class ScanRunner(HasEnvironment):
         # Interval between scheduler.check_pause() calls on the core device (or rather,
         # the minimum interval; calls are only made after a point has been completed).
         self._kscan_pause_check_interval_mu = self.core.seconds_to_mu(0.2)
-
-        for i, axis in enumerate(axes):
-            setattr(self, "_kscan_param_setter_{}".format(i),
-                    axis.param_store.set_value)
+        self._kscan_last_pause_check_mu = np.int64(0)
 
         # _kscan_param_values_chunk returns a tuple of lists of values, one for each
         # scan axis. Synthesize a return type annotation (`def foo(self): -> …`) with
         # the concrete type for this scan so the compiler can infer the types in
-        # _kscan_impl() correctly.
+        # run_chunk() correctly.
         self._kscan_param_values_chunk.__func__.__annotations__ = {
             "return":
             TTuple([
@@ -145,80 +149,92 @@ class ScanRunner(HasEnvironment):
             ])
         }
 
-        # FIXME: Replace this with generated code once eval_kernel() is implemented.
-        num_dims = len(axes)
-        scan_impl = getattr(self, "_kscan_impl_{}".format(num_dims), None)
-        if scan_impl is None:
-            raise NotImplementedError(
-                "{}-dimensional scans not supported yet".format(num_dims))
+        # Build kernel function that calls _kscan_param_values_chunk() and iterates over
+        # the returned values, assigning them to the respective parameter stores and
+        # calling _kscan_run_point() for each.
+        #
+        # Currently, this can't be expressed as generic code, as there is no way to
+        # express indexing or deconstructing a tuple of values of inhomogeneous types
+        # without actually writing it out as an assignment from a tuple value.
+        for i, axis in enumerate(axes):
+            setattr(self, "_kscan_param_setter_{}".format(i),
+                    axis.param_store.set_value)
+        run_chunk = self._build_kscan_run_chunk(len(axes))
 
         with suppress(ScanFinished):
             self._kscan_update_host_param_stores()
             while True:
-                self._fragment.host_setup()
-                scan_impl()
+                self._kscan_fragment.host_setup()
+                self._kscan_run_loop(run_chunk)
                 self.core.comm.close()
                 self.scheduler.pause()
 
+    def _build_kscan_run_chunk(self, num_axes):
+        param_decl = " ".join("p{0},".format(idx) for idx in range(num_axes))
+        code = ""
+        code += "({}) = self._kscan_param_values_chunk()\n".format(param_decl)
+        code += "for i in range(len(p0)):\n"
+        for idx in range(num_axes):
+            code += "    self._kscan_param_setter_{0}(p{0}[i])\n".format(idx)
+        code += "    if self._kscan_run_point():\n"
+        code += "        return True\n"
+        code += "return False"
+        return kernel_from_string(["self"], code)
+
     @kernel
-    def _kscan_impl_1(self):
-        last_pause_check_mu = self.core.get_rtio_counter_mu()
+    def _kscan_run_loop(self, run_chunk):
+        self._kscan_last_pause_check_mu = self.core.get_rtio_counter_mu()
         while True:
-            (param_values_0, ) = self._kscan_param_values_chunk()
-            for i in range(len(param_values_0)):
-                self._kscan_param_setter_0(param_values_0[i])
-                self._kscan_run_fragment_once()
-                self._kscan_point_completed()
-
-                current_time_mu = self.core.get_rtio_counter_mu()
-                if (current_time_mu - last_pause_check_mu >
-                        self._kscan_pause_check_interval_mu):
-                    if self.scheduler.check_pause():
-                        return
-                    last_pause_check_mu = current_time_mu
+            # Fetch chunk in separate function to make sure stack memory is released
+            # every time.
+            if run_chunk(self):
+                return
 
     @kernel
-    def _kscan_impl_2(self):
-        last_pause_check_mu = self.core.get_rtio_counter_mu()
+    def _kscan_run_point(self) -> TBool:
+        """Execute the fragment for a single point (with the currently set parameters).
+
+        :return: Whether the kernel should be exited/experiment should be paused before
+            continuing (``True`` to pause, ``False`` to continue immediately).
+        """
+        num_underflows = 0
         while True:
-            param_values_0, param_values_1 = self._kscan_param_values_chunk()
-            for i in range(len(param_values_0)):
-                self._kscan_param_setter_0(param_values_0[i])
-                self._kscan_param_setter_1(param_values_1[i])
-                self._kscan_run_fragment_once()
-                self._kscan_point_completed()
-
-                current_time_mu = self.core.get_rtio_counter_mu()
-                if (current_time_mu - last_pause_check_mu >
-                        self._kscan_pause_check_interval_mu):
-                    if self.scheduler.check_pause():
-                        return
-                    last_pause_check_mu = current_time_mu
-
-    @kernel
-    def _kscan_impl_3(self):
-        last_pause_check_mu = self.core.get_rtio_counter_mu()
-        while True:
-            param_values_0, param_values_1, param_values_2 =\
-                self._kscan_param_values_chunk()
-            for i in range(len(param_values_0)):
-                self._kscan_param_setter_0(param_values_0[i])
-                self._kscan_param_setter_1(param_values_1[i])
-                self._kscan_param_setter_2(param_values_2[i])
-                self._kscan_run_fragment_once()
-                self._kscan_point_completed()
-
-                current_time_mu = self.core.get_rtio_counter_mu()
-                if (current_time_mu - last_pause_check_mu >
-                        self._kscan_pause_check_interval_mu):
-                    if self.scheduler.check_pause():
-                        return
-                    last_pause_check_mu = current_time_mu
+            if self._kscan_should_pause():
+                return True
+            try:
+                self._kscan_fragment.device_setup()
+                self._kscan_fragment.run_once()
+                break
+            except RTIOUnderflow:
+                # For the first two underflows per point, just print a warning and carry
+                # on (3 is a pretty arbitrary limit – we don't want to block forever in
+                # case the experiment is faulty, but also want to tolerate ~1% underflow
+                # chance for experiments where timing is critical).
+                if num_underflows >= NUM_TOLERATED_UNDERFLOWS_PER_POINT:
+                    raise
+                num_underflows += 1
+                print("Ignoring RTIOUnderflow (", num_underflows, "/",
+                      NUM_TOLERATED_UNDERFLOWS_PER_POINT, ")")
+                self._kscan_retry_point()
+            except RestartKernelTransitoryError:
+                print("Ignoring transitory error, restarting kernel")
+                self._kscan_retry_point()
+                return True
+            except TransitoryError:
+                print("Ignoring transitory error, retrying")
+                self._kscan_retry_point()
+        self._kscan_point_completed()
+        return False
 
     @kernel
-    def _kscan_run_fragment_once(self):
-        self._fragment.device_setup()
-        self._fragment.run_once()
+    def _kscan_should_pause(self) -> TBool:
+        current_time_mu = self.core.get_rtio_counter_mu()
+        if (current_time_mu - self._kscan_last_pause_check_mu >
+                self._kscan_pause_check_interval_mu):
+            self._kscan_last_pause_check_mu = current_time_mu
+            if self.scheduler.check_pause():
+                return True
+        return False
 
     def _kscan_param_values_chunk(self):
         # Number of scan points to send at once. After each chunk, the kernel needs to
@@ -242,6 +258,15 @@ class ScanRunner(HasEnvironment):
         if not values[0]:
             raise ScanFinished
         return values
+
+    @rpc(flags={"async"})
+    def _kscan_retry_point(self):
+        # TODO: Ensure any values pushed to result channels in this iteration are
+        # discarded. For this, we'll need to make ScanRunner aware of the result channel
+        # sinks (not just the axis sinks), or "rebind" the fragment's result channels
+        # to intercept values locally and only forward them to the real sinks in
+        # _kscan_point_completed.
+        pass
 
     @rpc(flags={"async"})
     def _kscan_point_completed(self):
