@@ -146,7 +146,14 @@
            <div itemprop="articleBody">
             
   <h1>Source code for ndscan.experiment.scan_runner</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
+<span></span><span class="sd">&quot;&quot;&quot;Generic scanning loop.</span>
+
+<span class="sd">While :mod:`.scan_generator` describes a scan to be run in the abstract, this module</span>
+<span class="sd">contains the implementation to actually execute one within an ARTIQ experiment. This</span>
+<span class="sd">will likely be used by end users via ``FragmentScanExperiment`` or subscans.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">suppress</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">islice</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span>
@@ -168,20 +175,34 @@
     <span class="k">pass</span></div>
 
 
-<span class="k">class</span> <span class="nc">ScanAxis</span><span class="p">:</span>
+<div class="viewcode-block" id="ScanAxis"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanAxis">[docs]</a><span class="k">class</span> <span class="nc">ScanAxis</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Describes a single axis that is being scanned.</span>
+
+<span class="sd">    Apart from the metadata, this also includes the necessary information to execute the</span>
+<span class="sd">    scan at runtime; i.e. the :class:`.ParamStore` to modify in order to set the</span>
+<span class="sd">    parameter.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_schema</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">param_store</span><span class="p">:</span> <span class="n">ParamStore</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">param_schema</span> <span class="o">=</span> <span class="n">param_schema</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">param_store</span> <span class="o">=</span> <span class="n">param_store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_store</span> <span class="o">=</span> <span class="n">param_store</span></div>
 
 
-<span class="k">class</span> <span class="nc">ScanSpec</span><span class="p">:</span>
+<div class="viewcode-block" id="ScanSpec"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanSpec">[docs]</a><span class="k">class</span> <span class="nc">ScanSpec</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Describes a single scan.</span>
+
+<span class="sd">    :param axes: The list of parameters that are scanned.</span>
+<span class="sd">    :param generators: Generators that give the points for each of the specified axes.</span>
+<span class="sd">    :param options: Applicable :class:`.ScanOptions`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span> <span class="n">generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanGenerator</span><span class="p">],</span>
                  <span class="n">options</span><span class="p">:</span> <span class="n">ScanOptions</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">generators</span> <span class="o">=</span> <span class="n">generators</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">options</span></div>
 
 
 <div class="viewcode-block" id="ScanRunner"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanRunner">[docs]</a><span class="k">class</span> <span class="nc">ScanRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
@@ -402,14 +423,16 @@
             <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 
-<span class="k">def</span> <span class="nf">filter_default_analyses</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
+<div class="viewcode-block" id="filter_default_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.filter_default_analyses">[docs]</a><span class="k">def</span> <span class="nf">filter_default_analyses</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
                             <span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Return the default analyses of the given fragment that can be executed for the</span>
+<span class="sd">    given scan spec.&quot;&quot;&quot;</span>
     <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">axis_identities</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">s</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">analysis</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">analysis</span><span class="o">.</span><span class="n">has_data</span><span class="p">(</span><span class="n">axis_identities</span><span class="p">):</span>
             <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">result</span>
+    <span class="k">return</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="describe_scan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.describe_scan">[docs]</a><span class="k">def</span> <span class="nf">describe_scan</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>

@@ -90,10 +90,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#module-ndscan.experiment.result_channels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.result_channels</span></code> module</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#scan-execution">Scan execution</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#module-ndscan.experiment.scan_runner"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.scan_runner</span></code> module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scans">Scans</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-ndscan.experiment.scan_generator"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.scan_generator</span></code> module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-ndscan.experiment.subscan"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.subscan</span></code> module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-ndscan.experiment.default_analysis"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.default_analysis</span></code> module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-ndscan.experiment.scan_runner"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.scan_runner</span></code> module</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#experiment-entry-points">Experiment entry points</a><ul>
@@ -174,7 +175,7 @@
 <p><code class="docutils literal notranslate"><span class="pre">ndscan.experiment</span></code> contains the code for implementing the <code class="docutils literal notranslate"><span class="pre">ndscan</span></code> primitives from
 ARTIQ experiments (as opposed to submitting the experiments with certain parameters, or
 later analysing and plotting the generated data).</p>
-<p>This top-level module provides a single convenient way to import commonly used symbols
+<p>The top-level module provides a single convenient way to import commonly used symbols
 from experiment client code, like <code class="docutils literal notranslate"><span class="pre">artiq.experiment</span></code> does for upstream ARTIQ:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import commonly used symbols, including all of artiq.experiment:</span>
 <span class="kn">from</span> <span class="nn">ndscan.experiment</span> <span class="k">import</span> <span class="o">*</span>
@@ -452,6 +453,16 @@ pipeline stage.</p>
 parameters, producing one set of results (if any).</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="ndscan.experiment.fragment.ExpFragment.get_default_analyses">
+<code class="descname">get_default_analyses</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[ndscan.experiment.default_analysis.DefaultAnalysis]<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.get_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.get_default_analyses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of <a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis"><code class="xref py py-class docutils literal notranslate"><span class="pre">DefaultAnalysis</span></code></a> instances describing analyses
+(fits, etc.) for this fragment.</p>
+<p>Analyses are only run if the fragment is scanned along the axes required for
+them to apply.</p>
+<p>This is a class method in spirit, and might become one in the future.</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -565,60 +576,50 @@ if any.</p>
 
 </div>
 </div>
-<div class="section" id="scan-execution">
-<h2>Scan execution<a class="headerlink" href="#scan-execution" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="module-ndscan.experiment.scan_runner">
-<span id="ndscan-experiment-scan-runner-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.scan_runner" title="ndscan.experiment.scan_runner"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.scan_runner</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.scan_runner" title="Permalink to this headline">¶</a></h3>
-<dl class="exception">
-<dt id="ndscan.experiment.scan_runner.ScanFinished">
-<em class="property">exception </em><code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">ScanFinished</code><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanFinished"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanFinished" title="Permalink to this definition">¶</a></dt>
-<dd><p>Used internally to signal that a scan has been successfully completed (points
-exhausted).</p>
-<p>This is a kludge to work around a bug where tuples of empty lists crash the ARTIQ
-RPC code (kernel aborts), and should never be visible to the user.</p>
+<div class="section" id="scans">
+<h2>Scans<a class="headerlink" href="#scans" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-ndscan.experiment.scan_generator">
+<span id="ndscan-experiment-scan-generator-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.scan_generator" title="ndscan.experiment.scan_generator"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.scan_generator</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.scan_generator" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="ndscan.experiment.scan_generator.ScanGenerator">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_generator.</code><code class="descname">ScanGenerator</code><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates points along a single scan axis to be visited.</p>
+<dl class="method">
+<dt id="ndscan.experiment.scan_generator.ScanGenerator.has_level">
+<code class="descname">has_level</code><span class="sig-paren">(</span><em>level: int</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.has_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.has_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ndscan.experiment.scan_generator.ScanGenerator.points_for_level">
+<code class="descname">points_for_level</code><span class="sig-paren">(</span><em>level: int</em>, <em>rng=None</em><span class="sig-paren">)</span> &#x2192; List[Any]<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.points_for_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.points_for_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ndscan.experiment.scan_generator.ScanGenerator.describe_limits">
+<code class="descname">describe_limits</code><span class="sig-paren">(</span><em>target: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.describe_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.describe_limits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
-<dt id="ndscan.experiment.scan_runner.ScanRunner">
-<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">ScanRunner</code><span class="sig-paren">(</span><em>managers_or_parent</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner" title="Permalink to this definition">¶</a></dt>
-<dd><p>Runs the actual loop that executes an <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> for a specified list
-of scan axes (on either the host or core device, as appropriate).</p>
-<p>Integrates with the ARTIQ scheduler to pause/terminate execution as requested.</p>
-<p>Conceptually, this is only a single function (<code class="docutils literal notranslate"><span class="pre">run()</span></code>), but is wrapped in a class
-to follow the idiomatic ARTIQ kernel/<code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> integration style.</p>
-<dl class="method">
-<dt id="ndscan.experiment.scan_runner.ScanRunner.run">
-<code class="descname">run</code><span class="sig-paren">(</span><em>fragment: ndscan.experiment.fragment.ExpFragment, spec: ndscan.experiment.scan_runner.ScanSpec, axis_sinks: List[ndscan.experiment.result_channels.ResultSink]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a scan of the given fragment, with axes as specified.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fragment</strong> – The fragment to iterate.</p></li>
-<li><p><strong>options</strong> – The options for the scan generator.</p></li>
-<li><p><strong>axis_sinks</strong> – A list of <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultSink</span></code> instances to push the
-coordinates for each scan point to, matching <code class="docutils literal notranslate"><span class="pre">scan.axes</span></code>.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
+<dt id="ndscan.experiment.scan_generator.RefiningGenerator">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_generator.</code><code class="descname">RefiningGenerator</code><span class="sig-paren">(</span><em>lower</em>, <em>upper</em>, <em>randomise_order</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#RefiningGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.RefiningGenerator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
-</dd></dl>
+<dl class="class">
+<dt id="ndscan.experiment.scan_generator.LinearGenerator">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_generator.</code><code class="descname">LinearGenerator</code><span class="sig-paren">(</span><em>start</em>, <em>stop</em>, <em>num_points</em>, <em>randomise_order</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#LinearGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.LinearGenerator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
-<dl class="function">
-<dt id="ndscan.experiment.scan_runner.describe_scan">
-<code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">describe_scan</code><span class="sig-paren">(</span><em>spec: ndscan.experiment.scan_runner.ScanSpec, fragment: ndscan.experiment.fragment.ExpFragment, short_result_names: Dict[ndscan.experiment.result_channels.ResultChannel, str]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#describe_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.describe_scan" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return metadata for the given spec in stringly typed dictionary form, executing
-any default analyses as necessary.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>spec</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanSpec</span></code> describing the scan.</p></li>
-<li><p><strong>fragment</strong> – Fragment being scanned.</p></li>
-<li><p><strong>short_result_names</strong> – Map from result channel objects to shortened names.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
+<dl class="class">
+<dt id="ndscan.experiment.scan_generator.ListGenerator">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_generator.</code><code class="descname">ListGenerator</code><span class="sig-paren">(</span><em>values</em>, <em>randomise_order</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ListGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ListGenerator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ndscan.experiment.scan_generator.ScanOptions">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_generator.</code><code class="descname">ScanOptions</code><span class="sig-paren">(</span><em>num_repeats: int = 1</em>, <em>continuous_without_axes: bool = False</em>, <em>randomise_order_globally: bool = False</em>, <em>seed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanOptions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </div>
 <div class="section" id="module-ndscan.experiment.subscan">
@@ -792,6 +793,95 @@ dictionaries mapping coordinate names to fit result names. If <code class="docut
 <li><p><strong>analysis_identifier</strong> – Optional explicit name to use for online analysis.
 Defaults to <code class="docutils literal notranslate"><span class="pre">fit_&lt;fit_type&gt;</span></code>, but can be set explicitly to allow more than one
 fit of a given type at a time.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-ndscan.experiment.scan_runner">
+<span id="ndscan-experiment-scan-runner-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.scan_runner" title="ndscan.experiment.scan_runner"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.scan_runner</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.scan_runner" title="Permalink to this headline">¶</a></h3>
+<p>Generic scanning loop.</p>
+<p>While <a class="reference internal" href="#module-ndscan.experiment.scan_generator" title="ndscan.experiment.scan_generator"><code class="xref py py-mod docutils literal notranslate"><span class="pre">scan_generator</span></code></a> describes a scan to be run in the abstract, this module
+contains the implementation to actually execute one within an ARTIQ experiment. This
+will likely be used by end users via <code class="docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code> or subscans.</p>
+<dl class="exception">
+<dt id="ndscan.experiment.scan_runner.ScanFinished">
+<em class="property">exception </em><code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">ScanFinished</code><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanFinished"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanFinished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used internally to signal that a scan has been successfully completed (points
+exhausted).</p>
+<p>This is a kludge to work around a bug where tuples of empty lists crash the ARTIQ
+RPC code (kernel aborts), and should never be visible to the user.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="ndscan.experiment.scan_runner.ScanAxis">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">ScanAxis</code><span class="sig-paren">(</span><em>param_schema: Dict[str, Any], path: str, param_store: ndscan.experiment.parameters.ParamStore</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanAxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a single axis that is being scanned.</p>
+<p>Apart from the metadata, this also includes the necessary information to execute the
+scan at runtime; i.e. the <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamStore</span></code> to modify in order to set the
+parameter.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="ndscan.experiment.scan_runner.ScanSpec">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">ScanSpec</code><span class="sig-paren">(</span><em>axes: List[ndscan.experiment.scan_runner.ScanAxis], generators: List[ndscan.experiment.scan_generator.ScanGenerator], options: ndscan.experiment.scan_generator.ScanOptions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a single scan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> – The list of parameters that are scanned.</p></li>
+<li><p><strong>generators</strong> – Generators that give the points for each of the specified axes.</p></li>
+<li><p><strong>options</strong> – Applicable <a class="reference internal" href="#ndscan.experiment.scan_generator.ScanOptions" title="ndscan.experiment.scan_generator.ScanOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScanOptions</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="ndscan.experiment.scan_runner.ScanRunner">
+<em class="property">class </em><code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">ScanRunner</code><span class="sig-paren">(</span><em>managers_or_parent</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the actual loop that executes an <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> for a specified list
+of scan axes (on either the host or core device, as appropriate).</p>
+<p>Integrates with the ARTIQ scheduler to pause/terminate execution as requested.</p>
+<p>Conceptually, this is only a single function (<code class="docutils literal notranslate"><span class="pre">run()</span></code>), but is wrapped in a class
+to follow the idiomatic ARTIQ kernel/<code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> integration style.</p>
+<dl class="method">
+<dt id="ndscan.experiment.scan_runner.ScanRunner.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>fragment: ndscan.experiment.fragment.ExpFragment, spec: ndscan.experiment.scan_runner.ScanSpec, axis_sinks: List[ndscan.experiment.result_channels.ResultSink]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a scan of the given fragment, with axes as specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fragment</strong> – The fragment to iterate.</p></li>
+<li><p><strong>options</strong> – The options for the scan generator.</p></li>
+<li><p><strong>axis_sinks</strong> – A list of <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultSink</span></code> instances to push the
+coordinates for each scan point to, matching <code class="docutils literal notranslate"><span class="pre">scan.axes</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ndscan.experiment.scan_runner.filter_default_analyses">
+<code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">filter_default_analyses</code><span class="sig-paren">(</span><em>fragment: ndscan.experiment.fragment.ExpFragment</em>, <em>spec: ndscan.experiment.scan_runner.ScanSpec</em><span class="sig-paren">)</span> &#x2192; List[ndscan.experiment.default_analysis.DefaultAnalysis]<a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#filter_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.filter_default_analyses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the default analyses of the given fragment that can be executed for the
+given scan spec.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ndscan.experiment.scan_runner.describe_scan">
+<code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">describe_scan</code><span class="sig-paren">(</span><em>spec: ndscan.experiment.scan_runner.ScanSpec, fragment: ndscan.experiment.fragment.ExpFragment, short_result_names: Dict[ndscan.experiment.result_channels.ResultChannel, str]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#describe_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.describe_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return metadata for the given spec in stringly typed dictionary form, executing
+any default analyses as necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spec</strong> – <a class="reference internal" href="#ndscan.experiment.scan_runner.ScanSpec" title="ndscan.experiment.scan_runner.ScanSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScanSpec</span></code></a> describing the scan.</p></li>
+<li><p><strong>fragment</strong> – Fragment being scanned.</p></li>
+<li><p><strong>short_result_names</strong> – Map from result channel objects to shortened names.</p></li>
 </ul>
 </dd>
 </dl>

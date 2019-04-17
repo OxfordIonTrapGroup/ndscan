@@ -580,8 +580,16 @@
 <span class="sd">        parameters, producing one set of results (if any).&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-    <span class="k">def</span> <span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+<div class="viewcode-block" id="ExpFragment.get_default_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment.get_default_analyses">[docs]</a>    <span class="k">def</span> <span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return list of :class:`.DefaultAnalysis` instances describing analyses</span>
+<span class="sd">        (fits, etc.) for this fragment.</span>
+
+<span class="sd">        Analyses are only run if the fragment is scanned along the axes required for</span>
+<span class="sd">        them to apply.</span>
+
+<span class="sd">        This is a class method in spirit, and might become one in the future.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span></div></div>
 </pre></div>
 
            </div>
