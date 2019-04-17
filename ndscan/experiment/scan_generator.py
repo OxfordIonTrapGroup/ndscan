@@ -3,17 +3,29 @@ import numpy as np
 import random
 from typing import Any, Dict, List
 
-__all__ = ["RefiningGenerator", "LinearGenerator", "ListGenerator", "ScanOptions"]
+__all__ = [
+    "ScanGenerator", "RefiningGenerator", "LinearGenerator", "ListGenerator",
+    "ScanOptions"
+]
 
 
 class ScanGenerator:
+    """Generates points along a single scan axis to be visited.
+    """
+
     def has_level(self, level: int) -> bool:
+        """
+        """
         raise NotImplementedError
 
     def points_for_level(self, level: int, rng=None) -> List[Any]:
+        """
+        """
         raise NotImplementedError
 
     def describe_limits(self, target: Dict[str, Any]) -> None:
+        """
+        """
         raise NotImplementedError
 
 
@@ -24,9 +36,11 @@ class RefiningGenerator(ScanGenerator):
         self.randomise_order = randomise_order
 
     def has_level(self, level: int) -> bool:
+        ""
         return True
 
     def points_for_level(self, level: int, rng=None) -> List[Any]:
+        ""
         if level == 0:
             return [self.lower, self.upper]
 
@@ -40,6 +54,7 @@ class RefiningGenerator(ScanGenerator):
         return points
 
     def describe_limits(self, target: Dict[str, Any]) -> None:
+        ""
         target["min"] = self.lower
         target["max"] = self.upper
 
@@ -54,9 +69,11 @@ class LinearGenerator(ScanGenerator):
         self.randomise_order = randomise_order
 
     def has_level(self, level: int) -> bool:
+        ""
         return level == 0
 
     def points_for_level(self, level: int, rng=None) -> List[Any]:
+        ""
         assert level == 0
         points = np.linspace(
             start=self.start, stop=self.stop, num=self.num_points, endpoint=True)
@@ -65,6 +82,7 @@ class LinearGenerator(ScanGenerator):
         return points
 
     def describe_limits(self, target: Dict[str, Any]) -> None:
+        ""
         target["min"] = min(self.start, self.stop)
         target["max"] = max(self.start, self.stop)
         target["increment"] = abs(self.stop - self.start) / (self.num_points - 1)
@@ -76,9 +94,11 @@ class ListGenerator(ScanGenerator):
         self.randomise_order = randomise_order
 
     def has_level(self, level: int) -> bool:
+        ""
         return level == 0
 
     def points_for_level(self, level: int, rng=None) -> List[Any]:
+        ""
         assert level == 0
         values = self.values
         if self.randomise_order:
@@ -87,6 +107,7 @@ class ListGenerator(ScanGenerator):
         return values
 
     def describe_limits(self, target: Dict[str, Any]) -> None:
+        ""
         values = np.array(self.values)
         if np.issubdtype(values.dtype, np.number):
             target["min"] = np.min(values)
@@ -101,6 +122,9 @@ GENERATORS = {
 
 
 class ScanOptions:
+    """
+    """
+
     def __init__(self,
                  num_repeats: int = 1,
                  continuous_without_axes: bool = False,
