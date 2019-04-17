@@ -377,6 +377,15 @@ class Fragment(HasEnvironment):
         for s in self._subfragments:
             s.init_params(overrides)
 
+    def reload_param_defaults(self) -> None:
+        for name, param in self._free_params.items():
+            new_default = param.eval_default(self._get_dataset_or_set_default)
+            for handle in self._get_all_handles_for_param(name):
+                handle._store.set_value(new_default)
+
+        for s in self._subfragments:
+            s.reload_param_defaults()
+
     def _get_all_handles_for_param(self, name: str) -> List[ParamHandle]:
         return [getattr(self, name)] + self._rebound_subfragment_params.get(name, [])
 
