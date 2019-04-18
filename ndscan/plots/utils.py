@@ -16,8 +16,8 @@ FIT_COLORS = [
 
 
 def extract_scalar_channels(channels):
-    data_names = set(
-        name for name, spec in channels.items() if spec["type"] in ["int", "float"])
+    data_names = set(name for name, spec in channels.items()
+                     if spec["type"] in ["int", "float"])
 
     path_to_name = {channels[name]["path"]: name for name in data_names}
 

@@ -53,11 +53,10 @@ class NdscanApplet(SimpleApplet):
         # user in a normal use case).
         super().__init__(_MainWidget, default_update_delay=20e-3)
 
-        self.argparser.add_argument(
-            "--port-control",
-            default=3251,
-            type=int,
-            help="TCP port for master control commands")
+        self.argparser.add_argument("--port-control",
+                                    default=3251,
+                                    type=int,
+                                    help="TCP port for master control commands")
         self.argparser.add_argument("--rid", help="RID of the experiment to plot")
 
     def subscribe(self):

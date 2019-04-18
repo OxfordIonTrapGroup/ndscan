@@ -148,8 +148,8 @@ class CustomAnalysis(DefaultAnalysis):
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
         ""
-        return all(
-            h._store.identity in scanned_axes for h in self._required_axis_handles)
+        return all(h._store.identity in scanned_axes
+                   for h in self._required_axis_handles)
 
     def describe_online_analyses(
             self, context: AnnotationContext
@@ -257,20 +257,20 @@ class OnlineFit(DefaultAnalysis):
             analysis_identifier = "fit_" + self.fit_type + "_" + "_".join(channels)
 
         def analysis_ref(key):
-            return AnnotationValueRef(
-                "analysis_result", analysis_name=analysis_identifier, result_key=key)
+            return AnnotationValueRef("analysis_result",
+                                      analysis_name=analysis_identifier,
+                                      result_key=key)
 
         annotations = [
-            Annotation(
-                "computed_curve",
-                parameters={
-                    "function_name": self.fit_type,
-                    "associated_channels": channels
-                },
-                data={
-                    k: analysis_ref(k)
-                    for k in FIT_OBJECTS[self.fit_type].parameter_names
-                })
+            Annotation("computed_curve",
+                       parameters={
+                           "function_name": self.fit_type,
+                           "associated_channels": channels
+                       },
+                       data={
+                           k: analysis_ref(k)
+                           for k in FIT_OBJECTS[self.fit_type].parameter_names
+                       })
         ]
         for a in self.annotations.values():
             # TODO: Change API to allow more general annotations.

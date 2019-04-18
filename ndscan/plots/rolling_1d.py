@@ -39,10 +39,9 @@ class _Series:
         num_to_show = self.values.shape[0]
         self.data_item.setData(self.x_indices[-num_to_show:], self.values[:, 0].T)
         if self.error_bar_item:
-            self.error_bar_item.setData(
-                x=self.x_indices[-num_to_show:],
-                y=self.values[:, 0].T,
-                height=self.values[:, 1].T)
+            self.error_bar_item.setData(x=self.x_indices[-num_to_show:],
+                                        y=self.values[:, 0].T,
+                                        height=self.values[:, 1].T)
 
         if is_first:
             self.plot.addItem(self.data_item)
@@ -113,8 +112,8 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
                 label = c["path"].split("/")[-1]
             return label, c["path"], colors[i], c
 
-        setup_axis_item(
-            self.getAxis("left"), [axis_info(i) for i in range(len(data_names))])
+        setup_axis_item(self.getAxis("left"),
+                        [axis_info(i) for i in range(len(data_names))])
 
         self.ready.emit()
 

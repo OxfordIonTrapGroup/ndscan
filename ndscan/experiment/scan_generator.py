@@ -75,8 +75,10 @@ class LinearGenerator(ScanGenerator):
     def points_for_level(self, level: int, rng=None) -> List[Any]:
         ""
         assert level == 0
-        points = np.linspace(
-            start=self.start, stop=self.stop, num=self.num_points, endpoint=True)
+        points = np.linspace(start=self.start,
+                             stop=self.stop,
+                             num=self.num_points,
+                             endpoint=True)
         if self.randomise_order:
             rng.shuffle(points)
         return points

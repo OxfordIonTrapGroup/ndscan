@@ -171,10 +171,9 @@ def setattr_subscan(owner: Fragment,
         #    the most common use case anyway).
         #  - Serialise the scan point coordinates into the scan spec.
         coordinate_channels.append(
-            owner.setattr_result(
-                scan_name + "_axis_{}".format(i),
-                OpaqueChannel,
-                save_by_default=save_results_by_default))
+            owner.setattr_result(scan_name + "_axis_{}".format(i),
+                                 OpaqueChannel,
+                                 save_by_default=save_results_by_default))
 
     # Instead of letting our parent directly manage the subfragment result channels,
     # we redirect the results to ArraySinks…
