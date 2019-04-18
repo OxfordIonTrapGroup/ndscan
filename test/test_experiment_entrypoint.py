@@ -85,9 +85,8 @@ class FragmentScanExpCase(HasEnvironmentCase):
                 }
             }
         }
-        self.assertEqual(
-            json.loads(self.dataset_db.get("ndscan.annotations")),
-            [curve_annotation, location_annotation])
+        self.assertEqual(json.loads(self.dataset_db.get("ndscan.annotations")),
+                         [curve_annotation, location_annotation])
 
         self.assertEqual(
             json.loads(self.dataset_db.get("ndscan.online_analyses")), {
@@ -126,23 +125,22 @@ class FragmentScanExpCase(HasEnvironmentCase):
         def d(key):
             return self.dataset_db.get("ndscan." + key)
 
-        self.assertEqual(
-            json.loads(d("axes")), [{
-                "increment": 1.0,
-                "max": 2,
-                "min": 0,
-                "param": {
-                    "default": "0.0",
-                    "description": "Value to return",
-                    "fqn": fqn,
-                    "spec": {
-                        "scale": 1.0,
-                        "step": 0.1
-                    },
-                    "type": "float"
+        self.assertEqual(json.loads(d("axes")), [{
+            "increment": 1.0,
+            "max": 2,
+            "min": 0,
+            "param": {
+                "default": "0.0",
+                "description": "Value to return",
+                "fqn": fqn,
+                "spec": {
+                    "scale": 1.0,
+                    "step": 0.1
                 },
-                "path": "*"
-            }])
+                "type": "float"
+            },
+            "path": "*"
+        }])
         self.assertEqual(d("completed"), True)
         self.assertEqual(d("points.axis_0"), [0, 1, 2])
         self.assertEqual(d("points.channel_result"), [1, 2, 3])

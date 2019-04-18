@@ -58,13 +58,12 @@ class HasEnvironmentCase(unittest.TestCase):
         self.ccb = unittest.mock.Mock()
         self.core = unittest.mock.Mock()
         self.scheduler = MockScheduler()
-        self.device_mgr = DeviceManager(
-            self.device_db,
-            virtual_devices={
-                "ccb": self.ccb,
-                "core": self.core,
-                "scheduler": self.scheduler
-            })
+        self.device_mgr = DeviceManager(self.device_db,
+                                        virtual_devices={
+                                            "ccb": self.ccb,
+                                            "core": self.core,
+                                            "scheduler": self.scheduler
+                                        })
 
     def create(self, klass, *args, **kwargs):
         return klass(

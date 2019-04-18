@@ -78,8 +78,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._override_items = dict()
 
         def icon_path(name):
-            return os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "icons", name)
+            return os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons",
+                                name)
 
         self._add_override_icon = QtGui.QIcon(icon_path("list-add-32.png"))
         self._remove_override_icon = QtGui.QIcon(icon_path("list-remove-32.png"))
@@ -426,8 +426,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     def _set_override_line_active(self):
         self._update_param_choice_map()
-        self._add_override_prompt_box.set_choices(
-            [(s, 0) for s in self._param_choice_map.keys()])
+        self._add_override_prompt_box.set_choices([
+            (s, 0) for s in self._param_choice_map.keys()
+        ])
 
         self._add_override_button.setEnabled(False)
         self._add_override_button.setVisible(False)
@@ -452,8 +453,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             return self._groups[name]
         group = self._make_group_header_item(name)
         if self.override_separator:
-            self.insertTopLevelItem(
-                self.indexOfTopLevelItem(self.override_separator), group)
+            self.insertTopLevelItem(self.indexOfTopLevelItem(self.override_separator),
+                                    group)
         else:
             self.addTopLevelItem(group)
         self._groups[name] = group
@@ -466,11 +467,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         try:
             arginfo, _ = await self.manager.examine_arginfo(self.expurl)
         except Exception:
-            logger.error(
-                "Could not recompute argument '%s' of '%s'",
-                name,
-                self.expurl,
-                exc_info=True)
+            logger.error("Could not recompute argument '%s' of '%s'",
+                         name,
+                         self.expurl,
+                         exc_info=True)
             return
         argument = self.manager.get_submission_arguments(self.expurl)[name]
 
@@ -509,8 +509,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             if (fqn, path) in self._param_entries:
                 return
             schema = self._schema_for_fqn(fqn)
-            display_string = "{} – {}".format(
-                self._param_display_name(fqn, path), schema["description"])
+            display_string = "{} – {}".format(self._param_display_name(fqn, path),
+                                              schema["description"])
             self._param_choice_map[display_string] = (fqn, path)
 
         fqn_occurences = Counter()
@@ -639,11 +639,12 @@ def _parse_list_pyon(values: str) -> List[float]:
 
 class FloatOverrideEntry(OverrideEntry):
     def __init__(self, schema, *args):
-        self.scan_types = OrderedDict(
-            [("Fixed", (self._build_fixed_ui, self._write_override)),
-             ("Refining", (self._build_refining_ui, self._write_refining_scan)),
-             ("Linear", (self._build_linear_ui, self._write_linear_scan)),
-             ("List", (self._build_list_ui, self._write_list_scan))])
+        self.scan_types = OrderedDict([
+            ("Fixed", (self._build_fixed_ui, self._write_override)),
+            ("Refining", (self._build_refining_ui, self._write_refining_scan)),
+            ("Linear", (self._build_linear_ui, self._write_linear_scan)),
+            ("List", (self._build_list_ui, self._write_list_scan))
+        ])
         self.current_scan_type = None
         self.scale = schema.get("spec", {}).get("scale", 1.0)
 

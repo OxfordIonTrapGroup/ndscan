@@ -52,8 +52,9 @@ class _XYSeries(QtCore.QObject):
 
             if self.error_bar_item:
                 y_err = np.array(y_err)
-                self.error_bar_item.setData(
-                    x=x_data[order], y=y_data[order], height=y_err[order])
+                self.error_bar_item.setData(x=x_data[order],
+                                            y=y_data[order],
+                                            height=y_err[order])
                 if self.num_current_points == 0:
                     self.plot.addItem(self.error_bar_item)
         else:
@@ -62,10 +63,9 @@ class _XYSeries(QtCore.QObject):
                 self.plot.addItem(self.data_item)
 
             if self.error_bar_item:
-                self.error_bar_item.setData(
-                    x=x_data[:num_to_show],
-                    y=y_data[:num_to_show],
-                    height=(2 * np.array(y_err[:num_to_show])))
+                self.error_bar_item.setData(x=x_data[:num_to_show],
+                                            y=y_data[:num_to_show],
+                                            height=(2 * np.array(y_err[:num_to_show])))
                 if self.num_current_points == 0:
                     self.plot.addItem(self.error_bar_item)
 
@@ -157,10 +157,11 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
 
         if self.crosshair is None:
             # FIXME: Reinitialise crosshair as necessary on schema changes.
-            self.crosshair = LabeledCrosshairCursor(
-                self, self.getPlotItem(), self.x_unit_suffix,
-                self.x_data_to_display_scale, self.y_unit_suffix,
-                self.y_data_to_display_scale)
+            self.crosshair = LabeledCrosshairCursor(self, self.getPlotItem(),
+                                                    self.x_unit_suffix,
+                                                    self.x_data_to_display_scale,
+                                                    self.y_unit_suffix,
+                                                    self.y_data_to_display_scale)
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
         self.ready.emit()
 

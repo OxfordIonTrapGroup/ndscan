@@ -116,8 +116,8 @@ class _ImagePlot:
                 self.current_z_limits = (data_min, data_max)
                 num_skip = 0
             else:
-                z_limits = (min(self.current_z_limits[0], data_min),
-                            max(self.current_z_limits[1], data_max))
+                z_limits = (min(self.current_z_limits[0],
+                                data_min), max(self.current_z_limits[1], data_max))
                 if z_limits != self.current_z_limits:
                     self.current_z_limits = z_limits
                     num_skip = 0
@@ -195,9 +195,11 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         self.y_unit_suffix, self.y_data_to_display_scale = \
             setup_axis(self.y_schema, "left")
 
-        self.crosshair = LabeledCrosshairCursor(
-            self, self.getPlotItem(), self.x_unit_suffix, self.x_data_to_display_scale,
-            self.y_unit_suffix, self.y_data_to_display_scale)
+        self.crosshair = LabeledCrosshairCursor(self, self.getPlotItem(),
+                                                self.x_unit_suffix,
+                                                self.x_data_to_display_scale,
+                                                self.y_unit_suffix,
+                                                self.y_data_to_display_scale)
         self.showGrid(x=True, y=True)
 
     def _initialise_series(self, channels):
@@ -235,8 +237,8 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         if self.model.context.is_online_master():
             x_datasets = extract_linked_datasets(self.x_schema["param"])
             y_datasets = extract_linked_datasets(self.y_schema["param"])
-            for d, axis in chain(
-                    zip(x_datasets, repeat("x")), zip(y_datasets, repeat("y"))):
+            for d, axis in chain(zip(x_datasets, repeat("x")),
+                                 zip(y_datasets, repeat("y"))):
                 action = builder.append_action("Set '{}' from crosshair".format(d))
                 action.triggered.connect(lambda *a, d=d: self.
                                          _set_dataset_from_crosshair(d, axis))

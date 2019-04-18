@@ -51,10 +51,16 @@ class RabiFlopSim(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("readout", Readout)
 
-        self.setattr_param(
-            "rabi_freq", FloatParam, "Rabi frequency", 1.0 * MHz, unit="MHz")
-        self.setattr_param(
-            "duration", FloatParam, "Pulse duration", 0.5 * us, unit="us")
+        self.setattr_param("rabi_freq",
+                           FloatParam,
+                           "Rabi frequency",
+                           1.0 * MHz,
+                           unit="MHz")
+        self.setattr_param("duration",
+                           FloatParam,
+                           "Pulse duration",
+                           0.5 * us,
+                           unit="us")
         self.setattr_param("detuning", FloatParam, "Detuning", 0.0 * MHz, unit="MHz")
 
     def run_once(self):

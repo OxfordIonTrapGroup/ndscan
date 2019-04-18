@@ -30,9 +30,9 @@ def strip_suffix(string: str, suffix: str) -> str:
     return string
 
 
-def shorten_to_unambiguous_suffixes(
-        fqns: Iterable[str],
-        get_last_n_parts: Callable[[str, int], str]) -> Dict[str, str]:
+def shorten_to_unambiguous_suffixes(fqns: Iterable[str],
+                                    get_last_n_parts: Callable[[str, int], str]
+                                    ) -> Dict[str, str]:
     short_to_fqns = dict()
     shortened_fqns = dict()
 

@@ -121,33 +121,30 @@ class VLineItem(AnnotationItem):
         self._x_unit_suffix = x_unit_suffix
         self._added_to_plot = False
 
-        self._left_line = pyqtgraph.InfiniteLine(
-            movable=False,
-            angle=90,
-            pen={
-                "color": base_color,
-                "style": QtCore.Qt.DotLine
-            })
-        self._center_line = pyqtgraph.InfiniteLine(
-            movable=False,
-            angle=90,
-            label="",
-            labelOpts={
-                "position": 0.97,
-                "color": base_color,
-                "movable": True
-            },
-            pen={
-                "color": base_color,
-                "style": QtCore.Qt.SolidLine
-            })
-        self._right_line = pyqtgraph.InfiniteLine(
-            movable=False,
-            angle=90,
-            pen={
-                "color": base_color,
-                "style": QtCore.Qt.DotLine
-            })
+        self._left_line = pyqtgraph.InfiniteLine(movable=False,
+                                                 angle=90,
+                                                 pen={
+                                                     "color": base_color,
+                                                     "style": QtCore.Qt.DotLine
+                                                 })
+        self._center_line = pyqtgraph.InfiniteLine(movable=False,
+                                                   angle=90,
+                                                   label="",
+                                                   labelOpts={
+                                                       "position": 0.97,
+                                                       "color": base_color,
+                                                       "movable": True
+                                                   },
+                                                   pen={
+                                                       "color": base_color,
+                                                       "style": QtCore.Qt.SolidLine
+                                                   })
+        self._right_line = pyqtgraph.InfiniteLine(movable=False,
+                                                  angle=90,
+                                                  pen={
+                                                      "color": base_color,
+                                                      "style": QtCore.Qt.DotLine
+                                                  })
 
         self._position_source.changed.connect(self._redraw)
         if self._uncertainty_source:

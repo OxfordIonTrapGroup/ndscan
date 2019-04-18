@@ -118,9 +118,9 @@ class FragmentScanExperiment(EnvExperiment):
             param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store))
 
-        options = ScanOptions(
-            scan.get("num_repeats", 1), scan.get("continuous_without_axes", True),
-            scan.get("randomise_order_globally", False))
+        options = ScanOptions(scan.get("num_repeats", 1),
+                              scan.get("continuous_without_axes", True),
+                              scan.get("randomise_order_globally", False))
         self._scan = ScanSpec(axes, generators, options)
 
         self.fragment.init_params(param_stores)
@@ -196,8 +196,9 @@ class FragmentScanExperiment(EnvExperiment):
         if annotations:
             # Replace existing (online-fit) annotations if any analysis produced custom
             # ones. This could be made configurable in the future.
-            self.set_dataset(
-                "ndscan.annotations", json.dumps(annotations), broadcast=True)
+            self.set_dataset("ndscan.annotations",
+                             json.dumps(annotations),
+                             broadcast=True)
 
     def _run_single(self):
         try:
@@ -253,12 +254,11 @@ class FragmentScanExperiment(EnvExperiment):
                "--port=${port_notify} "
                "--port-control=${port_control}")
         cmd += " --rid={}".format(self.scheduler.rid)
-        self.ccb.issue(
-            "create_applet",
-            "ndscan: " + self.fragment.fqn,
-            cmd,
-            group="ndscan",
-            is_transient=True)
+        self.ccb.issue("create_applet",
+                       "ndscan: " + self.fragment.fqn,
+                       cmd,
+                       group="ndscan",
+                       is_transient=True)
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
@@ -266,8 +266,8 @@ def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
         full_names, lambda fqn, n: "/".join(fqn.split("/")[-n:]))
 
 
-def make_fragment_scan_exp(
-        fragment_class: Type[ExpFragment]) -> Type[FragmentScanExperiment]:
+def make_fragment_scan_exp(fragment_class: Type[ExpFragment]
+                           ) -> Type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
 
@@ -361,6 +361,6 @@ def create_and_run_fragment_once(env: HasEnvironment, fragment_class: Type[ExpFr
         not pushed to).
     """
     results = run_fragment_once(fragment_class(env, [], *args, **kwargs))
-    shortened_names = _shorten_result_channel_names(
-        channel.path for channel in results.keys())
+    shortened_names = _shorten_result_channel_names(channel.path
+                                                    for channel in results.keys())
     return {shortened_names[channel.path]: value for channel, value in results.items()}
