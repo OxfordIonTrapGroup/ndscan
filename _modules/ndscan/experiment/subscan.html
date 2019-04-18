@@ -319,10 +319,9 @@
         <span class="c1">#    the most common use case anyway).</span>
         <span class="c1">#  - Serialise the scan point coordinates into the scan spec.</span>
         <span class="n">coordinate_channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
-                <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
-                <span class="n">OpaqueChannel</span><span class="p">,</span>
-                <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span><span class="p">))</span>
+            <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span><span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+                                 <span class="n">OpaqueChannel</span><span class="p">,</span>
+                                 <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span><span class="p">))</span>
 
     <span class="c1"># Instead of letting our parent directly manage the subfragment result channels,</span>
     <span class="c1"># we redirect the results to ArraySinks…</span>
