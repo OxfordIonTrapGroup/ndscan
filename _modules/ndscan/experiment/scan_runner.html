@@ -153,12 +153,14 @@
 <span class="sd">will likely be used by end users via ``FragmentScanExperiment`` or subscans.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">artiq.coredevice.exceptions</span> <span class="k">import</span> <span class="n">RTIOUnderflow</span>
 <span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">suppress</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">islice</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="k">import</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">DefaultAnalysis</span>
-<span class="kn">from</span> <span class="nn">.fragment</span> <span class="k">import</span> <span class="n">ExpFragment</span>
+<span class="kn">from</span> <span class="nn">.fragment</span> <span class="k">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">TransitoryError</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">type_string_to_param</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ResultSink</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="k">import</span> <span class="n">generate_points</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
@@ -205,6 +207,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">options</span></div>
 
 
+<span class="c1">#: Number of RTIOUnderflows to tolerate per scan point (by simply trying again) before</span>
+<span class="c1">#: giving up.</span>
+<span class="n">NUM_TOLERATED_UNDERFLOWS_PER_POINT</span> <span class="o">=</span> <span class="mi">3</span>
+
+
 <div class="viewcode-block" id="ScanRunner"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanRunner">[docs]</a><span class="k">class</span> <span class="nc">ScanRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Runs the actual loop that executes an :class:`.ExpFragment` for a specified list</span>
 <span class="sd">    of scan axes (on either the host or core device, as appropriate).</span>
@@ -217,8 +224,7 @@
 
     <span class="c1"># Note: ARTIQ Python is currently severely limited in its support for generics or</span>
     <span class="c1"># metaprogramming. While the interface for this class is effortlessly generic, the</span>
-    <span class="c1"># implementation might well be a long-forgotten ritual for invoking Cthulhu, and is</span>
-    <span class="c1"># special-cased for a number of low dimensions.</span>
+    <span class="c1"># implementation might well be a long-forgotten ritual for invoking Cthulhu.</span>
 
     <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;&quot;</span>
@@ -235,19 +241,15 @@
 <span class="sd">            coordinates for each scan point to, matching ``scan.axes``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="c1"># Stash away _fragment in member variable to pacify ARTIQ compiler; there is no</span>
-        <span class="c1"># reason this shouldn&#39;t just be passed along and materialised as a global.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span> <span class="o">=</span> <span class="n">fragment</span>
-
         <span class="n">points</span> <span class="o">=</span> <span class="n">generate_points</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">generators</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
         <span class="c1"># TODO: Support parameters which require host_setup() when changed.</span>
         <span class="n">run_impl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_core_device</span> <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_host</span>
-        <span class="n">run_impl</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">)</span></div>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_scan_on_host</span>
+        <span class="n">run_impl</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_run_scan_on_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">],</span> <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
-                          <span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_run_scan_on_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">],</span>
+                          <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span> <span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">axis_values</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">axis_values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -256,13 +258,18 @@
                 <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                 <span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_run_scan_on_core_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
+    <span class="k">def</span> <span class="nf">_run_scan_on_core_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+                                 <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
                                  <span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Stash away _ragment in member variable to pacify ARTIQ compiler; there is no</span>
+        <span class="c1"># reason this shouldn&#39;t just be passed along and materialised as a global.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span> <span class="o">=</span> <span class="n">fragment</span>
+
         <span class="c1"># Set up members to be accessed from the kernel through the</span>
         <span class="c1"># _kscan_param_values_chunk RPC call later.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_points</span> <span class="o">=</span> <span class="n">points</span>
@@ -276,15 +283,12 @@
         <span class="c1"># Interval between scheduler.check_pause() calls on the core device (or rather,</span>
         <span class="c1"># the minimum interval; calls are only made after a point has been completed).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_pause_check_interval_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">seconds_to_mu</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axes</span><span class="p">):</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_kscan_param_setter_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_last_pause_check_mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
         <span class="c1"># _kscan_param_values_chunk returns a tuple of lists of values, one for each</span>
         <span class="c1"># scan axis. Synthesize a return type annotation (`def foo(self): -&gt; …`) with</span>
         <span class="c1"># the concrete type for this scan so the compiler can infer the types in</span>
-        <span class="c1"># _kscan_impl() correctly.</span>
+        <span class="c1"># run_chunk() correctly.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_values_chunk</span><span class="o">.</span><span class="vm">__func__</span><span class="o">.</span><span class="vm">__annotations__</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;return&quot;</span><span class="p">:</span>
             <span class="n">TTuple</span><span class="p">([</span>
@@ -293,80 +297,92 @@
             <span class="p">])</span>
         <span class="p">}</span>
 
-        <span class="c1"># FIXME: Replace this with generated code once eval_kernel() is implemented.</span>
-        <span class="n">num_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>
-        <span class="n">scan_impl</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_kscan_impl_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_dims</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">scan_impl</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">-dimensional scans not supported yet&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_dims</span><span class="p">))</span>
+        <span class="c1"># Build kernel function that calls _kscan_param_values_chunk() and iterates over</span>
+        <span class="c1"># the returned values, assigning them to the respective parameter stores and</span>
+        <span class="c1"># calling _kscan_run_point() for each.</span>
+        <span class="c1">#</span>
+        <span class="c1"># Currently, this can&#39;t be expressed as generic code, as there is no way to</span>
+        <span class="c1"># express indexing or deconstructing a tuple of values of inhomogeneous types</span>
+        <span class="c1"># without actually writing it out as an assignment from a tuple value.</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axes</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_kscan_param_setter_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+                    <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">)</span>
+        <span class="n">run_chunk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_kscan_run_chunk</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">))</span>
 
         <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">ScanFinished</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_update_host_param_stores</span><span class="p">()</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                <span class="n">scan_impl</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_loop</span><span class="p">(</span><span class="n">run_chunk</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
 
+    <span class="k">def</span> <span class="nf">_build_kscan_run_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_axes</span><span class="p">):</span>
+        <span class="n">param_decl</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;p</span><span class="si">{0}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_axes</span><span class="p">))</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;(</span><span class="si">{}</span><span class="s2">) = self._kscan_param_values_chunk()</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_decl</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;for i in range(len(p0)):</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_axes</span><span class="p">):</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    self._kscan_param_setter_</span><span class="si">{0}</span><span class="s2">(p</span><span class="si">{0}</span><span class="s2">[i])</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    if self._kscan_run_point():</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;        return True</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;return False&quot;</span>
+        <span class="k">return</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span> <span class="n">code</span><span class="p">)</span>
+
     <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">_kscan_impl_1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">_kscan_run_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_chunk</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">param_values_0</span><span class="p">,</span> <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_values_chunk</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">param_values_0</span><span class="p">)):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_setter_0</span><span class="p">(</span><span class="n">param_values_0</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_fragment_once</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_point_completed</span><span class="p">()</span>
-
-                <span class="n">current_time_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">current_time_mu</span> <span class="o">-</span> <span class="n">last_pause_check_mu</span> <span class="o">&gt;</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_pause_check_interval_mu</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
-                        <span class="k">return</span>
-                    <span class="n">last_pause_check_mu</span> <span class="o">=</span> <span class="n">current_time_mu</span>
+            <span class="c1"># Fetch chunk in separate function to make sure stack memory is released</span>
+            <span class="c1"># every time.</span>
+            <span class="k">if</span> <span class="n">run_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">return</span>
 
     <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">_kscan_impl_2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">_kscan_run_point</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TBool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Execute the fragment for a single point (with the currently set parameters).</span>
+
+<span class="sd">        :return: Whether the kernel should be exited/experiment should be paused before</span>
+<span class="sd">            continuing (``True`` to pause, ``False`` to continue immediately).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">num_underflows</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">param_values_0</span><span class="p">,</span> <span class="n">param_values_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_values_chunk</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">param_values_0</span><span class="p">)):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_setter_0</span><span class="p">(</span><span class="n">param_values_0</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_setter_1</span><span class="p">(</span><span class="n">param_values_1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_fragment_once</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_point_completed</span><span class="p">()</span>
-
-                <span class="n">current_time_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">current_time_mu</span> <span class="o">-</span> <span class="n">last_pause_check_mu</span> <span class="o">&gt;</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_pause_check_interval_mu</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
-                        <span class="k">return</span>
-                    <span class="n">last_pause_check_mu</span> <span class="o">=</span> <span class="n">current_time_mu</span>
-
-    <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">_kscan_impl_3</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">param_values_0</span><span class="p">,</span> <span class="n">param_values_1</span><span class="p">,</span> <span class="n">param_values_2</span> <span class="o">=</span>\
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_values_chunk</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">param_values_0</span><span class="p">)):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_setter_0</span><span class="p">(</span><span class="n">param_values_0</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_setter_1</span><span class="p">(</span><span class="n">param_values_1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_setter_2</span><span class="p">(</span><span class="n">param_values_2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_fragment_once</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_point_completed</span><span class="p">()</span>
-
-                <span class="n">current_time_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">current_time_mu</span> <span class="o">-</span> <span class="n">last_pause_check_mu</span> <span class="o">&gt;</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_pause_check_interval_mu</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
-                        <span class="k">return</span>
-                    <span class="n">last_pause_check_mu</span> <span class="o">=</span> <span class="n">current_time_mu</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_should_pause</span><span class="p">():</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="n">RTIOUnderflow</span><span class="p">:</span>
+                <span class="c1"># For the first two underflows per point, just print a warning and carry</span>
+                <span class="c1"># on (3 is a pretty arbitrary limit – we don&#39;t want to block forever in</span>
+                <span class="c1"># case the experiment is faulty, but also want to tolerate ~1% underflow</span>
+                <span class="c1"># chance for experiments where timing is critical).</span>
+                <span class="k">if</span> <span class="n">num_underflows</span> <span class="o">&gt;=</span> <span class="n">NUM_TOLERATED_UNDERFLOWS_PER_POINT</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="n">num_underflows</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span> <span class="n">num_underflows</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                      <span class="n">NUM_TOLERATED_UNDERFLOWS_PER_POINT</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error, restarting kernel&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error, retrying&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_point_completed</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">_kscan_run_fragment_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">_kscan_should_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TBool</span><span class="p">:</span>
+        <span class="n">current_time_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">current_time_mu</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_last_pause_check_mu</span> <span class="o">&gt;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_pause_check_interval_mu</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_last_pause_check_mu</span> <span class="o">=</span> <span class="n">current_time_mu</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">_kscan_param_values_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Number of scan points to send at once. After each chunk, the kernel needs to</span>
@@ -390,6 +406,15 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="n">ScanFinished</span>
         <span class="k">return</span> <span class="n">values</span>
+
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="k">def</span> <span class="nf">_kscan_retry_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># TODO: Ensure any values pushed to result channels in this iteration are</span>
+        <span class="c1"># discarded. For this, we&#39;ll need to make ScanRunner aware of the result channel</span>
+        <span class="c1"># sinks (not just the axis sinks), or &quot;rebind&quot; the fragment&#39;s result channels</span>
+        <span class="c1"># to intercept values locally and only forward them to the real sinks in</span>
+        <span class="c1"># _kscan_point_completed.</span>
+        <span class="k">pass</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span> <span class="nf">_kscan_point_completed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

@@ -158,7 +158,7 @@
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">path_matches_spec</span>
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="k">import</span> <span class="n">strip_prefix</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">,</span> <span class="s2">&quot;ExpFragment&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">,</span> <span class="s2">&quot;ExpFragment&quot;</span><span class="p">,</span> <span class="s2">&quot;TransitoryError&quot;</span><span class="p">,</span> <span class="s2">&quot;RestartKernelTransitoryError&quot;</span><span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -590,6 +590,18 @@
 <span class="sd">        This is a class method in spirit, and might become one in the future.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[]</span></div></div>
+
+
+<div class="viewcode-block" id="TransitoryError"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.TransitoryError">[docs]</a><span class="k">class</span> <span class="nc">TransitoryError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Transitory error encountered while executing a fragment, which is expected to</span>
+<span class="sd">    clear itself up if it is attempted again without any further changes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RestartKernelTransitoryError"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.RestartKernelTransitoryError">[docs]</a><span class="k">class</span> <span class="nc">RestartKernelTransitoryError</span><span class="p">(</span><span class="n">TransitoryError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Transitory error where the kernel should be restarted before retrying.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
 </pre></div>
 
            </div>

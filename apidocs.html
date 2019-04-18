@@ -465,15 +465,23 @@ them to apply.</p>
 
 </dd></dl>
 
+<dl class="exception">
+<dt id="ndscan.experiment.fragment.TransitoryError">
+<em class="property">exception </em><code class="descclassname">ndscan.experiment.fragment.</code><code class="descname">TransitoryError</code><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#TransitoryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.TransitoryError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transitory error encountered while executing a fragment, which is expected to
+clear itself up if it is attempted again without any further changes.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="ndscan.experiment.fragment.RestartKernelTransitoryError">
+<em class="property">exception </em><code class="descclassname">ndscan.experiment.fragment.</code><code class="descname">RestartKernelTransitoryError</code><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#RestartKernelTransitoryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.RestartKernelTransitoryError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transitory error where the kernel should be restarted before retrying.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-ndscan.experiment.parameters">
 <span id="ndscan-experiment-parameters-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.parameters" title="ndscan.experiment.parameters"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.parameters</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.parameters" title="Permalink to this headline">¶</a></h3>
 <p>Fragment-side parameter containers.</p>
-<p>The ARTIQ compiler does not support templates or generics (neither in the sense
-of typing.Generic, nor any other), yet requires the inferred types/signatures
-of fields to match across all instances of a class. Hence, we have no option
-but to hang our heads in shame and manually instantiate the parameter handling
-machinery for all supported value types.</p>
 </div>
 <div class="section" id="module-ndscan.experiment.result_channels">
 <span id="ndscan-experiment-result-channels-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.result_channels" title="ndscan.experiment.result_channels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.result_channels</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.result_channels" title="Permalink to this headline">¶</a></h3>
@@ -836,6 +844,13 @@ parameter.</p>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="data">
+<dt id="ndscan.experiment.scan_runner.NUM_TOLERATED_UNDERFLOWS_PER_POINT">
+<code class="descclassname">ndscan.experiment.scan_runner.</code><code class="descname">NUM_TOLERATED_UNDERFLOWS_PER_POINT</code><em class="property"> = 3</em><a class="headerlink" href="#ndscan.experiment.scan_runner.NUM_TOLERATED_UNDERFLOWS_PER_POINT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of RTIOUnderflows to tolerate per scan point (by simply trying again) before
+giving up.</p>
 </dd></dl>
 
 <dl class="class">
