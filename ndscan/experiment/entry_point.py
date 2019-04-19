@@ -115,7 +115,7 @@ class FragmentScanExperiment(EnvExperiment):
             store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
             store = store_type((fqn, pathspec),
                                generator.points_for_level(0, random)[0])
-            param_stores.setdefault(fqn, []).append({"path": pathspec, "store": store})
+            param_stores.setdefault(fqn, []).append((pathspec, store))
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store))
 
         options = ScanOptions(scan.get("num_repeats", 1),

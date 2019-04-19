@@ -347,29 +347,35 @@ class Fragment(HasEnvironment):
         for s in self._subfragments:
             s._collect_params(params, schemata)
 
-    def init_params(self, overrides: Dict[str, List[dict]] = {}) -> None:
+    def init_params(self,
+                    overrides: Dict[str, List[Tuple[str, ParamStore]]] = {}) -> None:
         """Initialise free parameters of this fragment and all its subfragments.
 
-        If a relevant override is given, the specified ParamStore is used.
-        Otherwise, the default value is evaluated and a new store created.
+        If, for a given parameter, a relevant override is given, the specified
+        ParamStore is used. Otherwise, the default value is evaluated and a new store
+        pointing to it created.
 
-        This method should be called after :meth:`build`, but before any of the
-        fragment's user-defined functions are used.
-        :class:`ndscan.experiment.entrypoint.FragmentScanExperiment` takes care of this,
-        but the function can be called manually if fragments are to be used in other
-        contexts, e.g. from a standalone ``artiq.language.environment.EnvExperiment``.
+        This method should be called before any of the fragment's user-defined functions
+        are used (but after the constructor -> :meth:`build` -> :meth`build_fragment()`
+        has completed). Most likely, the top-level fragment will be called from a
+        :mod:`ndscan.experiment.entry_point` which already take care of this. In cases
+        where fragments are used in a different context, for example from a standalone
+        ``EnvExperiment``, this method must be called manually.
+
+        :param overrides: A dictionary mapping parameter FQNs to lists of overrides.
+            Each override is specified as a tuple `(pathspec, store)` of a path spec and
+            the store to use for parameters the path of which matches the spec.
         """
-        # TODO: Change overrides value type to a named tuple or something else
-        # more appropriate than a free-form dict.
         for name, param in self._free_params.items():
             store = None
-            for o in overrides.get(param.fqn, []):
-                if path_matches_spec(self._fragment_path, o["path"]):
-                    store = o["store"]
+            for override_pathspec, override_store in overrides.get(param.fqn, []):
+                if path_matches_spec(self._fragment_path, override_pathspec):
+                    store = override_store
             if not store:
                 identity = (param.fqn, self._stringize_path())
                 value = param.eval_default(self._get_dataset_or_set_default)
                 store = param.make_store(identity, value)
+                self._default_params.append((param, store))
 
             for handle in self._get_all_handles_for_param(name):
                 handle.set_store(store)
