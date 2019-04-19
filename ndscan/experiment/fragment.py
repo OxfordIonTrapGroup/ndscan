@@ -42,6 +42,10 @@ class Fragment(HasEnvironment):
         #: rebinding API that targets single paths).
         self._rebound_subfragment_params = dict()
 
+        #: List of (param, store) tuples of parameters set to their defaults after
+        #: init_params().
+        self._default_params = []
+
         #: Maps full path of own result channels to ResultChannel instances.
         self._result_channels = {}
 
@@ -382,6 +386,23 @@ class Fragment(HasEnvironment):
 
         for s in self._subfragments:
             s.init_params(overrides)
+
+    def recompute_param_defaults(self) -> None:
+        """Recompute default values of the parameters of this fragment and all its
+        subfragments.
+
+        For parameters where the default value was previously used, the expression is
+        evaluated again – thus for instance fetching new dataset values –, and assigned
+        to the existing parameter store.
+        """
+        for param, store in self._default_params:
+            value = param.eval_default(self._get_dataset_or_set_default)
+            old_value = store.get_value()
+            if old_value != value:
+                logger.info("Updating %s: %s -> %s", store.identity, old_value, value)
+                store.set_value(value)
+        for s in self._subfragments:
+            s.recompute_param_defaults()
 
     def _get_all_handles_for_param(self, name: str) -> List[ParamHandle]:
         return [getattr(self, name)] + self._rebound_subfragment_params.get(name, [])
