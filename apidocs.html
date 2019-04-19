@@ -417,15 +417,34 @@ bound to.</p>
 
 <dl class="method">
 <dt id="ndscan.experiment.fragment.Fragment.init_params">
-<code class="descname">init_params</code><span class="sig-paren">(</span><em>overrides: Dict[str</em>, <em>List[dict]] = {}</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.init_params" title="Permalink to this definition">¶</a></dt>
+<code class="descname">init_params</code><span class="sig-paren">(</span><em>overrides: Dict[str</em>, <em>List[Tuple[str</em>, <em>ndscan.experiment.parameters.ParamStore]]] = {}</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.init_params" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialise free parameters of this fragment and all its subfragments.</p>
-<p>If a relevant override is given, the specified ParamStore is used.
-Otherwise, the default value is evaluated and a new store created.</p>
-<p>This method should be called after <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build" title="ndscan.experiment.fragment.Fragment.build"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build()</span></code></a>, but before any of the
-fragment’s user-defined functions are used.
-<code class="xref py py-class docutils literal notranslate"><span class="pre">ndscan.experiment.entrypoint.FragmentScanExperiment</span></code> takes care of this,
-but the function can be called manually if fragments are to be used in other
-contexts, e.g. from a standalone <code class="docutils literal notranslate"><span class="pre">artiq.language.environment.EnvExperiment</span></code>.</p>
+<p>If, for a given parameter, a relevant override is given, the specified
+ParamStore is used. Otherwise, the default value is evaluated and a new store
+pointing to it created.</p>
+<p>This method should be called before any of the fragment’s user-defined functions
+are used (but after the constructor -&gt; <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build" title="ndscan.experiment.fragment.Fragment.build"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build()</span></code></a> -&gt; :meth`build_fragment()`
+has completed). Most likely, the top-level fragment will be called from a
+<a class="reference internal" href="#module-ndscan.experiment.entry_point" title="ndscan.experiment.entry_point"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.entry_point</span></code></a> which already take care of this. In cases
+where fragments are used in a different context, for example from a standalone
+<code class="docutils literal notranslate"><span class="pre">EnvExperiment</span></code>, this method must be called manually.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>overrides</strong> – A dictionary mapping parameter FQNs to lists of overrides.
+Each override is specified as a tuple <cite>(pathspec, store)</cite> of a path spec and
+the store to use for parameters the path of which matches the spec.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.experiment.fragment.Fragment.recompute_param_defaults">
+<code class="descname">recompute_param_defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.recompute_param_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.recompute_param_defaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recompute default values of the parameters of this fragment and all its
+subfragments.</p>
+<p>For parameters where the default value was previously used, the expression is
+evaluated again – thus for instance fetching new dataset values –, and assigned
+to the existing parameter store.</p>
 </dd></dl>
 
 </dd></dl>

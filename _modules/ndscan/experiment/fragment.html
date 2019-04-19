@@ -190,6 +190,10 @@
         <span class="c1">#: rebinding API that targets single paths).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
+        <span class="c1">#: List of (param, store) tuples of parameters set to their defaults after</span>
+        <span class="c1">#: init_params().</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_params</span> <span class="o">=</span> <span class="p">[]</span>
+
         <span class="c1">#: Maps full path of own result channels to ResultChannel instances.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -495,35 +499,58 @@
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
             <span class="n">s</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">schemata</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Fragment.init_params"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.init_params">[docs]</a>    <span class="k">def</span> <span class="nf">init_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">overrides</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="Fragment.init_params"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.init_params">[docs]</a>    <span class="k">def</span> <span class="nf">init_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">overrides</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialise free parameters of this fragment and all its subfragments.</span>
 
-<span class="sd">        If a relevant override is given, the specified ParamStore is used.</span>
-<span class="sd">        Otherwise, the default value is evaluated and a new store created.</span>
+<span class="sd">        If, for a given parameter, a relevant override is given, the specified</span>
+<span class="sd">        ParamStore is used. Otherwise, the default value is evaluated and a new store</span>
+<span class="sd">        pointing to it created.</span>
 
-<span class="sd">        This method should be called after :meth:`build`, but before any of the</span>
-<span class="sd">        fragment&#39;s user-defined functions are used.</span>
-<span class="sd">        :class:`ndscan.experiment.entrypoint.FragmentScanExperiment` takes care of this,</span>
-<span class="sd">        but the function can be called manually if fragments are to be used in other</span>
-<span class="sd">        contexts, e.g. from a standalone ``artiq.language.environment.EnvExperiment``.</span>
+<span class="sd">        This method should be called before any of the fragment&#39;s user-defined functions</span>
+<span class="sd">        are used (but after the constructor -&gt; :meth:`build` -&gt; :meth`build_fragment()`</span>
+<span class="sd">        has completed). Most likely, the top-level fragment will be called from a</span>
+<span class="sd">        :mod:`ndscan.experiment.entry_point` which already take care of this. In cases</span>
+<span class="sd">        where fragments are used in a different context, for example from a standalone</span>
+<span class="sd">        ``EnvExperiment``, this method must be called manually.</span>
+
+<span class="sd">        :param overrides: A dictionary mapping parameter FQNs to lists of overrides.</span>
+<span class="sd">            Each override is specified as a tuple `(pathspec, store)` of a path spec and</span>
+<span class="sd">            the store to use for parameters the path of which matches the spec.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: Change overrides value type to a named tuple or something else</span>
-        <span class="c1"># more appropriate than a free-form dict.</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">store</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="p">[]):</span>
-                <span class="k">if</span> <span class="n">path_matches_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">,</span> <span class="n">o</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]):</span>
-                    <span class="n">store</span> <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="s2">&quot;store&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">override_pathspec</span><span class="p">,</span> <span class="n">override_store</span> <span class="ow">in</span> <span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="k">if</span> <span class="n">path_matches_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">,</span> <span class="n">override_pathspec</span><span class="p">):</span>
+                    <span class="n">store</span> <span class="o">=</span> <span class="n">override_store</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">store</span><span class="p">:</span>
                 <span class="n">identity</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_or_set_default</span><span class="p">)</span>
                 <span class="n">store</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">make_store</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_default_params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">param</span><span class="p">,</span> <span class="n">store</span><span class="p">))</span>
 
             <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_handles_for_param</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
                 <span class="n">handle</span><span class="o">.</span><span class="n">set_store</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
             <span class="n">s</span><span class="o">.</span><span class="n">init_params</span><span class="p">(</span><span class="n">overrides</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fragment.recompute_param_defaults"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.recompute_param_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">recompute_param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Recompute default values of the parameters of this fragment and all its</span>
+<span class="sd">        subfragments.</span>
+
+<span class="sd">        For parameters where the default value was previously used, the expression is</span>
+<span class="sd">        evaluated again – thus for instance fetching new dataset values –, and assigned</span>
+<span class="sd">        to the existing parameter store.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">store</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_params</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_or_set_default</span><span class="p">)</span>
+            <span class="n">old_value</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">old_value</span> <span class="o">!=</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Updating </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2"> -&gt; </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">store</span><span class="o">.</span><span class="n">identity</span><span class="p">,</span> <span class="n">old_value</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="nf">_get_all_handles_for_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span>
