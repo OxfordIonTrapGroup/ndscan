@@ -92,10 +92,8 @@ class FragmentScanExperiment(EnvExperiment):
         param_stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
             store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
-            param_stores[fqn] = [{
-                "path": s["path"],
-                "store": store_type((fqn, s["path"]), s["value"])
-            } for s in specs]
+            param_stores[fqn] = [(s["path"], store_type((fqn, s["path"]), s["value"]))
+                                 for s in specs]
 
         scan = self._params.get("scan", {})
 
