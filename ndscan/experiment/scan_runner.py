@@ -113,7 +113,9 @@ class ScanRunner(HasEnvironment):
             fragment.host_setup()
             fragment.device_setup()
             fragment.run_once()
-            self.scheduler.pause()
+            if self.scheduler.check_pause():
+                self.scheduler.pause()
+                fragment.recompute_param_defaults()
 
     def _run_scan_on_core_device(self, fragment: ExpFragment, points: list,
                                  axes: List[ScanAxis],
@@ -168,6 +170,7 @@ class ScanRunner(HasEnvironment):
                 self._kscan_run_loop(run_chunk)
                 self.core.comm.close()
                 self.scheduler.pause()
+                self._kscan_fragment.recompute_param_defaults()
 
     def _build_kscan_run_chunk(self, num_axes):
         param_decl = " ".join("p{0},".format(idx) for idx in range(num_axes))
