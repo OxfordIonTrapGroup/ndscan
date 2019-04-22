@@ -336,9 +336,12 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
 
     desc["axes"] = axis_specs
     desc["seed"] = spec.options.seed
+
+    # KLUDGE: Skip non-saved channels to make sure the UI doesn't attempt to display
+    # them; they should possibly just be ignored there.
     desc["channels"] = {
         name: channel.describe()
-        for (channel, name) in short_result_names.items()
+        for (channel, name) in short_result_names.items() if channel.save_by_default
     }
 
     axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
