@@ -80,8 +80,9 @@ def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]])
     def label_html(description, identity_string, color, spec):
         result = ""
         if color is not None:
-            # KLUDGE: Truncate alpha, as it renders in weird colors (RGBA vs. ARGB)?
-            color = color[:7]
+            if isinstance(color, str) and len(color) == 9 and color[0] == "#":
+                # KLUDGE: Reorder RGBA to ARGB.
+                color = "#" + color[7:] + color[1:7]
             result += "<span style='color: \"{}\"'>".format(color)
         unit = spec.get("unit", "")
         if unit:
