@@ -88,7 +88,8 @@ def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]])
             unit = "/ " + unit + " "
         result += "<b>{} {}</b>".format(description, unit)
         if identity_string:
-            result += "<i>({})</i>".format(identity_string)
+            pt = axis_item.label.font().pointSizeF() * 0.8
+            result += "<i style='font-size: {}pt'>({})</i>".format(pt, identity_string)
         if color is not None:
             result += "</span>"
         return result
