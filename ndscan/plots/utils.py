@@ -111,6 +111,11 @@ def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]])
 
 
 class ContextMenuBuilder:
+    """Builds a list of QActions and separators to display in a QMenu context menu.
+
+    Elides multiple separators in a row.
+    """
+
     def __init__(self, target_menu):
         self._last_was_no_separator = False
         self._entries = []
@@ -198,6 +203,9 @@ class AlternateMenuPlotWidget(ContextMenuPlotWidget):
 
 
 class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
+    """PlotWidget with a context menu to open new windows for subplots (in addition to
+    AlternateMenuPlotWidget functionality)."""
+
     def __init__(self, context, get_alternate_plot_names):
         super().__init__(get_alternate_plot_names)
         self._context = context
