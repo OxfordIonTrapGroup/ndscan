@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 # ColorBrewer-inspired to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = [
-    "#d9d9d999", "#fdb46299", "#80b1d399", "#fb807299", "#bebada99", "#ffffb399"
+    "#d9d9d9bb", "#fdb462bb", "#80b1d3bb", "#fb8072bb", "#bebadabb", "#ffffb3bb"
 ]
 FIT_COLORS = [
     "#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebadadd", "#ffffb3dd"
