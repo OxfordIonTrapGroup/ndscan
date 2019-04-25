@@ -10,8 +10,8 @@ from typing import Dict, Union
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
-from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
-                    AlternateMenuPlotWidget)
+from .utils import (extract_linked_datasets, extract_scalar_channels,
+                    format_param_identity, setup_axis_item, AlternateMenuPlotWidget)
 
 logger = logging.getLogger(__name__)
 
@@ -181,14 +181,11 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         self.plot = None
 
         def setup_axis(schema, location):
-            path = schema["path"]
-            if not path:
-                path = "/"
             param = schema["param"]
-            identity_string = param["fqn"] + "@" + path
             return setup_axis_item(
                 self.getAxis(location),
-                [(param["description"], identity_string, None, param["spec"])])
+                [(param["description"], format_param_identity(schema), None,
+                  param["spec"])])
 
         self.x_unit_suffix, self.x_data_to_display_scale = \
             setup_axis(self.x_schema, "bottom")

@@ -76,6 +76,17 @@ def extract_linked_datasets(param_schema):
     return datasets
 
 
+def format_param_identity(schema: Dict[str, Any]) -> str:
+    """Extract a string representation of the parameter identity from the given schema,
+    for use in human-readable labels.
+    """
+    path = schema["path"]
+    if not path:
+        path = "/"
+    shortened_fqn = schema["param"]["fqn"].split(".")[-1]
+    return shortened_fqn + "@" + path
+
+
 def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]]):
     def label_html(description, identity_string, color, spec):
         result = ""
