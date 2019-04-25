@@ -8,8 +8,9 @@ from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .utils import (extract_linked_datasets, extract_scalar_channels, setup_axis_item,
-                    SubplotMenuPlotWidget, FIT_COLORS, SERIES_COLORS)
+from .utils import (extract_linked_datasets, extract_scalar_channels,
+                    format_param_identity, setup_axis_item, SubplotMenuPlotWidget,
+                    FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
@@ -106,13 +107,10 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         self.series = []
 
         x_schema = self.model.axes[0]
-        path = x_schema["path"]
-        if not path:
-            path = "/"
-        identity_string = x_schema["param"]["fqn"] + "@" + path
         self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
-            self.getAxis("bottom"), [(x_schema["param"]["description"], identity_string,
-                                      None, x_schema["param"]["spec"])])
+            self.getAxis("bottom"),
+            [(x_schema["param"]["description"], format_param_identity(x_schema), None,
+              x_schema["param"]["spec"])])
         self.crosshair = None
         self._highlighted_spot = None
         self.showGrid(x=True, y=True)
