@@ -24,15 +24,16 @@ class ComputedCurveItem(AnnotationItem):
         return function_name in FIT_OBJECTS
 
     def __init__(self, function_name: str,
-                 data_sources: Dict[str, AnnotationDataSource], plot, curve_item):
+                 data_sources: Dict[str, AnnotationDataSource], view_box, curve_item):
         self._function = FIT_OBJECTS[function_name].fitting_function
         self._data_sources = data_sources
-        self._plot = plot
+        self._view_box = view_box
         self._curve_item = curve_item
         self._curve_item_added = False
 
-        self.redraw_limiter = pyqtgraph.SignalProxy(
-            self._plot.getViewBox().sigXRangeChanged, slot=self._redraw, rateLimit=30)
+        self.redraw_limiter = pyqtgraph.SignalProxy(self._view_box.sigXRangeChanged,
+                                                    slot=self._redraw,
+                                                    rateLimit=30)
 
         for source in self._data_sources.values():
             source.changed.connect(self.redraw_limiter.signalReceived)
@@ -43,7 +44,7 @@ class ComputedCurveItem(AnnotationItem):
         for source in self._data_sources.values():
             source.changed.disconnect(self.redraw_limiter.signalReceived)
         if self._curve_item_added:
-            self._plot.removeItem(self._curve_item)
+            self._view_box.removeItem(self._curve_item)
 
     def _redraw(self, *args):
         params = {}
@@ -58,17 +59,16 @@ class ComputedCurveItem(AnnotationItem):
         if not self._curve_item_added:
             # Ignore bounding box of newly added line for auto-range computation, as we
             # choose its range based on the visible area.
-            self._plot.addItem(self._curve_item, ignoreBounds=True)
+            self._view_box.addItem(self._curve_item, ignoreBounds=True)
             self._curve_item_added = True
 
         # Choose horizontal range based on currently visible area.
-        view_box = self._plot.getViewBox()
-        x_range, _ = view_box.state["viewRange"]
+        x_range, _ = self._view_box.state["viewRange"]
         ext = (x_range[1] - x_range[0]) / 10
         x_lims = (x_range[0] - ext, x_range[1] + ext)
 
         # Choose number of points based on width of plot on screen (in pixels).
-        fn_xs = numpy.linspace(*x_lims, view_box.width())
+        fn_xs = numpy.linspace(*x_lims, self._view_box.width())
 
         fn_ys = self._function(fn_xs, params)
         self._curve_item.setData(fn_xs, fn_ys)
@@ -78,10 +78,10 @@ class CurveItem(AnnotationItem):
     """Shows a curve between the given x/y coordinate pairs."""
 
     def __init__(self, x_source: AnnotationDataSource, y_source: AnnotationDataSource,
-                 plot, curve_item):
+                 view_box, curve_item):
         self._x_source = x_source
         self._y_source = y_source
-        self._plot = plot
+        self._view_box = view_box
         self._curve_item = curve_item
         self._curve_item_added = False
 
@@ -94,7 +94,7 @@ class CurveItem(AnnotationItem):
         for source in [self._x_source, self._y_source]:
             source.changed.disconnect(self._redraw)
         if self._curve_item_added:
-            self._plot.removeItem(self._curve_item)
+            self._view_box.removeItem(self._curve_item)
 
     def _redraw(self):
         xs = self._x_source.get()
@@ -103,7 +103,7 @@ class CurveItem(AnnotationItem):
             return
 
         if not self._curve_item_added:
-            self._plot.addItem(self._curve_item)
+            self._view_box.addItem(self._curve_item)
             self._curve_item_added = True
         self._curve_item.setData(xs, ys)
 
@@ -112,11 +112,11 @@ class VLineItem(AnnotationItem):
     """Vertical line marking a given x coordinate, with optional confidence interval."""
 
     def __init__(self, position_source: AnnotationDataSource,
-                 uncertainty_source: Union[None, AnnotationDataSource], plot,
+                 uncertainty_source: Union[None, AnnotationDataSource], view_box,
                  base_color, x_data_to_display_scale, x_unit_suffix):
         self._position_source = position_source
         self._uncertainty_source = uncertainty_source
-        self._plot = plot
+        self._view_box = view_box
         self._x_data_to_display_scale = x_data_to_display_scale
         self._x_unit_suffix = x_unit_suffix
         self._added_to_plot = False
@@ -158,7 +158,7 @@ class VLineItem(AnnotationItem):
             self._uncertainty_source.changed.disconnect(self._redraw)
         if self._added_to_plot:
             for l in (self._left_line, self._center_line, self._right_line):
-                self._plot.removeItem(l)
+                self._view_box.removeItem(l)
 
     def _redraw(self):
         x = self._position_source.get()
@@ -166,9 +166,9 @@ class VLineItem(AnnotationItem):
             return
 
         if not self._added_to_plot:
-            self._plot.addItem(self._left_line, ignoreBounds=True)
-            self._plot.addItem(self._center_line, ignoreBounds=True)
-            self._plot.addItem(self._right_line, ignoreBounds=True)
+            self._view_box.addItem(self._left_line, ignoreBounds=True)
+            self._view_box.addItem(self._center_line, ignoreBounds=True)
+            self._view_box.addItem(self._right_line, ignoreBounds=True)
             self._added_to_plot = True
 
         delta_x = None

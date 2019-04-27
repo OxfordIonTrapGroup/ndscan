@@ -84,6 +84,7 @@ def group_channels_into_axes(channels: Dict[str, Any],
     # cache the results in a dict to only emit the does-not-exist warning once.
     path_to_name = {channels[name]["path"]: name for name in data_names}
     share_names = {}
+
     def get_share_name(name):
         if name in share_names:
             return share_names[name]
