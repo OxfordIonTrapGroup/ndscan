@@ -18,6 +18,8 @@ def extract_scalar_channels(channels: Dict[str, Any]
     """Extract channels with scalar numerical values from the given channel metadata,
     also mapping error bar channels to their associated value channels.
 
+    :param channels: The ndscan.channels metadata.
+
     :return: A tuple ``(data_names, error_bar_names)``. The first element is a list of
         strings giving the scalar channel names in priority order (excluding error
         bars), the second a dictionary matching those channels to the associated error
@@ -65,6 +67,62 @@ def extract_scalar_channels(channels: Dict[str, Any]
     data_names.sort(key=priority_key)
 
     return data_names, error_bar_names
+
+
+def group_channels_into_axes(channels: Dict[str, Any],
+                             data_names: List[str]) -> List[List[str]]:
+    """Extract channels with scalar numerical values from the given channel metadata,
+    also mapping error bar channels to their associated value channels.
+
+    :param channels: ndscan.channels metadata.
+    :param data_names: The channels to group. Sets the order of results.
+
+    :return: A list of lists giving the channel names along each axis.
+    """
+
+    # The display hint is given in terms of paths, so we need to translate to names. We
+    # cache the results in a dict to only emit the does-not-exist warning once.
+    path_to_name = {channels[name]["path"]: name for name in data_names}
+    share_names = {}
+    def get_share_name(name):
+        if name in share_names:
+            return share_names[name]
+
+        path = channels[name].get("display_hints", {}).get("share_axis_with", None)
+        if path is None:
+            return None
+        if path not in path_to_name:
+            logger.warning("share_axis_with target path '%s' does not exist", path)
+            return None
+        share_name = path_to_name[path]
+        share_names[name] = share_name
+        return share_name
+
+    # Group data names into axes. We don't know which order we will get the channels in,
+    # so just check both directions. This implementation is quadratic, but many othe
+    # things will break before this becomes a concern.
+    axes = []
+    for index, name in enumerate(data_names):
+        share_name = get_share_name(name)
+
+        for axis in axes:
+            for _, existing_name in axis:
+                if existing_name == share_name or get_share_name(existing_name) == name:
+                    axis.append((index, name))
+                    break
+            else:
+                continue
+            break
+        else:
+            axes.append([(index, name)])
+
+    # Sort the channels on each axes by original order, and then the groups themselves
+    # lexicographically too.
+    for axis in axes:
+        axis.sort()
+    axes.sort(key=lambda a: a[0])
+
+    return [[name for (_, name) in axis] for axis in axes]
 
 
 def extract_linked_datasets(param_schema: Dict[str, Any]) -> List[str]:
