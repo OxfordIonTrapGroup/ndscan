@@ -10,8 +10,9 @@ from typing import Dict, Union
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
+from .plot_widgets import AlternateMenuPlotWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, setup_axis_item, AlternateMenuPlotWidget)
+                    format_param_identity, setup_axis_item)
 
 logger = logging.getLogger(__name__)
 
