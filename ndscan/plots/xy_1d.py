@@ -8,9 +8,9 @@ from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
+from .plot_widgets import SubplotMenuPlotWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, setup_axis_item, SubplotMenuPlotWidget,
-                    FIT_COLORS, SERIES_COLORS)
+                    format_param_identity, setup_axis_item, FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 

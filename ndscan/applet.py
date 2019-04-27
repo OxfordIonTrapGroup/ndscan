@@ -6,7 +6,7 @@ import logging
 import pyqtgraph
 from typing import Any, Dict, Iterable
 
-from .plots.container import RootWidget
+from .plots.container_widgets import RootWidget
 from .plots.model import Context
 from .plots.model.subscriber import SubscriberRoot
 

@@ -3,8 +3,8 @@ import pyqtgraph
 from quamash import QtWidgets, QtCore
 
 from .model import SinglePointModel
-from .utils import (extract_scalar_channels, setup_axis_item, AlternateMenuPlotWidget,
-                    SERIES_COLORS)
+from .plot_widgets import AlternateMenuPlotWidget
+from .utils import extract_scalar_channels, setup_axis_item, SERIES_COLORS
 
 
 class _Series:
