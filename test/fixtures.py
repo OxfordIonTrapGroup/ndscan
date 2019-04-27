@@ -3,7 +3,6 @@ Common fragments/… for unit tests.
 """
 
 import numpy
-from artiq.experiment import *
 from ndscan.experiment import *
 
 
