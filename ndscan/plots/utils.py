@@ -15,7 +15,16 @@ FIT_COLORS = [
 ]
 
 
-def extract_scalar_channels(channels):
+def extract_scalar_channels(channels: Dict[str, Any]
+                            ) -> Tuple[List[str], Dict[str, str]]:
+    """Extract channels with scalar numerical values from the given channel metadata,
+    also mapping error bar channels to their associated value channels.
+
+    :return: A tuple ``(data_names, error_bar_names)``. The first element is a list of
+        strings giving the scalar channel names in priority order (excluding error
+        bars), the second a dictionary matching those channels to the associated error
+        bars, if any.
+    """
     data_names = set(name for name, spec in channels.items()
                      if spec["type"] in ["int", "float"])
 
@@ -60,7 +69,11 @@ def extract_scalar_channels(channels):
     return data_names, error_bar_names
 
 
-def extract_linked_datasets(param_schema):
+def extract_linked_datasets(param_schema: Dict[str, Any]) -> List[str]:
+    """Extract datasets mentioned in the default value of the given parameter schema.
+
+    :return: A list of dataset keys mentioned.
+    """
     datasets = []
     try:
         # Intercept dataset() to build up list of accessed keys.
