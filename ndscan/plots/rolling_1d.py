@@ -4,13 +4,14 @@ from quamash import QtWidgets, QtCore
 
 from .model import SinglePointModel
 from .plot_widgets import AlternateMenuPlotWidget
-from .utils import extract_scalar_channels, setup_axis_item, SERIES_COLORS
+from .utils import (extract_scalar_channels, group_channels_into_axes, setup_axis_item,
+                    SERIES_COLORS)
 
 
 class _Series:
-    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item,
+    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item,
                  history_length):
-        self.plot = plot
+        self.view_box = view_box
         self.data_item = data_item
         self.data_name = data_name
         self.error_bar_item = error_bar_item
@@ -44,16 +45,16 @@ class _Series:
                                         height=self.values[:, 1].T)
 
         if is_first:
-            self.plot.addItem(self.data_item)
+            self.view_box.addItem(self.data_item)
             if self.error_bar_item:
-                self.plot.addItem(self.error_bar_item)
+                self.view_box.addItem(self.error_bar_item)
 
     def remove_items(self):
         if self.values.shape[0] == 0:
             return
-        self.plot.removeItem(self.data_item)
+        self.view_box.removeItem(self.data_item)
         if self.error_bar_item:
-            self.plot.removeItem(self.error_bar_item)
+            self.view_box.removeItem(self.error_bar_item)
 
     def set_history_length(self, n):
         assert n > 0, "Invalid history length"
@@ -91,29 +92,34 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
             self.error.emit(str(e))
             return
 
-        colors = [SERIES_COLORS[i % len(SERIES_COLORS)] for i in range(len(data_names))]
-        for i, (data_name, color) in enumerate(zip(data_names, colors)):
-            data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color)
+        series_idx = 0
+        axes = group_channels_into_axes(channels, data_names)
+        for names in axes:
+            axis, view_box = self.new_y_axis()
 
-            error_bar_name = error_bar_names.get(data_name, None)
-            error_bar_item = pyqtgraph.ErrorBarItem(
-                pen=color) if error_bar_name else None
+            info = []
+            for name in names:
+                color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
+                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
 
-            self.series.append(
-                _Series(self, data_name, data_item, error_bar_name, error_bar_item,
-                        self._history_length))
+                error_bar_item = None
+                error_bar_name = error_bar_names.get(name, None)
+                if error_bar_name:
+                    error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
-        def axis_info(i):
-            # If there is only one series, set label/scaling accordingly.
-            # TODO: Add multiple y axis for additional channels.
-            c = channels[data_names[i]]
-            label = c["description"]
-            if not label:
-                label = c["path"].split("/")[-1]
-            return label, c["path"], colors[i], c
+                self.series.append(
+                    _Series(view_box, name, data_item, error_bar_name, error_bar_item,
+                            self._history_length))
 
-        setup_axis_item(self.getAxis("left"),
-                        [axis_info(i) for i in range(len(data_names))])
+                channel = channels[name]
+                label = channel["description"]
+                if not label:
+                    label = channel["path"].split("/")[-1]
+                info.append((label, channel["path"], color, channel))
+
+                series_idx += 1
+
+            setup_axis_item(axis, info)
 
         self.ready.emit()
 

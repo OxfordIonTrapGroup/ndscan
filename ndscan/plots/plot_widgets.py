@@ -11,6 +11,54 @@ from typing import List
 from quamash import QtCore, QtWidgets
 
 
+class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
+    """PlotWidget with the ability to create multiple y axes linked to the same x axis.
+
+    This is somewhat of a hack following the MultiplePlotAxes pyqtgraph example.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._num_y_axes = 0
+        self._additional_view_boxes = []
+
+    def new_y_axis(self):
+        self._num_y_axes += 1
+
+        pi = self.getPlotItem()
+        if self._num_y_axes == 1:
+            return pi.getAxis("left"), pi.getViewBox()
+
+        vb = pyqtgraph.ViewBox()
+
+        if self._num_y_axes == 2:
+            # With more than one axis, we need to start resizing the linked views.
+            pi.getViewBox().sigResized.connect(self._update_additional_view_boxes)
+
+            pi.showAxis("right")
+            axis = pi.getAxis("right")
+        else:
+            axis = pyqtgraph.AxisItem("right")
+            # FIXME: Z value setting is cargo-culted in from the pyqtgraph example –
+            # what should the correct value be?
+            axis.setZValue(-10000)
+            pi.layout.addItem(axis, 2, self._num_y_axes)
+
+        pi.scene().addItem(vb)
+        axis.linkToView(vb)
+        axis.setGrid(False)
+        vb.setXLink(pi)
+        self._additional_view_boxes.append(vb)
+        self._update_additional_view_boxes()
+        return axis, vb
+
+    def _update_additional_view_boxes(self):
+        for vb in self._additional_view_boxes:
+            vb.setGeometry(self.getViewBox().sceneBoundingRect())
+        for vb in self._additional_view_boxes:
+            vb.linkedViewChanged(self.getViewBox(), vb.XAxis)
+
+
 class ContextMenuBuilder:
     """Builds a list of QActions and separators to display in a QMenu context menu.
 
@@ -46,7 +94,7 @@ class ContextMenuBuilder:
         self._entries.append(action)
 
 
-class ContextMenuPlotWidget(pyqtgraph.PlotWidget):
+class ContextMenuPlotWidget(MultiYAxisPlotWidget):
     """PlotWidget with support for dynamically populated context menus."""
 
     def __init__(self):

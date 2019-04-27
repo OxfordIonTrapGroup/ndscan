@@ -10,17 +10,18 @@ from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import SubplotMenuPlotWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, setup_axis_item, FIT_COLORS, SERIES_COLORS)
+                    format_param_identity, group_channels_into_axes, setup_axis_item,
+                    FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
 
 class _XYSeries(QtCore.QObject):
-    def __init__(self, plot, data_name, data_item, error_bar_name, error_bar_item,
+    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item,
                  plot_left_to_right):
-        super().__init__(plot)
+        super().__init__(view_box)
 
-        self.plot = plot
+        self.view_box = view_box
         self.data_item = data_item
         self.data_name = data_name
         self.error_bar_item = error_bar_item
@@ -49,7 +50,7 @@ class _XYSeries(QtCore.QObject):
             y_data = np.array(y_data)
             self.data_item.setData(x_data[order], y_data[order])
             if self.num_current_points == 0:
-                self.plot.addItem(self.data_item)
+                self.view_box.addItem(self.data_item)
 
             if self.error_bar_item:
                 y_err = np.array(y_err)
@@ -57,27 +58,27 @@ class _XYSeries(QtCore.QObject):
                                             y=y_data[order],
                                             height=y_err[order])
                 if self.num_current_points == 0:
-                    self.plot.addItem(self.error_bar_item)
+                    self.view_box.addItem(self.error_bar_item)
         else:
             self.data_item.setData(x_data[:num_to_show], y_data[:num_to_show])
             if self.num_current_points == 0:
-                self.plot.addItem(self.data_item)
+                self.view_box.addItem(self.data_item)
 
             if self.error_bar_item:
                 self.error_bar_item.setData(x=x_data[:num_to_show],
                                             y=y_data[:num_to_show],
                                             height=(2 * np.array(y_err[:num_to_show])))
                 if self.num_current_points == 0:
-                    self.plot.addItem(self.error_bar_item)
+                    self.view_box.addItem(self.error_bar_item)
 
         self.num_current_points = num_to_show
 
     def remove_items(self):
         if self.num_current_points == 0:
             return
-        self.plot.removeItem(self.data_item)
+        self.view_box.removeItem(self.data_item)
         if self.error_bar_item:
-            self.plot.removeItem(self.error_bar_item)
+            self.view_box.removeItem(self.error_bar_item)
         self.num_current_points = 0
 
 
@@ -111,6 +112,8 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             self.getAxis("bottom"),
             [(x_schema["param"]["description"], format_param_identity(x_schema), None,
               x_schema["param"]["spec"])])
+        self.y_unit_suffix = None
+        self.y_data_to_display_scale = None
         self.crosshair = None
         self._highlighted_spot = None
         self.showGrid(x=True, y=True)
@@ -129,29 +132,39 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             self.error.emit(str(e))
             return
 
-        colors = [SERIES_COLORS[i % len(SERIES_COLORS)] for i in range(len(data_names))]
-        for i, (name, color) in enumerate(zip(data_names, colors)):
-            data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
-            data_item.sigClicked.connect(self._point_clicked)
+        series_idx = 0
+        axes = group_channels_into_axes(channels, data_names)
+        for names in axes:
+            axis, view_box = self.new_y_axis()
 
-            error_bar_name = error_bar_names.get(name, None)
-            error_bar_item = pyqtgraph.ErrorBarItem(
-                pen=color) if error_bar_name else None
+            info = []
+            for name in names:
+                color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
+                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
+                data_item.sigClicked.connect(self._point_clicked)
 
-            self.series.append(
-                _XYSeries(self, name, data_item, error_bar_name, error_bar_item, False))
+                error_bar_item = None
+                error_bar_name = error_bar_names.get(name, None)
+                if error_bar_name:
+                    error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
-        # If there is only one series, set unit/scale accordingly.
-        # TODO: Add multiple y axes for additional channels.
-        def axis_info(i):
-            c = channels[data_names[i]]
-            label = c["description"]
-            if not label:
-                label = c["path"].split("/")[-1]
-            return label, c["path"], colors[i], c
+                self.series.append(
+                    _XYSeries(view_box, name, data_item, error_bar_name, error_bar_item,
+                              False))
 
-        self.y_unit_suffix, self.y_data_to_display_scale = setup_axis_item(
-            self.getAxis("left"), [axis_info(i) for i in range(len(data_names))])
+                channel = channels[name]
+                label = channel["description"]
+                if not label:
+                    label = channel["path"].split("/")[-1]
+                info.append((label, channel["path"], color, channel))
+
+                series_idx += 1
+
+            suffix, scale = setup_axis_item(axis, info)
+            if self.y_unit_suffix is None:
+                # FIXME: Add multiple lines to the crosshair.
+                self.y_unit_suffix = suffix
+                self.y_data_to_display_scale = scale
 
         if self.crosshair is None:
             # FIXME: Reinitialise crosshair as necessary on schema changes.
@@ -178,7 +191,7 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             item.remove()
         self.annotation_items.clear()
 
-        def series_idx(ref):
+        def channel_ref_to_series_idx(ref):
             for i, s in enumerate(self.series):
                 if "channel_" + s.data_name == ref:
                     return i
@@ -193,42 +206,45 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         for a in annotations:
             if a.kind == "location":
                 if set(a.coordinates.keys()) == set(["axis_0"]):
-                    idx = max(
-                        series_idx(chan)
+                    associated_series_idx = max(
+                        channel_ref_to_series_idx(chan)
                         for chan in a.parameters.get("associated_channels", [None]))
-                    color = FIT_COLORS[idx % len(FIT_COLORS)]
+
+                    color = FIT_COLORS[associated_series_idx % len(FIT_COLORS)]
+                    vb = self.series[associated_series_idx].view_box
                     line = VLineItem(a.coordinates["axis_0"],
-                                     a.data.get("axis_0_error",
-                                                None), self.getPlotItem(), color,
+                                     a.data.get("axis_0_error", None), vb, color,
                                      self.x_data_to_display_scale, self.x_unit_suffix)
                     self.annotation_items.append(line)
                     continue
 
             if a.kind == "curve":
-                idx = None
-                for i, s in enumerate(self.series):
-                    match_coords = set(["axis_0", "channel_" + s.data_name])
+                associated_series_idx = None
+                for series_idx, series in enumerate(self.series):
+                    match_coords = set(["axis_0", "channel_" + series.data_name])
                     if set(a.coordinates.keys()) == match_coords:
-                        idx = i
+                        associated_series_idx = series_idx
                         break
-                if idx is not None:
-                    curve = make_curve_item(idx)
+                if associated_series_idx is not None:
+                    curve = make_curve_item(associated_series_idx)
+                    series = self.series[associated_series_idx]
+                    vb = series.view_box
                     item = CurveItem(a.coordinates["axis_0"],
-                                     a.coordinates["channel_" + s.data_name],
-                                     self.getPlotItem(), curve)
+                                     a.coordinates["channel_" + series.data_name], vb,
+                                     curve)
                     self.annotation_items.append(item)
                     continue
 
             if a.kind == "computed_curve":
                 function_name = a.parameters.get("function_name", None)
                 if ComputedCurveItem.is_function_supported(function_name):
-                    idx = max(
-                        series_idx(chan)
-                        for chan in a.parameters.get("associated_channels", []))
+                    associated_series_idx = max(
+                        channel_ref_to_series_idx(chan)
+                        for chan in a.parameters.get("associated_channels", [None]))
 
-                    curve = make_curve_item(idx)
-                    item = ComputedCurveItem(function_name, a.data, self.getPlotItem(),
-                                             curve)
+                    curve = make_curve_item(associated_series_idx)
+                    vb = self.series[associated_series_idx].view_box
+                    item = ComputedCurveItem(function_name, a.data, vb, curve)
                     self.annotation_items.append(item)
                     continue
 
