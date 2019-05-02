@@ -1,8 +1,8 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from ...utils import strip_suffix
-from . import *
+from . import Model, Root, ScanModel, SinglePointModel
 from .utils import call_later, emit_later
 
 logger = logging.getLogger(__name__)

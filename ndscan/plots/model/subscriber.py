@@ -1,7 +1,7 @@
-from typing import Any, Dict, Iterable
 import json
-from . import *
+from typing import Any, Dict, Iterable, List, Union
 from ...utils import strip_prefix
+from . import Annotation, Context, Model, Root, ScanModel, SinglePointModel
 
 
 class SubscriberRoot(Root):

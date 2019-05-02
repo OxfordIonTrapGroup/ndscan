@@ -1,6 +1,6 @@
-from typing import Any, Dict
-from . import *
+from typing import Any, Dict, Union
 from ...utils import strip_prefix
+from . import ScanModel, SinglePointModel
 
 
 class SelectPointFromScanModel(SinglePointModel):
