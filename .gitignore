@@ -1,4 +1,6 @@
 __pycache__
 *.pyc
-/*.egg-info
 /docs/_build
+/*.egg-info
+/.idea
+/.vscode
