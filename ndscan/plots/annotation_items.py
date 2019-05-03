@@ -1,3 +1,5 @@
+"""Plot annotations, which are rendered as one or more pyqtgraph graphics objects."""
+
 import numpy
 from oitg import uncertainty_to_string
 import pyqtgraph

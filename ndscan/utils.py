@@ -1,3 +1,5 @@
+"""Odds and ends common to all of ndscan."""
+
 from artiq.language import units
 import oitg.fitting
 from typing import Any, Callable, Dict, Iterable

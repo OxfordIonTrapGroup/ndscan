@@ -1,3 +1,8 @@
+"""ARTIQ applet that plots the results of a single ndscan experiment.
+
+Typically, applets aren't created manually, but used via ``ndscan.experiment`` (CCB).
+"""
+
 from artiq.applets.simple import SimpleApplet
 from artiq.protocols.pc_rpc import AsyncioClient
 from artiq.protocols.sync_struct import Subscriber
@@ -21,7 +26,10 @@ class _MainWidget(RootWidget):
         context = Context(self.set_dataset)
         super().__init__(SubscriberRoot(context), context)
 
-        # FIXME: See if call_later() fixes resizing on startup.
+        # Try ensuring a sensible window size on startup (i.e. large enough to show a
+        # plot in.
+        # FIXME: This doesn't seem to work when used with ARTIQ applet embedding. See if
+        # call_later() works around that, or whether this needs to be fixed in ARTIQ.
         self.resize(600, 600)
         self.setWindowTitle("ndscan plot")
 
