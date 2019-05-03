@@ -102,7 +102,6 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         self.model.points_rewritten.connect(rewritten)
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
-        self.subscan_roots = {}
 
         self.annotation_items = []
         self.series = []

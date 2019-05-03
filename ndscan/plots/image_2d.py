@@ -166,7 +166,6 @@ class _ImagePlot:
 class Image2DPlotWidget(AlternateMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
-    alternate_plot_requested = QtCore.pyqtSignal(str)
 
     def __init__(self, model: ScanModel, get_alternate_plot_names):
         super().__init__(get_alternate_plot_names)
