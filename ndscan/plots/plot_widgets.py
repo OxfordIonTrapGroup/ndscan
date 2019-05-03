@@ -133,7 +133,11 @@ class ContextMenuPlotWidget(MultiYAxisPlotWidget):
 
 class AlternateMenuPlotWidget(ContextMenuPlotWidget):
     """PlotWidget with context menu for integration with the
-    .container_widget.PlotContainerWidget alternate plot switching functionality."""
+    .container_widget.PlotContainerWidget alternate plot switching functionality.
+
+    Alternate plots are shown *instead* of the main plot (as compared to subplots, which
+    are shown separately).
+    """
 
     alternate_plot_requested = QtCore.pyqtSignal(str)
 
@@ -153,17 +157,18 @@ class AlternateMenuPlotWidget(ContextMenuPlotWidget):
 
 class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
     """PlotWidget with a context menu to open new windows for subplots (in addition to
-    AlternateMenuPlotWidget functionality)."""
+    AlternateMenuPlotWidget functionality).
+    """
 
     def __init__(self, context, get_alternate_plot_names):
         super().__init__(get_alternate_plot_names)
         self._context = context
 
-        #: Maps subplot names to active plot widgets.
-        self.subplots = {}
-
         #: Maps subscan names to model Root instances.
         self.subscan_roots = {}
+
+        #: Maps subplot names to active plot widgets.
+        self.subplot_widgets = {}
 
     def build_context_menu(self, builder: ContextMenuBuilder) -> None:
         for name in self.subscan_roots.keys():
@@ -173,7 +178,7 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
         super().build_context_menu(builder)
 
     def open_subplot(self, name: str):
-        widget = self.subplots.get(name, None)
+        widget = self.subplot_widgets.get(name, None)
         if widget is not None:
             widget.show()
             widget.activateWindow()
@@ -181,7 +186,7 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
 
         import ndscan.plots.container_widgets as containers
         widget = containers.RootWidget(self.subscan_roots[name], self._context)
-        self.subplots[name] = widget
+        self.subplot_widgets[name] = widget
         # TODO: Save window geometry.
         widget.resize(600, 400)
         widget.show()
