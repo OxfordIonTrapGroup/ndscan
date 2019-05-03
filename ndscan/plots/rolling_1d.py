@@ -66,7 +66,6 @@ class _Series:
 class Rolling1DPlotWidget(AlternateMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
-    alternate_plot_requested = QtCore.pyqtSignal(str)
 
     def __init__(self, model: SinglePointModel, get_alternate_plot_names):
         super().__init__(get_alternate_plot_names)
