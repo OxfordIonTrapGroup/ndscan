@@ -154,6 +154,11 @@ class ScanModel(Model):
         return self._annotations
 
     def _set_annotation_schemata(self, schemata: List[Dict[str, Any]]):
+        """Replace annotations with ones created according to the given schemata.
+
+        This will be called by concrete subclasses once/whenever they have received the
+        annotation metadata.
+        """
         self._annotation_schemata = schemata
         self._annotations = []
 
@@ -180,6 +185,11 @@ class ScanModel(Model):
 
     def _set_online_analyses(self,
                              analysis_schemata: Dict[str, Dict[str, Any]]) -> None:
+        """Create and hook up online analyses from the given schema.
+
+        This will be called by concrete subclasses once/whenever they have received
+        the schema metadata.
+        """
         for a in self._online_analyses.values():
             a.stop()
         self._online_analyses = {}

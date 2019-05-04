@@ -22,6 +22,12 @@ def _make_dimensional_plot(model: ScanModel, get_alternate_names):
 
 
 class RootWidget(QtWidgets.QWidget):
+    """Top-level widget that displays the plot(s) for a given :class:`.Root` instance.
+
+    Shows a message while the model is ``None`` (i.e. no point selected/data still
+    loading), the plot after that.
+    """
+
     def __init__(self, root: Root, context: Context):
         super().__init__()
 
@@ -63,6 +69,12 @@ class RootWidget(QtWidgets.QWidget):
 
 
 class PlotContainerWidget(QtWidgets.QWidget):
+    """Displays the plot for a given :class:`.Model`.
+
+    For single point models, also registers any subscans as alternate plots to the
+    top-level rolling plot.
+    """
+
     def __init__(self, model: Model):
         super().__init__()
 
