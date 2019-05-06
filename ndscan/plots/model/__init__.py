@@ -38,20 +38,35 @@ class Context(QtCore.QObject):
     only sparsely (i.e. for actual properties of the environment).
     """
 
+    source_id_changed = QtCore.pyqtSignal(str)
     title_changed = QtCore.pyqtSignal(str)
 
     def __init__(self, set_dataset: Callable[[str, Any], None] = None):
         super().__init__()
         self._set_dataset = set_dataset
         self._title = ""
+        self._source_id = "<unknown>"
 
     def get_title(self) -> str:
         return self._title
 
     def set_title(self, title: str) -> None:
-        if title != self._title:
+        if self._title != title:
             self._title = title
             self.title_changed.emit(title)
+
+    def get_source_id(self):
+        """Return a short string that helps the user to identify the data source.
+
+        This is usually based on the run id, and shown in plots for data traceability
+        purposes.
+        """
+        return self._source_id
+
+    def set_source_id(self, source_id):
+        if self._source_id != source_id:
+            self._source_id = source_id
+            self.source_id_changed.emit(source_id)
 
     def is_online_master(self) -> bool:
         """Return whether the plot is run in an environment where there is a connection

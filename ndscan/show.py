@@ -38,7 +38,13 @@ def main():
     try:
         context = Context()
         context.set_title(os.path.basename(args.path))
-        root = HDF5Root(file["datasets"], context)
+        # Old ndscan versions had a rid dataset instead of source_id.
+        datasets = file["datasets"]
+        if "ndscan.source_id" in datasets:
+            context.set_source_id(datasets["ndscan.source_id"][()])
+        else:
+            context.set_source_id("rid_{}".format(datasets["ndscan.rid"][()]))
+        root = HDF5Root(datasets, context)
     except Exception as e:
         QtWidgets.QMessageBox.critical(
             None, "Error parsing ndscan file",

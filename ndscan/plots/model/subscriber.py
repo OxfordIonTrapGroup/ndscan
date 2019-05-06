@@ -16,6 +16,7 @@ class SubscriberRoot(Root):
 
         # For root dataset sources, scan metadata doesn't change once it's been set.
         self._title_set = False
+        self._source_id_set = False
         self._axes_initialised = False
 
     def data_changed(self, data: Dict[str, Any],
@@ -28,6 +29,12 @@ class SubscriberRoot(Root):
             if fqn:
                 self._context.set_title(fqn)
                 self._title_set = True
+
+        if not self._source_id_set:
+            source_id = d("source_id")
+            if source_id:
+                self._context.set_source_id(source_id)
+                self._source_id_set = True
 
         if not self._axes_initialised:
             axes_json = d("axes")

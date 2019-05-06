@@ -14,6 +14,7 @@ ScanReboundAddOneExp = make_fragment_scan_exp(ReboundAddOneFragment)
 
 class FragmentScanExpCase(HasEnvironmentCase):
     def test_run_trivial_scan(self):
+        self.dataset_db.data["system_id"] = (True, "system")
         exp = self.create(ScanAddOneExp)
         exp._params["scan"]["continuous_without_axes"] = False
         exp.prepare()
@@ -28,7 +29,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(json.loads(d("axes")), [])
         self.assertEqual(d("completed"), True)
         self.assertEqual(d("fragment_fqn"), "fixtures.AddOneFragment")
-        self.assertEqual(d("rid"), 0)
+        self.assertEqual(d("source_id"), "system_0")
 
     def test_run_1d_scan(self):
         exp = self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
@@ -145,7 +146,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("points.axis_0"), [0, 1, 2])
         self.assertEqual(d("points.channel_result"), [1, 2, 3])
         self.assertEqual(d("fragment_fqn"), fragment_fqn)
-        self.assertEqual(d("rid"), 0)
+        self.assertEqual(d("source_id"), "rid_0")
 
         return exp
 
