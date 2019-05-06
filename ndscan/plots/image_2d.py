@@ -10,7 +10,7 @@ from typing import Dict, Union
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
-from .plot_widgets import AlternateMenuPlotWidget
+from .plot_widgets import add_source_id_label, AlternateMenuPlotWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, setup_axis_item)
 
@@ -198,6 +198,9 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
                                                 self.y_unit_suffix,
                                                 self.y_data_to_display_scale)
         self.showGrid(x=True, y=True)
+
+        self.source_label = add_source_id_label(self.getPlotItem().getViewBox(),
+                                                self.model.context)
 
     def _initialise_series(self, channels):
         if self.plot is not None:

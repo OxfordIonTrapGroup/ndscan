@@ -3,7 +3,7 @@ import pyqtgraph
 from quamash import QtWidgets, QtCore
 
 from .model import SinglePointModel
-from .plot_widgets import AlternateMenuPlotWidget
+from .plot_widgets import add_source_id_label, AlternateMenuPlotWidget
 from .utils import (extract_scalar_channels, group_channels_into_axes, setup_axis_item,
                     SERIES_COLORS)
 
@@ -78,6 +78,9 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
         self._history_length = 1024
 
         self.showGrid(x=True, y=True)
+
+        self.source_label = add_source_id_label(self.getPlotItem().getViewBox(),
+                                                self.model.context)
 
     def _initialise_series(self):
         for s in self.series:

@@ -234,7 +234,9 @@ class FragmentScanExperiment(EnvExperiment):
         def push(name, value):
             self.set_dataset("ndscan." + name, value, broadcast=True)
 
-        push("rid", self.scheduler.rid)
+        source_prefix = self.get_dataset("system_id", default="rid")
+        push("source_id", "{}_{}".format(source_prefix, self.scheduler.rid))
+
         push("completed", False)
 
         self._scan_desc = describe_scan(self._scan, self.fragment,

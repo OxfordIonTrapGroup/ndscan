@@ -8,7 +8,7 @@ from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import SubplotMenuPlotWidget
+from .plot_widgets import add_source_id_label, SubplotMenuPlotWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, group_channels_into_axes, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
@@ -117,8 +117,10 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         self._highlighted_spot = None
         self.showGrid(x=True, y=True)
 
-        self.getPlotItem().getViewBox().scene().sigMouseClicked.connect(
-            self._handle_scene_click)
+        view_box = self.getPlotItem().getViewBox()
+        self.source_label = add_source_id_label(view_box, self.model.context)
+
+        view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
 
     def _initialise_series(self, channels):
         for s in self.series:
