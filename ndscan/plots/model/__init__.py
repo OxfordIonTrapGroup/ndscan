@@ -43,11 +43,14 @@ class Context(QtCore.QObject):
     def __init__(self, set_dataset: Callable[[str, Any], None] = None):
         super().__init__()
         self._set_dataset = set_dataset
-        self.title = ""
+        self._title = ""
+
+    def get_title(self) -> str:
+        return self._title
 
     def set_title(self, title: str) -> None:
-        if title != self.title:
-            self.title = title
+        if title != self._title:
+            self._title = title
             self.title_changed.emit(title)
 
     def is_online_master(self) -> bool:
