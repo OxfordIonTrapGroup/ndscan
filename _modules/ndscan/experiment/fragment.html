@@ -414,9 +414,10 @@
 
         <span class="c1"># Deregister it from the original owner and make sure we set the store</span>
         <span class="c1"># to our own later.</span>
+        <span class="n">original_handles</span> <span class="o">=</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_get_all_handles_for_param</span><span class="p">(</span><span class="n">original_name</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">original_name</span><span class="p">]</span>
-        <span class="n">original_handle</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">original_owner</span><span class="p">,</span> <span class="n">original_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">original_handle</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">original_handles</span>
 
         <span class="k">return</span> <span class="n">handle</span></div>
 
