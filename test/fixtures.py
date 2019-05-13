@@ -37,6 +37,15 @@ class ReboundAddOneFragment(ExpFragment):
         self.add_one.run_once()
 
 
+class ReboundReboundAddOneFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("rebound_add_one", ReboundAddOneFragment)
+        self.setattr_param_rebind("value", self.rebound_add_one)
+
+    def run_once(self):
+        self.rebound_add_one.run_once()
+
+
 class AddOneCustomAnalysisFragment(AddOneFragment):
     def get_default_analyses(self):
         return [CustomAnalysis({self.value}, self._analyze)]
