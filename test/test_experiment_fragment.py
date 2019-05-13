@@ -4,6 +4,7 @@ Tests for general fragment tree behaviour.
 
 from ndscan.experiment import *
 from ndscan.experiment.parameters import IntParamStore
+from fixtures import ReboundReboundAddOneFragment
 from mock_environment import HasEnvironmentCase
 
 
@@ -36,3 +37,16 @@ class TestParamDefaults(HasEnvironmentCase):
         ddf.recompute_param_defaults()
         self.assertEqual(ddf.foo.get(), 6)
         self.assertEqual(ddf.bar.get(), 5)
+
+
+class TestRebinding(HasEnvironmentCase):
+    def test_recursive_rebind_default(self):
+        rrf = self.create(ReboundReboundAddOneFragment, [])
+        result = run_fragment_once(rrf)[rrf.rebound_add_one.add_one.result]
+        self.assertEqual(result, 1)
+
+    def test_recursive_rebind_override(self):
+        rrf = self.create(ReboundReboundAddOneFragment, [])
+        rrf.override_param("value", 2)
+        result = run_fragment_once(rrf)[rrf.rebound_add_one.add_one.result]
+        self.assertEqual(result, 3)

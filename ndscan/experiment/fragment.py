@@ -266,9 +266,10 @@ class Fragment(HasEnvironment):
 
         # Deregister it from the original owner and make sure we set the store
         # to our own later.
+        original_handles = original_owner._get_all_handles_for_param(original_name)
         del original_owner._free_params[original_name]
-        original_handle = getattr(original_owner, original_name)
-        self._rebound_subfragment_params.setdefault(name, []).append(original_handle)
+        assert name not in self._rebound_subfragment_params
+        self._rebound_subfragment_params[name] = original_handles
 
         return handle
 
