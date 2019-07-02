@@ -203,7 +203,7 @@ class FloatParam:
                 try:
                     scale = getattr(units, unit)
                 except AttributeError:
-                    raise KeyError("Unit {} is unknown, you must specify "
+                    raise KeyError("Unit '{}' is unknown, you must specify "
                                    "the scale manually".format(unit))
         self.scale = scale
         self.unit = unit
