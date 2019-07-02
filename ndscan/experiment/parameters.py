@@ -254,13 +254,15 @@ class IntParam:
                  fqn: str,
                  description: str,
                  default: Union[str, int],
-                 min=0,
+                 min: Union[int, None] = 0,
+                 max: Union[int, None] = None,
                  unit: str = "",
                  scale=None):
         self.fqn = fqn
         self.description = description
         self.default = default
         self.min = min
+        self.max = max
 
         self.unit = unit
         self.scale = resolve_numeric_scale(scale, unit)
@@ -270,6 +272,10 @@ class IntParam:
 
     def describe(self) -> Dict[str, Any]:
         spec = {"scale": self.scale}
+        if self.min is not None:
+            spec["min"] = self.min
+        if self.max is not None:
+            spec["max"] = self.max
         if self.unit:
             spec["unit"] = self.unit
         return {
@@ -289,6 +295,9 @@ class IntParam:
         if self.min is not None and value < self.min:
             raise InvalidDefaultError("Value {} below minimum of {}".format(
                 value, self.min))
+        if self.max is not None and value > self.max:
+            raise InvalidDefaultError("Value {} above maximum of {}".format(
+                value, self.max))
         return IntParamStore(identity, value)
 
 
