@@ -175,6 +175,18 @@ class StringParamHandle(ParamHandle):
         return self._store.get_value()
 
 
+def resolve_numeric_scale(scale: Union[None, float], unit: str) -> float:
+    if scale is not None:
+        return scale
+    if unit == "":
+        return 1
+    try:
+        return getattr(units, unit)
+    except AttributeError:
+        raise KeyError("Unit '{}' is unknown, you must specify "
+                       "the scale manually".format(unit))
+
+
 class FloatParam:
     HandleType = FloatParamHandle
     StoreType = FloatParamStore
@@ -196,19 +208,10 @@ class FloatParam:
         self.min = min
         self.max = max
 
-        if scale is None:
-            if unit == "":
-                scale = 1.0
-            else:
-                try:
-                    scale = getattr(units, unit)
-                except AttributeError:
-                    raise KeyError("Unit '{}' is unknown, you must specify "
-                                   "the scale manually".format(unit))
-        self.scale = scale
         self.unit = unit
+        self.scale = resolve_numeric_scale(scale, unit)
 
-        self.step = step if step is not None else scale / 10.0
+        self.step = step if step is not None else self.scale / 10.0
 
     def describe(self) -> Dict[str, Any]:
         spec = {"scale": self.scale, "step": self.step}
@@ -259,28 +262,22 @@ class IntParam:
         self.default = default
         self.min = min
 
-        if scale is None:
-            if unit == "":
-                scale = 1
-            else:
-                try:
-                    scale = getattr(units, unit)
-                except AttributeError:
-                    raise KeyError("Unit {} is unknown, you must specify "
-                                   "the scale manually".format(unit))
-        if scale != 1:
+        self.unit = unit
+        self.scale = resolve_numeric_scale(scale, unit)
+        if self.scale != 1:
             raise NotImplementedError(
                 "Non-unity scales not implemented for integer parameters")
 
     def describe(self) -> Dict[str, Any]:
+        spec = {"scale": self.scale}
+        if self.unit:
+            spec["unit"] = self.unit
         return {
             "fqn": self.fqn,
             "description": self.description,
             "type": "int",
             "default": str(self.default),
-            "spec": {
-                "scale": 1
-            }
+            "spec": spec
         }
 
     def eval_default(self, get_dataset: Callable) -> int:
