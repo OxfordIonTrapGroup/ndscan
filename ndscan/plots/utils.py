@@ -83,39 +83,61 @@ def group_channels_into_axes(channels: Dict[str, Any],
     # The display hint is given in terms of paths, so we need to translate to names. We
     # cache the results in a dict to only emit the does-not-exist warning once.
     path_to_name = {channels[name]["path"]: name for name in data_names}
-    share_names = {}
 
     def get_share_name(name):
-        if name in share_names:
-            return share_names[name]
-
         path = channels[name].get("display_hints", {}).get("share_axis_with", None)
         if path is None:
-            return None
+            return name
         if path not in path_to_name:
             logger.warning("share_axis_with target path '%s' does not exist", path)
-            return None
-        share_name = path_to_name[path]
-        share_names[name] = share_name
-        return share_name
+            return name
+        return path_to_name[path]
 
     # Group data names into axes. We don't know which order we will get the channels in,
-    # so just check both directions. This implementation is quadratic, but many othe
+    # so just check both directions. This implementation is quadratic, but many other
     # things will break before this becomes a concern.
     axes = []
+    share_names = {}
     for index, name in enumerate(data_names):
         share_name = get_share_name(name)
+        share_names[name] = share_name
 
+        target_axis = None
+
+        # Find links of the current name to any already existing axes.
+        if share_name != name:
+            for axis in axes:
+                for _, existing_name in axis:
+                    if existing_name == share_name:
+                        target_axis = axis
+                        break
+                else:
+                    continue
+                break
+        if target_axis is None:
+            target_axis = []
+            axes.append(target_axis)
+
+        target_axis.append((index, name))
+
+        # Now resolve any already existing axes with items pointing to the
+        # current name by merging them into the current axis.
+        new_axes = []
         for axis in axes:
-            for _, existing_name in axis:
-                if existing_name == share_name or get_share_name(existing_name) == name:
-                    axis.append((index, name))
-                    break
-            else:
+            if axis == target_axis:
+                # Can't merge target into itself.
+                new_axes.append(axis)
                 continue
-            break
-        else:
-            axes.append([(index, name)])
+            links_to_current = False
+            for _, existing_name in axis:
+                if share_names[existing_name] == name:
+                    links_to_current = True
+                    break
+            if links_to_current:
+                target_axis.extend(axis)
+            else:
+                new_axes.append(axis)
+        axes = new_axes
 
     # Sort the channels on each axes by original order, and then the groups themselves
     # lexicographically too.
