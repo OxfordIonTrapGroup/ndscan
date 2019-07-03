@@ -38,7 +38,6 @@ TestExp = make_fragment_scan_exp(TestFragment)
 class FragmentScanExpCase(HasEnvironmentCase):
     def test_scalar_channels(self):
         exp = self.create(TestExp)
-        exp._params["scan"]["continuous_without_axes"] = False
         exp.prepare()
         exp.run()
 
