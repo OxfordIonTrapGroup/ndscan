@@ -129,11 +129,9 @@ class ScanOptions:
 
     def __init__(self,
                  num_repeats: int = 1,
-                 continuous_without_axes: bool = False,
                  randomise_order_globally: bool = False,
                  seed=None):
         self.num_repeats = num_repeats
-        self.continuous_without_axes = continuous_without_axes
         self.randomise_order_globally = randomise_order_globally
 
         if seed is None:

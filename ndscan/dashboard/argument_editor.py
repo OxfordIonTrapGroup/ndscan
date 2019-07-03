@@ -11,7 +11,8 @@ from artiq.gui.scientific_spinbox import ScientificSpinBox
 from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
 from artiq.protocols import pyon
 
-from ..utils import PARAMS_ARG_KEY, eval_param_default, shorten_to_unambiguous_suffixes
+from ..utils import (NoAxesMode, PARAMS_ARG_KEY, eval_param_default,
+                     shorten_to_unambiguous_suffixes)
 from .fuzzy_select import FuzzySelectWidget
 
 logger = logging.getLogger(__name__)
@@ -152,23 +153,26 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
             #
 
-            cwa_container = QtWidgets.QWidget()
-            cwa_layout = QtWidgets.QHBoxLayout()
-            cwa_container.setLayout(cwa_layout)
+            no_axis_container = QtWidgets.QWidget()
+            no_axis_layout = QtWidgets.QHBoxLayout()
+            no_axis_container.setLayout(no_axis_layout)
 
-            cwa_label = QtWidgets.QLabel("Repeat continuously without axes: ")
-            cwa_layout.addWidget(cwa_label)
-            cwa_layout.setStretchFactor(cwa_label, 0)
+            no_axis_label = QtWidgets.QLabel("No-axis mode: ")
+            no_axis_layout.addWidget(no_axis_label)
+            no_axis_layout.setStretchFactor(no_axis_label, 0)
 
-            self.cwa_box = QtWidgets.QCheckBox()
-            self.cwa_box.setChecked(ndscan_params["scan"].get(
-                "continuous_without_axes", True))
-            cwa_layout.addWidget(self.cwa_box)
-            cwa_layout.setStretchFactor(self.cwa_box, 1)
+            self.no_axes_box = QtWidgets.QComboBox()
+            self.no_axes_box.addItems([m.value for m in NoAxesMode])
+            mode = NoAxesMode[ndscan_params["scan"].get("no_axes_mode", "single")]
+            self.no_axes_box.setCurrentText(mode.value)
+            no_axis_layout.addWidget(self.no_axes_box)
+            no_axis_layout.setStretchFactor(self.no_axes_box, 0)
 
-            cwa_item = QtWidgets.QTreeWidgetItem()
-            scan_options_group.addChild(cwa_item)
-            self.setItemWidget(cwa_item, 1, cwa_container)
+            no_axis_layout.addStretch()
+
+            no_axis_item = QtWidgets.QTreeWidgetItem()
+            scan_options_group.addChild(no_axis_item)
+            self.setItemWidget(no_axis_item, 1, no_axis_container)
 
             #
 
@@ -553,7 +557,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
         # Store scan parameters.
         scan["num_repeats"] = self.num_repeats_box.value()
-        scan["continuous_without_axes"] = self.cwa_box.isChecked()
+        scan["no_axes_mode"] = NoAxesMode(self.no_axes_box.currentText()).name
         scan["randomise_order_globally"] = self.randomise_globally_box.isChecked()
 
         _update_ndscan_params(self._arguments, self._ndscan_params)

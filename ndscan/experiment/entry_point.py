@@ -15,6 +15,7 @@ from contextlib import suppress
 import json
 import logging
 import random
+import time
 from typing import Any, Callable, Dict, Iterable, Type
 
 from .default_analysis import AnnotationContext
@@ -26,7 +27,7 @@ from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           filter_default_analyses)
 from .utils import is_kernel
-from ..utils import PARAMS_ARG_KEY, shorten_to_unambiguous_suffixes
+from ..utils import NoAxesMode, PARAMS_ARG_KEY, shorten_to_unambiguous_suffixes
 
 __all__ = [
     "make_fragment_scan_exp", "run_fragment_once", "create_and_run_fragment_once"
@@ -73,7 +74,7 @@ class FragmentScanExperiment(EnvExperiment):
             "scan": {
                 "axes": [],
                 "num_repeats": 1,
-                "continuous_without_axes": True,
+                "no_axes_mode": "single",
                 "randomise_order_globally": False
             }
         }
@@ -116,8 +117,29 @@ class FragmentScanExperiment(EnvExperiment):
             param_stores.setdefault(fqn, []).append((pathspec, store))
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store))
 
+        no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
+        # FIXME: Export as individual booleans as enums crash the ARTIQ
+        # compiler.
+        self._continue_running = False
+        self._is_time_series = False
+        if not axes:
+            self._continue_running = no_axes_mode != NoAxesMode.single
+            if no_axes_mode == NoAxesMode.time_series:
+                self._is_time_series = True
+                schema = {
+                    "type": "float",
+                    "fqn": "timestamp",
+                    "description": "Elapsed time",
+                    "default": "0.0",
+                    "spec": {
+                        "min": 0.0,
+                        "unit": "s",
+                        "scale": 1.0
+                    },
+                }
+                axes = [ScanAxis(schema, "*", None)]
+
         options = ScanOptions(scan.get("num_repeats", 1),
-                              scan.get("continuous_without_axes", True),
                               scan.get("randomise_order_globally", False))
         self._scan = ScanSpec(axes, generators, options)
 
@@ -151,8 +173,10 @@ class FragmentScanExperiment(EnvExperiment):
         self._issue_ccb()
 
         with suppress(TerminationRequested):
-            if not self._scan.axes:
-                self._run_single()
+            if self._is_time_series:
+                self._run_time_series()
+            elif not self._scan.axes:
+                self._run_continuous()
             else:
                 runner = ScanRunner(self)
                 self._scan_axis_sinks = [
@@ -198,7 +222,12 @@ class FragmentScanExperiment(EnvExperiment):
                              json.dumps(annotations),
                              broadcast=True)
 
-    def _run_single(self):
+    def _run_time_series(self):
+        self._timestamp_sink = AppendingDatasetSink(self, "ndscan.points.axis_0")
+        self._time_series_start = time.monotonic()
+        self._run_continuous()
+
+    def _run_continuous(self):
         try:
             with suppress(TerminationRequested):
                 while True:
@@ -208,7 +237,7 @@ class FragmentScanExperiment(EnvExperiment):
                         self.core.comm.close()
                     else:
                         self._continuous_loop()
-                    if not self._scan.options.continuous_without_axes:
+                    if not self._continue_running:
                         return
                     self.scheduler.pause()
         finally:
@@ -224,8 +253,14 @@ class FragmentScanExperiment(EnvExperiment):
         while not self.scheduler.check_pause():
             self.fragment.device_setup()
             self.fragment.run_once()
-            if not self._scan.options.continuous_without_axes:
+            self._finish_continuous_point()
+            if not self._continue_running:
                 return
+
+    @rpc(flags={"async"})
+    def _finish_continuous_point(self):
+        if self._is_time_series:
+            self._timestamp_sink.push(time.monotonic() - self._time_series_start)
 
     def _set_completed(self):
         self.set_dataset("ndscan.completed", True, broadcast=True)

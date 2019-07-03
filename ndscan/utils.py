@@ -1,6 +1,7 @@
 """Odds and ends common to all of ndscan."""
 
 from artiq.language import units
+from enum import Enum, unique
 import oitg.fitting
 from typing import Any, Callable, Dict, Iterable
 
@@ -18,6 +19,14 @@ FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 #:
 #: Users should not need to directly interface with this.
 PARAMS_ARG_KEY = "ndscan_params"
+
+
+@unique
+class NoAxesMode(Enum):
+    """Behaviours when launching an experiment with no parameter to be scanned."""
+    single = "Single (run once)"
+    repeat = "Repeat (save only last)"
+    time_series = "Time series (save all, with timestamps)"
 
 
 def strip_prefix(string: str, prefix: str) -> str:

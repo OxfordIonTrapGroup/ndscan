@@ -16,7 +16,6 @@ class FragmentScanExpCase(HasEnvironmentCase):
     def test_run_trivial_scan(self):
         self.dataset_db.data["system_id"] = (True, "system")
         exp = self.create(ScanAddOneExp)
-        exp._params["scan"]["continuous_without_axes"] = False
         exp.prepare()
         exp.run()
 
