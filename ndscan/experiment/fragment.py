@@ -83,16 +83,16 @@ class Fragment(HasEnvironment):
     def host_setup(self):
         """Perform host-side initialisation.
 
-        For fragments used as part of an on-core-device scan (i.e. with an `@kernel`
-        ``device_setup()``/``run_once()``), this will be called on the host, immediately
-        before the top-level kernel function is entered.
+        For fragments used as part of an on-core-device scan (i.e. with an ``@kernel``
+        :meth:`device_setup`/:meth:`run_once`), this will be called on the host,
+        immediately before the top-level kernel function is entered.
 
-        Typical uses include initialising member variables for latter use in `@kernel`
+        Typical uses include initialising member variables for latter use in ``@kernel``
         functions, and setting parameters not modifiable from kernels (e.g. because
         modifying a parameter requires launching another experiment to effect the
         change).
 
-        The default implementation calls ``host_setup()`` recursively on all
+        The default implementation calls :meth:`host_setup` recursively on all
         subfragments. When overriding it in a fragment with subfragments, consider
         forwarding to the default implementation (see example).
 
@@ -120,7 +120,7 @@ class Fragment(HasEnvironment):
         immediately before each ``ExpFragment.run_once()`` call (and, for on-core-device
         scans, from within the same kernel).
 
-        The default implementation calls ``device_setup_subfragments()`` to initialise
+        The default implementation calls :meth:`device_setup_subfragments` to initialise
         all subfragments. When overriding it, consider forwarding to it too unless a
         special initialisation order, etc. is required (see example).
 
@@ -139,14 +139,15 @@ class Fragment(HasEnvironment):
 
     @portable
     def device_setup_subfragments(self) -> None:
-        """Call ``device_setup()`` on all subfragments.
+        """Call :meth:`device_setup` on all subfragments.
 
-        This is the default implementation for ``device_setup()``, but is kept separate
-        so that subfragments overriding ``device_setup()`` can still access it. (ARTIQ
-        Python does not support calling superclass implementations in a polymorphic
-        way – ``Fragment.device_setup(self)`` could be used from one subclass, but would
-        cause the argument type to be inferred as that subclass. Only direct member
-        function calls are special-cased to be generic on the `self` type.)
+        This is the default implementation for :meth:`device_setup`, but is kept
+        separate so that subfragments overriding :meth:`device_setup` can still access
+        it. (ARTIQ Python does not support calling superclass implementations in a
+        polymorphic way – ``Fragment.device_setup(self)`` could be used from one
+        subclass, but would cause the argument type to be inferred as that subclass.
+        Only direct member function calls are special-cased to be generic on the
+        `self` type.)
         """
         # Forward to implementation generated using kernel_from_string().
         self._device_setup_subfragments_impl(self)
@@ -456,8 +457,8 @@ class ExpFragment(Fragment):
         """Prepare this instance for execution
         (see ``artiq.language.environment.Experiment.prepare``).
 
-        This is invoked only once per (sub)scan, after :meth:``build_fragment()`` but
-        before :meth:``host_setup()``. At this point, parameters, datasets and devices
+        This is invoked only once per (sub)scan, after :meth:`.build_fragment` but
+        before :meth:`.host_setup`. At this point, parameters, datasets and devices
         be accessed, but devices must not yet be.
 
         For top-level scans, this can (and will) be executed in the `prepare` scheduler
