@@ -253,6 +253,11 @@ class Fragment(HasEnvironment):
 
         if original_name is None:
             original_name = name
+        assert hasattr(original_owner, original_name), \
+            "Original owner does not have a field of name '{}'".format(original_name)
+        assert original_name in original_owner._free_params, (
+            "Field '{}' is not a free parameter of original owner; "
+            "already rebound?".format(original_name))
 
         # Set up our own copy of the parameter.
         original_param = original_owner._free_params[original_name]
