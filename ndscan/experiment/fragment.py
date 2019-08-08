@@ -378,7 +378,11 @@ class Fragment(HasEnvironment):
                     store = override_store
             if not store:
                 identity = (param.fqn, self._stringize_path())
-                value = param.eval_default(self._get_dataset_or_set_default)
+                try:
+                    value = param.eval_default(self._get_dataset_or_set_default)
+                except Exception:
+                    raise ValueError("Error while evaluating default "
+                                     "value for '{}'".format(identity))
                 store = param.make_store(identity, value)
                 self._default_params.append((param, store))
 
