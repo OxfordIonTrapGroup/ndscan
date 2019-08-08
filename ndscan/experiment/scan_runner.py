@@ -2,7 +2,8 @@
 
 While :mod:`.scan_generator` describes a scan to be run in the abstract, this module
 contains the implementation to actually execute one within an ARTIQ experiment. This
-will likely be used by end users via ``FragmentScanExperiment`` or subscans.
+will likely be used by end users via
+:class:`~ndscan.experiment.entry_point.FragmentScanExperiment` or subscans.
 """
 
 import numpy as np
