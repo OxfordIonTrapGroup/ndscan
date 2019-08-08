@@ -526,7 +526,11 @@
                     <span class="n">store</span> <span class="o">=</span> <span class="n">override_store</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">store</span><span class="p">:</span>
                 <span class="n">identity</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span>
-                <span class="n">value</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_or_set_default</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_or_set_default</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Error while evaluating default &quot;</span>
+                                     <span class="s2">&quot;value for &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">identity</span><span class="p">))</span>
                 <span class="n">store</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">make_store</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_default_params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">param</span><span class="p">,</span> <span class="n">store</span><span class="p">))</span>
 
