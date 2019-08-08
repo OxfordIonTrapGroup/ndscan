@@ -426,7 +426,8 @@ class Fragment(HasEnvironment):
             try:
                 return self.get_dataset(key)
             except KeyError:
-                logger.info("Setting dataset '%s' to default value (%s)", key, default)
+                logger.warning("Setting dataset '%s' to default value (%s)", key,
+                               default)
                 self.set_dataset(key, default, broadcast=True, persist=True)
                 return default
         except Exception as e:
