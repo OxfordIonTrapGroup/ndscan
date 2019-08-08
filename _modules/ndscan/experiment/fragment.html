@@ -401,6 +401,11 @@
 
         <span class="k">if</span> <span class="n">original_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">original_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">original_owner</span><span class="p">,</span> <span class="n">original_name</span><span class="p">),</span> \
+            <span class="s2">&quot;Original owner does not have a field of name &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_name</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">original_name</span> <span class="ow">in</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; is not a free parameter of original owner; &quot;</span>
+            <span class="s2">&quot;already rebound?&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_name</span><span class="p">))</span>
 
         <span class="c1"># Set up our own copy of the parameter.</span>
         <span class="n">original_param</span> <span class="o">=</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">original_name</span><span class="p">]</span>
