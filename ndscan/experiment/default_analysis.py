@@ -193,6 +193,11 @@ DEFAULT_FIT_ANNOTATIONS = {
         "extremum": {
             "x": "x0"
         }
+    },
+    "sinusoid": {
+        "pi_time": {
+            "x": "t_pi"
+        }
     }
 }
 
