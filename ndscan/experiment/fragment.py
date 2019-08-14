@@ -180,9 +180,9 @@ class Fragment(HasEnvironment):
             Python identifier; the fragment will be accessible as ``self.<name>``.
         :param fragment_class: The type of the subfragment to instantiate.
         :param args: Any extra arguments to forward to the subfragment
-            ``build_fragment()`` call.
+            :meth:`build_fragment` call.
         :param kwargs: Any extra keyword arguments to forward to the subfragment
-            ``build_fragment()`` call.
+            :meth:`build_fragment` call.
         :return: The newly created fragment instance.
         """
         assert self._building, ("Can only call setattr_fragment() "
