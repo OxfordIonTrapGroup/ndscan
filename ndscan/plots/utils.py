@@ -59,12 +59,23 @@ def extract_scalar_channels(channels: Dict[str, Any]
     data_names -= set(error_bar_names.values())
 
     # Sort by descending priority and then path (the latter for stable order).
-    def priority_key(name):
-        return (-channels[name].get("display_hints", {}).get("priority", 0),
-                channels[name]["path"])
+    def get_priority(name):
+        return channels[name].get("display_hints", {}).get("priority", 0)
 
     data_names = list(data_names)
-    data_names.sort(key=priority_key)
+    data_names.sort(key=lambda name: (-get_priority(name), channels[name]["path"]))
+
+    # HACK: Don't show negative-priority channels by default (but leave at least one).
+    # Instead of removing them entirely, they should just be hidden at a higher layer
+    # (and still be accessible from a context menu).
+    while len(data_names) > 1:
+        if get_priority(data_names[-1]) >= 0:
+            break
+        try:
+            del error_bar_names[data_names[-1]]
+        except KeyError:
+            pass
+        data_names = data_names[:-1]
 
     return data_names, error_bar_names
 
