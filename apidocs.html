@@ -241,7 +241,7 @@ forwarding to the default implementation (see example).</p>
 <dl class="method">
 <dt id="ndscan.experiment.fragment.Fragment.device_setup">
 <code class="sig-name descname">device_setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.device_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.device_setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform device-side initialisation.</p>
+<dd><p>Perform core-device-side initialisation.</p>
 <p>A typical implementation will make sure that any hardware state represented by
 the fragment (e.g. some DAC voltages, DDS frequencies, etc.) is updated to
 match the fragment parameters.</p>
@@ -275,6 +275,72 @@ polymorphic way – <code class="docutils literal notranslate"><span class="pre"
 subclass, but would cause the argument type to be inferred as that subclass.
 Only direct member function calls are special-cased to be generic on the
 <cite>self</cite> type.)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.experiment.fragment.Fragment.host_cleanup">
+<code class="sig-name descname">host_cleanup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.host_cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.host_cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform host-side cleanup after an experiment has been run.</p>
+<p>This is the equivalent of <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.host_setup" title="ndscan.experiment.fragment.Fragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a> to be run <em>after</em> the main
+experiment. It is executed on the host after the top-level kernel function, if
+any, has been left, as control is about to leave the experiment (whether because
+a scan has been finished, or the experiment is about to be paused for a
+higher-priority run to be scheduled in.</p>
+<p>Typically, fragments should strive to completely initialise the state of all
+their dependencies for robustness. As such, manual cleanup should almost never
+be necessary.</p>
+<p>By default, calls <cite>host_cleanup()</cite> on all subfragments, in reverse
+initialisation order. The default implementation catches all exceptions thrown
+from cleanups and converts them into log messages to ensure no cleanups are
+skipped. As there will be no exception propagating to the caller to mark the
+experiment as failed, failing cleanups should be avoided.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">host_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">tear_down_some_things</span><span class="p">()</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.experiment.fragment.Fragment.device_cleanup">
+<code class="sig-name descname">device_cleanup</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.device_cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.device_cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform core-device-side teardown.</p>
+<p>This is the equivalent of <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_setup" title="ndscan.experiment.fragment.Fragment.device_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_setup()</span></code></a>, run after the main experiment.
+It is executed on the core device every time the top-level kernel is about to be
+left.</p>
+<p>Thus, if the fragment is used as part of a scan, <code class="docutils literal notranslate"><span class="pre">device_cleanup()</span></code> will be
+typically be called once at the end of each scan (while <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_setup" title="ndscan.experiment.fragment.Fragment.device_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_setup()</span></code></a>
+will be called once per scan point).</p>
+<p>The default implementation calls <code class="xref py py-meth docutils literal notranslate"><span class="pre">device_clean_subfragments()</span></code> to clean up
+all subfragments in reverse initialisation order. When overriding it, consider
+forwarding to it too (see example).</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@kernel</span>
+<span class="k">def</span> <span class="nf">device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">clean_up_some_things</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">device_cleanup_subfragments</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndscan.experiment.fragment.Fragment.device_cleanup_subfragments">
+<code class="sig-name descname">device_cleanup_subfragments</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.device_cleanup_subfragments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.device_cleanup_subfragments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_cleanup" title="ndscan.experiment.fragment.Fragment.device_cleanup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_cleanup()</span></code></a> on all subfragments.</p>
+<p>This is the default implementation for <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_cleanup" title="ndscan.experiment.fragment.Fragment.device_cleanup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_cleanup()</span></code></a>, but is kept
+separate so that subfragments overriding <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_cleanup" title="ndscan.experiment.fragment.Fragment.device_cleanup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_cleanup()</span></code></a> can still access
+it.</p>
+<p><a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_cleanup" title="ndscan.experiment.fragment.Fragment.device_cleanup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_cleanup()</span></code></a> is invoked on all subfragments in reverse initialisation
+order. To ensure no cleanups are skipped, any exceptions thrown from cleanups
+are caught and converted into log messages. As there will be no exception
+propagating to the caller to mark the experiment as failed, failing cleanups
+should be avoided.</p>
+<p>(ARTIQ Python does not support calling superclass implementations in a
+polymorphic way – <code class="docutils literal notranslate"><span class="pre">Fragment.device_setup(self)</span></code> could be used from one
+concrete fragment in the whole project, but would cause the argument type to be
+inferred as that subclass. Only direct member function calls are special-cased
+to be generic on the <cite>self</cite> type.)</p>
 </dd></dl>
 
 <dl class="method">

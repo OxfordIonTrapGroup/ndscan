@@ -220,12 +220,24 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">build_fragment</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_building</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="c1"># Now that we know all subfragments, synthesise code for device_setup() to</span>
-        <span class="c1"># forward to subfragments.</span>
+        <span class="c1"># Now that we know all subfragments, synthesise code for device_setup() and</span>
+        <span class="c1"># device_cleanup() to forward to subfragments.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
             <span class="s2">&quot;self.</span><span class="si">{}</span><span class="s2">.device_setup()&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
             <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span>
-        <span class="p">])</span> <span class="ow">or</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span></div>
+        <span class="p">])</span> <span class="ow">or</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span>
+
+        <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">frag</span> <span class="o">=</span> <span class="s2">&quot;self.&quot;</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;try:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    </span><span class="si">{}</span><span class="s2">.device_cleanup()</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">frag</span><span class="p">)</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;except Exception as e:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    logger.error(</span><span class="se">\&quot;</span><span class="s2">Cleanup failed for &#39;</span><span class="si">{}</span><span class="s2">&#39;: </span><span class="si">%s</span><span class="se">\&quot;</span><span class="s2">, e)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_cleanup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">,</span> <span class="s2">&quot;logger&quot;</span><span class="p">],</span>
+                                                                    <span class="n">code</span> <span class="ow">or</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span>
+                                                                    <span class="n">portable</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Fragment.host_setup"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.host_setup">[docs]</a>    <span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Perform host-side initialisation.</span>
@@ -257,7 +269,7 @@
 
 <div class="viewcode-block" id="Fragment.device_setup"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_setup">[docs]</a>    <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Perform device-side initialisation.</span>
+        <span class="sd">&quot;&quot;&quot;Perform core-device-side initialisation.</span>
 
 <span class="sd">        A typical implementation will make sure that any hardware state represented by</span>
 <span class="sd">        the fragment (e.g. some DAC voltages, DDS frequencies, etc.) is updated to</span>
@@ -298,6 +310,85 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Forward to implementation generated using kernel_from_string().</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fragment.host_cleanup"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.host_cleanup">[docs]</a>    <span class="k">def</span> <span class="nf">host_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform host-side cleanup after an experiment has been run.</span>
+
+<span class="sd">        This is the equivalent of :meth:`host_setup` to be run *after* the main</span>
+<span class="sd">        experiment. It is executed on the host after the top-level kernel function, if</span>
+<span class="sd">        any, has been left, as control is about to leave the experiment (whether because</span>
+<span class="sd">        a scan has been finished, or the experiment is about to be paused for a</span>
+<span class="sd">        higher-priority run to be scheduled in.</span>
+
+<span class="sd">        Typically, fragments should strive to completely initialise the state of all</span>
+<span class="sd">        their dependencies for robustness. As such, manual cleanup should almost never</span>
+<span class="sd">        be necessary.</span>
+
+<span class="sd">        By default, calls `host_cleanup()` on all subfragments, in reverse</span>
+<span class="sd">        initialisation order. The default implementation catches all exceptions thrown</span>
+<span class="sd">        from cleanups and converts them into log messages to ensure no cleanups are</span>
+<span class="sd">        skipped. As there will be no exception propagating to the caller to mark the</span>
+<span class="sd">        experiment as failed, failing cleanups should be avoided.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            def host_cleanup(self):</span>
+<span class="sd">                tear_down_some_things()</span>
+<span class="sd">                super().host_setup()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cleanup failed for &#39;</span><span class="si">%s</span><span class="s2">&#39;: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">(),</span> <span class="n">e</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fragment.device_cleanup"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_cleanup">[docs]</a>    <span class="nd">@portable</span>
+    <span class="k">def</span> <span class="nf">device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Perform core-device-side teardown.</span>
+
+<span class="sd">        This is the equivalent of :meth:`device_setup`, run after the main experiment.</span>
+<span class="sd">        It is executed on the core device every time the top-level kernel is about to be</span>
+<span class="sd">        left.</span>
+
+<span class="sd">        Thus, if the fragment is used as part of a scan, ``device_cleanup()`` will be</span>
+<span class="sd">        typically be called once at the end of each scan (while :meth:`device_setup`</span>
+<span class="sd">        will be called once per scan point).</span>
+
+<span class="sd">        The default implementation calls :meth:`device_clean_subfragments` to clean up</span>
+<span class="sd">        all subfragments in reverse initialisation order. When overriding it, consider</span>
+<span class="sd">        forwarding to it too (see example).</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            @kernel</span>
+<span class="sd">            def device_cleanup(self):</span>
+<span class="sd">                clean_up_some_things()</span>
+<span class="sd">                self.device_cleanup_subfragments()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_cleanup_subfragments</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Fragment.device_cleanup_subfragments"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_cleanup_subfragments">[docs]</a>    <span class="nd">@portable</span>
+    <span class="k">def</span> <span class="nf">device_cleanup_subfragments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Call :meth:`device_cleanup` on all subfragments.</span>
+
+<span class="sd">        This is the default implementation for :meth:`device_cleanup`, but is kept</span>
+<span class="sd">        separate so that subfragments overriding :meth:`device_cleanup` can still access</span>
+<span class="sd">        it.</span>
+
+<span class="sd">        :meth:`device_cleanup` is invoked on all subfragments in reverse initialisation</span>
+<span class="sd">        order. To ensure no cleanups are skipped, any exceptions thrown from cleanups</span>
+<span class="sd">        are caught and converted into log messages. As there will be no exception</span>
+<span class="sd">        propagating to the caller to mark the experiment as failed, failing cleanups</span>
+<span class="sd">        should be avoided.</span>
+
+<span class="sd">        (ARTIQ Python does not support calling superclass implementations in a</span>
+<span class="sd">        polymorphic way – ``Fragment.device_setup(self)`` could be used from one</span>
+<span class="sd">        concrete fragment in the whole project, but would cause the argument type to be</span>
+<span class="sd">        inferred as that subclass. Only direct member function calls are special-cased</span>
+<span class="sd">        to be generic on the `self` type.)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Forward to implementation generated using kernel_from_string().</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_cleanup_subfragments_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Fragment.build_fragment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.build_fragment">[docs]</a>    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialise this fragment, building up the hierarchy of subfragments,</span>
@@ -488,7 +579,7 @@
 <span class="sd">        :param schemata: Dictionary to write the schemata for each parameter to,</span>
 <span class="sd">            indexed by FQN.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">()</span>
 
         <span class="n">fqns</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>

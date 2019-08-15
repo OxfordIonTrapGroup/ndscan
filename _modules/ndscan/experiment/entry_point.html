@@ -379,12 +379,15 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
                 <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
+                    <span class="k">finally</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
                         <span class="k">return</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
@@ -398,12 +401,15 @@
 
     <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">_continuous_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_finish_continuous_point</span><span class="p">()</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
-                <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_finish_continuous_point</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
+                    <span class="k">return</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span> <span class="nf">_finish_continuous_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -494,23 +500,32 @@
 
     <span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">()</span>
     <span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
-    <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
-        <span class="c1"># Run device_setup()/run_once() in a single kernel invocation.</span>
-        <span class="k">class</span> <span class="nc">FragmentRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
-            <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+            <span class="c1"># Run kernel functions in a single kernel invocation.</span>
+            <span class="k">class</span> <span class="nc">FragmentRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
+                <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
 
-            <span class="nd">@kernel</span>
-            <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                <span class="nd">@kernel</span>
+                <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                    <span class="k">finally</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
 
-        <span class="n">FragmentRunner</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">fragment</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-        <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+            <span class="n">FragmentRunner</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">fragment</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
 

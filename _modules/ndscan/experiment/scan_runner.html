@@ -257,9 +257,16 @@
                 <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                 <span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-            <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-            <span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-            <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                    <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
                 <span class="n">fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
@@ -313,8 +320,11 @@
         <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">ScanFinished</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_update_host_param_stores</span><span class="p">()</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_loop</span><span class="p">(</span><span class="n">run_chunk</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_loop</span><span class="p">(</span><span class="n">run_chunk</span><span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
@@ -333,12 +343,15 @@
 
     <span class="nd">@kernel</span>
     <span class="k">def</span> <span class="nf">_kscan_run_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_chunk</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="c1"># Fetch chunk in separate function to make sure stack memory is released</span>
-            <span class="c1"># every time.</span>
-            <span class="k">if</span> <span class="n">run_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-                <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="c1"># Fetch chunk in separate function to make sure stack memory is released</span>
+                <span class="c1"># every time.</span>
+                <span class="k">if</span> <span class="n">run_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                    <span class="k">return</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
 
     <span class="nd">@kernel</span>
     <span class="k">def</span> <span class="nf">_kscan_run_point</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TBool</span><span class="p">:</span>
