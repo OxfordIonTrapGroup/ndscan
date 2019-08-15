@@ -84,12 +84,11 @@ class Fragment(HasEnvironment):
             frag = "self." + s._fragment_path[-1]
             code += "try:\n"
             code += "    {}.device_cleanup()\n".format(frag)
-            code += "except Exception as e:\n"
-            code += "    logger.error(\"Cleanup failed for '{}': %s\", e)\n".format(
+            code += "except Exception:\n"
+            code += "    logger.error(\"Cleanup failed for '{}'.\")\n".format(
                 s._stringize_path())
-        self._device_cleanup_subfragments_impl = kernel_from_string(["self", "logger"],
-                                                                    code or "pass",
-                                                                    portable)
+        self._device_cleanup_subfragments_impl = kernel_from_string(
+            ["self", "logger"], code[:-1] if code else "pass", portable)
 
     def host_setup(self):
         """Perform host-side initialisation.
