@@ -165,7 +165,6 @@
 
 <div class="viewcode-block" id="Fragment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment">[docs]</a><span class="k">class</span> <span class="nc">Fragment</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Main building block.&quot;&quot;&quot;</span>
-
 <div class="viewcode-block" id="Fragment.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_path</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initialise this fragment instance; called from the ``HasEnvironment``</span>
 <span class="sd">        constructor.</span>
@@ -600,7 +599,6 @@
 
 <div class="viewcode-block" id="ExpFragment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment">[docs]</a><span class="k">class</span> <span class="nc">ExpFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Fragment that supports the notion of being run to produce results.&quot;&quot;&quot;</span>
-
 <div class="viewcode-block" id="ExpFragment.prepare"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Prepare this instance for execution</span>
 <span class="sd">        (see ``artiq.language.environment.Experiment.prepare``).</span>

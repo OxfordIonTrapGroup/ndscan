@@ -169,7 +169,6 @@
     <span class="sd">&quot;&quot;&quot;Handle returned by :meth:`setattr_subscan`, allowing the subscan to actually be</span>
 <span class="sd">    executed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ExpFragment</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ArraySink</span><span class="p">]],</span> <span class="kc">None</span><span class="p">],</span>
                  <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">possible_axes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ScanAxis</span><span class="p">],</span>
                  <span class="n">schema_channel</span><span class="p">:</span> <span class="n">SubscanChannel</span><span class="p">,</span>
@@ -247,8 +246,8 @@
                     <span class="k">assert</span> <span class="kc">False</span>
 
                 <span class="n">context</span> <span class="o">=</span> <span class="n">AnnotationContext</span><span class="p">(</span>
-                    <span class="n">get_axis_index</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span>
-                        <span class="n">channel</span><span class="p">])</span>
+                    <span class="n">get_axis_index</span><span class="p">,</span>
+                    <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">])</span>
 
                 <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">analyses</span><span class="p">:</span>

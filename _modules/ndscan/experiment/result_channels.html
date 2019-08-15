@@ -164,14 +164,12 @@
 <span class="k">class</span> <span class="nc">ResultSink</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
 
 <div class="viewcode-block" id="LastValueSink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.LastValueSink">[docs]</a><span class="k">class</span> <span class="nc">LastValueSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sink that stores the last-pushed value.&quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -185,7 +183,6 @@
 
 <div class="viewcode-block" id="ArraySink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ArraySink">[docs]</a><span class="k">class</span> <span class="nc">ArraySink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sink that stores all pushed values in a list.&quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -227,7 +224,6 @@
 <div class="viewcode-block" id="ScalarDatasetSink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">ScalarDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sink that writes pushed results to a dataset, overwriting its previous value</span>
 <span class="sd">    if any.&quot;&quot;&quot;</span>
-
 <div class="viewcode-block" id="ScalarDatasetSink.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">broadcast</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param key: Dataset key to write the value to.</span>
@@ -249,7 +245,6 @@
 <span class="k">class</span> <span class="nc">ResultChannel</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -306,7 +301,6 @@
 <span class="k">class</span> <span class="nc">NumericChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Base class for channels of numerical results, with scale/unit semantics and</span>
 <span class="sd">    optional range limits.&quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -375,7 +369,6 @@
 
 <span class="sd">    Serialised as a JSON string for HDF5 compatibility.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;subscan&quot;</span>
 
