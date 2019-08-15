@@ -171,9 +171,19 @@ class CustomAnalysis(DefaultAnalysis):
 #: Default points of interest for various fit types (e.g. highlighting the π time for a
 #: Rabi flop fit, or the extremum of a parabola.
 DEFAULT_FIT_ANNOTATIONS = {
+    "decaying_sinusoid": {
+        "pi_time": {
+            "x": "t_max_transfer"
+        }
+    },
     "exponential_decay": {
         "t_1_e": {
             "x": "t_1_e"
+        }
+    },
+    "lorentzian": {
+        "extremum": {
+            "x": "x0"
         }
     },
     "parabola": {
@@ -186,11 +196,11 @@ DEFAULT_FIT_ANNOTATIONS = {
             "x": "t_pi"
         }
     },
-    "lorentzian": {
-        "extremum": {
-            "x": "x0"
+    "sinusoid": {
+        "pi_time": {
+            "x": "t_pi"
         }
-    }
+    },
 }
 
 
