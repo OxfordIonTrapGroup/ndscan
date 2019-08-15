@@ -208,8 +208,8 @@ class FragmentScanExperiment(EnvExperiment):
         }
 
         context = AnnotationContext(
-            lambda handle: axis_indices[handle._store.identity], lambda channel: self.
-            _short_child_channel_names[channel])
+            lambda handle: axis_indices[handle._store.identity],
+            lambda channel: self._short_child_channel_names[channel])
 
         annotations = []
         for a in analyses:
@@ -297,8 +297,8 @@ class FragmentScanExperiment(EnvExperiment):
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
-    return shorten_to_unambiguous_suffixes(
-        full_names, lambda fqn, n: "/".join(fqn.split("/")[-n:]))
+    return shorten_to_unambiguous_suffixes(full_names,
+                                           lambda fqn, n: "/".join(fqn.split("/")[-n:]))
 
 
 def make_fragment_scan_exp(fragment_class: Type[ExpFragment]
@@ -317,7 +317,6 @@ def make_fragment_scan_exp(fragment_class: Type[ExpFragment]
 
         MyExpFragmentScan = make_fragment_scan_exp(MyExpFragment)
     """
-
     class FragmentScanShim(FragmentScanExperiment):
         def build(self):
             super().build(lambda: fragment_class(self, []))

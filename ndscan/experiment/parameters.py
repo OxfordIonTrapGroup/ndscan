@@ -32,7 +32,6 @@ class ParamStore:
         store, i.e. the override/default value it was created for.
     :param value: The initial value.
     """
-
     def __init__(self, identity: Tuple[str, str], value):
         self.identity = identity
 

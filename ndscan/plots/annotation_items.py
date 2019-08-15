@@ -20,7 +20,6 @@ class ComputedCurveItem(AnnotationItem):
     """Shows a curve (pyqtgraph.LineItem) that is computed from a given fit function,
     dynamically adapting to the coordinate region displayed.
     """
-
     @staticmethod
     def is_function_supported(function_name: str) -> bool:
         return function_name in FIT_OBJECTS
@@ -78,7 +77,6 @@ class ComputedCurveItem(AnnotationItem):
 
 class CurveItem(AnnotationItem):
     """Shows a curve between the given x/y coordinate pairs."""
-
     def __init__(self, x_source: AnnotationDataSource, y_source: AnnotationDataSource,
                  view_box, curve_item):
         self._x_source = x_source
@@ -112,7 +110,6 @@ class CurveItem(AnnotationItem):
 
 class VLineItem(AnnotationItem):
     """Vertical line marking a given x coordinate, with optional confidence interval."""
-
     def __init__(self, position_source: AnnotationDataSource,
                  uncertainty_source: Union[None, AnnotationDataSource], view_box,
                  base_color, x_data_to_display_scale, x_unit_suffix):

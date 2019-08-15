@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 class Fragment(HasEnvironment):
     """Main building block."""
-
     def build(self, fragment_path: List[str], *args, **kwargs):
         """Initialise this fragment instance; called from the ``HasEnvironment``
         constructor.
@@ -452,7 +451,6 @@ class Fragment(HasEnvironment):
 
 class ExpFragment(Fragment):
     """Fragment that supports the notion of being run to produce results."""
-
     def prepare(self):
         """Prepare this instance for execution
         (see ``artiq.language.environment.Experiment.prepare``).

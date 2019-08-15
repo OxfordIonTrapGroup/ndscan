@@ -11,7 +11,6 @@ class LabeledCrosshairCursor(QtCore.QObject):
     The TextItems for displaying the coordinates are updated on a timer to avoid a lag
     trail of buffered redraws when there are a lot of points.
     """
-
     def __init__(self, cursor_target_widget: QtWidgets.QWidget,
                  plot_item: pyqtgraph.PlotItem, x_unit_suffix: str,
                  x_data_to_display_scale: float, y_unit_suffix: str,

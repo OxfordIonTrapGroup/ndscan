@@ -10,8 +10,8 @@ class SelectPointFromScanModel(SinglePointModel):
         self._source_index = None
         self._point = None
 
-        self._source.points_rewritten.connect(lambda: self._set_point(
-            self._source_index, True))
+        self._source.points_rewritten.connect(
+            lambda: self._set_point(self._source_index, True))
 
         # TODO: Invalidate point data (reset index?) on channel schema change.
         self._source.channel_schemata_changed.connect(self.channel_schemata_changed)

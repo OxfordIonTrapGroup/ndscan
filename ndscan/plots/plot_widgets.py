@@ -17,7 +17,6 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
 
     This is somewhat of a hack following the MultiplePlotAxes pyqtgraph example.
     """
-
     def __init__(self):
         super().__init__()
         self._num_y_axes = 0
@@ -65,7 +64,6 @@ class ContextMenuBuilder:
 
     Elides multiple separators in a row.
     """
-
     def __init__(self, target_menu):
         self._last_was_no_separator = False
         self._entries = []
@@ -97,7 +95,6 @@ class ContextMenuBuilder:
 
 class ContextMenuPlotWidget(MultiYAxisPlotWidget):
     """PlotWidget with support for dynamically populated context menus."""
-
     def __init__(self):
         super().__init__()
         self._monkey_patch_context_menu()
@@ -151,8 +148,8 @@ class AlternateMenuPlotWidget(ContextMenuPlotWidget):
         if len(alternate_plot_names) > 1:
             for name in alternate_plot_names:
                 action = builder.append_action("Show " + name)
-                action.triggered.connect(lambda *args, name=name: self.
-                                         alternate_plot_requested.emit(name))
+                action.triggered.connect(
+                    lambda *args, name=name: self.alternate_plot_requested.emit(name))
         builder.ensure_separator()
 
 
@@ -160,7 +157,6 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
     """PlotWidget with a context menu to open new windows for subplots (in addition to
     AlternateMenuPlotWidget functionality).
     """
-
     def __init__(self, context: Context, get_alternate_plot_names):
         super().__init__(get_alternate_plot_names)
         self._context = context

@@ -7,7 +7,6 @@ from .utils import call_later, emit_later
 
 class HDF5Root(Root):
     """Scan root fed from an HDF5 results file."""
-
     def __init__(self, datasets: h5py.Group, context: Context):
         super().__init__()
 
