@@ -7,7 +7,6 @@ from . import Annotation, Context, Model, Root, ScanModel, SinglePointModel
 class SubscriberRoot(Root):
     """Scan root fed from artiq.applets.simple data_changed callbacks, listening to the
     top-level ndscan dataset."""
-
     def __init__(self, context: Context):
         super().__init__()
 

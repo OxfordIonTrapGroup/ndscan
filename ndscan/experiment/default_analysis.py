@@ -50,7 +50,6 @@ class Annotation:
     """Annotation to be displayed alongside scan result data, recording derived
     quantities (e.g. a fit minimizer).
     """
-
     def __init__(self,
                  kind: str,
                  coordinates: dict = {},
@@ -81,7 +80,6 @@ class DefaultAnalysis:
     """Analysis functionality associated with an `ExpFragment` to be executed when that
     fragment is scanned in a particular way.
     """
-
     def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
         """Return whether the scanned axes contain the data necessary for this analysis
         to be applicable.
@@ -138,7 +136,6 @@ class CustomAnalysis(DefaultAnalysis):
         scan to analyse. The function can return a list of :class:`Annotation`\ s to be
         broadcast.
     """
-
     def __init__(
             self, required_axes: Iterable[ParamHandle],
             analyze_fn: Callable[[Dict[ParamHandle, list], Dict[ResultChannel, list]],
@@ -212,7 +209,6 @@ class OnlineFit(DefaultAnalysis):
         Defaults to ``fit_<fit_type>``, but can be set explicitly to allow more than one
         fit of a given type at a time.
     """
-
     def __init__(self,
                  fit_type: str,
                  data: Dict[str, Union[ParamHandle, ResultChannel]],

@@ -530,8 +530,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     def _build_shortened_fqns(self):
         self.shortened_fqns = shorten_to_unambiguous_suffixes(
-            self._ndscan_params["schemata"].keys(), lambda fqn, n: ".".join(
-                fqn.split(".")[-(n + 1):]))
+            self._ndscan_params["schemata"].keys(),
+            lambda fqn, n: ".".join(fqn.split(".")[-(n + 1):]))
 
     def _param_display_name(self, fqn, path):
         if not path:

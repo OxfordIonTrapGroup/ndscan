@@ -16,14 +16,12 @@ __all__ = [
 class ResultSink:
     """
     """
-
     def push(self, value: Any) -> None:
         raise NotImplementedError
 
 
 class LastValueSink(ResultSink):
     """Sink that stores the last-pushed value."""
-
     def __init__(self):
         self.value = None
 
@@ -37,7 +35,6 @@ class LastValueSink(ResultSink):
 
 class ArraySink(ResultSink):
     """Sink that stores all pushed values in a list."""
-
     def __init__(self):
         self.data = []
 
@@ -79,7 +76,6 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
 class ScalarDatasetSink(ResultSink, HasEnvironment):
     """Sink that writes pushed results to a dataset, overwriting its previous value
     if any."""
-
     def build(self, key: str, broadcast: bool = True) -> None:
         """
         :param key: Dataset key to write the value to.
@@ -101,7 +97,6 @@ class ScalarDatasetSink(ResultSink, HasEnvironment):
 class ResultChannel:
     """
     """
-
     def __init__(self,
                  path: str,
                  description: str = "",
@@ -158,7 +153,6 @@ class ResultChannel:
 class NumericChannel(ResultChannel):
     """Base class for channels of numerical results, with scale/unit semantics and
     optional range limits."""
-
     def __init__(self,
                  path: str,
                  description: str = "",
@@ -227,7 +221,6 @@ class SubscanChannel(ResultChannel):
 
     Serialised as a JSON string for HDF5 compatibility.
     """
-
     def _get_type_string(self):
         return "subscan"
 

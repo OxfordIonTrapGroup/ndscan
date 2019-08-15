@@ -21,7 +21,6 @@ class Subscan:
     """Handle returned by :meth:`setattr_subscan`, allowing the subscan to actually be
     executed.
     """
-
     def __init__(self, run_fn: Callable[[ExpFragment, ScanSpec, List[ArraySink]], None],
                  fragment: ExpFragment, possible_axes: Dict[ParamHandle, ScanAxis],
                  schema_channel: SubscanChannel,
@@ -99,8 +98,8 @@ class Subscan:
                     assert False
 
                 context = AnnotationContext(
-                    get_axis_index, lambda channel: self._short_child_channel_names[
-                        channel])
+                    get_axis_index,
+                    lambda channel: self._short_child_channel_names[channel])
 
                 annotations = []
                 for a in analyses:

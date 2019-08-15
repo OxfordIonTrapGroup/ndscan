@@ -8,7 +8,6 @@ class RabiFlopWithAnalysis(RabiFlopSim):
     (Usually, get_default_analyses() would directly be defined in the respective
     ExpFragment.)
     """
-
     def get_default_analyses(self):
         return [CustomAnalysis([self.duration], self._analyse_time_scan)]
 

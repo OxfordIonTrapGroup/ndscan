@@ -12,7 +12,6 @@ __all__ = [
 class ScanGenerator:
     """Generates points along a single scan axis to be visited.
     """
-
     def has_level(self, level: int) -> bool:
         """
         """
@@ -126,7 +125,6 @@ GENERATORS = {
 class ScanOptions:
     """
     """
-
     def __init__(self,
                  num_repeats: int = 1,
                  randomise_order_globally: bool = False,
