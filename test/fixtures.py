@@ -13,12 +13,20 @@ class AddOneFragment(ExpFragment):
 
         self.num_host_setup_calls = 0
         self.num_device_setup_calls = 0
+        self.num_host_cleanup_calls = 0
+        self.num_device_cleanup_calls = 0
 
     def host_setup(self):
         self.num_host_setup_calls += 1
 
     def device_setup(self):
         self.num_device_setup_calls += 1
+
+    def host_cleanup(self):
+        self.num_host_cleanup_calls += 1
+
+    def device_cleanup(self):
+        self.num_device_cleanup_calls += 1
 
     def run_once(self):
         self.result.push(self.value.get() + 1)

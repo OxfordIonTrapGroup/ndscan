@@ -72,12 +72,24 @@ class Fragment(HasEnvironment):
         self.build_fragment(*args, **kwargs)
         self._building = False
 
-        # Now that we know all subfragments, synthesise code for device_setup() to
-        # forward to subfragments.
+        # Now that we know all subfragments, synthesise code for device_setup() and
+        # device_cleanup() to forward to subfragments.
         self._device_setup_subfragments_impl = kernel_from_string(["self"], "\n".join([
             "self.{}.device_setup()".format(s._fragment_path[-1])
             for s in self._subfragments
         ]) or "pass", portable)
+
+        code = ""
+        for s in self._subfragments[::-1]:
+            frag = "self." + s._fragment_path[-1]
+            code += "try:\n"
+            code += "    {}.device_cleanup()\n".format(frag)
+            code += "except Exception as e:\n"
+            code += "    logger.error(\"Cleanup failed for '{}': %s\", e)\n".format(
+                s._stringize_path())
+        self._device_cleanup_subfragments_impl = kernel_from_string(["self", "logger"],
+                                                                    code or "pass",
+                                                                    portable)
 
     def host_setup(self):
         """Perform host-side initialisation.
@@ -109,7 +121,7 @@ class Fragment(HasEnvironment):
 
     @portable
     def device_setup(self) -> None:
-        """Perform device-side initialisation.
+        """Perform core-device-side initialisation.
 
         A typical implementation will make sure that any hardware state represented by
         the fragment (e.g. some DAC voltages, DDS frequencies, etc.) is updated to
@@ -150,6 +162,85 @@ class Fragment(HasEnvironment):
         """
         # Forward to implementation generated using kernel_from_string().
         self._device_setup_subfragments_impl(self)
+
+    def host_cleanup(self):
+        """Perform host-side cleanup after an experiment has been run.
+
+        This is the equivalent of :meth:`host_setup` to be run *after* the main
+        experiment. It is executed on the host after the top-level kernel function, if
+        any, has been left, as control is about to leave the experiment (whether because
+        a scan has been finished, or the experiment is about to be paused for a
+        higher-priority run to be scheduled in.
+
+        Typically, fragments should strive to completely initialise the state of all
+        their dependencies for robustness. As such, manual cleanup should almost never
+        be necessary.
+
+        By default, calls `host_cleanup()` on all subfragments, in reverse
+        initialisation order. The default implementation catches all exceptions thrown
+        from cleanups and converts them into log messages to ensure no cleanups are
+        skipped. As there will be no exception propagating to the caller to mark the
+        experiment as failed, failing cleanups should be avoided.
+
+        Example::
+
+            def host_cleanup(self):
+                tear_down_some_things()
+                super().host_setup()
+        """
+        for s in self._subfragments[::-1]:
+            try:
+                s.host_cleanup()
+            except Exception as e:
+                logger.error("Cleanup failed for '%s': %s", s._stringize_path(), e)
+
+    @portable
+    def device_cleanup(self) -> None:
+        """Perform core-device-side teardown.
+
+        This is the equivalent of :meth:`device_setup`, run after the main experiment.
+        It is executed on the core device every time the top-level kernel is about to be
+        left.
+
+        Thus, if the fragment is used as part of a scan, ``device_cleanup()`` will be
+        typically be called once at the end of each scan (while :meth:`device_setup`
+        will be called once per scan point).
+
+        The default implementation calls :meth:`device_clean_subfragments` to clean up
+        all subfragments in reverse initialisation order. When overriding it, consider
+        forwarding to it too (see example).
+
+        Example::
+
+            @kernel
+            def device_cleanup(self):
+                clean_up_some_things()
+                self.device_cleanup_subfragments()
+        """
+        self.device_cleanup_subfragments()
+
+    @portable
+    def device_cleanup_subfragments(self) -> None:
+        """Call :meth:`device_cleanup` on all subfragments.
+
+        This is the default implementation for :meth:`device_cleanup`, but is kept
+        separate so that subfragments overriding :meth:`device_cleanup` can still access
+        it.
+
+        :meth:`device_cleanup` is invoked on all subfragments in reverse initialisation
+        order. To ensure no cleanups are skipped, any exceptions thrown from cleanups
+        are caught and converted into log messages. As there will be no exception
+        propagating to the caller to mark the experiment as failed, failing cleanups
+        should be avoided.
+
+        (ARTIQ Python does not support calling superclass implementations in a
+        polymorphic way – ``Fragment.device_setup(self)`` could be used from one
+        concrete fragment in the whole project, but would cause the argument type to be
+        inferred as that subclass. Only direct member function calls are special-cased
+        to be generic on the `self` type.)
+        """
+        # Forward to implementation generated using kernel_from_string().
+        self._device_cleanup_subfragments_impl(self, logger)
 
     def build_fragment(self, *args, **kwargs) -> None:
         """Initialise this fragment, building up the hierarchy of subfragments,
@@ -340,7 +431,7 @@ class Fragment(HasEnvironment):
         :param schemata: Dictionary to write the schemata for each parameter to,
             indexed by FQN.
         """
-        path = "/".join(self._fragment_path)
+        path = self._stringize_path()
 
         fqns = []
         for param in self._free_params.values():

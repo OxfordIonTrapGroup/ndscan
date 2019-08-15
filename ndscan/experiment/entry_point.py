@@ -231,12 +231,15 @@ class FragmentScanExperiment(EnvExperiment):
         try:
             with suppress(TerminationRequested):
                 while True:
-                    self.fragment.host_setup()
-                    if is_kernel(self.fragment.run_once):
-                        self._run_continuous_kernel()
-                        self.core.comm.close()
-                    else:
-                        self._continuous_loop()
+                    try:
+                        self.fragment.host_setup()
+                        if is_kernel(self.fragment.run_once):
+                            self._run_continuous_kernel()
+                            self.core.comm.close()
+                        else:
+                            self._continuous_loop()
+                    finally:
+                        self.fragment.host_cleanup()
                     if not self._continue_running:
                         return
                     self.scheduler.pause()
@@ -250,12 +253,15 @@ class FragmentScanExperiment(EnvExperiment):
 
     @portable
     def _continuous_loop(self):
-        while not self.scheduler.check_pause():
-            self.fragment.device_setup()
-            self.fragment.run_once()
-            self._finish_continuous_point()
-            if not self._continue_running:
-                return
+        try:
+            while not self.scheduler.check_pause():
+                self.fragment.device_setup()
+                self.fragment.run_once()
+                self._finish_continuous_point()
+                if not self._continue_running:
+                    return
+        finally:
+            self.fragment.device_cleanup()
 
     @rpc(flags={"async"})
     def _finish_continuous_point(self):
@@ -346,23 +352,32 @@ def run_fragment_once(fragment: ExpFragment) -> Dict[ResultChannel, Any]:
 
     fragment.init_params()
     fragment.prepare()
-    fragment.host_setup()
-    if is_kernel(fragment.run_once):
-        # Run device_setup()/run_once() in a single kernel invocation.
-        class FragmentRunner(HasEnvironment):
-            def build(self, fragment):
-                self.setattr_device("core")
-                self.fragment = fragment
+    try:
+        fragment.host_setup()
+        if is_kernel(fragment.run_once):
+            # Run kernel functions in a single kernel invocation.
+            class FragmentRunner(HasEnvironment):
+                def build(self, fragment):
+                    self.setattr_device("core")
+                    self.fragment = fragment
 
-            @kernel
-            def run(self):
-                self.fragment.device_setup()
-                self.fragment.run_once()
+                @kernel
+                def run(self):
+                    try:
+                        self.fragment.device_setup()
+                        self.fragment.run_once()
+                    finally:
+                        self.fragment.device_cleanup()
 
-        FragmentRunner(fragment, fragment).run()
-    else:
-        fragment.device_setup()
-        fragment.run_once()
+            FragmentRunner(fragment, fragment).run()
+        else:
+            try:
+                fragment.device_setup()
+                fragment.run_once()
+            finally:
+                fragment.device_cleanup()
+    finally:
+        fragment.host_cleanup()
 
     return {channel: sink.get_last() for channel, sink in sinks.items()}
 

@@ -109,9 +109,16 @@ class ScanRunner(HasEnvironment):
                 axis.param_store.set_value(value)
                 sink.push(value)
 
-            fragment.host_setup()
-            fragment.device_setup()
-            fragment.run_once()
+            try:
+                fragment.host_setup()
+                try:
+                    fragment.device_setup()
+                    fragment.run_once()
+                finally:
+                    fragment.device_cleanup()
+            finally:
+                fragment.host_cleanup()
+
             if self.scheduler.check_pause():
                 self.scheduler.pause()
                 fragment.recompute_param_defaults()
@@ -165,8 +172,11 @@ class ScanRunner(HasEnvironment):
         with suppress(ScanFinished):
             self._kscan_update_host_param_stores()
             while True:
-                self._kscan_fragment.host_setup()
-                self._kscan_run_loop(run_chunk)
+                try:
+                    self._kscan_fragment.host_setup()
+                    self._kscan_run_loop(run_chunk)
+                finally:
+                    self._kscan_fragment.host_cleanup()
                 self.core.comm.close()
                 self.scheduler.pause()
                 self._kscan_fragment.recompute_param_defaults()
@@ -185,12 +195,15 @@ class ScanRunner(HasEnvironment):
 
     @kernel
     def _kscan_run_loop(self, run_chunk):
-        self._kscan_last_pause_check_mu = self.core.get_rtio_counter_mu()
-        while True:
-            # Fetch chunk in separate function to make sure stack memory is released
-            # every time.
-            if run_chunk(self):
-                return
+        try:
+            self._kscan_last_pause_check_mu = self.core.get_rtio_counter_mu()
+            while True:
+                # Fetch chunk in separate function to make sure stack memory is released
+                # every time.
+                if run_chunk(self):
+                    return
+        finally:
+            self._kscan_fragment.device_cleanup()
 
     @kernel
     def _kscan_run_point(self) -> TBool:
