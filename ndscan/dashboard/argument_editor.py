@@ -752,8 +752,12 @@ class FloatOverrideEntry(OverrideEntry):
 
         self.box_linear_points = QtWidgets.QSpinBox()
         self.box_linear_points.setMinimum(2)
-        self.box_linear_points.setMaximum(
-            2**16)  # A gratuitous, but probably generous restriction
+        self.box_linear_points.setValue(21)
+
+        # Somewhat gratuitously restrict the number of scan points for sizing, and to
+        # avoid the user accidentally pasting in millions of poitns, etc.
+        self.box_linear_points.setMaximum(0xffff)
+
         self.box_linear_points.setSuffix(" pts")
         layout.addWidget(self.box_linear_points)
         layout.setStretchFactor(self.box_linear_points, 0)
