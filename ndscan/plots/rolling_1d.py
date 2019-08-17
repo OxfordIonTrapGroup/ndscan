@@ -86,6 +86,7 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
         for s in self.series:
             s.remove_items()
         self.series.clear()
+        self.reset_y_axes()
 
         channels = self.model.get_channel_schemata()
         try:

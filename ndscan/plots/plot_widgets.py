@@ -52,6 +52,13 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
         self._update_additional_view_boxes()
         return axis, vb
 
+    def reset_y_axes(self):
+        # TODO: Do we need to unlink anything else to avoid leaking memory?
+        for vb in self._additional_view_boxes:
+            self.getPlotItem().removeItem(vb)
+        self._additional_view_boxes = []
+        self._num_y_axes = 0
+
     def _update_additional_view_boxes(self):
         for vb in self._additional_view_boxes:
             vb.setGeometry(self.getViewBox().sceneBoundingRect())
