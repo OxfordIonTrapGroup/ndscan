@@ -126,6 +126,7 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         for s in self.series:
             s.remove_items()
         self.series.clear()
+        self.reset_y_axes()
 
         try:
             data_names, error_bar_names = extract_scalar_channels(channels)
