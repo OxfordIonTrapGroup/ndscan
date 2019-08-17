@@ -4,3 +4,6 @@ merge:
     labels: ["auto-merge"]
   method: rebase
   delete_after_merge: true
+update:
+  whitelist:
+    labels: ["auto-merge"]
