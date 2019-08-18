@@ -33,7 +33,17 @@ class AddOneFragment(ExpFragment):
 
     def get_default_analyses(self):
         # Nonsensical fit spec to exercise serialisation code.
-        return [OnlineFit("lorentzian", {"x": self.value, "y": self.result})]
+        return [
+            OnlineFit(
+                "lorentzian",
+                {
+                    "x": self.value,
+                    "y": self.result
+                },
+                constants={"y0": 1.0},
+                initial_values={"fwhm": 2.0},
+            )
+        ]
 
 
 class ReboundAddOneFragment(ExpFragment):

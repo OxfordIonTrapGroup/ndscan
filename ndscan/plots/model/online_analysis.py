@@ -23,6 +23,8 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
 
         self._fit_type = self._schema["fit_type"]
         self._fit_obj = FIT_OBJECTS[self._fit_type]
+        self._constants = self._schema.get("constants", {})
+        self._initial_values = self._schema.get("initial_values", {})
 
         self._last_fit_params = None
         self._last_fit_errors = None
@@ -90,19 +92,24 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
 
         loop = asyncio.get_event_loop()
         self._last_fit_params, self._last_fit_errors = await loop.run_in_executor(
-            self._fit_executor, _run_fit, self._fit_type, xs, ys, y_errs)
+            self._fit_executor, _run_fit, self._fit_type, xs, ys, y_errs,
+            self._constants, self._initial_values)
 
         self._recompute_in_progress = False
         self.updated.emit()
 
 
-def _run_fit(fit_type, xs, ys, y_errs=None):
+def _run_fit(fit_type, xs, ys, y_errs, constants, initial_values):
     """Fits the given data with the chosen method.
 
     This function is intended to be executed on a worker process, hence the
     primitive API.
     """
     try:
-        return FIT_OBJECTS[fit_type].fit(xs, ys, y_errs)
+        return FIT_OBJECTS[fit_type].fit(x=xs,
+                                         y=ys,
+                                         y_err=y_errs,
+                                         constants=constants,
+                                         initialise=initial_values)
     except Exception:
         return None, None
