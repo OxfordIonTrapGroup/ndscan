@@ -174,6 +174,15 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
         #: Maps subplot names to active plot widgets.
         self.subplot_widgets = {}
 
+    def hideEvent(self, *args):
+        # Hide subplots as well when hiding the parent plot (i.e. self). This in
+        # particular also handles the case where the main window is closed. Arguably,
+        # closeEvent() would be the better place to do this, but that only works for
+        # top-level windows.
+        for w in self.subplot_widgets.values():
+            w.hide()
+        super().hideEvent(*args)
+
     def build_context_menu(self, builder: ContextMenuBuilder) -> None:
         for name in self.subscan_roots.keys():
             action = builder.append_action("Open subscan '{}'".format(name))
