@@ -218,12 +218,20 @@ class OnlineFit(DefaultAnalysis):
     :param analysis_identifier: Optional explicit name to use for online analysis.
         Defaults to ``fit_<fit_type>``, but can be set explicitly to allow more than one
         fit of a given type at a time.
+    :param constants: Specifies parameters to be held constant during the fit. This is
+        a dictionary mapping fit parameter names to the respective constant values,
+        forwarded to :meth:`oitg.fitting.FitBase.FitBase.fit`.
+    :param initial_values: Specifies initial values for the fit parameters. This is
+        a dictionary mapping fit parameter names to the respective values, forwarded to
+        :meth:`oitg.fitting.FitBase.FitBase.fit`.
     """
     def __init__(self,
                  fit_type: str,
                  data: Dict[str, Union[ParamHandle, ResultChannel]],
                  annotations: Union[None, Dict[str, Dict[str, Any]]] = None,
-                 analysis_identifier: str = None):
+                 analysis_identifier: str = None,
+                 constants: Dict[str, Any] = {},
+                 initial_values: Dict[str, Any] = {}):
         self.fit_type = fit_type
         if fit_type not in FIT_OBJECTS:
             logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
@@ -232,6 +240,8 @@ class OnlineFit(DefaultAnalysis):
             annotations = DEFAULT_FIT_ANNOTATIONS.get(fit_type, {})
         self.annotations = annotations
         self.analysis_identifier = analysis_identifier
+        self.constants = constants
+        self.initial_values = initial_values
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]):
         ""
@@ -298,7 +308,9 @@ class OnlineFit(DefaultAnalysis):
                 "data": {
                     name: context.describe_coordinate(obj)
                     for name, obj in self.data.items()
-                }
+                },
+                "constants": self.constants,
+                "initial_values": self.initial_values
             }
         }
 

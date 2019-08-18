@@ -103,11 +103,17 @@ class SubscanCase(ExpFragmentCase):
         self.assertEqual(
             spec["online_analyses"], {
                 "fit_lorentzian_channel_result": {
+                    "constants": {
+                        "y0": 1.0
+                    },
                     "data": {
                         "y": "channel_result",
                         "x": "axis_0"
                     },
                     "fit_type": "lorentzian",
+                    "initial_values": {
+                        "fwhm": 2.0
+                    },
                     "kind": "named_fit"
                 }
             })
