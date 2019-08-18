@@ -1,6 +1,7 @@
 from typing import Any, Dict, Union
 from ...utils import strip_prefix
 from . import ScanModel, SinglePointModel
+import numpy
 
 
 class SelectPointFromScanModel(SinglePointModel):
@@ -11,7 +12,7 @@ class SelectPointFromScanModel(SinglePointModel):
         self._point = None
 
         self._source.points_rewritten.connect(
-            lambda: self._set_point(self._source_index, True))
+            lambda: self._set_point(self._source_index, silently_fail=True))
 
         # TODO: Invalidate point data (reset index?) on channel schema change.
         self._source.channel_schemata_changed.connect(self.channel_schemata_changed)
@@ -19,7 +20,7 @@ class SelectPointFromScanModel(SinglePointModel):
     def set_source_index(self, idx: Union[None, int]) -> None:
         if idx == self._source_index:
             return
-        self._set_point(idx, False)
+        self._set_point(idx, silently_fail=False)
 
     def get_channel_schemata(self) -> Dict[str, Any]:
         return self._source.get_channel_schemata()
@@ -46,7 +47,10 @@ class SelectPointFromScanModel(SinglePointModel):
                     name = strip_prefix(key, "channel_")
                     if name != key:
                         point[name] = values[idx]
-        if point == self._point:
+        # The point data can include NumPy arrays, which breaks object comparison (as
+        # comparing two arrays gives back a bool array of element-wise results). We thus
+        # need to use array_equal() to work around this.
+        if numpy.array_equal(point, self._point):
             return
         self._point = point
         self.point_changed.emit(point)
