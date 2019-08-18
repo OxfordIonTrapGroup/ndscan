@@ -366,12 +366,20 @@
 <span class="sd">    :param analysis_identifier: Optional explicit name to use for online analysis.</span>
 <span class="sd">        Defaults to ``fit_&lt;fit_type&gt;``, but can be set explicitly to allow more than one</span>
 <span class="sd">        fit of a given type at a time.</span>
+<span class="sd">    :param constants: Specifies parameters to be held constant during the fit. This is</span>
+<span class="sd">        a dictionary mapping fit parameter names to the respective constant values,</span>
+<span class="sd">        forwarded to :meth:`oitg.fitting.FitBase.FitBase.fit`.</span>
+<span class="sd">    :param initial_values: Specifies initial values for the fit parameters. This is</span>
+<span class="sd">        a dictionary mapping fit parameter names to the respective values, forwarded to</span>
+<span class="sd">        :meth:`oitg.fitting.FitBase.FitBase.fit`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">fit_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]],</span>
                  <span class="n">annotations</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">analysis_identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                 <span class="n">analysis_identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">constants</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+                 <span class="n">initial_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span> <span class="o">=</span> <span class="n">fit_type</span>
         <span class="k">if</span> <span class="n">fit_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FIT_OBJECTS</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Unknown fit type: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">fit_type</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -380,6 +388,8 @@
             <span class="n">annotations</span> <span class="o">=</span> <span class="n">DEFAULT_FIT_ANNOTATIONS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">fit_type</span><span class="p">,</span> <span class="p">{})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span> <span class="o">=</span> <span class="n">annotations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">analysis_identifier</span> <span class="o">=</span> <span class="n">analysis_identifier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span> <span class="o">=</span> <span class="n">constants</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_values</span> <span class="o">=</span> <span class="n">initial_values</span>
 
     <span class="k">def</span> <span class="nf">has_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]):</span>
         <span class="s2">&quot;&quot;</span>
@@ -446,7 +456,9 @@
                 <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
                     <span class="n">name</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+                <span class="s2">&quot;initial_values&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_values</span>
             <span class="p">}</span>
         <span class="p">}</span>
 

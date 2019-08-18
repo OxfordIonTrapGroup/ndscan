@@ -871,7 +871,7 @@ broadcast.</p></li>
 
 <dl class="class">
 <dt id="ndscan.experiment.default_analysis.OnlineFit">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">OnlineFit</code><span class="sig-paren">(</span><em class="sig-param">fit_type: str, data: Dict[str, Union[ndscan.experiment.parameters.ParamHandle, ndscan.experiment.result_channels.ResultChannel]], annotations: Union[None, Dict[str, Dict[str, Any]]] = None, analysis_identifier: str = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#OnlineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.OnlineFit" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">OnlineFit</code><span class="sig-paren">(</span><em class="sig-param">fit_type: str, data: Dict[str, Union[ndscan.experiment.parameters.ParamHandle, ndscan.experiment.result_channels.ResultChannel]], annotations: Union[None, Dict[str, Dict[str, Any]]] = None, analysis_identifier: str = None, constants: Dict[str, Any] = {}, initial_values: Dict[str, Any] = {}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#OnlineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.OnlineFit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Describes an automatically executed fit for a given combination of scan axes
 and result channels.</p>
 <dl class="field-list simple">
@@ -887,6 +887,12 @@ dictionaries mapping coordinate names to fit result names. If <code class="docut
 <li><p><strong>analysis_identifier</strong> – Optional explicit name to use for online analysis.
 Defaults to <code class="docutils literal notranslate"><span class="pre">fit_&lt;fit_type&gt;</span></code>, but can be set explicitly to allow more than one
 fit of a given type at a time.</p></li>
+<li><p><strong>constants</strong> – Specifies parameters to be held constant during the fit. This is
+a dictionary mapping fit parameter names to the respective constant values,
+forwarded to <code class="xref py py-meth docutils literal notranslate"><span class="pre">oitg.fitting.FitBase.FitBase.fit()</span></code>.</p></li>
+<li><p><strong>initial_values</strong> – Specifies initial values for the fit parameters. This is
+a dictionary mapping fit parameter names to the respective values, forwarded to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">oitg.fitting.FitBase.FitBase.fit()</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
