@@ -170,7 +170,8 @@ class FragmentScanExperiment(EnvExperiment):
     def run(self):
         """Run the (possibly trivial) scan."""
         self._broadcast_metadata()
-        self._issue_ccb()
+        if len(self._scan_result_sinks) > 0:
+            self._issue_ccb()
 
         with suppress(TerminationRequested):
             if self._is_time_series:
