@@ -16,7 +16,7 @@ class PiTimeFitSim(ExpFragment):
         x = coords[self.flop.duration]
         y = points[self.flop.readout.p]
         y_err = points[self.flop.readout.p_err]
-        fit_results, fit_errs = oitg.fitting.rabi_flop.fit(x, y, y_err)
+        fit_results, fit_errs = oitg.fitting.sinusoid.fit(x, y, y_err)
         self.t_pi.push(fit_results["t_pi"])
         self.t_pi_err.push(fit_errs["t_pi"])
 
