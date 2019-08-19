@@ -19,6 +19,15 @@ class AnnotationItem:
 class ComputedCurveItem(AnnotationItem):
     """Shows a curve (pyqtgraph.LineItem) that is computed from a given fit function,
     dynamically adapting to the coordinate region displayed.
+
+    :param function_name: The name of the function (see :data:`FIT_OBJECTS`) to
+        evaluate.
+    :param data_sources: A dictionary giving the parameters for the curve.
+    :param view_box: The :class:`pyqtgraph.ViewBox` to add the line item to once there
+        is data.
+    :param curve_item: The target line item to draw the curve into. This will have been
+        set up by the client with the appropriate styling and will be added to
+        ``view_box`` as soon as there is data.
     """
     @staticmethod
     def is_function_supported(function_name: str) -> bool:
