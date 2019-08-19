@@ -73,11 +73,15 @@ class RabiFlopSim(ExpFragment):
 
     def get_default_analyses(self):
         return [
-            OnlineFit("rabi_flop", {
-                "x": self.duration,
-                "y": self.readout.p,
-                "y_err": self.readout.p_err
-            }),
+            OnlineFit("sinusoid",
+                      data={
+                          "x": self.duration,
+                          "y": self.readout.p,
+                          "y_err": self.readout.p_err,
+                      },
+                      constants={
+                          "t_dead": 0,
+                      }),
             OnlineFit("cos", {
                 "x": self.duration,
                 "y": self.readout.z,

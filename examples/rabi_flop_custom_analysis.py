@@ -15,7 +15,7 @@ class RabiFlopWithAnalysis(RabiFlopSim):
         x = axis_values[self.duration]
         y = result_values[self.readout.p]
         y_err = result_values[self.readout.p_err]
-        fit_results, fit_errs, fit_xs, fit_ys, = oitg.fitting.rabi_flop.fit(
+        fit_results, fit_errs, fit_xs, fit_ys, = oitg.fitting.sinusoid.fit(
             x, y, y_err, evaluate_function=True)
         return [
             Annotation("location", {self.duration: fit_results["t_pi"]}),
