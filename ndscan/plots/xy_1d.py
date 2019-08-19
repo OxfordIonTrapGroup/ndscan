@@ -107,10 +107,11 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         self.series = []
 
         x_schema = self.model.axes[0]
+        self.x_param_spec = x_schema["param"]["spec"]
         self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
             self.getAxis("bottom"),
             [(x_schema["param"]["description"], format_param_identity(x_schema), None,
-              x_schema["param"]["spec"])])
+              self.x_param_spec)])
         self.y_unit_suffix = None
         self.y_data_to_display_scale = None
         self.crosshair = None
@@ -244,9 +245,10 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
                         channel_ref_to_series_idx(chan)
                         for chan in a.parameters.get("associated_channels", [None]))
 
+                    x_limits = [self.x_param_spec.get(n, None) for n in ("min", "max")]
                     curve = make_curve_item(associated_series_idx)
                     vb = self.series[associated_series_idx].view_box
-                    item = ComputedCurveItem(function_name, a.data, vb, curve)
+                    item = ComputedCurveItem(function_name, a.data, vb, curve, x_limits)
                     self.annotation_items.append(item)
                     continue
 
