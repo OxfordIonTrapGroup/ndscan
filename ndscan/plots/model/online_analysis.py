@@ -14,6 +14,13 @@ class OnlineAnalysis(QtCore.QObject):
 
 
 class OnlineNamedFitAnalysis(OnlineAnalysis):
+    """Implements :class:`ndscan.experiment.default_analysis.OnlineFit`, that is, a fit
+    of a well-known function that is executed repeatedly as new data is coming in.
+
+    :param schema: The ``ndscan.online_analyses`` schema to implement.
+    :param parent_model: The :class:`~ndscan.plots.model.ScanModel` to draw the data
+        from. The schema is notexpected not to change until :meth:`stop` is called.
+    """
     _trigger_recompute_fit = QtCore.pyqtSignal()
 
     def __init__(self, schema: Dict[str, Any], parent_model):
@@ -65,8 +72,10 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         for param_key, source_key in self._schema["data"].items():
             self._source_data[param_key] = data.get(source_key, [])
 
+        # Truncate the source data to a complete set of points.
         num_points = min(len(v) for v in self._source_data.values())
         if num_points < len(self._fit_obj.parameter_names):
+            # Not enough points yet for the given number of degrees of freedom.
             return
 
         for key, value in self._source_data.items():
