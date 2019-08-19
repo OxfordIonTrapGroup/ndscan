@@ -191,6 +191,18 @@ def format_param_identity(schema: Dict[str, Any]) -> str:
 
 
 def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]]):
+    """Set up an axis item with the appropriate labels/scaling for the given axis
+    metadata.
+
+    :param axis_item: The :class:`pyqtgraph.AxisItem` to set up.
+    :param axes: A list of tuples ``(description, identity_string, color, spec)``,
+        giving for each logical axes to be displayed on the target axis item the name
+        and source fragment identity to be displayed, the series color to render it in,
+        and the backing parameter/result channel metadata.
+    :return: A tuple ``(unit_suffix, data_to_display_scale)`` of the unit suffix to
+        display when referring to coordinates on this axis, and the scale factor to
+        apply to compute the data from display coordinates due to the applied units.
+    """
     def label_html(description, identity_string, color, spec):
         result = ""
         if color is not None:
