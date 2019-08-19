@@ -4,7 +4,7 @@ import numpy
 from oitg import uncertainty_to_string
 import pyqtgraph
 from quamash import QtCore
-from typing import Dict, Union
+from typing import Dict, Union, Tuple
 from ..utils import FIT_OBJECTS
 from .model import AnnotationDataSource
 
@@ -28,17 +28,21 @@ class ComputedCurveItem(AnnotationItem):
     :param curve_item: The target line item to draw the curve into. This will have been
         set up by the client with the appropriate styling and will be added to
         ``view_box`` as soon as there is data.
+    :param x_limits: Limits to restrict the drawn horizontal range to even if the
+        viewport extends beyond them.
     """
     @staticmethod
     def is_function_supported(function_name: str) -> bool:
         return function_name in FIT_OBJECTS
 
     def __init__(self, function_name: str,
-                 data_sources: Dict[str, AnnotationDataSource], view_box, curve_item):
+                 data_sources: Dict[str, AnnotationDataSource], view_box, curve_item,
+                 x_limits: Tuple[Union[float, None], Union[float, None]]):
         self._function = FIT_OBJECTS[function_name].fitting_function
         self._data_sources = data_sources
         self._view_box = view_box
         self._curve_item = curve_item
+        self._x_limits = x_limits
         self._curve_item_added = False
 
         self.redraw_limiter = pyqtgraph.SignalProxy(self._view_box.sigXRangeChanged,
@@ -72,10 +76,16 @@ class ComputedCurveItem(AnnotationItem):
             self._view_box.addItem(self._curve_item, ignoreBounds=True)
             self._curve_item_added = True
 
-        # Choose horizontal range based on currently visible area.
+        # Choose horizontal range based on currently visible area (extending slightly
+        # beyond it to ensure a visually smooth border).
         x_range, _ = self._view_box.state["viewRange"]
         ext = (x_range[1] - x_range[0]) / 10
-        x_lims = (x_range[0] - ext, x_range[1] + ext)
+        x_lims = [x_range[0] - ext, x_range[1] + ext]
+
+        if self._x_limits[0] is not None:
+            x_lims[0] = max(x_lims[0], self._x_limits[0])
+        if self._x_limits[1] is not None:
+            x_lims[1] = min(x_lims[1], self._x_limits[1])
 
         # Choose number of points based on width of plot on screen (in pixels).
         fn_xs = numpy.linspace(*x_lims, self._view_box.width())
