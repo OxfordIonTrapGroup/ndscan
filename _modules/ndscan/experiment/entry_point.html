@@ -240,7 +240,13 @@
         <span class="c1"># Create scan and parameter overrides.</span>
         <span class="n">param_stores</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">specs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;overrides&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Parameter schema not found (likely due to outdated &quot;</span>
+                               <span class="s2">&quot;argument editor after changes to experiment; &quot;</span>
+                               <span class="s2">&quot;try Recompute All Arguments)&quot;</span><span class="p">)</span>
+
             <span class="n">param_stores</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]),</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]))</span>
                                  <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">]</span>
 
