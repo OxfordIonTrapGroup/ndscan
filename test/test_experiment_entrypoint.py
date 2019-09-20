@@ -34,10 +34,10 @@ class FragmentScanExpCase(HasEnvironmentCase):
 
     def test_run_1d_scan(self):
         exp = self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
-        self.assertEqual(exp.fragment.num_host_setup_calls, 3)
+        self.assertEqual(exp.fragment.num_host_setup_calls, 1)
         self.assertEqual(exp.fragment.num_device_setup_calls, 3)
-        self.assertEqual(exp.fragment.num_host_cleanup_calls, 3)
-        self.assertEqual(exp.fragment.num_device_cleanup_calls, 3)
+        self.assertEqual(exp.fragment.num_host_cleanup_calls, 1)
+        self.assertEqual(exp.fragment.num_device_cleanup_calls, 1)
 
         curve_annotation = {
             "kind": "computed_curve",
@@ -112,10 +112,10 @@ class FragmentScanExpCase(HasEnvironmentCase):
 
     def test_run_rebound_1d_scan(self):
         exp = self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment")
-        self.assertEqual(exp.fragment.add_one.num_host_setup_calls, 3)
+        self.assertEqual(exp.fragment.add_one.num_host_setup_calls, 1)
         self.assertEqual(exp.fragment.add_one.num_device_setup_calls, 3)
-        self.assertEqual(exp.fragment.add_one.num_host_cleanup_calls, 3)
-        self.assertEqual(exp.fragment.add_one.num_device_cleanup_calls, 3)
+        self.assertEqual(exp.fragment.add_one.num_host_cleanup_calls, 1)
+        self.assertEqual(exp.fragment.add_one.num_device_cleanup_calls, 1)
 
     def _test_run_1d(self, klass, fragment_fqn):
         exp = self.create(klass)

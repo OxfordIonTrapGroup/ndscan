@@ -102,26 +102,26 @@ class ScanRunner(HasEnvironment):
     def _run_scan_on_host(self, fragment: ExpFragment, points: Iterator[Tuple],
                           axes: List[ScanAxis], axis_sinks: List[ResultSink]) -> None:
         while True:
-            axis_values = next(points, None)
-            if axis_values is None:
-                break
-            for (axis, value, sink) in zip(axes, axis_values, axis_sinks):
-                axis.param_store.set_value(value)
-                sink.push(value)
-
             try:
                 fragment.host_setup()
                 try:
-                    fragment.device_setup()
-                    fragment.run_once()
+                    while True:
+                        axis_values = next(points, None)
+                        if axis_values is None:
+                            return
+                        for (axis, value, sink) in zip(axes, axis_values, axis_sinks):
+                            axis.param_store.set_value(value)
+                            sink.push(value)
+                        fragment.device_setup()
+                        fragment.run_once()
+                        if self.scheduler.check_pause():
+                            break
                 finally:
                     fragment.device_cleanup()
             finally:
                 fragment.host_cleanup()
-
-            if self.scheduler.check_pause():
-                self.scheduler.pause()
-                fragment.recompute_param_defaults()
+            self.scheduler.pause()
+            fragment.recompute_param_defaults()
 
     def _run_scan_on_core_device(self, fragment: ExpFragment, points: list,
                                  axes: List[ScanAxis],
