@@ -124,9 +124,11 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
 
     def _initialise_series(self, channels):
+        # Remove all currently shown items and any extra axes added.
         for s in self.series:
             s.remove_items()
         self.series.clear()
+        self._clear_annotations()
         self.reset_y_axes()
 
         try:
@@ -177,6 +179,11 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
                                                     self.y_unit_suffix,
                                                     self.y_data_to_display_scale)
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
+
+        # Make sure we put back annotations (if they haven't changed but the points
+        # have been rewritten, there might not be an annotations_changed event).
+        self._update_annotations()
+
         self.ready.emit()
 
     def _update_points(self, points):
@@ -189,10 +196,13 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         for s in self.series:
             s.update(x_data, points)
 
-    def _update_annotations(self):
+    def _clear_annotations(self):
         for item in self.annotation_items:
             item.remove()
         self.annotation_items.clear()
+
+    def _update_annotations(self):
+        self._clear_annotations()
 
         def channel_ref_to_series_idx(ref):
             for i, s in enumerate(self.series):
