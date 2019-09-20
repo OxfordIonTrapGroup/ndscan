@@ -92,7 +92,13 @@ class FragmentScanExperiment(EnvExperiment):
         # Create scan and parameter overrides.
         param_stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
-            store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
+            try:
+                store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
+            except KeyError:
+                raise KeyError("Parameter schema not found (likely due to outdated "
+                               "argument editor after changes to experiment; "
+                               "try Recompute All Arguments)")
+
             param_stores[fqn] = [(s["path"], store_type((fqn, s["path"]), s["value"]))
                                  for s in specs]
 
