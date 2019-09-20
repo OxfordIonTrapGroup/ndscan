@@ -21,6 +21,7 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
         super().__init__()
         self._num_y_axes = 0
         self._additional_view_boxes = []
+        self._additional_right_axes = []
 
     def new_y_axis(self):
         self._num_y_axes += 1
@@ -42,6 +43,7 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
             # FIXME: Z value setting is cargo-culted in from the pyqtgraph example –
             # what should the correct value be?
             axis.setZValue(-10000)
+            self._additional_right_axes.append(axis)
             pi.layout.addItem(axis, 2, self._num_y_axes)
 
         pi.scene().addItem(vb)
@@ -57,6 +59,9 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
         for vb in self._additional_view_boxes:
             self.getPlotItem().removeItem(vb)
         self._additional_view_boxes = []
+        for axis in self._additional_right_axes:
+            self.getPlotItem().layout.removeItem(axis)
+        self._additional_right_axes = []
         self._num_y_axes = 0
 
     def _update_additional_view_boxes(self):
