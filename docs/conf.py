@@ -28,6 +28,13 @@ version = ''
 # The full version, including alpha/beta/rc tags
 release = ''
 
+# Monkey-patch Sphinx so that ARTIQ-Python types are printed in an
+# user-friendly way rather than exposing the compiler internals.
+# See https://github.com/m-labs/artiq/issues/741 for context.
+from sphinx.ext import autodoc
+from sphinx.util import inspect
+autodoc.repr = inspect.repr = str
+
 
 # -- General configuration ---------------------------------------------------
 
