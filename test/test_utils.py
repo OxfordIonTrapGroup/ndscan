@@ -22,3 +22,8 @@ class ShortenTest(unittest.TestCase):
 
         test({"foo": "foo"})
         test({"": "", "foo/bar": "foo/bar", "foo/baz": "baz", "baz/bar": "baz/bar"})
+
+        test({"a1/b": "a1/b", "a2/b": "a2/b"})
+        test({"a1/b/c": "a1/b/c", "a2/b/c": "a2/b/c"})
+        test({"a1/b/c/d": "a1/b/c/d", "a2/b/c/d": "a2/b/c/d"})
+        test({"a1/b/c/d/e": "a1/b/c/d/e", "a2/b/c/d/e": "a2/b/c/d/e"})
