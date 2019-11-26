@@ -58,7 +58,7 @@ def shorten_to_unambiguous_suffixes(fqns: Iterable[str],
         while True:
             candidate = get_last_n_parts(current, n)
             if candidate not in short_to_fqns:
-                short_to_fqns[candidate] = set([current])
+                short_to_fqns[candidate] = {current}
                 shortened_fqns[current] = candidate
                 break
 
@@ -68,7 +68,9 @@ def shorten_to_unambiguous_suffixes(fqns: Iterable[str],
                 if shortened_fqns[old] == candidate:
                     # This hasn't previously been moved to a higher n, so
                     # do it now.
-                    shortened_fqns[old] = get_last_n_parts(old, n + 1)
+                    new = get_last_n_parts(old, n + 1)
+                    shortened_fqns[old] = new
+                    short_to_fqns[new] = {old}
                     break  # Exits inner for loop.
             existing_fqns.add(current)
             n += 1
