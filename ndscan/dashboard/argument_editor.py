@@ -9,7 +9,7 @@ from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
 from artiq.gui.scientific_spinbox import ScientificSpinBox
 from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
-from artiq.protocols import pyon
+from sipyco import pyon
 
 from ..utils import (NoAxesMode, PARAMS_ARG_KEY, eval_param_default,
                      shorten_to_unambiguous_suffixes)
