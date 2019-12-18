@@ -146,17 +146,17 @@
            <div itemprop="articleBody">
             
   <h1>Source code for ndscan.experiment.fragment</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">artiq.language</span> <span class="k">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+<span></span><span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="k">import</span> <span class="n">DefaultAnalysis</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ParamStore</span>
-<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="k">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">FloatChannel</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">path_matches_spec</span>
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="k">import</span> <span class="n">strip_prefix</span>
+<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">DefaultAnalysis</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ParamStore</span>
+<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">FloatChannel</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">path_matches_spec</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">strip_prefix</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">,</span> <span class="s2">&quot;ExpFragment&quot;</span><span class="p">,</span> <span class="s2">&quot;TransitoryError&quot;</span><span class="p">,</span> <span class="s2">&quot;RestartKernelTransitoryError&quot;</span><span class="p">]</span>
 
