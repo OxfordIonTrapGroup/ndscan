@@ -2,7 +2,7 @@ version: 2
 
 artiq-docker: &artiq_docker
     docker:
-      - image: dnadlinger/docker-oitg-artiq@sha256:4f84002d1796c52562203111584f660b7b359b69174972d9ada33e930fb798d3
+      - image: dnadlinger/docker-oitg-artiq@sha256:769f68808341d4d457dede3322fb12b3ccf9aa374323f8857b204aed0a861b79
 
     # The container is set up such that the correct Conda environment gets
     # activated in ~/.bashrc, but CircleCI seems to override it when not

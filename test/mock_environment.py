@@ -8,7 +8,7 @@ import unittest.mock
 
 from artiq.language.environment import ProcessArgumentManager
 from artiq.master.worker_db import DatasetManager, DeviceManager
-from artiq.protocols.sync_struct import process_mod
+from sipyco.sync_struct import process_mod
 
 
 class MockDatasetDB:

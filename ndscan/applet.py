@@ -4,11 +4,11 @@ Typically, applets aren't created manually, but used via ``ndscan.experiment`` (
 """
 
 from artiq.applets.simple import SimpleApplet
-from artiq.protocols.pc_rpc import AsyncioClient
-from artiq.protocols.sync_struct import Subscriber
 import asyncio
 import logging
 import pyqtgraph
+from sipyco.pc_rpc import AsyncioClient
+from sipyco.sync_struct import Subscriber
 from typing import Any, Dict, Iterable
 
 from .plots.container_widgets import RootWidget
