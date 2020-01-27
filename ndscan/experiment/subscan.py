@@ -192,13 +192,14 @@ def setattr_subscan(owner: Fragment,
     aggregate_result_channels = {}
     short_child_channel_names = {}
     for full_name, short_name in channel_name_map.items():
+        short_identifier = short_name.replace("/", "_")
         channel = original_channels[full_name]
-        short_child_channel_names[channel] = short_name
+        short_child_channel_names[channel] = short_identifier
 
         # TODO: Implement ArrayChannel to represent a variable number of dimensions
         # around a scalar channel so we can keep the schema information here.
         aggregate_result_channels[channel] = owner.setattr_result(
-            scan_name + "_channel_" + short_name,
+            scan_name + "_channel_" + short_identifier,
             OpaqueChannel,
             save_by_default=save_results_by_default and channel.save_by_default)
 
