@@ -314,8 +314,8 @@ def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
                                            lambda fqn, n: "/".join(fqn.split("/")[-n:]))
 
 
-def make_fragment_scan_exp(fragment_class: Type[ExpFragment]
-                           ) -> Type[FragmentScanExperiment]:
+def make_fragment_scan_exp(fragment_class: Type[ExpFragment],
+                           *args) -> Type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
 
@@ -332,7 +332,7 @@ def make_fragment_scan_exp(fragment_class: Type[ExpFragment]
     """
     class FragmentScanShim(FragmentScanExperiment):
         def build(self):
-            super().build(lambda: fragment_class(self, []))
+            super().build(lambda: fragment_class(self, [], *args))
 
     # Take on the name of the fragment class to keep result file names informative.
     FragmentScanShim.__name__ = fragment_class.__name__
