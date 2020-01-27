@@ -62,6 +62,10 @@ class ScanSpec:
 #: giving up.
 NUM_TOLERATED_UNDERFLOWS_PER_POINT = 3
 
+#: Number of transitory errors to tolerate per scan point (by simply trying again)
+#: before giving up.
+NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT = 10
+
 
 class ScanRunner(HasEnvironment):
     """Runs the actual loop that executes an :class:`.ExpFragment` for a specified list
@@ -213,6 +217,7 @@ class ScanRunner(HasEnvironment):
             continuing (``True`` to pause, ``False`` to continue immediately).
         """
         num_underflows = 0
+        num_transitory_errors = 0
         while True:
             if self._kscan_should_pause():
                 return True
@@ -236,7 +241,11 @@ class ScanRunner(HasEnvironment):
                 self._kscan_retry_point()
                 return True
             except TransitoryError:
-                print("Ignoring transitory error, retrying")
+                if num_transitory_errors >= NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT:
+                    raise
+                num_transitory_errors += 1
+                print("Ignoring transitory error (", num_transitory_errors, "/",
+                      NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT, "), retrying")
                 self._kscan_retry_point()
         self._kscan_point_completed()
         return False
