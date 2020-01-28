@@ -462,8 +462,8 @@
                                            <span class="k">lambda</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span>
 
 
-<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">]</span>
-                           <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FragmentScanExperiment</span><span class="p">]:</span>
+<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
+                           <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FragmentScanExperiment</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Create a :class:`FragmentScanExperiment` subclass that scans the given</span>
 <span class="sd">    :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…</span>
 
@@ -480,7 +480,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">class</span> <span class="nc">FragmentScanShim</span><span class="p">(</span><span class="n">FragmentScanExperiment</span><span class="p">):</span>
         <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">fragment_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[]))</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">fragment_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">args</span><span class="p">))</span>
 
     <span class="c1"># Take on the name of the fragment class to keep result file names informative.</span>
     <span class="n">FragmentScanShim</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fragment_class</span><span class="o">.</span><span class="vm">__name__</span>
