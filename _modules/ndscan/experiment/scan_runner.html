@@ -210,6 +210,10 @@
 <span class="c1">#: giving up.</span>
 <span class="n">NUM_TOLERATED_UNDERFLOWS_PER_POINT</span> <span class="o">=</span> <span class="mi">3</span>
 
+<span class="c1">#: Number of transitory errors to tolerate per scan point (by simply trying again)</span>
+<span class="c1">#: before giving up.</span>
+<span class="n">NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT</span> <span class="o">=</span> <span class="mi">10</span>
+
 
 <div class="viewcode-block" id="ScanRunner"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanRunner">[docs]</a><span class="k">class</span> <span class="nc">ScanRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Runs the actual loop that executes an :class:`.ExpFragment` for a specified list</span>
@@ -361,6 +365,7 @@
 <span class="sd">            continuing (``True`` to pause, ``False`` to continue immediately).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">num_underflows</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">num_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_should_pause</span><span class="p">():</span>
                 <span class="k">return</span> <span class="kc">True</span>
@@ -384,7 +389,11 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
                 <span class="k">return</span> <span class="kc">True</span>
             <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error, retrying&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">num_transitory_errors</span> <span class="o">&gt;=</span> <span class="n">NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="n">num_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error (&quot;</span><span class="p">,</span> <span class="n">num_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                      <span class="n">NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT</span><span class="p">,</span> <span class="s2">&quot;), retrying&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_point_completed</span><span class="p">()</span>
         <span class="k">return</span> <span class="kc">False</span>
