@@ -340,13 +340,14 @@
     <span class="n">aggregate_result_channels</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">short_child_channel_names</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">full_name</span><span class="p">,</span> <span class="n">short_name</span> <span class="ow">in</span> <span class="n">channel_name_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">short_identifier</span> <span class="o">=</span> <span class="n">short_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
         <span class="n">channel</span> <span class="o">=</span> <span class="n">original_channels</span><span class="p">[</span><span class="n">full_name</span><span class="p">]</span>
-        <span class="n">short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">short_name</span>
+        <span class="n">short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">short_identifier</span>
 
         <span class="c1"># TODO: Implement ArrayChannel to represent a variable number of dimensions</span>
         <span class="c1"># around a scalar channel so we can keep the schema information here.</span>
         <span class="n">aggregate_result_channels</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
-            <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_channel_&quot;</span> <span class="o">+</span> <span class="n">short_name</span><span class="p">,</span>
+            <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_channel_&quot;</span> <span class="o">+</span> <span class="n">short_identifier</span><span class="p">,</span>
             <span class="n">OpaqueChannel</span><span class="p">,</span>
             <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span> <span class="ow">and</span> <span class="n">channel</span><span class="o">.</span><span class="n">save_by_default</span><span class="p">)</span>
 
