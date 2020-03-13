@@ -159,6 +159,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">artiq.coredevice.exceptions</span> <span class="kn">import</span> <span class="n">RTIOUnderflow</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">logging</span>
@@ -167,7 +168,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span>
 
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">AnnotationContext</span>
-<span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="n">ExpFragment</span>
+<span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span><span class="p">,</span> <span class="n">TransitoryError</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">type_string_to_param</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="p">(</span><span class="n">AppendingDatasetSink</span><span class="p">,</span> <span class="n">LastValueSink</span><span class="p">,</span> <span class="n">ScalarDatasetSink</span><span class="p">,</span>
                               <span class="n">ResultChannel</span><span class="p">)</span>
@@ -491,9 +492,81 @@
     <span class="k">return</span> <span class="n">FragmentScanShim</span></div>
 
 
-<div class="viewcode-block" id="run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">run_fragment_once</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">class</span> <span class="nc">_FragmentRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Object wrapping fragment execution to be able to execute everything in one kernel</span>
+<span class="sd">    invocation (no difference for non-kernel fragments).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+              <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span> <span class="o">=</span> <span class="n">max_rtio_underflow_retries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span> <span class="o">=</span> <span class="n">max_transitory_error_retries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_underflows_caught</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Execute device_setup()/run_once(), retrying if nececssary.</span>
+
+<span class="sd">        :return: ``True`` if execution completed, ``False`` if it should be attempted</span>
+<span class="sd">            again (RestartKernelTransitoryError).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_on_kernel</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">()</span>
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span> <span class="nf">_run_on_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Force the portable _run() to run on the kernel.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">()</span>
+
+    <span class="nd">@portable</span>
+    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">except</span> <span class="n">RTIOUnderflow</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_underflows_caught</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_underflows_caught</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">:</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_underflows_caught</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">&gt;</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">):</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error, restarting kernel&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">&gt;</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">):</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error (&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span> <span class="s2">&quot;), retrying&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+
+<div class="viewcode-block" id="run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">run_fragment_once</span><span class="p">(</span>
+        <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
+        <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Initialise the passed fragment and run it once, capturing and returning the</span>
 <span class="sd">    values from any result channels.</span>
+
+<span class="sd">    :param max_transitory_error_retries: Number of times to catch transitory error</span>
+<span class="sd">        exceptions and retry execution. If exceeded, the exception is re-raised for</span>
+<span class="sd">        the caller to handle. If ``0``, retrying is disabled entirely.</span>
 
 <span class="sd">    :return: A dictionary mapping :class:`ResultChannel` instances to their values</span>
 <span class="sd">        (or ``None`` if not pushed to).</span>
@@ -505,40 +578,27 @@
     <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">sinks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span>
 
+    <span class="n">runner</span> <span class="o">=</span> <span class="n">_FragmentRunner</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">fragment</span><span class="p">,</span> <span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+                             <span class="n">max_transitory_error_retries</span><span class="p">)</span>
     <span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">()</span>
     <span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
-            <span class="c1"># Run kernel functions in a single kernel invocation.</span>
-            <span class="k">class</span> <span class="nc">FragmentRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
-                <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
-
-                <span class="nd">@kernel</span>
-                <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
-                    <span class="k">finally</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
-
-            <span class="n">FragmentRunner</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">fragment</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-                <span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
-            <span class="k">finally</span><span class="p">:</span>
-                <span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">():</span>
+                <span class="k">break</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
 
 
-<div class="viewcode-block" id="create_and_run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.create_and_run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
-                                 <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<div class="viewcode-block" id="create_and_run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.create_and_run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span>
+                                 <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
+                                 <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+                                 <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                                 <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                                 <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
 <span class="sd">    returning the values pushed to any result channels.</span>
 
@@ -564,7 +624,10 @@
 <span class="sd">    :return: A dictionary mapping result channel names to their values (or ``None`` if</span>
 <span class="sd">        not pushed to).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">run_fragment_once</span><span class="p">(</span><span class="n">fragment_class</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">run_fragment_once</span><span class="p">(</span>
+        <span class="n">fragment_class</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+        <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+        <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="n">max_transitory_error_retries</span><span class="p">)</span>
     <span class="n">shortened_names</span> <span class="o">=</span> <span class="n">_shorten_result_channel_names</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">path</span>
                                                     <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">shortened_names</span><span class="p">[</span><span class="n">channel</span><span class="o">.</span><span class="n">path</span><span class="p">]:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>

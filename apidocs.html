@@ -1092,12 +1092,17 @@ for the given fragment.</p>
 
 <dl class="function">
 <dt id="ndscan.experiment.entry_point.run_fragment_once">
-<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param">fragment: ndscan.experiment.fragment.ExpFragment</em><span class="sig-paren">)</span> &#x2192; Dict[ndscan.experiment.result_channels.ResultChannel, Any]<a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.run_fragment_once" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param">fragment: ndscan.experiment.fragment.ExpFragment</em>, <em class="sig-param">max_rtio_underflow_retries: int = 3</em>, <em class="sig-param">max_transitory_error_retries: int = 10</em><span class="sig-paren">)</span> &#x2192; Dict[ndscan.experiment.result_channels.ResultChannel, Any]<a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.run_fragment_once" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialise the passed fragment and run it once, capturing and returning the
 values from any result channels.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>A dictionary mapping <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultChannel</span></code> instances to their values
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>max_transitory_error_retries</strong> – Number of times to catch transitory error
+exceptions and retry execution. If exceeded, the exception is re-raised for
+the caller to handle. If <code class="docutils literal notranslate"><span class="pre">0</span></code>, retrying is disabled entirely.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dictionary mapping <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultChannel</span></code> instances to their values
 (or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not pushed to).</p>
 </dd>
 </dl>
@@ -1105,7 +1110,7 @@ values from any result channels.</p>
 
 <dl class="function">
 <dt id="ndscan.experiment.entry_point.create_and_run_fragment_once">
-<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">create_and_run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param">env: artiq.language.environment.HasEnvironment, fragment_class: Type[ndscan.experiment.fragment.ExpFragment], *args, **kwargs</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#create_and_run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.create_and_run_fragment_once" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">create_and_run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param">env: artiq.language.environment.HasEnvironment, fragment_class: Type[ndscan.experiment.fragment.ExpFragment], max_rtio_underflow_retries: int = 3, max_transitory_error_retries: int = 10, *args, **kwargs</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#create_and_run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.create_and_run_fragment_once" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create an instance of the passed <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> type and runs it once,
 returning the values pushed to any result channels.</p>
 <p>Example:</p>
