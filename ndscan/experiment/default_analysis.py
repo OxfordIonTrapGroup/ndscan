@@ -176,6 +176,11 @@ DEFAULT_FIT_ANNOTATIONS = {
             "x": "t_max_transfer"
         }
     },
+    "detuned_square_pulse": {
+        "centre": {
+            "x": "offset"
+        }
+    },
     "exponential_decay": {
         "t_1_e": {
             "x": "t_1_e"
