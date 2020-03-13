@@ -3,7 +3,7 @@ Declarative fits, to be excecuted locally by the user interface displaying the d
 it comes in.
 """
 import logging
-from typing import Any, Callable, Dict, List, Iterable, Tuple, Union
+from typing import Any, Callable, Dict, List, Iterable, Optional, Tuple, Union
 
 from ..utils import FIT_OBJECTS
 from .parameters import ParamHandle
@@ -52,13 +52,13 @@ class Annotation:
     """
     def __init__(self,
                  kind: str,
-                 coordinates: dict = {},
-                 parameters: dict = {},
-                 data: dict = {}):
+                 coordinates: Optional[dict] = None,
+                 parameters: Optional[dict] = None,
+                 data: Optional[dict] = None):
         self.kind = kind
-        self.coordinates = coordinates
-        self.parameters = parameters
-        self.data = data
+        self.coordinates = {} if coordinates is None else coordinates
+        self.parameters = {} if parameters is None else parameters
+        self.data = {} if data is None else data
 
     def describe(self, context: AnnotationContext) -> Dict[str, Any]:
         def to_spec_map(dictionary):
@@ -230,8 +230,8 @@ class OnlineFit(DefaultAnalysis):
                  data: Dict[str, Union[ParamHandle, ResultChannel]],
                  annotations: Union[None, Dict[str, Dict[str, Any]]] = None,
                  analysis_identifier: str = None,
-                 constants: Dict[str, Any] = {},
-                 initial_values: Dict[str, Any] = {}):
+                 constants: Optional[Dict[str, Any]] = None,
+                 initial_values: Optional[Dict[str, Any]] = None):
         self.fit_type = fit_type
         if fit_type not in FIT_OBJECTS:
             logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
@@ -240,8 +240,8 @@ class OnlineFit(DefaultAnalysis):
             annotations = DEFAULT_FIT_ANNOTATIONS.get(fit_type, {})
         self.annotations = annotations
         self.analysis_identifier = analysis_identifier
-        self.constants = constants
-        self.initial_values = initial_values
+        self.constants = {} if constants is None else constants
+        self.initial_values = {} if initial_values is None else initial_values
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]):
         ""
