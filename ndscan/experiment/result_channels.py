@@ -5,7 +5,7 @@ Result handling building blocks.
 from artiq.language import HasEnvironment, rpc
 import artiq.language.units
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 __all__ = [
     "LastValueSink", "ArraySink", "AppendingDatasetSink", "ScalarDatasetSink",
@@ -100,11 +100,11 @@ class ResultChannel:
     def __init__(self,
                  path: str,
                  description: str = "",
-                 display_hints: Dict[str, Any] = {},
+                 display_hints: Optional[Dict[str, Any]] = None,
                  save_by_default: bool = True):
         self.path = path
         self.description = description
-        self.display_hints = display_hints
+        self.display_hints = {} if display_hints is None else display_hints
         self.save_by_default = save_by_default
         self.sink = None
 
@@ -156,7 +156,7 @@ class NumericChannel(ResultChannel):
     def __init__(self,
                  path: str,
                  description: str = "",
-                 display_hints: Dict[str, Any] = {},
+                 display_hints: Optional[Dict[str, Any]] = None,
                  min=None,
                  max=None,
                  unit: str = "",
