@@ -87,3 +87,29 @@ class TrivialKernelFragment(ExpFragment):
     @kernel
     def run_once(self):
         pass
+
+
+class TransitoryErrorFragment(ExpFragment):
+    def build_fragment(self):
+        self.num_device_setup_to_fail = 0
+        self.num_device_setup_to_restart_fail = 0
+        self.num_run_once_to_fail = 0
+        self.num_run_once_to_restart_fail = 0
+        self.setattr_result("result", IntChannel)
+
+    def device_setup(self):
+        if self.num_device_setup_to_restart_fail > 0:
+            self.num_device_setup_to_restart_fail -= 1
+            raise RestartKernelTransitoryError
+        if self.num_device_setup_to_fail > 0:
+            self.num_device_setup_to_fail -= 1
+            raise TransitoryError
+
+    def run_once(self):
+        if self.num_run_once_to_restart_fail > 0:
+            self.num_run_once_to_restart_fail -= 1
+            raise RestartKernelTransitoryError
+        if self.num_run_once_to_fail > 0:
+            self.num_run_once_to_fail -= 1
+            raise TransitoryError
+        self.result.push(42)

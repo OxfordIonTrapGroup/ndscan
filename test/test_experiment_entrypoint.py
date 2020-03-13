@@ -5,7 +5,8 @@ Tests for ndscan.experiment top-level runners.
 import json
 from artiq.language import HasEnvironment
 from ndscan.experiment import *
-from fixtures import AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment
+from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
+                      TransitoryErrorFragment)
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
@@ -176,3 +177,30 @@ class RunOnceCase(HasEnvironmentCase):
         self.assertEqual(
             create_and_run_fragment_once(self.create(HasEnvironment), AddOneFragment),
             {"result": 1.0})
+
+    def test_run_once_transitory_errors(self):
+        fragment = self.create(TransitoryErrorFragment, [])
+        fragment.num_device_setup_to_fail = 3
+        fragment.num_device_setup_to_restart_fail = 3
+        fragment.num_run_once_to_fail = 3
+        fragment.num_run_once_to_restart_fail = 3
+
+        self.assertEqual(run_fragment_once(fragment, max_transitory_error_retries=12),
+                         {fragment.result: 42})
+
+        self.assertEqual(fragment.num_device_setup_to_fail, 0)
+        self.assertEqual(fragment.num_device_setup_to_restart_fail, 0)
+        self.assertEqual(fragment.num_run_once_to_fail, 0)
+        self.assertEqual(fragment.num_run_once_to_restart_fail, 0)
+
+    def test_run_once_transitory_error_limit(self):
+        fragment = self.create(TransitoryErrorFragment, [])
+        fragment.num_run_once_to_fail = 3
+        with self.assertRaises(TransitoryError):
+            run_fragment_once(fragment, max_transitory_error_retries=2)
+
+    def test_run_once_restart_kernel_transitory_error_limit(self):
+        fragment = self.create(TransitoryErrorFragment, [])
+        fragment.num_run_once_to_restart_fail = 3
+        with self.assertRaises(RestartKernelTransitoryError):
+            run_fragment_once(fragment, max_transitory_error_retries=2)
