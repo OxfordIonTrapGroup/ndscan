@@ -31,6 +31,11 @@ class TestFragment(ExpFragment):
         self.setattr_fragment("n0", NestedFragment)
         self.setattr_fragment("n1", NestedFragment)
 
+        # Also try manually adding display hints to channels from subfragments.
+        self.setattr_fragment("n2", NestedFragment)
+        self.setattr_fragment("n3", NestedFragment)
+        self.n3.g.display_hints["share_axis_with"] = self.n2.g.path
+
 
 TestExp = make_fragment_scan_exp(TestFragment)
 
@@ -44,10 +49,12 @@ class FragmentScanExpCase(HasEnvironmentCase):
         channels = json.loads(self.dataset_db.get("ndscan.channels"))
 
         data_names, error_bar_names = extract_scalar_channels(channels)
-        self.assertEqual(data_names,
-                         ["b", "a", "d", "e", "f", "n0_g", "n0_h", "n1_g", "n1_h"])
+        self.assertEqual(data_names, [
+            "b", "a", "d", "e", "f", "n0_g", "n0_h", "n1_g", "n1_h", "n2_g", "n2_h",
+            "n3_g", "n3_h"
+        ])
         self.assertEqual(error_bar_names, {"a": "a_err"})
 
         groups = group_channels_into_axes(channels, data_names)
-        self.assertEqual(
-            groups, [["b", "f"], ["a", "d", "e"], ["n0_g", "n0_h"], ["n1_g", "n1_h"]])
+        self.assertEqual(groups, [["b", "f"], ["a", "d", "e"], ["n0_g", "n0_h"],
+                                  ["n1_g", "n1_h"], ["n2_g", "n2_h", "n3_g", "n3_h"]])
