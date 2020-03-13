@@ -11,6 +11,7 @@ The two main entry points into the :class:`.ExpFragment` universe are
 """
 
 from artiq.language import *
+from artiq.coredevice.exceptions import RTIOUnderflow
 from contextlib import suppress
 import json
 import logging
@@ -19,7 +20,7 @@ import time
 from typing import Any, Callable, Dict, Iterable, Type
 
 from .default_analysis import AnnotationContext
-from .fragment import ExpFragment
+from .fragment import ExpFragment, RestartKernelTransitoryError, TransitoryError
 from .parameters import type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
@@ -343,9 +344,81 @@ def make_fragment_scan_exp(fragment_class: Type[ExpFragment],
     return FragmentScanShim
 
 
-def run_fragment_once(fragment: ExpFragment) -> Dict[ResultChannel, Any]:
+class _FragmentRunner(HasEnvironment):
+    """Object wrapping fragment execution to be able to execute everything in one kernel
+    invocation (no difference for non-kernel fragments).
+    """
+    def build(self, fragment: ExpFragment, max_rtio_underflow_retries: int,
+              max_transitory_error_retries: int):
+        self.fragment = fragment
+        self.max_rtio_underflow_retries = max_rtio_underflow_retries
+        self.max_transitory_error_retries = max_transitory_error_retries
+        self.num_underflows_caught = 0
+        self.num_transitory_errors_caught = 0
+
+    def run(self) -> bool:
+        """Execute device_setup()/run_once(), retrying if nececssary.
+
+        :return: ``True`` if execution completed, ``False`` if it should be attempted
+            again (RestartKernelTransitoryError).
+        """
+        if is_kernel(self.fragment.run_once):
+            self.setattr_device("core")
+            return self._run_on_kernel()
+        else:
+            return self._run()
+
+    @kernel
+    def _run_on_kernel(self):
+        """Force the portable _run() to run on the kernel."""
+        return self._run()
+
+    @portable
+    def _run(self):
+        try:
+            while True:
+                try:
+                    self.fragment.device_setup()
+                    self.fragment.run_once()
+                    return True
+                except RTIOUnderflow:
+                    self.num_underflows_caught += 1
+                    if self.num_underflows_caught > self.max_rtio_underflow_retries:
+                        raise
+                    print("Ignoring RTIOUnderflow (", self.num_underflows_caught, "/",
+                          self.max_rtio_underflow_retries, ")")
+                except RestartKernelTransitoryError:
+                    self.num_transitory_errors_caught += 1
+                    if (self.num_transitory_errors_caught >
+                            self.max_transitory_error_retries):
+                        raise
+                    print("Ignoring transitory error, restarting kernel")
+                    return False
+                except TransitoryError:
+                    self.num_transitory_errors_caught += 1
+                    if (self.num_transitory_errors_caught >
+                            self.max_transitory_error_retries):
+                        raise
+                    print("Ignoring transitory error (",
+                          self.num_transitory_errors_caught, "/",
+                          self.max_transitory_error_retries, "), retrying")
+        finally:
+            self.fragment.device_cleanup()
+        assert False, "Execution never reaches here, return is just to pacify compiler."
+        return True
+
+
+def run_fragment_once(
+        fragment: ExpFragment,
+        max_rtio_underflow_retries: int = 3,
+        max_transitory_error_retries: int = 10,
+) -> Dict[ResultChannel, Any]:
     """Initialise the passed fragment and run it once, capturing and returning the
     values from any result channels.
+
+    :param max_transitory_error_retries: Number of times to catch transitory error
+        exceptions and retry execution. If exceeded, the exception is re-raised for
+        the caller to handle. If ``0``, retrying is disabled entirely.
 
     :return: A dictionary mapping :class:`ResultChannel` instances to their values
         (or ``None`` if not pushed to).
@@ -357,40 +430,27 @@ def run_fragment_once(fragment: ExpFragment) -> Dict[ResultChannel, Any]:
     for channel, sink in sinks.items():
         channel.set_sink(sink)
 
+    runner = _FragmentRunner(fragment, fragment, max_rtio_underflow_retries,
+                             max_transitory_error_retries)
     fragment.init_params()
     fragment.prepare()
     try:
-        fragment.host_setup()
-        if is_kernel(fragment.run_once):
-            # Run kernel functions in a single kernel invocation.
-            class FragmentRunner(HasEnvironment):
-                def build(self, fragment):
-                    self.setattr_device("core")
-                    self.fragment = fragment
-
-                @kernel
-                def run(self):
-                    try:
-                        self.fragment.device_setup()
-                        self.fragment.run_once()
-                    finally:
-                        self.fragment.device_cleanup()
-
-            FragmentRunner(fragment, fragment).run()
-        else:
-            try:
-                fragment.device_setup()
-                fragment.run_once()
-            finally:
-                fragment.device_cleanup()
+        while True:
+            fragment.host_setup()
+            if runner.run():
+                break
     finally:
         fragment.host_cleanup()
 
     return {channel: sink.get_last() for channel, sink in sinks.items()}
 
 
-def create_and_run_fragment_once(env: HasEnvironment, fragment_class: Type[ExpFragment],
-                                 *args, **kwargs) -> Dict[str, Any]:
+def create_and_run_fragment_once(env: HasEnvironment,
+                                 fragment_class: Type[ExpFragment],
+                                 max_rtio_underflow_retries: int = 3,
+                                 max_transitory_error_retries: int = 10,
+                                 *args,
+                                 **kwargs) -> Dict[str, Any]:
     """Create an instance of the passed :class:`.ExpFragment` type and runs it once,
     returning the values pushed to any result channels.
 
@@ -416,7 +476,10 @@ def create_and_run_fragment_once(env: HasEnvironment, fragment_class: Type[ExpFr
     :return: A dictionary mapping result channel names to their values (or ``None`` if
         not pushed to).
     """
-    results = run_fragment_once(fragment_class(env, [], *args, **kwargs))
+    results = run_fragment_once(
+        fragment_class(env, [], *args, **kwargs),
+        max_rtio_underflow_retries=max_rtio_underflow_retries,
+        max_transitory_error_retries=max_transitory_error_retries)
     shortened_names = _shorten_result_channel_names(channel.path
                                                     for channel in results.keys())
     return {shortened_names[channel.path]: value for channel, value in results.items()}
