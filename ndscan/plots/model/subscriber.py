@@ -18,8 +18,8 @@ class SubscriberRoot(Root):
         self._source_id_set = False
         self._axes_initialised = False
 
-    def data_changed(self, data: Dict[str, Any],
-                     mods: Iterable[Dict[str, Any]]) -> None:
+    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
+                                                                     Any]]) -> None:
         def d(name):
             return data.get("ndscan." + name, (False, None))[1]
 
@@ -74,8 +74,8 @@ class SubscriberSinglePointModel(SinglePointModel):
             raise ValueError("No complete point yet")
         return self._current_point
 
-    def data_changed(self, data: Dict[str, Any],
-                     mods: Iterable[Dict[str, Any]]) -> None:
+    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
+                                                                     Any]]) -> None:
         if not self._series_initialised:
             channels_json = data.get("ndscan.channels", (False, None))[1]
             if not channels_json:
@@ -109,8 +109,8 @@ class SubscriberScanModel(ScanModel):
         self._annotations = []
         self._point_data = {}
 
-    def data_changed(self, data: Dict[str, Any],
-                     mods: Iterable[Dict[str, Any]]) -> None:
+    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
+                                                                     Any]]) -> None:
         if not self._series_initialised:
             channels_json = data.get("ndscan.channels", (False, None))[1]
             if not channels_json:

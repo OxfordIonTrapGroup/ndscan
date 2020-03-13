@@ -21,9 +21,10 @@ class Subscan:
     """Handle returned by :meth:`setattr_subscan`, allowing the subscan to actually be
     executed.
     """
-    def __init__(self, run_fn: Callable[[ExpFragment, ScanSpec, List[ArraySink]], None],
-                 fragment: ExpFragment, possible_axes: Dict[ParamHandle, ScanAxis],
-                 schema_channel: SubscanChannel,
+    def __init__(self, run_fn: Callable[[ExpFragment, ScanSpec, List[ArraySink]],
+                                        None], fragment: ExpFragment,
+                 possible_axes: Dict[ParamHandle,
+                                     ScanAxis], schema_channel: SubscanChannel,
                  coordinate_channels: List[ResultChannel],
                  child_result_sinks: Dict[ResultChannel, ArraySink],
                  aggregate_result_channels: Dict[ResultChannel, ResultChannel],
@@ -37,11 +38,12 @@ class Subscan:
         self._aggregate_result_channels = aggregate_result_channels
         self._short_child_channel_names = short_child_channel_names
 
-    def run(self,
-            axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
-            options=ScanOptions(),
-            execute_default_analyses=True
-            ) -> Tuple[Dict[ParamHandle, list], Dict[ResultChannel, list]]:
+    def run(
+        self,
+        axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
+        options=ScanOptions(),
+        execute_default_analyses=True
+    ) -> Tuple[Dict[ParamHandle, list], Dict[ResultChannel, list]]:
         """Run the subscan with the given axis iteration specifications, and return the
         data point coordinates/result channel values.
 
