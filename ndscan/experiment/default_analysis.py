@@ -95,7 +95,7 @@ class DefaultAnalysis:
         raise NotImplementedError
 
     def describe_online_analyses(
-            self, context: AnnotationContext
+        self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
         """Exceute analysis and serialise information about resulting annotations and
         online analyses to stringly typed metadata.
@@ -108,8 +108,8 @@ class DefaultAnalysis:
         """
         raise NotImplementedError
 
-    def execute(self, axis_data: Dict[Tuple[str, str], list],
-                result_data: Dict[ResultChannel, list],
+    def execute(self, axis_data: Dict[Tuple[str, str],
+                                      list], result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
         """Exceute analysis and serialise information about resulting annotations to
         stringly typed metadata.
@@ -137,9 +137,9 @@ class CustomAnalysis(DefaultAnalysis):
         broadcast.
     """
     def __init__(
-            self, required_axes: Iterable[ParamHandle],
-            analyze_fn: Callable[[Dict[ParamHandle, list], Dict[ResultChannel, list]],
-                                 List[Annotation]]):
+        self, required_axes: Iterable[ParamHandle],
+        analyze_fn: Callable[[Dict[ParamHandle, list], Dict[ResultChannel, list]],
+                             List[Annotation]]):
         self._required_axis_handles = set(required_axes)
         self._analyze_fn = analyze_fn
 
@@ -149,13 +149,13 @@ class CustomAnalysis(DefaultAnalysis):
                    for h in self._required_axis_handles)
 
     def describe_online_analyses(
-            self, context: AnnotationContext
+        self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
         ""
         return [], {}
 
-    def execute(self, axis_data: Dict[Tuple[str, str], list],
-                result_data: Dict[ResultChannel, list],
+    def execute(self, axis_data: Dict[Tuple[str, str],
+                                      list], result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
         ""
         user_axis_data = {}
@@ -256,7 +256,7 @@ class OnlineFit(DefaultAnalysis):
         return len(scanned_axes) == num_axes
 
     def describe_online_analyses(
-            self, context: AnnotationContext
+        self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
         ""
         # TODO: Generalise to higher-dimensional fits.
@@ -314,8 +314,8 @@ class OnlineFit(DefaultAnalysis):
             }
         }
 
-    def execute(self, axis_data: Dict[Tuple[str, str], list],
-                result_data: Dict[ResultChannel, list],
+    def execute(self, axis_data: Dict[Tuple[str, str],
+                                      list], result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
         ""
         # Nothing to do off-line for online fits.

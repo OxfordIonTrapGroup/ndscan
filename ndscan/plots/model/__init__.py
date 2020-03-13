@@ -201,8 +201,8 @@ class ScanModel(Model):
                 Annotation(schema["kind"], schema.get("parameters", {}), *sources))
         self.annotations_changed.emit(self._annotations)
 
-    def _set_online_analyses(self,
-                             analysis_schemata: Dict[str, Dict[str, Any]]) -> None:
+    def _set_online_analyses(self, analysis_schemata: Dict[str, Dict[str,
+                                                                     Any]]) -> None:
         """Create and hook up online analyses from the given schema.
 
         This will be called by concrete subclasses once/whenever they have received

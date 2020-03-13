@@ -55,9 +55,11 @@ def _coords_to_indices(coords, range_spec):
 class _ImagePlot:
     def __init__(self, image_item: pyqtgraph.ImageItem, active_channel_name: str,
                  x_min: Union[float, None], x_max: Union[float, None],
-                 x_increment: Union[float, None], y_min: Union[float, None],
-                 y_max: Union[float, None], y_increment: Union[float, None],
-                 hints_for_channels: Dict[str, dict]):
+                 x_increment: Union[float,
+                                    None], y_min: Union[float,
+                                                        None], y_max: Union[float,
+                                                                            None],
+                 y_increment: Union[float, None], hints_for_channels: Dict[str, dict]):
         self.image_item = image_item
         self.active_channel_name = active_channel_name
         self.hints_for_channels = hints_for_channels

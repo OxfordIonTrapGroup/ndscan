@@ -398,7 +398,8 @@ class Fragment(HasEnvironment):
 
         return channel
 
-    def override_param(self, param_name: str,
+    def override_param(self,
+                       param_name: str,
                        initial_value: Any = None) -> Tuple[Any, ParamStore]:
         """Override the parameter with the given name and set it to the provided value.
 

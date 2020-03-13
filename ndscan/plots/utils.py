@@ -13,8 +13,8 @@ FIT_COLORS = [
 ]
 
 
-def extract_scalar_channels(channels: Dict[str, Any]
-                            ) -> Tuple[List[str], Dict[str, str]]:
+def extract_scalar_channels(
+        channels: Dict[str, Any]) -> Tuple[List[str], Dict[str, str]]:
     """Extract channels with scalar numerical values from the given channel metadata,
     also mapping error bar channels to their associated value channels.
 
