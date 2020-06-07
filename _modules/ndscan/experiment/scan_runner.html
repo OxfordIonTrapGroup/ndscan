@@ -385,14 +385,14 @@
                       <span class="n">NUM_TOLERATED_UNDERFLOWS_PER_POINT</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
             <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error, restarting kernel&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error, restarting kernel&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
                 <span class="k">return</span> <span class="kc">True</span>
             <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">num_transitory_errors</span> <span class="o">&gt;=</span> <span class="n">NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT</span><span class="p">:</span>
                     <span class="k">raise</span>
                 <span class="n">num_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error (&quot;</span><span class="p">,</span> <span class="n">num_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span> <span class="n">num_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
                       <span class="n">NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT</span><span class="p">,</span> <span class="s2">&quot;), retrying&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_retry_point</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_point_completed</span><span class="p">()</span>

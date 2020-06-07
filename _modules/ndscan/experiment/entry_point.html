@@ -540,14 +540,14 @@
                     <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">&gt;</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">):</span>
                         <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error, restarting kernel&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error, restarting kernel&quot;</span><span class="p">)</span>
                     <span class="k">return</span> <span class="kc">False</span>
                 <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">&gt;</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">):</span>
                         <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring transitory error (&quot;</span><span class="p">,</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span> <span class="s2">&quot;), retrying&quot;</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
