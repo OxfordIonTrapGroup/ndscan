@@ -392,14 +392,14 @@ class _FragmentRunner(HasEnvironment):
                     if (self.num_transitory_errors_caught >
                             self.max_transitory_error_retries):
                         raise
-                    print("Ignoring transitory error, restarting kernel")
+                    print("Caught transitory error, restarting kernel")
                     return False
                 except TransitoryError:
                     self.num_transitory_errors_caught += 1
                     if (self.num_transitory_errors_caught >
                             self.max_transitory_error_retries):
                         raise
-                    print("Ignoring transitory error (",
+                    print("Caught transitory error (",
                           self.num_transitory_errors_caught, "/",
                           self.max_transitory_error_retries, "), retrying")
         finally:
