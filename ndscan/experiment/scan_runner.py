@@ -237,14 +237,14 @@ class ScanRunner(HasEnvironment):
                       NUM_TOLERATED_UNDERFLOWS_PER_POINT, ")")
                 self._kscan_retry_point()
             except RestartKernelTransitoryError:
-                print("Ignoring transitory error, restarting kernel")
+                print("Caught transitory error, restarting kernel")
                 self._kscan_retry_point()
                 return True
             except TransitoryError:
                 if num_transitory_errors >= NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT:
                     raise
                 num_transitory_errors += 1
-                print("Ignoring transitory error (", num_transitory_errors, "/",
+                print("Caught transitory error (", num_transitory_errors, "/",
                       NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT, "), retrying")
                 self._kscan_retry_point()
         self._kscan_point_completed()
