@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional
 from ...utils import strip_prefix
 from . import ScanModel, SinglePointModel
 import numpy
@@ -17,7 +17,7 @@ class SelectPointFromScanModel(SinglePointModel):
         # TODO: Invalidate point data (reset index?) on channel schema change.
         self._source.channel_schemata_changed.connect(self.channel_schemata_changed)
 
-    def set_source_index(self, idx: Union[None, int]) -> None:
+    def set_source_index(self, idx: Optional[int]) -> None:
         if idx == self._source_index:
             return
         self._set_point(idx, silently_fail=False)
@@ -25,10 +25,10 @@ class SelectPointFromScanModel(SinglePointModel):
     def get_channel_schemata(self) -> Dict[str, Any]:
         return self._source.get_channel_schemata()
 
-    def get_point(self) -> Union[None, Dict[str, Any]]:
+    def get_point(self) -> Optional[Dict[str, Any]]:
         return self._point
 
-    def _set_point(self, idx: Union[None, int], silently_fail: bool) -> None:
+    def _set_point(self, idx: Optional[int], silently_fail: bool) -> None:
         self._source_index = idx
         if idx is None:
             point = None

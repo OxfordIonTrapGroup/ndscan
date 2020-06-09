@@ -9,7 +9,7 @@
 
 from artiq.language import *
 from artiq.language import units
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 from ..utils import eval_param_default
 
 __all__ = ["FloatParam", "IntParam", "StringParam"]
@@ -174,7 +174,7 @@ class StringParamHandle(ParamHandle):
         return self._store.get_value()
 
 
-def resolve_numeric_scale(scale: Union[None, float], unit: str) -> float:
+def resolve_numeric_scale(scale: Optional[float], unit: str) -> float:
     if scale is not None:
         return scale
     if unit == "":

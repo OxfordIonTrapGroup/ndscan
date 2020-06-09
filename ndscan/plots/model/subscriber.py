@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 from ...utils import strip_prefix
 from . import Annotation, Context, Model, Root, ScanModel, SinglePointModel
 
@@ -69,7 +69,7 @@ class SubscriberSinglePointModel(SinglePointModel):
             raise ValueError("No complete point yet")
         return self._channel_schemata
 
-    def get_point(self) -> Union[None, Dict[str, Any]]:
+    def get_point(self) -> Optional[Dict[str, Any]]:
         if self._current_point is None:
             raise ValueError("No complete point yet")
         return self._current_point
