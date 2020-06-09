@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 from ...utils import strip_suffix
 from . import Model, Root, ScanModel, SinglePointModel
 from .utils import call_later, emit_later
@@ -65,7 +65,7 @@ class SubscanModel(ScanModel):
     def quit(self) -> None:
         self._parent.point_changed.disconnect(self._update)
 
-    def _update(self, parent_data: Union[None, Dict[str, Any]]) -> None:
+    def _update(self, parent_data: Optional[Dict[str, Any]]) -> None:
         if parent_data is None:
             logger.debug("Ignoring update ")
             return

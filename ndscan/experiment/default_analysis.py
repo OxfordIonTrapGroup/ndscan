@@ -233,7 +233,7 @@ class OnlineFit(DefaultAnalysis):
     def __init__(self,
                  fit_type: str,
                  data: Dict[str, Union[ParamHandle, ResultChannel]],
-                 annotations: Union[None, Dict[str, Dict[str, Any]]] = None,
+                 annotations: Optional[Dict[str, Dict[str, Any]]] = None,
                  analysis_identifier: str = None,
                  constants: Optional[Dict[str, Any]] = None,
                  initial_values: Optional[Dict[str, Any]] = None):

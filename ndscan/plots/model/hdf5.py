@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 import h5py
 from . import Context, Model, Root, ScanModel, SinglePointModel
 from .utils import call_later, emit_later
@@ -37,7 +37,7 @@ class HDF5SingleShotModel(SinglePointModel):
     def get_channel_schemata(self) -> Dict[str, Any]:
         return self._channel_schemata
 
-    def get_point(self) -> Union[None, Dict[str, Any]]:
+    def get_point(self) -> Optional[Dict[str, Any]]:
         return self._point
 
 

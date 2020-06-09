@@ -4,7 +4,7 @@ import numpy
 from oitg import uncertainty_to_string
 import pyqtgraph
 from quamash import QtCore
-from typing import Dict, Union, Tuple
+from typing import Dict, Union, Optional, Tuple
 from ..utils import FIT_OBJECTS
 from .model import AnnotationDataSource
 
@@ -130,7 +130,7 @@ class CurveItem(AnnotationItem):
 class VLineItem(AnnotationItem):
     """Vertical line marking a given x coordinate, with optional confidence interval."""
     def __init__(self, position_source: AnnotationDataSource,
-                 uncertainty_source: Union[None, AnnotationDataSource], view_box,
+                 uncertainty_source: Optional[AnnotationDataSource], view_box,
                  base_color, x_data_to_display_scale, x_unit_suffix):
         self._position_source = position_source
         self._uncertainty_source = uncertainty_source
