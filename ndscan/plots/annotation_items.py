@@ -175,8 +175,8 @@ class VLineItem(AnnotationItem):
         if self._uncertainty_source:
             self._uncertainty_source.changed.disconnect(self._redraw)
         if self._added_to_plot:
-            for l in (self._left_line, self._center_line, self._right_line):
-                self._view_box.removeItem(l)
+            for line in (self._left_line, self._center_line, self._right_line):
+                self._view_box.removeItem(line)
 
     def _redraw(self):
         x = self._position_source.get()
