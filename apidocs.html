@@ -23,10 +23,10 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -185,13 +185,13 @@ from experiment client code, like <code class="docutils literal notranslate"><sp
 <h2>Fragments<a class="headerlink" href="#fragments" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="module-ndscan.experiment.fragment">
 <span id="ndscan-experiment-fragment-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.fragment" title="ndscan.experiment.fragment"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.fragment</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.fragment" title="Permalink to this headline">¶</a></h3>
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.fragment.Fragment">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">Fragment</code><span class="sig-paren">(</span><em class="sig-param">managers_or_parent</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">Fragment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main building block.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.build">
-<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param">fragment_path: List[str], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.build" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment_path</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.build" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialise this fragment instance; called from the <code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code>
 constructor.</p>
 <p>This sets up the machinery for registering parameters and result channels with
@@ -213,7 +213,7 @@ created by <code class="docutils literal notranslate"><span class="pre">setattr_
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.host_setup">
 <code class="sig-name descname">host_setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.host_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.host_setup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform host-side initialisation.</p>
@@ -238,7 +238,7 @@ forwarding to the default implementation (see example).</p>
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.device_setup">
 <code class="sig-name descname">device_setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.device_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.device_setup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform core-device-side initialisation.</p>
@@ -264,7 +264,7 @@ special initialisation order, etc. is required (see example).</p>
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.device_setup_subfragments">
 <code class="sig-name descname">device_setup_subfragments</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.device_setup_subfragments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.device_setup_subfragments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Call <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_setup" title="ndscan.experiment.fragment.Fragment.device_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_setup()</span></code></a> on all subfragments.</p>
@@ -277,7 +277,7 @@ Only direct member function calls are special-cased to be generic on the
 <cite>self</cite> type.)</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.host_cleanup">
 <code class="sig-name descname">host_cleanup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.host_cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.host_cleanup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform host-side cleanup after an experiment has been run.</p>
@@ -302,7 +302,7 @@ experiment as failed, failing cleanups should be avoided.</p>
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.device_cleanup">
 <code class="sig-name descname">device_cleanup</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.device_cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.device_cleanup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform core-device-side teardown.</p>
@@ -324,7 +324,7 @@ forwarding to it too (see example).</p>
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.device_cleanup_subfragments">
 <code class="sig-name descname">device_cleanup_subfragments</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.device_cleanup_subfragments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.device_cleanup_subfragments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Call <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.device_cleanup" title="ndscan.experiment.fragment.Fragment.device_cleanup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">device_cleanup()</span></code></a> on all subfragments.</p>
@@ -343,9 +343,9 @@ inferred as that subclass. Only direct member function calls are special-cased
 to be generic on the <cite>self</cite> type.)</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.build_fragment">
-<code class="sig-name descname">build_fragment</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.build_fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">build_fragment</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.build_fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialise this fragment, building up the hierarchy of subfragments,
 parameters and result channels.</p>
 <p>This is where any constructor-type initialisation should take place, similar to
@@ -364,9 +364,9 @@ constructor.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.setattr_fragment">
-<code class="sig-name descname">setattr_fragment</code><span class="sig-paren">(</span><em class="sig-param">name: str, fragment_class: Type[Fragment], *args, **kwargs</em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.fragment.Fragment<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_fragment" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">setattr_fragment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type<span class="p">[</span>Fragment<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment">ndscan.experiment.fragment.Fragment</a><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_fragment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a subfragment of the given name and type.</p>
 <p>Can only be called during <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p>
 <dl class="field-list simple">
@@ -387,9 +387,9 @@ Python identifier; the fragment will be accessible as <code class="docutils lite
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.setattr_param">
-<code class="sig-name descname">setattr_param</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">param_class: Type</em>, <em class="sig-param">description: str</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.parameters.ParamHandle<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_param" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">setattr_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">param_class</span><span class="p">:</span> <span class="n">Type</span></em>, <em class="sig-param"><span class="n">description</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.parameters.ParamHandle<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_param" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a parameter of the given name and type.</p>
 <p>Can only be called during <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p>
 <dl class="field-list simple">
@@ -410,9 +410,9 @@ constructor.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.setattr_param_rebind">
-<code class="sig-name descname">setattr_param_rebind</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">original_owner: ndscan.experiment.fragment.Fragment</em>, <em class="sig-param">original_name: Optional[str] = None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.parameters.ParamHandle<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_param_rebind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_param_rebind" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">setattr_param_rebind</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">original_owner</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment">ndscan.experiment.fragment.Fragment</a></span></em>, <em class="sig-param"><span class="n">original_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.parameters.ParamHandle<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_param_rebind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_param_rebind" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a parameter that overrides the value of a subfragment parameter.</p>
 <p>The most common use case for this is to specialise the operation of a generic
 subfragment. For example, there might be a fragment <code class="docutils literal notranslate"><span class="pre">Fluoresce</span></code> that drives
@@ -439,7 +439,7 @@ defaults to that of the original parameter.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.setattr_result">
 <code class="sig-name descname">setattr_result</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">channel_class: Type[ndscan.experiment.result_channels.ResultChannel] = &lt;class 'ndscan.experiment.result_channels.FloatChannel'&gt;</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.result_channels.ResultChannel<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_result" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a result channel of the given name and type.</p>
@@ -462,9 +462,9 @@ constructor.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.override_param">
-<code class="sig-name descname">override_param</code><span class="sig-paren">(</span><em class="sig-param">param_name: str</em>, <em class="sig-param">initial_value: Any = None</em><span class="sig-paren">)</span> &#x2192; Tuple[Any, ndscan.experiment.parameters.ParamStore]<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.override_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.override_param" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">override_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">initial_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>Any<span class="p">, </span>ndscan.experiment.parameters.ParamStore<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.override_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.override_param" title="Permalink to this definition">¶</a></dt>
 <dd><p>Override the parameter with the given name and set it to the provided value.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -482,9 +482,9 @@ bound to.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.init_params">
-<code class="sig-name descname">init_params</code><span class="sig-paren">(</span><em class="sig-param">overrides: Dict[str</em>, <em class="sig-param">List[Tuple[str</em>, <em class="sig-param">ndscan.experiment.parameters.ParamStore]]] = {}</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.init_params" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">init_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">overrides</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>ndscan.experiment.parameters.ParamStore<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">{}</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.init_params" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialise free parameters of this fragment and all its subfragments.</p>
 <p>If, for a given parameter, a relevant override is given, the specified
 ParamStore is used. Otherwise, the default value is evaluated and a new store
@@ -504,7 +504,7 @@ the store to use for parameters the path of which matches the spec.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.recompute_param_defaults">
 <code class="sig-name descname">recompute_param_defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.recompute_param_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.recompute_param_defaults" title="Permalink to this definition">¶</a></dt>
 <dd><p>Recompute default values of the parameters of this fragment and all its
@@ -516,11 +516,11 @@ to the existing parameter store.</p>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.fragment.ExpFragment">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">ExpFragment</code><span class="sig-paren">(</span><em class="sig-param">managers_or_parent</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">ExpFragment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fragment that supports the notion of being run to produce results.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.ExpFragment.prepare">
 <code class="sig-name descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.prepare" title="Permalink to this definition">¶</a></dt>
 <dd><p>Prepare this instance for execution
@@ -532,16 +532,16 @@ be accessed, but devices must not yet be.</p>
 pipeline stage.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.ExpFragment.run_once">
 <code class="sig-name descname">run_once</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.run_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.run_once" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute the experiment described by the fragment once with the current
 parameters, producing one set of results (if any).</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.ExpFragment.get_default_analyses">
-<code class="sig-name descname">get_default_analyses</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[ndscan.experiment.default_analysis.DefaultAnalysis]<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.get_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.get_default_analyses" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_default_analyses</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis">ndscan.experiment.default_analysis.DefaultAnalysis</a><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.get_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.get_default_analyses" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return list of <a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis"><code class="xref py py-class docutils literal notranslate"><span class="pre">DefaultAnalysis</span></code></a> instances describing analyses
 (fits, etc.) for this fragment.</p>
 <p>Analyses are only run if the fragment is scanned along the axes required for
@@ -551,14 +551,14 @@ them to apply.</p>
 
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="ndscan.experiment.fragment.TransitoryError">
 <em class="property">exception </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">TransitoryError</code><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#TransitoryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.TransitoryError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transitory error encountered while executing a fragment, which is expected to
 clear itself up if it is attempted again without any further changes.</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="ndscan.experiment.fragment.RestartKernelTransitoryError">
 <em class="property">exception </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">RestartKernelTransitoryError</code><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#RestartKernelTransitoryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.RestartKernelTransitoryError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transitory error where the kernel should be restarted before retrying.</p>
@@ -572,11 +572,11 @@ clear itself up if it is attempted again without any further changes.</p>
 <div class="section" id="module-ndscan.experiment.result_channels">
 <span id="ndscan-experiment-result-channels-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.result_channels" title="ndscan.experiment.result_channels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.result_channels</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.result_channels" title="Permalink to this headline">¶</a></h3>
 <p>Result handling building blocks.</p>
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.LastValueSink">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">LastValueSink</code><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#LastValueSink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.LastValueSink" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sink that stores the last-pushed value.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.result_channels.LastValueSink.get_last">
 <code class="sig-name descname">get_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Any<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#LastValueSink.get_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.LastValueSink.get_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the last-pushed value, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if none yet.</p>
@@ -584,17 +584,17 @@ clear itself up if it is attempted again without any further changes.</p>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.ArraySink">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">ArraySink</code><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ArraySink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ArraySink" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sink that stores all pushed values in a list.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.result_channels.ArraySink.get_all">
-<code class="sig-name descname">get_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Any]<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ArraySink.get_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ArraySink.get_all" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Any<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ArraySink.get_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ArraySink.get_all" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a list of all previously pushed values.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.result_channels.ArraySink.clear">
 <code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ArraySink.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ArraySink.clear" title="Permalink to this definition">¶</a></dt>
 <dd><p>Clear the list of previously pushed values.</p>
@@ -602,12 +602,12 @@ clear itself up if it is attempted again without any further changes.</p>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.AppendingDatasetSink">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">AppendingDatasetSink</code><span class="sig-paren">(</span><em class="sig-param">managers_or_parent</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#AppendingDatasetSink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.AppendingDatasetSink" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">AppendingDatasetSink</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#AppendingDatasetSink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.AppendingDatasetSink" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
 <dt id="ndscan.experiment.result_channels.AppendingDatasetSink.build">
-<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param">key: str</em>, <em class="sig-param">broadcast: bool = True</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#AppendingDatasetSink.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.AppendingDatasetSink.build" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">broadcast</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#AppendingDatasetSink.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.AppendingDatasetSink.build" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -619,22 +619,22 @@ and subsequently appended to.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.result_channels.AppendingDatasetSink.get_all">
-<code class="sig-name descname">get_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Any]<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#AppendingDatasetSink.get_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.AppendingDatasetSink.get_all" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Any<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#AppendingDatasetSink.get_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.AppendingDatasetSink.get_all" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read back the previously pushed values from the target dataset (if any).</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.ScalarDatasetSink">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">ScalarDatasetSink</code><span class="sig-paren">(</span><em class="sig-param">managers_or_parent</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ScalarDatasetSink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ScalarDatasetSink" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">ScalarDatasetSink</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ScalarDatasetSink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ScalarDatasetSink" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sink that writes pushed results to a dataset, overwriting its previous value
 if any.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.result_channels.ScalarDatasetSink.build">
-<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param">key: str</em>, <em class="sig-param">broadcast: bool = True</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ScalarDatasetSink.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ScalarDatasetSink.build" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">broadcast</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ScalarDatasetSink.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ScalarDatasetSink.build" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -645,7 +645,7 @@ if any.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.result_channels.ScalarDatasetSink.get_last">
 <code class="sig-name descname">get_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Any<a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ScalarDatasetSink.get_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ScalarDatasetSink.get_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the last pushed value, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if none yet.</p>
@@ -653,17 +653,17 @@ if any.</p>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.FloatChannel">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">FloatChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">min=None</em>, <em class="sig-param">max=None</em>, <em class="sig-param">unit: str =</em>, <em class="sig-param">scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#FloatChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.FloatChannel" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.IntChannel">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">IntChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">min=None</em>, <em class="sig-param">max=None</em>, <em class="sig-param">unit: str =</em>, <em class="sig-param">scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#IntChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.IntChannel" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.OpaqueChannel">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">OpaqueChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">save_by_default: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#OpaqueChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.OpaqueChannel" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -674,45 +674,45 @@ if any.</p>
 <h2>Scans<a class="headerlink" href="#scans" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="module-ndscan.experiment.scan_generator">
 <span id="ndscan-experiment-scan-generator-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.scan_generator" title="ndscan.experiment.scan_generator"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.scan_generator</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.scan_generator" title="Permalink to this headline">¶</a></h3>
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_generator.ScanGenerator">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">ScanGenerator</code><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates points along a single scan axis to be visited.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.scan_generator.ScanGenerator.has_level">
-<code class="sig-name descname">has_level</code><span class="sig-paren">(</span><em class="sig-param">level: int</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.has_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.has_level" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">has_level</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.has_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.has_level" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.scan_generator.ScanGenerator.points_for_level">
-<code class="sig-name descname">points_for_level</code><span class="sig-paren">(</span><em class="sig-param">level: int</em>, <em class="sig-param">rng=None</em><span class="sig-paren">)</span> &#x2192; List[Any]<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.points_for_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.points_for_level" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">points_for_level</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">rng</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Any<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.points_for_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.points_for_level" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.scan_generator.ScanGenerator.describe_limits">
-<code class="sig-name descname">describe_limits</code><span class="sig-paren">(</span><em class="sig-param">target: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.describe_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.describe_limits" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">describe_limits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanGenerator.describe_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanGenerator.describe_limits" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_generator.RefiningGenerator">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">RefiningGenerator</code><span class="sig-paren">(</span><em class="sig-param">lower</em>, <em class="sig-param">upper</em>, <em class="sig-param">randomise_order</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#RefiningGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.RefiningGenerator" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">RefiningGenerator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span></em>, <em class="sig-param"><span class="n">upper</span></em>, <em class="sig-param"><span class="n">randomise_order</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#RefiningGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.RefiningGenerator" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_generator.LinearGenerator">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">LinearGenerator</code><span class="sig-paren">(</span><em class="sig-param">start</em>, <em class="sig-param">stop</em>, <em class="sig-param">num_points</em>, <em class="sig-param">randomise_order</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#LinearGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.LinearGenerator" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">LinearGenerator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start</span></em>, <em class="sig-param"><span class="n">stop</span></em>, <em class="sig-param"><span class="n">num_points</span></em>, <em class="sig-param"><span class="n">randomise_order</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#LinearGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.LinearGenerator" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_generator.ListGenerator">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">ListGenerator</code><span class="sig-paren">(</span><em class="sig-param">values</em>, <em class="sig-param">randomise_order</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ListGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ListGenerator" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">ListGenerator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">values</span></em>, <em class="sig-param"><span class="n">randomise_order</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ListGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ListGenerator" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_generator.ScanOptions">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">ScanOptions</code><span class="sig-paren">(</span><em class="sig-param">num_repeats: int = 1</em>, <em class="sig-param">randomise_order_globally: bool = False</em>, <em class="sig-param">seed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanOptions" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_generator.</code><code class="sig-name descname">ScanOptions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_repeats</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">randomise_order_globally</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_generator.html#ScanOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_generator.ScanOptions" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -720,40 +720,9 @@ if any.</p>
 <span id="ndscan-experiment-subscan-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.subscan" title="ndscan.experiment.subscan"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.subscan</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.subscan" title="Permalink to this headline">¶</a></h3>
 <p>Implements subscans, that is, the ability for an <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> to scan
 another child fragment as part of its execution.</p>
-<dl class="class">
-<dt id="ndscan.experiment.subscan.Subscan">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.subscan.</code><code class="sig-name descname">Subscan</code><span class="sig-paren">(</span><em class="sig-param">run_fn: Callable[[ndscan.experiment.fragment.ExpFragment, ndscan.experiment.scan_runner.ScanSpec, List[ndscan.experiment.result_channels.ArraySink]], None], fragment: ndscan.experiment.fragment.ExpFragment, possible_axes: Dict[ndscan.experiment.parameters.ParamHandle, ndscan.experiment.scan_runner.ScanAxis], schema_channel: ndscan.experiment.result_channels.SubscanChannel, coordinate_channels: List[ndscan.experiment.result_channels.ResultChannel], child_result_sinks: Dict[ndscan.experiment.result_channels.ResultChannel, ndscan.experiment.result_channels.ArraySink], aggregate_result_channels: Dict[ndscan.experiment.result_channels.ResultChannel, ndscan.experiment.result_channels.ResultChannel], short_child_channel_names: Dict[str, ndscan.experiment.result_channels.ResultChannel]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle returned by <a class="reference internal" href="#ndscan.experiment.subscan.setattr_subscan" title="ndscan.experiment.subscan.setattr_subscan"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a>, allowing the subscan to actually be
-executed.</p>
-<dl class="method">
-<dt id="ndscan.experiment.subscan.Subscan.run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">axis_generators: List[Tuple[ndscan.experiment.parameters.ParamHandle, ndscan.experiment.scan_generator.ScanGenerator]], options=&lt;ndscan.experiment.scan_generator.ScanOptions object&gt;, execute_default_analyses=True</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[ndscan.experiment.parameters.ParamHandle, list], Dict[ndscan.experiment.result_channels.ResultChannel, list]]<a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the subscan with the given axis iteration specifications, and return the
-data point coordinates/result channel values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>axis_generators</strong> – The list of scan axes (dimensions). Each element is a
-tuple of parameter to scan (handle must have been passed to
-<a class="reference internal" href="#ndscan.experiment.subscan.setattr_subscan" title="ndscan.experiment.subscan.setattr_subscan"><code class="xref py py-func docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a> to set up), and the <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanGenerator</span></code> to use
-to generate the points.</p></li>
-<li><p><strong>options</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanOptions</span></code> to control scan execution.</p></li>
-<li><p><strong>execute_default_analyses</strong> – Whether to run any default analyses associated
-with the subfragment after the scan is complete.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple <code class="docutils literal notranslate"><span class="pre">(coordinates,</span> <span class="pre">values)</span></code>, each a dictionary mapping parameter
-handles resp. result channels to lists of their values.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="ndscan.experiment.subscan.setattr_subscan">
-<code class="sig-prename descclassname">ndscan.experiment.subscan.</code><code class="sig-name descname">setattr_subscan</code><span class="sig-paren">(</span><em class="sig-param">owner: ndscan.experiment.fragment.Fragment, scan_name: str, fragment: ndscan.experiment.fragment.ExpFragment, axis_params: List[Tuple[ndscan.experiment.fragment.Fragment, str]], save_results_by_default: bool = True</em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.subscan.Subscan<a class="reference internal" href="_modules/ndscan/experiment/subscan.html#setattr_subscan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.subscan.setattr_subscan" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.subscan.</code><code class="sig-name descname">setattr_subscan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">owner</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment">ndscan.experiment.fragment.Fragment</a></span></em>, <em class="sig-param"><span class="n">scan_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">axis_params</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Tuple<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment">ndscan.experiment.fragment.Fragment</a><span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">save_results_by_default</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#ndscan.experiment.subscan.Subscan" title="ndscan.experiment.subscan.Subscan">ndscan.experiment.subscan.Subscan</a><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#setattr_subscan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.subscan.setattr_subscan" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set up a scan for the given subfragment.</p>
 <p>Result channels are set up to expose the scan data in the owning fragment for
 introspectability.</p>
@@ -777,26 +746,57 @@ be overridden and set to their default values.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py class">
+<dt id="ndscan.experiment.subscan.Subscan">
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.subscan.</code><code class="sig-name descname">Subscan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_fn</span><span class="p">:</span> <span class="n">Callable[[ndscan.experiment.fragment.ExpFragment, ndscan.experiment.scan_runner.ScanSpec, List[ndscan.experiment.result_channels.ArraySink]], None]</span></em>, <em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">possible_axes</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">, </span><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanAxis" title="ndscan.experiment.scan_runner.ScanAxis">ndscan.experiment.scan_runner.ScanAxis</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">schema_channel</span><span class="p">:</span> <span class="n">ndscan.experiment.result_channels.SubscanChannel</span></em>, <em class="sig-param"><span class="n">coordinate_channels</span><span class="p">:</span> <span class="n">List<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">child_result_sinks</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span><a class="reference internal" href="#ndscan.experiment.result_channels.ArraySink" title="ndscan.experiment.result_channels.ArraySink">ndscan.experiment.result_channels.ArraySink</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">aggregate_result_channels</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span>ndscan.experiment.result_channels.ResultChannel<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">short_child_channel_names</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>ndscan.experiment.result_channels.ResultChannel<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle returned by <a class="reference internal" href="#ndscan.experiment.subscan.setattr_subscan" title="ndscan.experiment.subscan.setattr_subscan"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a>, allowing the subscan to actually be
+executed.</p>
+<dl class="py method">
+<dt id="ndscan.experiment.subscan.Subscan.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">axis_generators: List[Tuple[ndscan.experiment.parameters.ParamHandle, ndscan.experiment.scan_generator.ScanGenerator]], options=&lt;ndscan.experiment.scan_generator.ScanOptions object&gt;, execute_default_analyses=True</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>Dict<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">, </span>list<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span>list<span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the subscan with the given axis iteration specifications, and return the
+data point coordinates/result channel values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis_generators</strong> – The list of scan axes (dimensions). Each element is a
+tuple of parameter to scan (handle must have been passed to
+<a class="reference internal" href="#ndscan.experiment.subscan.setattr_subscan" title="ndscan.experiment.subscan.setattr_subscan"><code class="xref py py-func docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a> to set up), and the <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanGenerator</span></code> to use
+to generate the points.</p></li>
+<li><p><strong>options</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanOptions</span></code> to control scan execution.</p></li>
+<li><p><strong>execute_default_analyses</strong> – Whether to run any default analyses associated
+with the subfragment after the scan is complete.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple <code class="docutils literal notranslate"><span class="pre">(coordinates,</span> <span class="pre">values)</span></code>, each a dictionary mapping parameter
+handles resp. result channels to lists of their values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-ndscan.experiment.default_analysis">
 <span id="ndscan-experiment-default-analysis-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.default_analysis" title="ndscan.experiment.default_analysis"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.default_analysis</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.default_analysis" title="Permalink to this headline">¶</a></h3>
 <p>Declarative fits, to be excecuted locally by the user interface displaying the data as
 it comes in.</p>
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.default_analysis.Annotation">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">Annotation</code><span class="sig-paren">(</span><em class="sig-param">kind: str</em>, <em class="sig-param">coordinates: Optional[dict] = None</em>, <em class="sig-param">parameters: Optional[dict] = None</em>, <em class="sig-param">data: Optional[dict] = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#Annotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.Annotation" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">Annotation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">kind</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">coordinates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>dict<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parameters</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>dict<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>dict<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#Annotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.Annotation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Annotation to be displayed alongside scan result data, recording derived
 quantities (e.g. a fit minimizer).</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.default_analysis.DefaultAnalysis">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">DefaultAnalysis</code><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Analysis functionality associated with an <cite>ExpFragment</cite> to be executed when that
 fragment is scanned in a particular way.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.default_analysis.DefaultAnalysis.has_data">
-<code class="sig-name descname">has_data</code><span class="sig-paren">(</span><em class="sig-param">scanned_axes: List[Tuple[str, str]]</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.has_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.has_data" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">has_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.has_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.has_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return whether the scanned axes contain the data necessary for this analysis
 to be applicable.</p>
 <dl class="field-list simple">
@@ -813,9 +813,9 @@ the particular handle given or a wildcard path spec.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.default_analysis.DefaultAnalysis.describe_online_analyses">
-<code class="sig-name descname">describe_online_analyses</code><span class="sig-paren">(</span><em class="sig-param">context: ndscan.experiment.default_analysis.AnnotationContext</em><span class="sig-paren">)</span> &#x2192; Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]<a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.describe_online_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.describe_online_analyses" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">describe_online_analyses</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">ndscan.experiment.default_analysis.AnnotationContext</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.describe_online_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.describe_online_analyses" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exceute analysis and serialise information about resulting annotations and
 online analyses to stringly typed metadata.</p>
 <dl class="field-list simple">
@@ -830,9 +830,9 @@ online analyses.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.default_analysis.DefaultAnalysis.execute">
-<code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param">axis_data: Dict[Tuple[str, str], list], result_data: Dict[ndscan.experiment.result_channels.ResultChannel, list], context: ndscan.experiment.default_analysis.AnnotationContext</em><span class="sig-paren">)</span> &#x2192; List[Dict[str, Any]]<a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.execute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">, </span>list<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">result_data</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span>list<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">ndscan.experiment.default_analysis.AnnotationContext</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.execute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exceute analysis and serialise information about resulting annotations to
 stringly typed metadata.</p>
 <dl class="field-list simple">
@@ -849,9 +849,9 @@ annotations, if any.</p>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.default_analysis.CustomAnalysis">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">CustomAnalysis</code><span class="sig-paren">(</span><em class="sig-param">required_axes: Iterable[ndscan.experiment.parameters.ParamHandle], analyze_fn: Callable[[Dict[ndscan.experiment.parameters.ParamHandle, list], Dict[ndscan.experiment.result_channels.ResultChannel, list]], List[ndscan.experiment.default_analysis.Annotation]]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#CustomAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.CustomAnalysis" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">CustomAnalysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Dict<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">, </span>list<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span>list<span class="p">]</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.default_analysis.Annotation" title="ndscan.experiment.default_analysis.Annotation">ndscan.experiment.default_analysis.Annotation</a><span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#CustomAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.CustomAnalysis" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis"><code class="xref py py-class docutils literal notranslate"><span class="pre">DefaultAnalysis</span></code></a> that executes a user-defined analysis function in the
 <cite>execute()</cite> step.</p>
 <p>No analysis is run online.</p>
@@ -869,9 +869,9 @@ broadcast.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.default_analysis.OnlineFit">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">OnlineFit</code><span class="sig-paren">(</span><em class="sig-param">fit_type: str, data: Dict[str, Union[ndscan.experiment.parameters.ParamHandle, ndscan.experiment.result_channels.ResultChannel]], annotations: Optional[Dict[str, Dict[str, Any]]] = None, analysis_identifier: str = None, constants: Optional[Dict[str, Any]] = None, initial_values: Optional[Dict[str, Any]] = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#OnlineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.OnlineFit" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">OnlineFit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fit_type</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Union<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">, </span>ndscan.experiment.result_channels.ResultChannel<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">annotations</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">analysis_identifier</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">constants</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">initial_values</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#OnlineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.OnlineFit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Describes an automatically executed fit for a given combination of scan axes
 and result channels.</p>
 <dl class="field-list simple">
@@ -906,7 +906,7 @@ a dictionary mapping fit parameter names to the respective values, forwarded to
 contains the implementation to actually execute one within an ARTIQ experiment. This
 will likely be used by end users via
 <a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="ndscan.experiment.entry_point.FragmentScanExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code></a> or subscans.</p>
-<dl class="exception">
+<dl class="py exception">
 <dt id="ndscan.experiment.scan_runner.ScanFinished">
 <em class="property">exception </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanFinished</code><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanFinished"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanFinished" title="Permalink to this definition">¶</a></dt>
 <dd><p>Used internally to signal that a scan has been successfully completed (points
@@ -915,18 +915,18 @@ exhausted).</p>
 RPC code (kernel aborts), and should never be visible to the user.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_runner.ScanAxis">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanAxis</code><span class="sig-paren">(</span><em class="sig-param">param_schema: Dict[str, Any], path: str, param_store: ndscan.experiment.parameters.ParamStore</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanAxis" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanAxis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_schema</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">param_store</span><span class="p">:</span> <span class="n">ndscan.experiment.parameters.ParamStore</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanAxis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Describes a single axis that is being scanned.</p>
 <p>Apart from the metadata, this also includes the necessary information to execute the
 scan at runtime; i.e. the <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamStore</span></code> to modify in order to set the
 parameter.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_runner.ScanSpec">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanSpec</code><span class="sig-paren">(</span><em class="sig-param">axes: List[ndscan.experiment.scan_runner.ScanAxis], generators: List[ndscan.experiment.scan_generator.ScanGenerator], options: ndscan.experiment.scan_generator.ScanOptions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanSpec" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanAxis" title="ndscan.experiment.scan_runner.ScanAxis">ndscan.experiment.scan_runner.ScanAxis</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">generators</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator">ndscan.experiment.scan_generator.ScanGenerator</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">options</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanOptions" title="ndscan.experiment.scan_generator.ScanOptions">ndscan.experiment.scan_generator.ScanOptions</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanSpec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Describes a single scan.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -939,31 +939,31 @@ parameter.</p>
 </dl>
 </dd></dl>
 
-<dl class="data">
+<dl class="py data">
 <dt id="ndscan.experiment.scan_runner.NUM_TOLERATED_UNDERFLOWS_PER_POINT">
 <code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">NUM_TOLERATED_UNDERFLOWS_PER_POINT</code><em class="property"> = 3</em><a class="headerlink" href="#ndscan.experiment.scan_runner.NUM_TOLERATED_UNDERFLOWS_PER_POINT" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of RTIOUnderflows to tolerate per scan point (by simply trying again) before
 giving up.</p>
 </dd></dl>
 
-<dl class="data">
+<dl class="py data">
 <dt id="ndscan.experiment.scan_runner.NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT">
 <code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT</code><em class="property"> = 10</em><a class="headerlink" href="#ndscan.experiment.scan_runner.NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of transitory errors to tolerate per scan point (by simply trying again)
 before giving up.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.scan_runner.ScanRunner">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanRunner</code><span class="sig-paren">(</span><em class="sig-param">managers_or_parent</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanRunner</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner" title="Permalink to this definition">¶</a></dt>
 <dd><p>Runs the actual loop that executes an <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> for a specified list
 of scan axes (on either the host or core device, as appropriate).</p>
 <p>Integrates with the ARTIQ scheduler to pause/terminate execution as requested.</p>
 <p>Conceptually, this is only a single function (<code class="docutils literal notranslate"><span class="pre">run()</span></code>), but is wrapped in a class
 to follow the idiomatic ARTIQ kernel/<code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> integration style.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.scan_runner.ScanRunner.run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">fragment: ndscan.experiment.fragment.ExpFragment, spec: ndscan.experiment.scan_runner.ScanSpec, axis_sinks: List[ndscan.experiment.result_channels.ResultSink]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner.run" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">spec</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanSpec" title="ndscan.experiment.scan_runner.ScanSpec">ndscan.experiment.scan_runner.ScanSpec</a></span></em>, <em class="sig-param"><span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List<span class="p">[</span>ndscan.experiment.result_channels.ResultSink<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a scan of the given fragment, with axes as specified.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -979,16 +979,16 @@ coordinates for each scan point to, matching <code class="docutils literal notra
 
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="ndscan.experiment.scan_runner.filter_default_analyses">
-<code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">filter_default_analyses</code><span class="sig-paren">(</span><em class="sig-param">fragment: ndscan.experiment.fragment.ExpFragment</em>, <em class="sig-param">spec: ndscan.experiment.scan_runner.ScanSpec</em><span class="sig-paren">)</span> &#x2192; List[ndscan.experiment.default_analysis.DefaultAnalysis]<a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#filter_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.filter_default_analyses" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">filter_default_analyses</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">spec</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanSpec" title="ndscan.experiment.scan_runner.ScanSpec">ndscan.experiment.scan_runner.ScanSpec</a></span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis">ndscan.experiment.default_analysis.DefaultAnalysis</a><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#filter_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.filter_default_analyses" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the default analyses of the given fragment that can be executed for the
 given scan spec.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="ndscan.experiment.scan_runner.describe_scan">
-<code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">describe_scan</code><span class="sig-paren">(</span><em class="sig-param">spec: ndscan.experiment.scan_runner.ScanSpec, fragment: ndscan.experiment.fragment.ExpFragment, short_result_names: Dict[ndscan.experiment.result_channels.ResultChannel, str]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#describe_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.describe_scan" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">describe_scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">spec</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanSpec" title="ndscan.experiment.scan_runner.ScanSpec">ndscan.experiment.scan_runner.ScanSpec</a></span></em>, <em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">short_result_names</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#describe_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.describe_scan" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return metadata for the given spec in stringly typed dictionary form, executing
 any default analyses as necessary.</p>
 <dl class="field-list simple">
@@ -1019,9 +1019,9 @@ of the ARTIQ <code class="docutils literal notranslate"><span class="pre">HasEnv
 <a class="reference internal" href="#ndscan.experiment.entry_point.run_fragment_once" title="ndscan.experiment.entry_point.run_fragment_once"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run_fragment_once()</span></code></a> or <a class="reference internal" href="#ndscan.experiment.entry_point.create_and_run_fragment_once" title="ndscan.experiment.entry_point.create_and_run_fragment_once"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_and_run_fragment_once()</span></code></a>.</p></li>
 </ul>
 </div></blockquote>
-<dl class="function">
+<dl class="py function">
 <dt id="ndscan.experiment.entry_point.make_fragment_scan_exp">
-<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">make_fragment_scan_exp</code><span class="sig-paren">(</span><em class="sig-param">fragment_class: Type[ndscan.experiment.fragment.ExpFragment], *args</em><span class="sig-paren">)</span> &#x2192; Type[ndscan.experiment.entry_point.FragmentScanExperiment]<a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#make_fragment_scan_exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.make_fragment_scan_exp" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">make_fragment_scan_exp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span> &#x2192; Type<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="ndscan.experiment.entry_point.FragmentScanExperiment">ndscan.experiment.entry_point.FragmentScanExperiment</a><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#make_fragment_scan_exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.make_fragment_scan_exp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a <a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="ndscan.experiment.entry_point.FragmentScanExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code></a> subclass that scans the given
 <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>, ready to be picked up by the ARTIQ explorer/…</p>
 <p>This is the default way of creating scan experiments:</p>
@@ -1037,17 +1037,17 @@ of the ARTIQ <code class="docutils literal notranslate"><span class="pre">HasEnv
 </div>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.entry_point.FragmentScanExperiment">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">FragmentScanExperiment</code><span class="sig-paren">(</span><em class="sig-param">managers_or_parent</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">FragmentScanExperiment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implements possibly (trivial) scans of an <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>, with overrides
 and scan axes as specified by the <code class="xref py py-data docutils literal notranslate"><span class="pre">PARAMS_ARG_KEY</span></code> dataset, and result
 channels being broadcasted to datasets.</p>
 <p>See <a class="reference internal" href="#ndscan.experiment.entry_point.make_fragment_scan_exp" title="ndscan.experiment.entry_point.make_fragment_scan_exp"><code class="xref py py-meth docutils literal notranslate"><span class="pre">make_fragment_scan_exp()</span></code></a> for a convenience method to create subclasses for
 a specific <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.entry_point.FragmentScanExperiment.build">
-<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param">fragment_init: Callable[ndscan.experiment.fragment.ExpFragment]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.build" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.build" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>fragment_init</strong> – Callable to create the top-level <code class="xref py py-meth docutils literal notranslate"><span class="pre">ExpFragment()</span></code>
@@ -1056,20 +1056,20 @@ instance.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.entry_point.FragmentScanExperiment.prepare">
 <code class="sig-name descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.prepare" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collect parameters to set from both scan axes and simple overrides, and
 initialise result channels.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.entry_point.FragmentScanExperiment.run">
 <code class="sig-name descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the (possibly trivial) scan.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="ndscan.experiment.entry_point.FragmentScanExperiment.analyze">
 <code class="sig-name descname">analyze</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.analyze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.analyze" title="Permalink to this definition">¶</a></dt>
 <dd><p>Entry point for analyzing the results of the experiment.</p>
@@ -1083,16 +1083,16 @@ overlapped with the next experiment in a pipelined manner.</p>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ndscan.experiment.entry_point.ScanSpecError">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">ScanSpecError</code><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#ScanSpecError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.ScanSpecError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when the scan specification passed in <code class="xref py py-data docutils literal notranslate"><span class="pre">PARAMS_ARG_KEY</span></code> is not valid
 for the given fragment.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="ndscan.experiment.entry_point.run_fragment_once">
-<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param">fragment: ndscan.experiment.fragment.ExpFragment</em>, <em class="sig-param">max_rtio_underflow_retries: int = 3</em>, <em class="sig-param">max_transitory_error_retries: int = 10</em><span class="sig-paren">)</span> &#x2192; Dict[ndscan.experiment.result_channels.ResultChannel, Any]<a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.run_fragment_once" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em>, <em class="sig-param"><span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span>Any<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.run_fragment_once" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialise the passed fragment and run it once, capturing and returning the
 values from any result channels.</p>
 <dl class="field-list simple">
@@ -1108,9 +1108,9 @@ the caller to handle. If <code class="docutils literal notranslate"><span class=
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="ndscan.experiment.entry_point.create_and_run_fragment_once">
-<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">create_and_run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param">env: artiq.language.environment.HasEnvironment, fragment_class: Type[ndscan.experiment.fragment.ExpFragment], max_rtio_underflow_retries: int = 3, max_transitory_error_retries: int = 10, *args, **kwargs</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#create_and_run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.create_and_run_fragment_once" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">create_and_run_fragment_once</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">env</span><span class="p">:</span> <span class="n">artiq.language.environment.HasEnvironment</span></em>, <em class="sig-param"><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em>, <em class="sig-param"><span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#create_and_run_fragment_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.create_and_run_fragment_once" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create an instance of the passed <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> type and runs it once,
 returning the values pushed to any result channels.</p>
 <p>Example:</p>
