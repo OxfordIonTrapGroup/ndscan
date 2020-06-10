@@ -241,6 +241,7 @@ class FragmentScanExperiment(EnvExperiment):
                 while True:
                     try:
                         self.fragment.host_setup()
+                        self._point_phase = False
                         if is_kernel(self.fragment.run_once):
                             self._run_continuous_kernel()
                             self.core.comm.close()
@@ -273,6 +274,8 @@ class FragmentScanExperiment(EnvExperiment):
 
     @rpc(flags={"async"})
     def _finish_continuous_point(self):
+        self._point_phase = not self._point_phase
+        self.set_dataset("ndscan.point_phase", self._point_phase, broadcast=True)
         if self._is_time_series:
             self._timestamp_sink.push(time.monotonic() - self._time_series_start)
 

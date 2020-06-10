@@ -1,5 +1,6 @@
 import json
 from typing import Any, Dict, Iterable, List, Optional, Union
+from sipyco.sync_struct import ModAction
 from ...utils import strip_prefix
 from . import Annotation, Context, Model, Root, ScanModel, SinglePointModel
 
@@ -76,6 +77,21 @@ class SubscriberSinglePointModel(SinglePointModel):
 
     def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
                                                                      Any]]) -> None:
+        # For single-point scans, points are completed as soon as point_phase flips, at
+        # which point we need to emit them. There are slight subtleties in the below, in
+        # that the initial sync can happen at any point through the first/current point.
+        mods = list(mods)
+        if mods and mods[0]["action"] == ModAction.init.value:
+            # Squirrel away any number of already existing points. We need to do this
+            # separately (rather than just using `data`), as there might be more mods
+            # from a next point already in the pipeline (and applied to data).
+            for key, (_, value) in mods[0]["struct"].items():
+                name = strip_prefix(key, "ndscan.point.")
+                if name == key:
+                    continue
+                self._next_point[name] = value
+            mods.pop(0)
+
         if not self._series_initialised:
             channels_json = data.get("ndscan.channels", (False, None))[1]
             if not channels_json:
@@ -84,19 +100,28 @@ class SubscriberSinglePointModel(SinglePointModel):
             self._series_initialised = True
             self.channel_schemata_changed.emit(self._channel_schemata)
 
-        for m in mods:
-            if m["action"] != "setitem":
-                continue
-            key = strip_prefix(m["key"], "ndscan.point.")
-            if key == m["key"]:
-                continue
-            if key in self._channel_schemata:
-                self._next_point[key] = m["value"][1]
-
-        if len(self._next_point) == len(self._channel_schemata):
+        def emit_point():
             self._current_point = self._next_point
             self._next_point = {}
             self.point_changed.emit(self._current_point)
+
+        for m in mods:
+            if m["action"] != ModAction.setitem.value:
+                continue
+
+            if m["key"] == "ndscan.point_phase":
+                emit_point()
+
+            name = strip_prefix(m["key"], "ndscan.point.")
+            if name == m["key"]:
+                continue
+            self._next_point[name] = m["value"][1]
+
+        if (self._current_point is None and data.get("ndscan.completed",
+                                                     (False, False))[1]):
+            # If the scan is already completed on the initial sync, we still
+            # need to emit at least one point.
+            emit_point()
 
 
 class SubscriberScanModel(ScanModel):
