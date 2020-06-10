@@ -412,9 +412,9 @@ class _FragmentRunner(HasEnvironment):
 
 
 def run_fragment_once(
-        fragment: ExpFragment,
-        max_rtio_underflow_retries: int = 3,
-        max_transitory_error_retries: int = 10,
+    fragment: ExpFragment,
+    max_rtio_underflow_retries: int = 3,
+    max_transitory_error_retries: int = 10,
 ) -> Dict[ResultChannel, Any]:
     """Initialise the passed fragment and run it once, capturing and returning the
     values from any result channels.
