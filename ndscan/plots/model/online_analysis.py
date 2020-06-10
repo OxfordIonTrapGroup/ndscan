@@ -61,7 +61,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
             error_key = key + "_error"
             if error_key in result:
                 raise ValueError(
-                    "Fit error key name collides with result: ''".format(error_key))
+                    "Fit error key name collides with result: '{}'".format(error_key))
             result[error_key] = value
         return result
 
