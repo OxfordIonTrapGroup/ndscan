@@ -159,10 +159,10 @@ def generate_points(axis_generators: List[ScanGenerator], options: ScanOptions):
         points = []
 
         for axis_levels in product(*(range(len(p)) for p in axis_level_points)):
-            if all(l < max_level for l in axis_levels):
+            if all(lvl < max_level for lvl in axis_levels):
                 # Previously visited this combination already.
                 continue
-            tp = product(*(p[l] for (l, p) in zip(axis_levels, axis_level_points)))
+            tp = product(*(p[lvl] for (lvl, p) in zip(axis_levels, axis_level_points)))
             points.extend(tp)
 
         for _ in range(options.num_repeats):

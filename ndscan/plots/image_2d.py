@@ -245,7 +245,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
                 action.triggered.connect(
                     lambda *a, d=d: self._set_dataset_from_crosshair(d, axis))
             if len(x_datasets) == 1 and len(y_datasets) == 1:
-                action = builder.append_action("Set both from crosshair".format(d))
+                action = builder.append_action("Set both from crosshair")
 
                 def set_both():
                     self._set_dataset_from_crosshair(x_datasets[0], "x")
