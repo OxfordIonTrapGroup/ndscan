@@ -505,6 +505,19 @@ class Fragment(HasEnvironment):
         for s in self._subfragments:
             s.recompute_param_defaults()
 
+    def make_namespaced_identifier(self, name: str) -> str:
+        """Mangle passed name and path to this fragment into a string, such that calls
+        from different fragments give different results for the same name.
+
+        This can, for instance, be useful when naming DMA sequences, or interacting with
+        other kinds of global registries, where multiple fragment instances should not
+        conflict with each other.
+
+        The returned string will consist of characters that are valid Python identifiers
+        and slashes.
+        """
+        return "/".join(self._fragment_path + [name])
+
     def _get_all_handles_for_param(self, name: str) -> List[ParamHandle]:
         return [getattr(self, name)] + self._rebound_subfragment_params.get(name, [])
 
