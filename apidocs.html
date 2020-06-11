@@ -514,6 +514,18 @@ evaluated again – thus for instance fetching new dataset values –, and assig
 to the existing parameter store.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt id="ndscan.experiment.fragment.Fragment.make_namespaced_identifier">
+<code class="sig-name descname">make_namespaced_identifier</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.make_namespaced_identifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.make_namespaced_identifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mangle passed name and path to this fragment into a string, such that calls
+from different fragments give different results for the same name.</p>
+<p>This can, for instance, be useful when naming DMA sequences, or interacting with
+other kinds of global registries, where multiple fragment instances should not
+conflict with each other.</p>
+<p>The returned string will consist of characters that are valid Python identifiers
+and slashes.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">

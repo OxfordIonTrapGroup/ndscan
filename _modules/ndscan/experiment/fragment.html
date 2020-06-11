@@ -653,6 +653,19 @@
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
             <span class="n">s</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span></div>
 
+<div class="viewcode-block" id="Fragment.make_namespaced_identifier"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.make_namespaced_identifier">[docs]</a>    <span class="k">def</span> <span class="nf">make_namespaced_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Mangle passed name and path to this fragment into a string, such that calls</span>
+<span class="sd">        from different fragments give different results for the same name.</span>
+
+<span class="sd">        This can, for instance, be useful when naming DMA sequences, or interacting with</span>
+<span class="sd">        other kinds of global registries, where multiple fragment instances should not</span>
+<span class="sd">        conflict with each other.</span>
+
+<span class="sd">        The returned string will consist of characters that are valid Python identifiers</span>
+<span class="sd">        and slashes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">name</span><span class="p">])</span></div>
+
     <span class="k">def</span> <span class="nf">_get_all_handles_for_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span>
 
