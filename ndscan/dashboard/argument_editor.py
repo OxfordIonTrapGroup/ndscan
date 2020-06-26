@@ -7,13 +7,13 @@ from typing import List
 from PyQt5 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
+from artiq.gui.fuzzy_select import FuzzySelectWidget
 from artiq.gui.scientific_spinbox import ScientificSpinBox
 from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
 from sipyco import pyon
 
 from ..utils import (NoAxesMode, PARAMS_ARG_KEY, eval_param_default,
                      shorten_to_unambiguous_suffixes)
-from .fuzzy_select import FuzzySelectWidget
 
 logger = logging.getLogger(__name__)
 
