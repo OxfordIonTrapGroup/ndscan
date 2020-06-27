@@ -84,35 +84,11 @@ class Subscan:
                                     self._short_child_channel_names)
 
         if execute_default_analyses:
-            analyses = filter_default_analyses(self._fragment, spec)
-            if analyses:
-                axis_data = {
-                    handle._store.identity: sink.get_all()
-                    for handle, sink in coordinate_sinks.items()
-                }
-
-                result_data = {
-                    chan: sink.get_all()
-                    for chan, sink in self._child_result_sinks.items()
-                }
-
-                def get_axis_index(handle):
-                    for i, h in enumerate(coordinate_sinks.keys()):
-                        if handle == h:
-                            return i
-                    assert False
-
-                context = AnnotationContext(
-                    get_axis_index,
-                    lambda channel: self._short_child_channel_names[channel])
-
-                annotations = []
-                for a in analyses:
-                    annotations += a.execute(axis_data, result_data, context)
-                if annotations:
-                    # Replace existing (online-fit) annotations if any analysis produced
-                    # custom ones. This could be made configurable in the future.
-                    scan_schema["annotations"] = annotations
+            annotations = self._run_default_analyses(spec, coordinate_sinks)
+            if annotations:
+                # Replace existing (online-fit) annotations if any analysis produced
+                # custom ones. This could be made configurable in the future.
+                scan_schema["annotations"] = annotations
 
         self._schema_channel.push(scan_schema)
 
@@ -127,6 +103,35 @@ class Subscan:
 
         coordinates = OrderedDict((p, s.get_all()) for p, s in coordinate_sinks.items())
         return coordinates, values
+
+    def _run_default_analyses(self, spec, coordinate_sinks):
+        analyses = filter_default_analyses(self._fragment, spec)
+        if not analyses:
+            return []
+
+        axis_data = {
+            handle._store.identity: sink.get_all()
+            for handle, sink in coordinate_sinks.items()
+        }
+
+        result_data = {
+            chan: sink.get_all()
+            for chan, sink in self._child_result_sinks.items()
+        }
+
+        def get_axis_index(handle):
+            for i, h in enumerate(coordinate_sinks.keys()):
+                if handle == h:
+                    return i
+            assert False
+
+        context = AnnotationContext(
+            get_axis_index, lambda channel: self._short_child_channel_names[channel])
+
+        annotations = []
+        for a in analyses:
+            annotations += a.execute(axis_data, result_data, context)
+        return annotations
 
 
 def setattr_subscan(owner: Fragment,
