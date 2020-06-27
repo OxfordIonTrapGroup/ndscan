@@ -232,35 +232,11 @@
                                     <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">execute_default_analyses</span><span class="p">:</span>
-            <span class="n">analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">analyses</span><span class="p">:</span>
-                <span class="n">axis_data</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
-                    <span class="k">for</span> <span class="n">handle</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="p">}</span>
-
-                <span class="n">result_data</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="n">chan</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
-                    <span class="k">for</span> <span class="n">chan</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="p">}</span>
-
-                <span class="k">def</span> <span class="nf">get_axis_index</span><span class="p">(</span><span class="n">handle</span><span class="p">):</span>
-                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                        <span class="k">if</span> <span class="n">handle</span> <span class="o">==</span> <span class="n">h</span><span class="p">:</span>
-                            <span class="k">return</span> <span class="n">i</span>
-                    <span class="k">assert</span> <span class="kc">False</span>
-
-                <span class="n">context</span> <span class="o">=</span> <span class="n">AnnotationContext</span><span class="p">(</span>
-                    <span class="n">get_axis_index</span><span class="p">,</span>
-                    <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">])</span>
-
-                <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">analyses</span><span class="p">:</span>
-                    <span class="n">annotations</span> <span class="o">+=</span> <span class="n">a</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">annotations</span><span class="p">:</span>
-                    <span class="c1"># Replace existing (online-fit) annotations if any analysis produced</span>
-                    <span class="c1"># custom ones. This could be made configurable in the future.</span>
-                    <span class="n">scan_schema</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">annotations</span>
+            <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_default_analyses</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">coordinate_sinks</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">annotations</span><span class="p">:</span>
+                <span class="c1"># Replace existing (online-fit) annotations if any analysis produced</span>
+                <span class="c1"># custom ones. This could be made configurable in the future.</span>
+                <span class="n">scan_schema</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">annotations</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_schema_channel</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">scan_schema</span><span class="p">)</span>
 
@@ -274,7 +250,36 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_aggregate_result_channels</span><span class="p">[</span><span class="n">chan</span><span class="p">]</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
 
         <span class="n">coordinates</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">values</span></div></div>
+        <span class="k">return</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">values</span></div>
+
+    <span class="k">def</span> <span class="nf">_run_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">coordinate_sinks</span><span class="p">):</span>
+        <span class="n">analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">analyses</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">axis_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">handle</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="n">result_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">chan</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">chan</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="nf">get_axis_index</span><span class="p">(</span><span class="n">handle</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">handle</span> <span class="o">==</span> <span class="n">h</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">i</span>
+            <span class="k">assert</span> <span class="kc">False</span>
+
+        <span class="n">context</span> <span class="o">=</span> <span class="n">AnnotationContext</span><span class="p">(</span>
+            <span class="n">get_axis_index</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">])</span>
+
+        <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">analyses</span><span class="p">:</span>
+            <span class="n">annotations</span> <span class="o">+=</span> <span class="n">a</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">annotations</span></div>
 
 
 <div class="viewcode-block" id="setattr_subscan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.setattr_subscan">[docs]</a><span class="k">def</span> <span class="nf">setattr_subscan</span><span class="p">(</span><span class="n">owner</span><span class="p">:</span> <span class="n">Fragment</span><span class="p">,</span>
