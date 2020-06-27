@@ -58,15 +58,6 @@ class ScanSpec:
         self.options = options
 
 
-#: Number of RTIOUnderflows to tolerate per scan point (by simply trying again) before
-#: giving up.
-NUM_TOLERATED_UNDERFLOWS_PER_POINT = 3
-
-#: Number of transitory errors to tolerate per scan point (by simply trying again)
-#: before giving up.
-NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT = 10
-
-
 class ScanRunner(HasEnvironment):
     """Runs the actual loop that executes an :class:`.ExpFragment` for a specified list
     of scan axes (on either the host or core device, as appropriate).
@@ -81,8 +72,17 @@ class ScanRunner(HasEnvironment):
     # metaprogramming. While the interface for this class is effortlessly generic, the
     # implementation might well be a long-forgotten ritual for invoking Cthulhu.
 
-    def build(self):
-        ""
+    def build(self,
+              max_rtio_underflow_retries: int = 3,
+              max_transitory_error_retries: int = 10):
+        """
+        :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan
+            point (by simply trying again) before giving up.
+        :param max_transitory_error_retries: Number of transitory errors to tolerate per
+            scan point (by simply trying again) before giving up.
+        """
+        self.max_rtio_underflow_retries = max_rtio_underflow_retries
+        self.max_transitory_error_retries = max_transitory_error_retries
         self.setattr_device("core")
         self.setattr_device("scheduler")
 
@@ -230,22 +230,22 @@ class ScanRunner(HasEnvironment):
                 # on (3 is a pretty arbitrary limit – we don't want to block forever in
                 # case the experiment is faulty, but also want to tolerate ~1% underflow
                 # chance for experiments where timing is critical).
-                if num_underflows >= NUM_TOLERATED_UNDERFLOWS_PER_POINT:
+                if num_underflows >= self.max_rtio_underflow_retries:
                     raise
                 num_underflows += 1
                 print("Ignoring RTIOUnderflow (", num_underflows, "/",
-                      NUM_TOLERATED_UNDERFLOWS_PER_POINT, ")")
+                      self.max_rtio_underflow_retries, ")")
                 self._kscan_retry_point()
             except RestartKernelTransitoryError:
                 print("Caught transitory error, restarting kernel")
                 self._kscan_retry_point()
                 return True
             except TransitoryError:
-                if num_transitory_errors >= NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT:
+                if num_transitory_errors >= self.max_transitory_error_retries:
                     raise
                 num_transitory_errors += 1
                 print("Caught transitory error (", num_transitory_errors, "/",
-                      NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT, "), retrying")
+                      self.max_transitory_error_retries, "), retrying")
                 self._kscan_retry_point()
         self._kscan_point_completed()
         return False

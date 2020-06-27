@@ -53,16 +53,25 @@ class FragmentScanExperiment(EnvExperiment):
     """
     argument_ui = "ndscan"
 
-    def build(self, fragment_init: Callable[[], ExpFragment]):
+    def build(self,
+              fragment_init: Callable[[], ExpFragment],
+              max_rtio_underflow_retries: int = 3,
+              max_transitory_error_retries: int = 10):
         """
         :param fragment_init: Callable to create the top-level :meth:`ExpFragment`
             instance.
+        :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan
+            point (by simply trying again) before giving up.
+        :param max_transitory_error_retries: Number of transitory errors to tolerate per
+            scan point (by simply trying again) before giving up.
         """
         self.setattr_device("ccb")
         self.setattr_device("core")
         self.setattr_device("scheduler")
 
         self.fragment = fragment_init()
+        self.max_rtio_underflow_retries = max_rtio_underflow_retries
+        self.max_transitory_error_retries = max_transitory_error_retries
 
         instances = dict()
         self.schemata = dict()
@@ -186,7 +195,10 @@ class FragmentScanExperiment(EnvExperiment):
             elif not self._scan.axes:
                 self._run_continuous()
             else:
-                runner = ScanRunner(self)
+                runner = ScanRunner(
+                    self,
+                    max_rtio_underflow_retries=self.max_rtio_underflow_retries,
+                    max_transitory_error_retries=self.max_transitory_error_retries)
                 self._scan_axis_sinks = [
                     AppendingDatasetSink(self, "ndscan.points.axis_{}".format(i))
                     for i in range(len(self._scan.axes))
@@ -318,8 +330,11 @@ def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
                                            lambda fqn, n: "/".join(fqn.split("/")[-n:]))
 
 
-def make_fragment_scan_exp(fragment_class: Type[ExpFragment],
-                           *args) -> Type[FragmentScanExperiment]:
+def make_fragment_scan_exp(
+        fragment_class: Type[ExpFragment],
+        *args,
+        max_rtio_underflow_retries: int = 3,
+        max_transitory_error_retries: int = 10) -> Type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
 
@@ -336,7 +351,9 @@ def make_fragment_scan_exp(fragment_class: Type[ExpFragment],
     """
     class FragmentScanShim(FragmentScanExperiment):
         def build(self):
-            super().build(lambda: fragment_class(self, [], *args))
+            super().build(lambda: fragment_class(self, [], *args),
+                          max_rtio_underflow_retries=max_rtio_underflow_retries,
+                          max_transitory_error_retries=max_transitory_error_retries)
 
     # Take on the name of the fragment class to keep result file names informative.
     FragmentScanShim.__name__ = fragment_class.__name__
