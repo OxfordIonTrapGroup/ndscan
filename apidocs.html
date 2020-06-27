@@ -951,20 +951,6 @@ parameter.</p>
 </dl>
 </dd></dl>
 
-<dl class="py data">
-<dt id="ndscan.experiment.scan_runner.NUM_TOLERATED_UNDERFLOWS_PER_POINT">
-<code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">NUM_TOLERATED_UNDERFLOWS_PER_POINT</code><em class="property"> = 3</em><a class="headerlink" href="#ndscan.experiment.scan_runner.NUM_TOLERATED_UNDERFLOWS_PER_POINT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of RTIOUnderflows to tolerate per scan point (by simply trying again) before
-giving up.</p>
-</dd></dl>
-
-<dl class="py data">
-<dt id="ndscan.experiment.scan_runner.NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT">
-<code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT</code><em class="property"> = 10</em><a class="headerlink" href="#ndscan.experiment.scan_runner.NUM_TOLERATED_TRANSITORY_ERRORS_PER_POINT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of transitory errors to tolerate per scan point (by simply trying again)
-before giving up.</p>
-</dd></dl>
-
 <dl class="py class">
 <dt id="ndscan.experiment.scan_runner.ScanRunner">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanRunner</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner" title="Permalink to this definition">¶</a></dt>
@@ -973,6 +959,21 @@ of scan axes (on either the host or core device, as appropriate).</p>
 <p>Integrates with the ARTIQ scheduler to pause/terminate execution as requested.</p>
 <p>Conceptually, this is only a single function (<code class="docutils literal notranslate"><span class="pre">run()</span></code>), but is wrapped in a class
 to follow the idiomatic ARTIQ kernel/<code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> integration style.</p>
+<dl class="py method">
+<dt id="ndscan.experiment.scan_runner.ScanRunner.build">
+<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em>, <em class="sig-param"><span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner.build" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_rtio_underflow_retries</strong> – Number of RTIOUnderflows to tolerate per scan
+point (by simply trying again) before giving up.</p></li>
+<li><p><strong>max_transitory_error_retries</strong> – Number of transitory errors to tolerate per
+scan point (by simply trying again) before giving up.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt id="ndscan.experiment.scan_runner.ScanRunner.run">
 <code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">spec</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanSpec" title="ndscan.experiment.scan_runner.ScanSpec">ndscan.experiment.scan_runner.ScanSpec</a></span></em>, <em class="sig-param"><span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List<span class="p">[</span>ndscan.experiment.result_channels.ResultSink<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanRunner.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanRunner.run" title="Permalink to this definition">¶</a></dt>
@@ -1033,7 +1034,7 @@ of the ARTIQ <code class="docutils literal notranslate"><span class="pre">HasEnv
 </div></blockquote>
 <dl class="py function">
 <dt id="ndscan.experiment.entry_point.make_fragment_scan_exp">
-<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">make_fragment_scan_exp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span> &#x2192; Type<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="ndscan.experiment.entry_point.FragmentScanExperiment">ndscan.experiment.entry_point.FragmentScanExperiment</a><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#make_fragment_scan_exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.make_fragment_scan_exp" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ndscan.experiment.entry_point.</code><code class="sig-name descname">make_fragment_scan_exp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em>, <em class="sig-param"><span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em><span class="sig-paren">)</span> &#x2192; Type<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="ndscan.experiment.entry_point.FragmentScanExperiment">ndscan.experiment.entry_point.FragmentScanExperiment</a><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#make_fragment_scan_exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.make_fragment_scan_exp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a <a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="ndscan.experiment.entry_point.FragmentScanExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code></a> subclass that scans the given
 <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>, ready to be picked up by the ARTIQ explorer/…</p>
 <p>This is the default way of creating scan experiments:</p>
@@ -1059,11 +1060,17 @@ channels being broadcasted to datasets.</p>
 a specific <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>.</p>
 <dl class="py method">
 <dt id="ndscan.experiment.entry_point.FragmentScanExperiment.build">
-<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.build" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em>, <em class="sig-param"><span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.build" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>fragment_init</strong> – Callable to create the top-level <code class="xref py py-meth docutils literal notranslate"><span class="pre">ExpFragment()</span></code>
-instance.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fragment_init</strong> – Callable to create the top-level <code class="xref py py-meth docutils literal notranslate"><span class="pre">ExpFragment()</span></code>
+instance.</p></li>
+<li><p><strong>max_rtio_underflow_retries</strong> – Number of RTIOUnderflows to tolerate per scan
+point (by simply trying again) before giving up.</p></li>
+<li><p><strong>max_transitory_error_retries</strong> – Number of transitory errors to tolerate per
+scan point (by simply trying again) before giving up.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>

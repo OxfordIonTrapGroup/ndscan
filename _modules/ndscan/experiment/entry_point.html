@@ -201,16 +201,25 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">argument_ui</span> <span class="o">=</span> <span class="s2">&quot;ndscan&quot;</span>
 
-<div class="viewcode-block" id="FragmentScanExperiment.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">ExpFragment</span><span class="p">]):</span>
+<div class="viewcode-block" id="FragmentScanExperiment.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+              <span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">ExpFragment</span><span class="p">],</span>
+              <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+              <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param fragment_init: Callable to create the top-level :meth:`ExpFragment`</span>
 <span class="sd">            instance.</span>
+<span class="sd">        :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan</span>
+<span class="sd">            point (by simply trying again) before giving up.</span>
+<span class="sd">        :param max_transitory_error_retries: Number of transitory errors to tolerate per</span>
+<span class="sd">            scan point (by simply trying again) before giving up.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;ccb&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;scheduler&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment_init</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span> <span class="o">=</span> <span class="n">max_rtio_underflow_retries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span> <span class="o">=</span> <span class="n">max_transitory_error_retries</span>
 
         <span class="n">instances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">schemata</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
@@ -334,7 +343,10 @@
             <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">runner</span> <span class="o">=</span> <span class="n">ScanRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">runner</span> <span class="o">=</span> <span class="n">ScanRunner</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+                    <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_scan_axis_sinks</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ndscan.points.axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
                     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
@@ -466,8 +478,11 @@
                                            <span class="k">lambda</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span>
 
 
-<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span><span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
-                           <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FragmentScanExperiment</span><span class="p">]:</span>
+<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span>
+        <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FragmentScanExperiment</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Create a :class:`FragmentScanExperiment` subclass that scans the given</span>
 <span class="sd">    :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…</span>
 
@@ -484,7 +499,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">class</span> <span class="nc">FragmentScanShim</span><span class="p">(</span><span class="n">FragmentScanExperiment</span><span class="p">):</span>
         <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">fragment_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">args</span><span class="p">))</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">fragment_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">args</span><span class="p">),</span>
+                          <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+                          <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="n">max_transitory_error_retries</span><span class="p">)</span>
 
     <span class="c1"># Take on the name of the fragment class to keep result file names informative.</span>
     <span class="n">FragmentScanShim</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fragment_class</span><span class="o">.</span><span class="vm">__name__</span>
