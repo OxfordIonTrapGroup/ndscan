@@ -21,18 +21,21 @@ class Subscan:
     """Handle returned by :meth:`setattr_subscan`, allowing the subscan to actually be
     executed.
     """
-    def __init__(self, run_fn: Callable[[ExpFragment, ScanSpec, List[ArraySink]],
-                                        None], fragment: ExpFragment,
-                 possible_axes: Dict[ParamHandle,
-                                     ScanAxis], schema_channel: SubscanChannel,
-                 coordinate_channels: List[ResultChannel],
-                 child_result_sinks: Dict[ResultChannel, ArraySink],
-                 aggregate_result_channels: Dict[ResultChannel, ResultChannel],
-                 short_child_channel_names: Dict[str, ResultChannel]):
+    def __init__(
+        self,
+        run_fn: Callable[[ExpFragment, ScanSpec, List[ArraySink]], None],
+        fragment: ExpFragment,
+        possible_axes: Dict[ParamHandle, ScanAxis],
+        schema_channel: SubscanChannel,
+        coordinate_channels: List[ResultChannel],
+        child_result_sinks: Dict[ResultChannel, ArraySink],
+        aggregate_result_channels: Dict[ResultChannel, ResultChannel],
+        short_child_channel_names: Dict[str, ResultChannel],
+    ):
         self._run_fn = run_fn
         self._fragment = fragment
-        self._schema_channel = schema_channel
         self._possible_axes = possible_axes
+        self._schema_channel = schema_channel
         self._coordinate_channels = coordinate_channels
         self._child_result_sinks = child_result_sinks
         self._aggregate_result_channels = aggregate_result_channels
@@ -41,8 +44,8 @@ class Subscan:
     def run(
         self,
         axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
-        options=ScanOptions(),
-        execute_default_analyses=True
+        options: ScanOptions = ScanOptions(),
+        execute_default_analyses: bool = True
     ) -> Tuple[Dict[ParamHandle, list], Dict[ResultChannel, list]]:
         """Run the subscan with the given axis iteration specifications, and return the
         data point coordinates/result channel values.
