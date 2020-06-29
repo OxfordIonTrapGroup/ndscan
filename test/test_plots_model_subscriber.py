@@ -10,7 +10,7 @@ from ndscan.plots.model.subscriber import SubscriberRoot
 class SinglePointTest(unittest.TestCase):
     def setUp(self):
         self.context = Context()
-        self.root = SubscriberRoot(self.context)
+        self.root = SubscriberRoot("ndscan.", self.context)
         self.datasets = Notifier({
             "ndscan.axes": (False, "[]"),
             "ndscan.channels": (False,

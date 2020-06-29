@@ -151,12 +151,12 @@ class TopLevelRunner(HasEnvironment):
               no_axes_mode: NoAxesMode = NoAxesMode.single,
               max_rtio_underflow_retries: int = 3,
               max_transitory_error_retries: int = 10,
-              dataset_root: str = "ndscan."):
+              dataset_prefix: str = "ndscan."):
         self.fragment = fragment
         self.spec = spec
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
-        self.dataset_root = dataset_root
+        self.dataset_prefix = dataset_prefix
 
         self.setattr_device("ccb")
         self.setattr_device("core")
@@ -199,9 +199,9 @@ class TopLevelRunner(HasEnvironment):
 
             if self.spec.axes:
                 sink = AppendingDatasetSink(
-                    self, self.dataset_root + "points.channel_" + name)
+                    self, self.dataset_prefix + "points.channel_" + name)
             else:
-                sink = ScalarDatasetSink(self, self.dataset_root + "point." + name)
+                sink = ScalarDatasetSink(self, self.dataset_prefix + "point." + name)
             channel.set_sink(sink)
             self._scan_result_sinks[channel] = sink
 
@@ -218,7 +218,7 @@ class TopLevelRunner(HasEnvironment):
         coordinate_sinks = None
         if self._is_time_series:
             self._timestamp_sink = AppendingDatasetSink(
-                self, self.dataset_root + "points.axis_0")
+                self, self.dataset_prefix + "points.axis_0")
             coordinate_sinks = [self._timestamp_sink]
             self._time_series_start = time.monotonic()
             self._run_continuous()
@@ -229,7 +229,7 @@ class TopLevelRunner(HasEnvironment):
                 max_transitory_error_retries=self.max_transitory_error_retries)
             coordinate_sinks = [
                 AppendingDatasetSink(self,
-                                     self.dataset_root + "points.axis_{}".format(i))
+                                     self.dataset_prefix + "points.axis_{}".format(i))
                 for i in range(len(self.spec.axes))
             ]
             runner.run(self.fragment, self.spec, coordinate_sinks)
@@ -266,7 +266,7 @@ class TopLevelRunner(HasEnvironment):
         if annotations:
             # Replace existing (online-fit) annotations if any analysis produced custom
             # ones. This could be made configurable in the future.
-            self.set_dataset(self.dataset_root + "annotations",
+            self.set_dataset(self.dataset_prefix + "annotations",
                              json.dumps(annotations),
                              broadcast=True)
 
@@ -310,18 +310,18 @@ class TopLevelRunner(HasEnvironment):
     @rpc(flags={"async"})
     def _finish_continuous_point(self):
         self._point_phase = not self._point_phase
-        self.set_dataset(self.dataset_root + "point_phase",
+        self.set_dataset(self.dataset_prefix + "point_phase",
                          self._point_phase,
                          broadcast=True)
         if self._is_time_series:
             self._timestamp_sink.push(time.monotonic() - self._time_series_start)
 
     def _set_completed(self):
-        self.set_dataset(self.dataset_root + "completed", True, broadcast=True)
+        self.set_dataset(self.dataset_prefix + "completed", True, broadcast=True)
 
     def _broadcast_metadata(self):
         def push(name, value):
-            self.set_dataset(self.dataset_root + name, value, broadcast=True)
+            self.set_dataset(self.dataset_prefix + name, value, broadcast=True)
 
         source_prefix = self.get_dataset("system_id", default="rid")
         push("source_id", "{}_{}".format(source_prefix, self.scheduler.rid))
@@ -343,8 +343,8 @@ class TopLevelRunner(HasEnvironment):
                "--port=${port_notify} "
                "--port-control=${port_control}")
         cmd += " --rid={}".format(self.scheduler.rid)
-        if self.dataset_root:
-            cmd += " --root={}".format(self.dataset_root)
+        if self.dataset_prefix != "ndscan.":
+            cmd += " --prefix={}".format(self.dataset_prefix)
         self.ccb.issue("create_applet", title, cmd, group=group, is_transient=True)
 
 

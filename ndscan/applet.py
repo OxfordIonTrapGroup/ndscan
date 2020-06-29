@@ -24,7 +24,7 @@ class _MainWidget(RootWidget):
 
         # TODO: Consider exposing Context in Root.
         context = Context(self.set_dataset)
-        super().__init__(SubscriberRoot(context), context)
+        super().__init__(SubscriberRoot(args.prefix, context), context)
 
         # Try ensuring a sensible window size on startup (i.e. large enough to show a
         # plot in.
@@ -65,6 +65,10 @@ class NdscanApplet(SimpleApplet):
                                     default=3251,
                                     type=int,
                                     help="TCP port for master control commands")
+        self.argparser.add_argument("--prefix",
+                                    default="ndscan.",
+                                    type=str,
+                                    help="Root of the ndscan dataset tree")
         self.argparser.add_argument("--rid", help="RID of the experiment to plot")
 
     def subscribe(self):
