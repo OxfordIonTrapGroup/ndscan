@@ -8,9 +8,14 @@ from . import Annotation, Context, Model, Root, ScanModel, SinglePointModel
 class SubscriberRoot(Root):
     """Scan root fed from artiq.applets.simple data_changed callbacks, listening to the
     top-level ndscan dataset."""
-    def __init__(self, context: Context):
+    def __init__(self, prefix: str, context: Context):
+        """
+        :param prefix: Prefix of the ndscan dataset tree to represent, e.g.
+            ``"ndscan."`` for the default location.
+        """
         super().__init__()
 
+        self._prefix = prefix
         self._context = context
         self._model = None
 
@@ -22,7 +27,7 @@ class SubscriberRoot(Root):
     def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
                                                                      Any]]) -> None:
         def d(name):
-            return data.get("ndscan." + name, (False, None))[1]
+            return data.get(self._prefix + name, (False, None))[1]
 
         if not self._title_set:
             fqn = d("fragment_fqn")
@@ -44,9 +49,9 @@ class SubscriberRoot(Root):
 
             dim = len(axes)
             if dim == 0:
-                self._model = SubscriberSinglePointModel(self._context)
+                self._model = SubscriberSinglePointModel(self._prefix, self._context)
             else:
-                self._model = SubscriberScanModel(axes, self._context)
+                self._model = SubscriberScanModel(axes, self._prefix, self._context)
 
             self._axes_initialised = True
             self.model_changed.emit(self._model)
@@ -58,8 +63,9 @@ class SubscriberRoot(Root):
 
 
 class SubscriberSinglePointModel(SinglePointModel):
-    def __init__(self, context: Context):
+    def __init__(self, prefix: str, context: Context):
         super().__init__(context)
+        self._prefix = prefix
         self._series_initialised = False
         self._channel_schemata = None
         self._current_point = None
@@ -86,14 +92,14 @@ class SubscriberSinglePointModel(SinglePointModel):
             # separately (rather than just using `data`), as there might be more mods
             # from a next point already in the pipeline (and applied to data).
             for key, (_, value) in mods[0]["struct"].items():
-                name = strip_prefix(key, "ndscan.point.")
+                name = strip_prefix(key, self._prefix + "point.")
                 if name == key:
                     continue
                 self._next_point[name] = value
             mods.pop(0)
 
         if not self._series_initialised:
-            channels_json = data.get("ndscan.channels", (False, None))[1]
+            channels_json = data.get(self._prefix + "channels", (False, None))[1]
             if not channels_json:
                 return
             self._channel_schemata = json.loads(channels_json)
@@ -109,15 +115,15 @@ class SubscriberSinglePointModel(SinglePointModel):
             if m["action"] != ModAction.setitem.value:
                 continue
 
-            if m["key"] == "ndscan.point_phase":
+            if m["key"] == self._prefix + "point_phase":
                 emit_point()
 
-            name = strip_prefix(m["key"], "ndscan.point.")
+            name = strip_prefix(m["key"], self._prefix + "point.")
             if name == m["key"]:
                 continue
             self._next_point[name] = m["value"][1]
 
-        if (self._current_point is None and data.get("ndscan.completed",
+        if (self._current_point is None and data.get(self._prefix + "completed",
                                                      (False, False))[1]):
             # If the scan is already completed on the initial sync, we still
             # need to emit at least one point.
@@ -125,8 +131,9 @@ class SubscriberSinglePointModel(SinglePointModel):
 
 
 class SubscriberScanModel(ScanModel):
-    def __init__(self, axes: List[Dict[str, Any]], context: Context):
+    def __init__(self, axes: List[Dict[str, Any]], prefix: str, context: Context):
         super().__init__(axes, context)
+        self._prefix = prefix
         self._series_initialised = False
         self._online_analyses_initialised = False
         self._channel_schemata = None
@@ -137,7 +144,7 @@ class SubscriberScanModel(ScanModel):
     def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
                                                                      Any]]) -> None:
         if not self._series_initialised:
-            channels_json = data.get("ndscan.channels", (False, None))[1]
+            channels_json = data.get(self._prefix + "channels", (False, None))[1]
             if not channels_json:
                 return
             self._channel_schemata = json.loads(channels_json)
@@ -145,20 +152,21 @@ class SubscriberScanModel(ScanModel):
             self.channel_schemata_changed.emit(self._channel_schemata)
 
         if not self._online_analyses_initialised:
-            analyses_json = data.get("ndscan.online_analyses", (False, None))[1]
+            analyses_json = data.get(self._prefix + "online_analyses", (False, None))[1]
             if not analyses_json:
                 return
             self._set_online_analyses(json.loads(analyses_json))
             self._online_analyses_initialised = True
 
-        annotation_json = data.get("ndscan.annotations", (False, None))[1]
+        annotation_json = data.get(self._prefix + "annotations", (False, None))[1]
         if annotation_json != self._annotation_json:
             self._set_annotation_schemata(json.loads(annotation_json))
             self._annotation_json = annotation_json
 
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
-            self._point_data[name] = data.get("ndscan.points." + name, (False, []))[1]
+            self._point_data[name] = data.get(self._prefix + "points." + name,
+                                              (False, []))[1]
 
         self.points_appended.emit(self._point_data)
 
