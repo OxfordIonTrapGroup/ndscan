@@ -150,11 +150,13 @@ class TopLevelRunner(HasEnvironment):
               spec: ScanSpec,
               no_axes_mode: NoAxesMode = NoAxesMode.single,
               max_rtio_underflow_retries: int = 3,
-              max_transitory_error_retries: int = 10):
+              max_transitory_error_retries: int = 10,
+              dataset_root: str = "ndscan."):
         self.fragment = fragment
         self.spec = spec
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
+        self.dataset_root = dataset_root
 
         self.setattr_device("ccb")
         self.setattr_device("core")
@@ -196,9 +198,10 @@ class TopLevelRunner(HasEnvironment):
             self._short_child_channel_names[channel] = name
 
             if self.spec.axes:
-                sink = AppendingDatasetSink(self, "ndscan.points.channel_" + name)
+                sink = AppendingDatasetSink(
+                    self, self.dataset_root + "points.channel_" + name)
             else:
-                sink = ScalarDatasetSink(self, "ndscan.point." + name)
+                sink = ScalarDatasetSink(self, self.dataset_root + "point." + name)
             channel.set_sink(sink)
             self._scan_result_sinks[channel] = sink
 
@@ -216,7 +219,8 @@ class TopLevelRunner(HasEnvironment):
 
         coordinate_sinks = None
         if self._is_time_series:
-            self._timestamp_sink = AppendingDatasetSink(self, "ndscan.points.axis_0")
+            self._timestamp_sink = AppendingDatasetSink(
+                self, self.dataset_root + "points.axis_0")
             coordinate_sinks = [self._timestamp_sink]
             self._time_series_start = time.monotonic()
             self._run_continuous()
@@ -226,7 +230,8 @@ class TopLevelRunner(HasEnvironment):
                 max_rtio_underflow_retries=self.max_rtio_underflow_retries,
                 max_transitory_error_retries=self.max_transitory_error_retries)
             coordinate_sinks = [
-                AppendingDatasetSink(self, "ndscan.points.axis_{}".format(i))
+                AppendingDatasetSink(self,
+                                     self.dataset_root + "points.axis_{}".format(i))
                 for i in range(len(self.spec.axes))
             ]
             runner.run(self.fragment, self.spec, coordinate_sinks)
@@ -263,7 +268,7 @@ class TopLevelRunner(HasEnvironment):
         if annotations:
             # Replace existing (online-fit) annotations if any analysis produced custom
             # ones. This could be made configurable in the future.
-            self.set_dataset("ndscan.annotations",
+            self.set_dataset(self.dataset_root + "annotations",
                              json.dumps(annotations),
                              broadcast=True)
 
@@ -307,16 +312,18 @@ class TopLevelRunner(HasEnvironment):
     @rpc(flags={"async"})
     def _finish_continuous_point(self):
         self._point_phase = not self._point_phase
-        self.set_dataset("ndscan.point_phase", self._point_phase, broadcast=True)
+        self.set_dataset(self.dataset_root + "point_phase",
+                         self._point_phase,
+                         broadcast=True)
         if self._is_time_series:
             self._timestamp_sink.push(time.monotonic() - self._time_series_start)
 
     def _set_completed(self):
-        self.set_dataset("ndscan.completed", True, broadcast=True)
+        self.set_dataset(self.dataset_root + "completed", True, broadcast=True)
 
     def _broadcast_metadata(self):
         def push(name, value):
-            self.set_dataset("ndscan." + name, value, broadcast=True)
+            self.set_dataset(self.dataset_root + name, value, broadcast=True)
 
         source_prefix = self.get_dataset("system_id", default="rid")
         push("source_id", "{}_{}".format(source_prefix, self.scheduler.rid))
