@@ -338,8 +338,8 @@ def filter_default_analyses(fragment: ExpFragment,
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,
                   short_result_names: Dict[ResultChannel, str]):
-    """Return metadata for the given spec in stringly typed dictionary form, executing
-    any default analyses as necessary.
+    """Return metadata for the given spec in stringly typed dictionary form, including
+    that for any online analyses that apply to it.
 
     :param spec: :class:`.ScanSpec` describing the scan.
     :param fragment: Fragment being scanned.
