@@ -12,19 +12,20 @@ The two main entry points into the :class:`.ExpFragment` universe are
 
 from artiq.language import *
 from artiq.coredevice.exceptions import RTIOUnderflow
+from collections import OrderedDict
 from contextlib import suppress
 import json
 import logging
 import random
 import time
-from typing import Any, Callable, Dict, Iterable, List, Type
+from typing import Any, Callable, Dict, Iterable, Type
 
 from .default_analysis import AnnotationContext
 from .fragment import ExpFragment, RestartKernelTransitoryError, TransitoryError
 from .parameters import type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
-from .scan_generator import GENERATORS, ScanGenerator, ScanOptions
+from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           filter_default_analyses)
 from .utils import is_kernel
@@ -130,12 +131,14 @@ class FragmentScanExperiment(EnvExperiment):
         options = ScanOptions(scan.get("num_repeats", 1),
                               scan.get("randomise_order_globally", False))
         no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
-        self.tlr = TopLevelRunner(self, self.fragment, axes, generators, options,
-                                  no_axes_mode, self.max_rtio_underflow_retries,
+        spec = ScanSpec(axes, generators, options)
+        self.tlr = TopLevelRunner(self, self.fragment, spec, no_axes_mode,
+                                  self.max_rtio_underflow_retries,
                                   self.max_transitory_error_retries)
 
     def run(self):
-        self.tlr.run()
+        with suppress(TerminationRequested):
+            self.tlr.run()
 
     def analyze(self):
         self.tlr.analyze()
@@ -144,13 +147,12 @@ class FragmentScanExperiment(EnvExperiment):
 class TopLevelRunner(HasEnvironment):
     def build(self,
               fragment: ExpFragment,
-              axes: List[ScanAxis],
-              generators: List[ScanGenerator],
-              options: ScanOptions = ScanOptions(),
+              spec: ScanSpec,
               no_axes_mode: NoAxesMode = NoAxesMode.single,
               max_rtio_underflow_retries: int = 3,
               max_transitory_error_retries: int = 10):
         self.fragment = fragment
+        self.spec = spec
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
 
@@ -162,11 +164,11 @@ class TopLevelRunner(HasEnvironment):
         self._continue_running = False
         self._is_time_series = False
 
-        if not axes:
+        if not self.spec.axes:
             self._continue_running = no_axes_mode != NoAxesMode.single
             if no_axes_mode == NoAxesMode.time_series:
                 self._is_time_series = True
-                schema = {
+                param_schema = {
                     "type": "float",
                     "fqn": "timestamp",
                     "description": "Elapsed time",
@@ -177,9 +179,7 @@ class TopLevelRunner(HasEnvironment):
                         "scale": 1.0
                     },
                 }
-                axes = [ScanAxis(schema, "*", None)]
-
-        self._scan = ScanSpec(axes, generators, options)
+                self.spec.axes = [ScanAxis(param_schema, "*", None)]
 
         # Initialise result channels.
         chan_dict = {}
@@ -195,14 +195,12 @@ class TopLevelRunner(HasEnvironment):
             name = chan_name_map[path].replace("/", "_")
             self._short_child_channel_names[channel] = name
 
-            if self._scan.axes:
+            if self.spec.axes:
                 sink = AppendingDatasetSink(self, "ndscan.points.channel_" + name)
             else:
                 sink = ScalarDatasetSink(self, "ndscan.point." + name)
             channel.set_sink(sink)
             self._scan_result_sinks[channel] = sink
-
-        self._scan_axis_sinks = None
 
         self.fragment.prepare()
 
@@ -212,43 +210,47 @@ class TopLevelRunner(HasEnvironment):
         if len(self._scan_result_sinks) > 0:
             self._issue_ccb()
 
-        with suppress(TerminationRequested):
-            if self._is_time_series:
-                self._run_time_series()
-            elif not self._scan.axes:
-                self._run_continuous()
-            else:
-                runner = ScanRunner(
-                    self,
-                    max_rtio_underflow_retries=self.max_rtio_underflow_retries,
-                    max_transitory_error_retries=self.max_transitory_error_retries)
-                self._scan_axis_sinks = [
-                    AppendingDatasetSink(self, "ndscan.points.axis_{}".format(i))
-                    for i in range(len(self._scan.axes))
-                ]
-                runner.run(self.fragment, self._scan, self._scan_axis_sinks)
+        if not self.spec.axes and not self._is_time_series:
+            self._run_continuous()
+            return None, {c: s.get_last() for c, s in self._scan_result_sinks.items()}
 
+        coordinate_sinks = None
+        if self._is_time_series:
+            self._timestamp_sink = AppendingDatasetSink(self, "ndscan.points.axis_0")
+            coordinate_sinks = [self._timestamp_sink]
+            self._time_series_start = time.monotonic()
+            self._run_continuous()
+        else:
+            runner = ScanRunner(
+                self,
+                max_rtio_underflow_retries=self.max_rtio_underflow_retries,
+                max_transitory_error_retries=self.max_transitory_error_retries)
+            coordinate_sinks = [
+                AppendingDatasetSink(self, "ndscan.points.axis_{}".format(i))
+                for i in range(len(self.spec.axes))
+            ]
+            runner.run(self.fragment, self.spec, coordinate_sinks)
             self._set_completed()
 
+        self._coordinate_data = OrderedDict(
+            ((a.param_schema["fqn"], a.path), s.get_all())
+            for a, s in zip(self.spec.axes, coordinate_sinks))
+        self._value_data = {c: s.get_all() for c, s in self._scan_result_sinks.items()}
+        return self._coordinate_data, self._value_data
+
     def analyze(self):
-        if not self._scan_axis_sinks:
+        if not self.spec.axes:
+            # Return if there are no scan axes - could allow the time series fake axis
+            # in the future.
             return
 
-        analyses = filter_default_analyses(self.fragment, self._scan)
+        analyses = filter_default_analyses(self.fragment, self.spec)
         if not analyses:
             return
 
-        axis_data = {}
         axis_indices = {}
-        for i, (axis, sink) in enumerate(zip(self._scan.axes, self._scan_axis_sinks)):
-            identity = (axis.param_schema["fqn"], axis.path)
-            axis_data[identity] = sink.get_all()
-            axis_indices[identity] = i
-
-        result_data = {
-            chan: sink.get_all()
-            for chan, sink in self._scan_result_sinks.items()
-        }
+        for i, axis in enumerate(self.spec.axes):
+            axis_indices[(axis.param_schema["fqn"], axis.path)] = i
 
         context = AnnotationContext(
             lambda handle: axis_indices[handle._store.identity],
@@ -256,7 +258,7 @@ class TopLevelRunner(HasEnvironment):
 
         annotations = []
         for a in analyses:
-            annotations += a.execute(axis_data, result_data, context)
+            annotations += a.execute(self._coordinate_data, self._value_data, context)
 
         if annotations:
             # Replace existing (online-fit) annotations if any analysis produced custom
@@ -264,11 +266,6 @@ class TopLevelRunner(HasEnvironment):
             self.set_dataset("ndscan.annotations",
                              json.dumps(annotations),
                              broadcast=True)
-
-    def _run_time_series(self):
-        self._timestamp_sink = AppendingDatasetSink(self, "ndscan.points.axis_0")
-        self._time_series_start = time.monotonic()
-        self._run_continuous()
 
     def _run_continuous(self):
         try:
@@ -326,7 +323,7 @@ class TopLevelRunner(HasEnvironment):
 
         push("completed", False)
 
-        self._scan_desc = describe_scan(self._scan, self.fragment,
+        self._scan_desc = describe_scan(self.spec, self.fragment,
                                         self._short_child_channel_names)
         for name, value in self._scan_desc.items():
             # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
