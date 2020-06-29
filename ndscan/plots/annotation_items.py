@@ -1,5 +1,6 @@
 """Plot annotations, which are rendered as one or more pyqtgraph graphics objects."""
 
+import logging
 import numpy
 from oitg import uncertainty_to_string
 import pyqtgraph
@@ -7,6 +8,8 @@ from quamash import QtCore
 from typing import Dict, Union, Optional, Tuple
 from ..utils import FIT_OBJECTS
 from .model import AnnotationDataSource
+
+logger = logging.getLogger(__name__)
 
 
 class AnnotationItem:
@@ -119,6 +122,9 @@ class CurveItem(AnnotationItem):
         xs = self._x_source.get()
         ys = self._y_source.get()
         if not xs or not ys or len(xs) != len(ys):
+            logger.warning(
+                "No matching data for 'curve' annotation, ignoring " +
+                "(len(xs) = %s vs. len(ys) = %s).", len(xs), len(ys))
             return
 
         if not self._curve_item_added:
