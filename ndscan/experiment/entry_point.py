@@ -17,14 +17,14 @@ import json
 import logging
 import random
 import time
-from typing import Any, Callable, Dict, Iterable, Type
+from typing import Any, Callable, Dict, Iterable, List, Type
 
 from .default_analysis import AnnotationContext
 from .fragment import ExpFragment, RestartKernelTransitoryError, TransitoryError
 from .parameters import type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
-from .scan_generator import GENERATORS, ScanOptions
+from .scan_generator import GENERATORS, ScanGenerator, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           filter_default_analyses)
 from .utils import is_kernel
@@ -65,9 +65,6 @@ class FragmentScanExperiment(EnvExperiment):
         :param max_transitory_error_retries: Number of transitory errors to tolerate per
             scan point (by simply trying again) before giving up.
         """
-        self.setattr_device("ccb")
-        self.setattr_device("core")
-        self.setattr_device("scheduler")
 
         self.fragment = fragment_init()
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
@@ -89,10 +86,6 @@ class FragmentScanExperiment(EnvExperiment):
             }
         }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
-
-        self._scan_desc = None
-        self._scan_axis_sinks = None
-        self._scan_result_sinks = {}
 
     def prepare(self):
         """Collect parameters to set from both scan axes and simple overrides, and
@@ -132,12 +125,43 @@ class FragmentScanExperiment(EnvExperiment):
                                generator.points_for_level(0, random)[0])
             param_stores.setdefault(fqn, []).append((pathspec, store))
             axes.append(ScanAxis(self.schemata[fqn], pathspec, store))
+        self.fragment.init_params(param_stores)
 
+        options = ScanOptions(scan.get("num_repeats", 1),
+                              scan.get("randomise_order_globally", False))
         no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
-        # FIXME: Export as individual booleans as enums crash the ARTIQ
-        # compiler.
+        self.tlr = TopLevelRunner(self, self.fragment, axes, generators, options,
+                                  no_axes_mode, self.max_rtio_underflow_retries,
+                                  self.max_transitory_error_retries)
+
+    def run(self):
+        self.tlr.run()
+
+    def analyze(self):
+        self.tlr.analyze()
+
+
+class TopLevelRunner(HasEnvironment):
+    def build(self,
+              fragment: ExpFragment,
+              axes: List[ScanAxis],
+              generators: List[ScanGenerator],
+              options: ScanOptions = ScanOptions(),
+              no_axes_mode: NoAxesMode = NoAxesMode.single,
+              max_rtio_underflow_retries: int = 3,
+              max_transitory_error_retries: int = 10):
+        self.fragment = fragment
+        self.max_rtio_underflow_retries = max_rtio_underflow_retries
+        self.max_transitory_error_retries = max_transitory_error_retries
+
+        self.setattr_device("ccb")
+        self.setattr_device("core")
+        self.setattr_device("scheduler")
+
+        # FIXME: We save these as individual booleans as enums crash the ARTIQ compiler.
         self._continue_running = False
         self._is_time_series = False
+
         if not axes:
             self._continue_running = no_axes_mode != NoAxesMode.single
             if no_axes_mode == NoAxesMode.time_series:
@@ -155,11 +179,7 @@ class FragmentScanExperiment(EnvExperiment):
                 }
                 axes = [ScanAxis(schema, "*", None)]
 
-        options = ScanOptions(scan.get("num_repeats", 1),
-                              scan.get("randomise_order_globally", False))
         self._scan = ScanSpec(axes, generators, options)
-
-        self.fragment.init_params(param_stores)
 
         # Initialise result channels.
         chan_dict = {}
@@ -167,6 +187,7 @@ class FragmentScanExperiment(EnvExperiment):
 
         chan_name_map = _shorten_result_channel_names(chan_dict.keys())
 
+        self._scan_result_sinks = {}
         self._short_child_channel_names = {}
         for path, channel in chan_dict.items():
             if not channel.save_by_default:
@@ -180,6 +201,8 @@ class FragmentScanExperiment(EnvExperiment):
                 sink = ScalarDatasetSink(self, "ndscan.point." + name)
             channel.set_sink(sink)
             self._scan_result_sinks[channel] = sink
+
+        self._scan_axis_sinks = None
 
         self.fragment.prepare()
 
