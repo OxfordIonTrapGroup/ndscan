@@ -66,7 +66,6 @@ class FragmentScanExperiment(EnvExperiment):
         :param max_transitory_error_retries: Number of transitory errors to tolerate per
             scan point (by simply trying again) before giving up.
         """
-
         self.fragment = fragment_init()
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
@@ -137,6 +136,7 @@ class FragmentScanExperiment(EnvExperiment):
                                   self.max_transitory_error_retries)
 
     def run(self):
+        self.tlr.create_applet(title="ndscan: " + self.fragment.fqn)
         with suppress(TerminationRequested):
             self.tlr.run()
 
@@ -210,8 +210,6 @@ class TopLevelRunner(HasEnvironment):
     def run(self):
         """Run the (possibly trivial) scan."""
         self._broadcast_metadata()
-        if len(self._scan_result_sinks) > 0:
-            self._issue_ccb()
 
         if not self.spec.axes and not self._is_time_series:
             self._run_continuous()
@@ -339,17 +337,15 @@ class TopLevelRunner(HasEnvironment):
             else:
                 push(name, json.dumps(value))
 
-    def _issue_ccb(self):
+    def create_applet(self, title: str, group: str = "ndscan"):
         cmd = ("${python} -m ndscan.applet "
                "--server=${server} "
                "--port=${port_notify} "
                "--port-control=${port_control}")
         cmd += " --rid={}".format(self.scheduler.rid)
-        self.ccb.issue("create_applet",
-                       "ndscan: " + self.fragment.fqn,
-                       cmd,
-                       group="ndscan",
-                       is_transient=True)
+        if self.dataset_root:
+            cmd += " --root={}".format(self.dataset_root)
+        self.ccb.issue("create_applet", title, cmd, group=group, is_transient=True)
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
