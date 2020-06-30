@@ -156,6 +156,12 @@ class TopLevelRunner(HasEnvironment):
         self.spec = spec
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
+
+        if dataset_prefix and dataset_prefix[-1] != ".":
+            # Add trailing dot to dataset prefix if not given – the same bare prefix
+            # mushed into all the ndscan datasets isn't what a user with an intact sense
+            # of style would intend.
+            dataset_prefix += "."
         self.dataset_prefix = dataset_prefix
 
         self.setattr_device("ccb")
