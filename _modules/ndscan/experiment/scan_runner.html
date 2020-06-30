@@ -486,8 +486,8 @@
 
 <div class="viewcode-block" id="describe_scan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.describe_scan">[docs]</a><span class="k">def</span> <span class="nf">describe_scan</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
                   <span class="n">short_result_names</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;Return metadata for the given spec in stringly typed dictionary form, executing</span>
-<span class="sd">    any default analyses as necessary.</span>
+    <span class="sd">&quot;&quot;&quot;Return metadata for the given spec in stringly typed dictionary form, including</span>
+<span class="sd">    that for any online analyses that apply to it.</span>
 
 <span class="sd">    :param spec: :class:`.ScanSpec` describing the scan.</span>
 <span class="sd">    :param fragment: Fragment being scanned.</span>

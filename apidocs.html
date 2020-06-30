@@ -1002,8 +1002,8 @@ given scan spec.</p>
 <dl class="py function">
 <dt id="ndscan.experiment.scan_runner.describe_scan">
 <code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">describe_scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">spec</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanSpec" title="ndscan.experiment.scan_runner.ScanSpec">ndscan.experiment.scan_runner.ScanSpec</a></span></em>, <em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">short_result_names</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>ndscan.experiment.result_channels.ResultChannel<span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#describe_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.describe_scan" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return metadata for the given spec in stringly typed dictionary form, executing
-any default analyses as necessary.</p>
+<dd><p>Return metadata for the given spec in stringly typed dictionary form, including
+that for any online analyses that apply to it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1085,7 +1085,12 @@ initialise result channels.</p>
 <dl class="py method">
 <dt id="ndscan.experiment.entry_point.FragmentScanExperiment.run">
 <code class="sig-name descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/entry_point.html#FragmentScanExperiment.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.entry_point.FragmentScanExperiment.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the (possibly trivial) scan.</p>
+<dd><p>The main entry point of the experiment.</p>
+<p>This method must be overloaded by the user to implement the main
+control flow of the experiment.</p>
+<p>This method may interact with the hardware.</p>
+<p>The experiment may call the scheduler’s <code class="xref py py-meth docutils literal notranslate"><span class="pre">pause()</span></code> method while in
+<a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment.run" title="ndscan.experiment.entry_point.FragmentScanExperiment.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py method">
