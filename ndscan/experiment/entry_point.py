@@ -213,6 +213,8 @@ class TopLevelRunner(HasEnvironment):
 
         self.fragment.prepare()
 
+        self._coordinate_data = None
+
     def run(self):
         """Run the (possibly trivial) scan."""
         self._broadcast_metadata()
@@ -248,9 +250,10 @@ class TopLevelRunner(HasEnvironment):
         return self._coordinate_data, self._value_data
 
     def analyze(self):
-        if not self.spec.axes:
-            # Return if there are no scan axes - could allow the time series fake axis
-            # in the future.
+        if self._coordinate_data is None:
+            # Experiment was actually terminated by exception, so there is no data to
+            # analyse – gracefully ignore this to keep FragmentScanExperiment
+            # implementation simple.
             return
 
         analyses = filter_default_analyses(self.fragment, self.spec)
