@@ -1,6 +1,20 @@
 """
-Declarative fits, to be excecuted locally by the user interface displaying the data as
-it comes in.
+Interfaces and declarations for analyses.
+
+Conceptually, analyses are attached to a fragment, and produce results "the next level
+up" – that is, they condense all the points from a scan over a particular choice of
+parameters into a few parameters.
+
+Two modalities are supported:
+ - Declarative fits of a number of pre-defined functions, to be excecuted locally by the
+   user interface displaying the result data, and updated as data continues to
+   accumulate ("online analysis").
+ - A separate analysis step executed at the end, after a scan has been completed. This
+   is the equivalent of ARTIQ's ``EnvExperiment.analyze()``, and is executed within the
+   master worker process ("execute an analysis", "analysis results").
+
+Both can produce annotations; particular values or plot locations highlighted in the
+user interface.
 """
 import logging
 from typing import Any, Callable, Dict, List, Iterable, Optional, Tuple, Union
@@ -76,20 +90,22 @@ class Annotation:
         return spec
 
 
+#: A tuple ``(fqn, path_spec)`` describing an axis being scanned over. This is the
+#: correct concept of identity to use (rather than e.g. directly parameter handles), as
+#: an analysis typically doesn't care whether a parameter was for instance scanned via
+#: the path of the particular handle given or a wildcard path spec.
+AxisIdentity = Tuple[str, str]
+
+
 class DefaultAnalysis:
     """Analysis functionality associated with an `ExpFragment` to be executed when that
     fragment is scanned in a particular way.
     """
-    def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
+    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
         """Return whether the scanned axes contain the data necessary for this analysis
         to be applicable.
 
-        :param scanned_axes: A list of axis identities, i.e. ``(fqn, path_spec)``
-            tuples, being scanned over. This is the correct concept of identity to use
-            (rather than e.g. directly parameter handles), as an analysis typically
-            doesn't care whether a parameter was for instance scanned via the path of
-            the particular handle given or a wildcard path spec.
-
+        :param scanned_axes: A list of axis identities being scanned over.
         :return: Whether this analysis applies or not.
         """
         raise NotImplementedError
@@ -100,15 +116,15 @@ class DefaultAnalysis:
         """Exceute analysis and serialise information about resulting annotations and
         online analyses to stringly typed metadata.
 
-        :param context: The AnnotationContext to use to describe the coordinate axes/
-            result channels in the resulting metadata.
+        :param context: The :class:`.AnnotationContext` to use to describe the
+            coordinate axes/result channels in the resulting metadata.
 
         :return: A tuple of string dictionary representations for annotations and
             online analyses.
         """
         raise NotImplementedError
 
-    def execute(self, axis_data: Dict[Tuple[str, str],
+    def execute(self, axis_data: Dict[AxisIdentity,
                                       list], result_data: Dict[ResultChannel, list],
                 context: AnnotationContext) -> List[Dict[str, Any]]:
         """Exceute analysis and serialise information about resulting annotations to
