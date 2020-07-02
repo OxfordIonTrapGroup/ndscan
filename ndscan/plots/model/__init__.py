@@ -184,7 +184,7 @@ class ScanModel(Model):
             kind = spec["kind"]
             if kind == "fixed":
                 return FixedDataSource(spec["value"])
-            if kind == "analysis_result":
+            if kind == "online_result":
                 analysis = self._online_analyses.get(spec["analysis_name"], None)
                 if analysis is None:
                     return None
