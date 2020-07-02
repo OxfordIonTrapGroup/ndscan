@@ -294,7 +294,7 @@ class OnlineFit(DefaultAnalysis):
             analysis_identifier = "fit_" + self.fit_type + "_" + "_".join(channels)
 
         def analysis_ref(key):
-            return AnnotationValueRef("analysis_result",
+            return AnnotationValueRef("online_result",
                                       analysis_name=analysis_identifier,
                                       result_key=key)
 
