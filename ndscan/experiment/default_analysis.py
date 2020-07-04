@@ -29,15 +29,33 @@ logger = logging.getLogger(__name__)
 
 
 class AnnotationValueRef:
+    """Marker type to distinguish an already-serialised annotation value source
+    specification from an user-supplied value of dictionary type.
+    """
     def __init__(self, kind: str, **kwargs):
         self.spec = {"kind": kind, **kwargs}
 
 
 class AnnotationContext:
+    """Resolves entities in user-specified annotation schemata to stringly-typed
+    dictionary form.
+
+    The user-facing interface to annotations allows references to parameters, result
+    channels, etc. to be given as their representation in the fragment tree. Thus, to
+    write annotations to scan metadata, it is necessary to resolve these to a
+    JSON-compatible form to funnel them to the applet (or any number of other dataset
+    consumers).
+
+    This class encapsulates the knowledge of the order of scan axes, shortened names of
+    result channels, etc. – that is, the global state – necessary to produce these
+    schema descriptions.
+    """
     def __init__(self, get_axis_index: Callable[[ParamHandle], int],
-                 name_channel: Callable[[ResultChannel], str]):
+                 name_channel: Callable[[ResultChannel], str],
+                 analysis_result_is_exported: Callable[[ResultChannel], bool]):
         self._get_axis_index = get_axis_index
         self._name_channel = name_channel
+        self._analysis_result_is_exported = analysis_result_is_exported
 
     def describe_coordinate(self, obj) -> str:
         if isinstance(obj, ParamHandle):
@@ -50,13 +68,11 @@ class AnnotationContext:
         if isinstance(obj, AnnotationValueRef):
             return obj
         if isinstance(obj, ResultChannel):
-            return AnnotationValueRef("result_channel", name=self._name_channel(obj))
-        # TODO: We would really like to avoid serialising large fit data into the JSON
-        # schemata and push it to an appropriately-typed store instead. However, we
-        # cannot do this for subscans, as we would need to set up appropriate result
-        # channels beforehand. We could (and probably should) set up a different `kind`
-        # (e.g. "annotation_data") for top-level scans though that loads from a dataset
-        # subtree (e.g. "ndscan.annotation_data.<annotation_name>_<value_key>").
+            # Only emit analysis result reference if it is actually exported (might not
+            # be for a subscan) – emit direct value reference otherwise.
+            if self._analysis_result_is_exported(obj):
+                return AnnotationValueRef("analysis_result", name=obj.path)
+            obj = obj.sink.get_last()
         return AnnotationValueRef("fixed", value=obj)
 
 
@@ -116,17 +132,23 @@ class DefaultAnalysis:
         """Exceute analysis and serialise information about resulting annotations and
         online analyses to stringly typed metadata.
 
-        :param context: The :class:`.AnnotationContext` to use to describe the
-            coordinate axes/result channels in the resulting metadata.
+        :param context: The :class:`.AnnotationContext` to use to resolve references to
+            fragment tree objects in user-specified data to m.
 
         :return: A tuple of string dictionary representations for annotations and
-            online analyses.
+            online analyses (with all the fragment tree references resolved).
         """
         raise NotImplementedError
 
-    def execute(self, axis_data: Dict[AxisIdentity,
-                                      list], result_data: Dict[ResultChannel, list],
-                context: AnnotationContext) -> List[Dict[str, Any]]:
+    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+        raise NotImplementedError
+
+    def execute(
+        self,
+        axis_data: Dict[AxisIdentity, list],
+        result_data: Dict[ResultChannel, list],
+        context: AnnotationContext,
+    ) -> List[Dict[str, Any]]:
         """Exceute analysis and serialise information about resulting annotations to
         stringly typed metadata.
 
@@ -153,11 +175,22 @@ class CustomAnalysis(DefaultAnalysis):
         broadcast.
     """
     def __init__(
-        self, required_axes: Iterable[ParamHandle],
-        analyze_fn: Callable[[Dict[ParamHandle, list], Dict[ResultChannel, list]],
-                             List[Annotation]]):
+            self,
+            required_axes: Iterable[ParamHandle],
+            analyze_fn: Callable[[Dict[ParamHandle, list], Dict[ResultChannel, list]],
+                                 Tuple[Dict[str, Any], List[Annotation]]],
+            analysis_results: Iterable[ResultChannel] = []):
         self._required_axis_handles = set(required_axes)
         self._analyze_fn = analyze_fn
+
+        self._result_channels = {}
+        for channel in analysis_results:
+            name = channel.path
+            if name in self._result_channels:
+                axes = ", ".join(h._store.identity for h in self._required_axis_handles)
+                raise ValueError("Duplicate analysis result channel name '" + name +
+                                 "' in analysis for axes '" + axes + "'")
+            self._result_channels[name] = channel
 
     def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
         ""
@@ -170,14 +203,28 @@ class CustomAnalysis(DefaultAnalysis):
         ""
         return [], {}
 
-    def execute(self, axis_data: Dict[Tuple[str, str],
-                                      list], result_data: Dict[ResultChannel, list],
-                context: AnnotationContext) -> List[Dict[str, Any]]:
+    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+        ""
+        return self._result_channels
+
+    def execute(
+        self,
+        axis_data: Dict[AxisIdentity, list],
+        result_data: Dict[ResultChannel, list],
+        context: AnnotationContext,
+    ) -> List[Dict[str, Any]]:
         ""
         user_axis_data = {}
         for handle in self._required_axis_handles:
             user_axis_data[handle] = axis_data[handle._store.identity]
-        annotations = self._analyze_fn(user_axis_data, result_data)
+
+        try:
+            annotations = self._analyze_fn(user_axis_data, result_data,
+                                           self._result_channels)
+        except TypeError:
+            # Tolerate old analysis functions that do not take analysis result channels.
+            annotations = self._analyze_fn(user_axis_data, result_data)
+
         if annotations is None:
             # Tolerate the user forgetting the return statement.
             annotations = []
@@ -335,9 +382,17 @@ class OnlineFit(DefaultAnalysis):
             }
         }
 
-    def execute(self, axis_data: Dict[Tuple[str, str],
-                                      list], result_data: Dict[ResultChannel, list],
-                context: AnnotationContext) -> List[Dict[str, Any]]:
+    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+        ""
+        # Could return annotation locations in the future.
+        return {}
+
+    def execute(
+        self,
+        axis_data: Dict[AxisIdentity, list],
+        result_data: Dict[ResultChannel, list],
+        context: AnnotationContext,
+    ) -> List[Dict[str, Any]]:
         ""
         # Nothing to do off-line for online fits.
         return []

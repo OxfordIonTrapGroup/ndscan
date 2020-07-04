@@ -387,16 +387,18 @@ class Fragment(HasEnvironment):
         :return: The newly created result channel instance.
         """
         assert self._building, "Can only call setattr_result() during build_fragment()"
+        path = "/".join(self._fragment_path + [name])
+        channel = channel_class(path, *args, **kwargs)
+        self._register_result_channel(name, path, channel)
+        return channel
+
+    def _register_result_channel(self, name: str, path: str,
+                                 channel: ResultChannel) -> None:
         assert name.isidentifier(), ("Result channel name must be a valid "
                                      "Python identifier")
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
-
-        path = "/".join(self._fragment_path + [name])
-        channel = channel_class(path, *args, **kwargs)
         self._result_channels[path] = channel
         setattr(self, name, channel)
-
-        return channel
 
     def override_param(self,
                        param_name: str,

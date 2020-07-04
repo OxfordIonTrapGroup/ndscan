@@ -16,7 +16,7 @@ class Scan1DFragment(ExpFragment):
 
     def run_once(self):
         return self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))],
-                             ScanOptions(seed=1234))
+                             ScanOptions(seed=1234))[:2]
 
 
 class SubscanCase(ExpFragmentCase):
@@ -178,7 +178,10 @@ class SubscanCase(ExpFragmentCase):
 class RunSubscanTwiceFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("child", AddOneFragment)
-        setattr_subscan(self, "scan", self.child, [(self.child, "value")])
+        setattr_subscan(self,
+                        "scan",
+                        self.child, [(self.child, "value")],
+                        expose_analysis_results=False)
 
     def run_once(self):
         r0 = self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))])
@@ -191,7 +194,7 @@ class RunSubscanTwiceCase(ExpFragmentCase):
         parent = self.create(RunSubscanTwiceFragment)
         results = parent.run_once()
 
-        for base, (coords, values) in zip([0, 4], results):
+        for base, (coords, values, _) in zip([0, 4], results):
             expected_values = [float(n) for n in range(base, base + 4)]
             expected_results = [v + 1 for v in expected_values]
             self.assertEqual(coords, {parent.child.value: expected_values})

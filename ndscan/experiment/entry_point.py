@@ -14,7 +14,7 @@ from artiq.language import *
 from artiq.coredevice.exceptions import RTIOUnderflow
 from collections import OrderedDict
 from contextlib import suppress
-import json
+from functools import reduce
 import logging
 import random
 import time
@@ -27,9 +27,10 @@ from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDataset
                               ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
-                          filter_default_analyses)
-from .utils import is_kernel
-from ..utils import NoAxesMode, PARAMS_ARG_KEY, shorten_to_unambiguous_suffixes
+                          describe_analyses, filter_default_analyses)
+from .utils import dump_json, is_kernel, to_metadata_broadcast_type
+from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY,
+                     shorten_to_unambiguous_suffixes)
 
 __all__ = [
     "make_fragment_scan_exp", "run_fragment_once", "create_and_run_fragment_once"
@@ -211,6 +212,26 @@ class TopLevelRunner(HasEnvironment):
             channel.set_sink(sink)
             self._scan_result_sinks[channel] = sink
 
+        # Filter analyses, set up analysis result channels, and keep track of all the
+        # names in the annotation context.
+        self._analyses = filter_default_analyses(self.fragment, self.spec.axes)
+
+        self._analysis_results = reduce(
+            lambda l, r: merge_no_duplicates(l, r, kind="analysis result"),
+            (a.get_analysis_results() for a in self._analyses), {})
+        for name, channel in self._analysis_results.items():
+            channel.set_sink(
+                ScalarDatasetSink(self,
+                                  self.dataset_prefix + "analysis_result." + name))
+
+        axis_indices = {}
+        for i, axis in enumerate(self.spec.axes):
+            axis_indices[(axis.param_schema["fqn"], axis.path)] = i
+        self._annotation_context = AnnotationContext(
+            lambda handle: axis_indices[handle._store.identity],
+            lambda channel: self._short_child_channel_names[channel],
+            lambda channel: True)
+
         self.fragment.prepare()
 
         self._coordinate_data = None
@@ -255,28 +276,19 @@ class TopLevelRunner(HasEnvironment):
             # analyse – gracefully ignore this to keep FragmentScanExperiment
             # implementation simple.
             return
-
-        analyses = filter_default_analyses(self.fragment, self.spec)
-        if not analyses:
+        if not self._analyses:
             return
 
-        axis_indices = {}
-        for i, axis in enumerate(self.spec.axes):
-            axis_indices[(axis.param_schema["fqn"], axis.path)] = i
-
-        context = AnnotationContext(
-            lambda handle: axis_indices[handle._store.identity],
-            lambda channel: self._short_child_channel_names[channel])
-
         annotations = []
-        for a in analyses:
-            annotations += a.execute(self._coordinate_data, self._value_data, context)
+        for a in self._analyses:
+            annotations += a.execute(self._coordinate_data, self._value_data,
+                                     self._annotation_context)
 
         if annotations:
             # Replace existing (online-fit) annotations if any analysis produced custom
             # ones. This could be made configurable in the future.
             self.set_dataset(self.dataset_prefix + "annotations",
-                             json.dumps(annotations),
+                             dump_json(annotations),
                              broadcast=True)
 
     def _run_continuous(self):
@@ -339,12 +351,20 @@ class TopLevelRunner(HasEnvironment):
 
         self._scan_desc = describe_scan(self.spec, self.fragment,
                                         self._short_child_channel_names)
+        self._scan_desc.update(
+            describe_analyses(self._analyses, self._annotation_context))
+        self._scan_desc["analysis_results"] = {
+            name: channel.describe()
+            for name, channel in self._analysis_results.items()
+        }
+
         for name, value in self._scan_desc.items():
             # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
-            if isinstance(value, str) or isinstance(value, int):
-                push(name, value)
+            ds_value = to_metadata_broadcast_type(value)
+            if ds_value is None:
+                push(name, dump_json(value))
             else:
-                push(name, json.dumps(value))
+                push(name, ds_value)
 
     def create_applet(self, title: str, group: str = "ndscan"):
         cmd = ("${python} -m ndscan.applet "

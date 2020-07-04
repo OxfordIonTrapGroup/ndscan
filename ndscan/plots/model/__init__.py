@@ -24,6 +24,7 @@ situations.)
 """
 
 import logging
+import numpy
 from quamash import QtCore
 from typing import Any, Callable, Dict, List, Optional, Union
 from .online_analysis import OnlineNamedFitAnalysis
@@ -96,6 +97,15 @@ class FixedDataSource(AnnotationDataSource):
 
     def get(self) -> Any:
         return self._value
+
+    def set(self, value: Any) -> None:
+        # Values could be NumPy arrays, so since NumPy blatantly disregards the Python
+        # object model and does not return a bool-ish value (but an array of bools),
+        # need to use array_equal().
+        if numpy.array_equal(value, self._value):
+            return
+        self._value = value
+        self.changed.emit()
 
 
 class OnlineAnalysisDataSource(AnnotationDataSource):
@@ -171,6 +181,15 @@ class ScanModel(Model):
     def get_annotations(self) -> List[Annotation]:
         return self._annotations
 
+    def get_analysis_result_source(self, name: str) -> Optional[AnnotationDataSource]:
+        raise NotImplementedError
+
+    #
+    # TODO: Having these as elaborate implementation in the base class leaves a bit of a
+    # bad aftertaste, although it's slightly hard to qualify why it should be bad
+    # design.
+    #
+
     def _set_annotation_schemata(self, schemata: List[Dict[str, Any]]):
         """Replace annotations with ones created according to the given schemata.
 
@@ -189,6 +208,12 @@ class ScanModel(Model):
                 if analysis is None:
                     return None
                 return OnlineAnalysisDataSource(analysis, spec["result_key"])
+            if kind == "analysis_result":
+                name = spec["name"]
+                source = self.get_analysis_result_source(name)
+                if source is None:
+                    logger.info("Analysis result data source not found: %s", name)
+                return source
             logger.info("Ignoring unsupported annotation data source type: '%s'", kind)
             return None
 
@@ -197,6 +222,9 @@ class ScanModel(Model):
 
         for schema in schemata:
             sources = [to_data_sources(schema.get(n)) for n in ("coordinates", "data")]
+            if any(s is None for t in sources for s in t.values()):
+                logger.warning("Ignoring analysis, not all data found: %s", schema)
+                continue
             self._annotations.append(
                 Annotation(schema["kind"], schema.get("parameters", {}), *sources))
         self.annotations_changed.emit(self._annotations)

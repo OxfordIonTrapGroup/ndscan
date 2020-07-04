@@ -82,3 +82,12 @@ def eval_param_default(value: str, get_dataset: Callable) -> Any:
     env = {name: getattr(units, name) for name in units.__all__}
     env.update({"dataset": get_dataset})
     return eval(value, env)
+
+
+def merge_no_duplicates(target: dict, source: dict, kind: str = "entries") -> None:
+    """Merges ``source`` into ``target``, raising a ``ValueError`` on duplicate keys."""
+    for k, v in source.items():
+        if k in target:
+            raise ValueError("Duplicate {} of key '{}'".format(kind, k))
+        target[k] = v
+    return target

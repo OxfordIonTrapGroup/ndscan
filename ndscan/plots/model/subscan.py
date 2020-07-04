@@ -1,8 +1,8 @@
 import json
 import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 from ...utils import strip_suffix
-from . import Model, Root, ScanModel, SinglePointModel
+from . import (FixedDataSource, Model, Root, ScanModel, SinglePointModel)
 from .utils import call_later, emit_later
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,16 @@ class SubscanRoot(Root):
         self._model = SubscanModel(self._schema, self._parent, self.name + "_")
         self.model_changed.emit(self._model)
 
-    def get_model(self) -> Union[Model, None]:
+    def get_model(self) -> Optional[Model]:
         return self._model
 
 
 class SubscanModel(ScanModel):
+    """A scan seleced out of a single point with a subscan channel.
+
+    Point content changes are forwarded, but the schema is static; changes to the latter
+    necessitate a new model instance.
+    """
     def __init__(self, schema: Dict[str, Any], parent: SinglePointModel,
                  result_prefix: str):
         super().__init__(schema["axes"], parent.context)
@@ -57,6 +62,17 @@ class SubscanModel(ScanModel):
         self._parent = parent
         self._parent.point_changed.connect(self._update)
 
+        # Do not require analysis results to be present for backwards-compatibility.
+        self._analysis_results = {}
+        self._analysis_result_mappings = []
+        for result_name, path in schema.get("analysis_results", {}).items():
+            for (channel_name,
+                 channel_schema) in self._parent.get_channel_schemata().items():
+                if channel_schema["path"] == path:
+                    source = FixedDataSource(None)
+                    self._analysis_results[result_name] = source
+                    self._analysis_result_mappings.append((result_name, channel_name))
+
         emit_later(self.channel_schemata_changed, self._channel_schemata)
         call_later(lambda: self._set_online_analyses(schema.get("online_analyses", {})))
         call_later(lambda: self._set_annotation_schemata(schema.get("annotations", [])))
@@ -67,7 +83,7 @@ class SubscanModel(ScanModel):
 
     def _update(self, parent_data: Optional[Dict[str, Any]]) -> None:
         if parent_data is None:
-            logger.debug("Ignoring update ")
+            logger.debug("Ignoring update")
             return
 
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
@@ -75,11 +91,17 @@ class SubscanModel(ScanModel):
             self._point_data[name] = parent_data[self._result_prefix + name]
         self.points_rewritten.emit(self._point_data)
 
+        for r, c in self._analysis_result_mappings:
+            self._analysis_results[r].set(parent_data[c])
+
     def get_channel_schemata(self) -> Dict[str, Any]:
         return self._channel_schemata
 
     def get_point_data(self) -> Dict[str, Any]:
         return self._point_data
+
+    def get_analysis_result_source(self, name: str) -> Optional[FixedDataSource]:
+        return self._analysis_results.get(name, None)
 
 
 def create_subscan_roots(model: SinglePointModel) -> Dict[str, SubscanRoot]:

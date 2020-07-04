@@ -4,15 +4,18 @@ another child fragment as part of its execution.
 """
 
 from collections import OrderedDict
+from copy import copy
+from functools import reduce
 from typing import Callable, Dict, List, Tuple
-from .default_analysis import AnnotationContext
+from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, Fragment
 from .parameters import ParamHandle
-from .result_channels import ArraySink, OpaqueChannel, ResultChannel, SubscanChannel
+from .result_channels import (ArraySink, LastValueSink, OpaqueChannel, ResultChannel,
+                              SubscanChannel)
 from .scan_generator import ScanGenerator, ScanOptions
-from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
-                          filter_default_analyses)
-from ..utils import shorten_to_unambiguous_suffixes
+from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_analyses,
+                          describe_scan, filter_default_analyses)
+from ..utils import merge_no_duplicates, shorten_to_unambiguous_suffixes
 
 __all__ = ["setattr_subscan", "Subscan"]
 
@@ -31,6 +34,8 @@ class Subscan:
         child_result_sinks: Dict[ResultChannel, ArraySink],
         aggregate_result_channels: Dict[ResultChannel, ResultChannel],
         short_child_channel_names: Dict[str, ResultChannel],
+        analyses: List[DefaultAnalysis],
+        parent_analysis_result_channels: Dict[str, ResultChannel],
     ):
         self._run_fn = run_fn
         self._fragment = fragment
@@ -40,6 +45,8 @@ class Subscan:
         self._child_result_sinks = child_result_sinks
         self._aggregate_result_channels = aggregate_result_channels
         self._short_child_channel_names = short_child_channel_names
+        self._analyses = analyses
+        self._parent_analysis_result_channels = parent_analysis_result_channels
 
     def run(
         self,
@@ -56,10 +63,12 @@ class Subscan:
             to generate the points.
         :param options: :class:`ScanOptions` to control scan execution.
         :param execute_default_analyses: Whether to run any default analyses associated
-            with the subfragment after the scan is complete.
+            with the subfragment after the scan is complete, even if they are not
+            exposed as owning fragment channels.
 
-        :return: A tuple ``(coordinates, values)``, each a dictionary mapping parameter
-            handles resp. result channels to lists of their values.
+        :return: A tuple ``(coordinates, values, analysis_results)``, each a dictionary
+            mapping parameter handles, result channels and analysis channel names to
+            lists of their values.
         """
 
         for sink in self._child_result_sinks.values():
@@ -83,13 +92,9 @@ class Subscan:
         scan_schema = describe_scan(spec, self._fragment,
                                     self._short_child_channel_names)
 
-        if execute_default_analyses:
-            annotations = self._run_default_analyses(spec, coordinate_sinks)
-            if annotations:
-                # Replace existing (online-fit) annotations if any analysis produced
-                # custom ones. This could be made configurable in the future.
-                scan_schema["annotations"] = annotations
-
+        analysis_schema, analysis_results = self._handle_default_analyses(
+            axes, coordinate_sinks, execute_default_analyses)
+        scan_schema.update(analysis_schema)
         self._schema_channel.push(scan_schema)
 
         for channel, sink in zip(self._coordinate_channels, coordinate_sinks.values()):
@@ -102,12 +107,17 @@ class Subscan:
             self._aggregate_result_channels[chan].push(v)
 
         coordinates = OrderedDict((p, s.get_all()) for p, s in coordinate_sinks.items())
-        return coordinates, values
+        return coordinates, values, analysis_results
 
-    def _run_default_analyses(self, spec, coordinate_sinks):
-        analyses = filter_default_analyses(self._fragment, spec)
-        if not analyses:
-            return []
+    def _handle_default_analyses(self, axes, coordinate_sinks, always_run):
+        if not self._analyses:
+            return {}, {}
+
+        # Re-filter analyses based on actual scan axes to support slightly dodgy use
+        # case where a lower-dimensional scan is actually taken than originally
+        # announced – should revisit this design.
+        axis_identities = [(ax.param_schema["fqn"], ax.path) for ax in axes]
+        analyses = [a for a in self._analyses if a.has_data(axis_identities)]
 
         axis_data = {
             handle._store.identity: sink.get_all()
@@ -126,19 +136,49 @@ class Subscan:
             assert False
 
         context = AnnotationContext(
-            get_axis_index, lambda channel: self._short_child_channel_names[channel])
+            get_axis_index, lambda channel: self._short_child_channel_names[channel],
+            lambda channel: channel.path in self._parent_analysis_result_channels)
+        schema = describe_analyses(analyses, context)
+        schema["analysis_results"] = {
+            name: parent.path
+            for name, parent in self._parent_analysis_result_channels.items()
+        }
 
-        annotations = []
-        for a in analyses:
-            annotations += a.execute(axis_data, result_data, context)
-        return annotations
+        analysis_sinks = {}
+
+        if len(self._parent_analysis_result_channels) > 0 or always_run:
+            for a in analyses:
+                for name, channel in a.get_analysis_results().items():
+                    sink = LastValueSink()
+                    channel.set_sink(sink)
+                    analysis_sinks[name] = sink
+            annotations = []
+            for a in self._analyses:
+                annotations += a.execute(axis_data, result_data, context)
+            if annotations:
+                # Replace existing (online-fit) annotations if any analysis produced
+                # custom ones. This could be made configurable in the future.
+                schema["annotations"] = annotations
+
+        analysis_results = {
+            name: sink.get_last()
+            for name, sink in analysis_sinks.items()
+        }
+        # FIXME: Check for None (not-set) values?
+        for name, value in analysis_results.items():
+            channel = self._parent_analysis_result_channels.get(name, None)
+            if channel is not None:
+                channel.push(value)
+
+        return schema, analysis_results
 
 
 def setattr_subscan(owner: Fragment,
                     scan_name: str,
                     fragment: ExpFragment,
                     axis_params: List[Tuple[Fragment, str]],
-                    save_results_by_default: bool = True) -> Subscan:
+                    save_results_by_default: bool = True,
+                    expose_analysis_results: bool = True) -> Subscan:
     """Set up a scan for the given subfragment.
 
     Result channels are set up to expose the scan data in the owning fragment for
@@ -153,6 +193,11 @@ def setattr_subscan(owner: Fragment,
         scanned. It is possible to specify more axes than are actually used; they will
         be overridden and set to their default values.
     :param save_results_by_default: Passed on to all derived result channels.
+    :param expose_analysis_results: Whether to add result channels to ``owner`` that
+        contain the results of default analyses set for the fragment. Note that for
+        this, all results must be known when this function is called (that is, all
+        ``axis_params`` should actually be scanned, and the analysis must not fail to
+        produce results).
 
     :return: A :class:`Subscan` instance to use to actually execute the scan.
     """
@@ -207,7 +252,8 @@ def setattr_subscan(owner: Fragment,
         short_child_channel_names[channel] = short_identifier
 
         # TODO: Implement ArrayChannel to represent a variable number of dimensions
-        # around a scalar channel so we can keep the schema information here.
+        # around a scalar channel so we can keep the schema information here instead of
+        # throwing our hands up in the air helplessly (i.e. using OpaqueChannel).
         aggregate_result_channels[channel] = owner.setattr_result(
             scan_name + "_channel_" + short_identifier,
             OpaqueChannel,
@@ -215,8 +261,28 @@ def setattr_subscan(owner: Fragment,
 
     spec_channel = owner.setattr_result(scan_name + "_spec", SubscanChannel)
 
+    analyses = filter_default_analyses(fragment, axes.values())
+    parent_analysis_result_channels = {}
+    if expose_analysis_results:
+        analysis_results = reduce(
+            lambda l, r: merge_no_duplicates(l, r, kind="analysis result"),
+            (a.get_analysis_results() for a in analyses), {})
+        for name, channel in analysis_results.items():
+            # Just clone results channels and directly register them as channels of the
+            # owning fragment – perhaps not the cleanest design…
+            #
+            # TODO: Include "analysis_result" in the full name? Seemed a bit verbose
+            # just to avoid collisions in the unlikely case of an analysis result named
+            # "spec", "axis_0" or similar.
+            full_name = scan_name + "_" + name
+            new_channel = copy(channel)
+            new_channel.path = "/".join(owner._fragment_path + [full_name])
+            owner._register_result_channel(full_name, new_channel.path, new_channel)
+            parent_analysis_result_channels[name] = new_channel
+
     subscan = Subscan(
         ScanRunner(owner).run, fragment, axes, spec_channel, coordinate_channels,
-        child_result_sinks, aggregate_result_channels, short_child_channel_names)
+        child_result_sinks, aggregate_result_channels, short_child_channel_names,
+        analyses, parent_analysis_result_channels)
     setattr(owner, scan_name, subscan)
     return subscan

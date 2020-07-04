@@ -4,8 +4,8 @@ Result handling building blocks.
 
 from artiq.language import HasEnvironment, rpc
 import artiq.language.units
-import json
 from typing import Any, Dict, List, Optional
+from .utils import dump_json
 
 __all__ = [
     "LastValueSink", "ArraySink", "AppendingDatasetSink", "ScalarDatasetSink",
@@ -225,4 +225,4 @@ class SubscanChannel(ResultChannel):
         return "subscan"
 
     def _coerce_to_type(self, value):
-        return json.dumps(value)
+        return dump_json(value)

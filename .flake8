@@ -2,6 +2,8 @@
 ignore =
     # indentation is not a multiple of four (YAPF)
     E111, E114,
+    # continuation line over-indented for hanging indent (YAPF)
+    E126,
     # visually indented line with same indent as next logical line (YAPF)
     E129,
     # Line breaks before/after binary operators (YAPF)
