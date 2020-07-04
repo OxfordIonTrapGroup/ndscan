@@ -1,7 +1,7 @@
 from itertools import product
 import numpy as np
 import random
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Iterator
 
 __all__ = [
     "ScanGenerator", "RefiningGenerator", "LinearGenerator", "ListGenerator",
@@ -137,7 +137,8 @@ class ScanOptions:
         self.seed = seed
 
 
-def generate_points(axis_generators: List[ScanGenerator], options: ScanOptions):
+def generate_points(axis_generators: List[ScanGenerator],
+                    options: ScanOptions) -> Iterator[Any]:
     rng = np.random.RandomState(options.seed)
 
     # Stores computed coordinates for each axis, indexed first by
