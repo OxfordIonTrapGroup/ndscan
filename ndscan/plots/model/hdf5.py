@@ -1,8 +1,11 @@
 import json
-from typing import Any, Dict, List, Optional, Union
+import logging
+from typing import Any, Dict, List, Optional
 import h5py
-from . import Context, Model, Root, ScanModel, SinglePointModel
+from . import (Context, FixedDataSource, Model, Root, ScanModel, SinglePointModel)
 from .utils import call_later, emit_later
+
+logger = logging.getLogger(__name__)
 
 
 class HDF5Root(Root):
@@ -18,7 +21,7 @@ class HDF5Root(Root):
             self._model = HDF5ScanModel(axes, datasets, context)
         emit_later(self.model_changed, self._model)
 
-    def get_model(self) -> Union[Model, None]:
+    def get_model(self) -> Optional[Model]:
         return self._model
 
 
@@ -54,6 +57,14 @@ class HDF5ScanModel(ScanModel):
         call_later(lambda: self._set_annotation_schemata(
             json.loads(datasets["ndscan.annotations"][()])))
 
+        self._analysis_result_sources = {}
+        ark = "ndscan.analysis_results"
+        if ark in datasets:
+            for name in json.loads(datasets[ark][()]).keys():
+                # FIXME: Need different HDF5 dataset operation for arrays?!
+                self._analysis_result_sources[name] = FixedDataSource(
+                    datasets["ndscan.analysis_result." + name][()])
+
         self._point_data = {}
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
@@ -65,3 +76,8 @@ class HDF5ScanModel(ScanModel):
 
     def get_point_data(self) -> Dict[str, Any]:
         return self._point_data
+
+    def get_analysis_result_source(self, name: str) -> Optional[FixedDataSource]:
+        if name not in self._analysis_result_sources:
+            return None
+        return self._analysis_result_sources[name]

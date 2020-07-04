@@ -120,10 +120,16 @@ class CurveItem(AnnotationItem):
 
     def _redraw(self):
         xs = self._x_source.get()
+        if xs is None:
+            return
+
         ys = self._y_source.get()
-        if not xs or not ys or len(xs) != len(ys):
+        if ys is None:
+            return
+
+        if len(xs) != len(ys):
             logger.warning(
-                "No matching data for 'curve' annotation, ignoring " +
+                "Mismatching data for 'curve' annotation, ignoring " +
                 "(len(xs) = %s vs. len(ys) = %s).", len(xs), len(ys))
             return
 

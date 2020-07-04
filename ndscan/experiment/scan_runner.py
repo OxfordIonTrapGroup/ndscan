@@ -11,7 +11,7 @@ from artiq.coredevice.exceptions import RTIOUnderflow
 from artiq.language import *
 from contextlib import suppress
 from itertools import islice
-from typing import Any, Dict, List, Iterator, Tuple
+from typing import Any, Dict, List, Iterable, Iterator, Tuple
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore, type_string_to_param
@@ -325,11 +325,11 @@ class ScanRunner(HasEnvironment):
 
 
 def filter_default_analyses(fragment: ExpFragment,
-                            spec: ScanSpec) -> List[DefaultAnalysis]:
+                            axes: Iterable[ScanAxis]) -> List[DefaultAnalysis]:
     """Return the default analyses of the given fragment that can be executed for the
     given scan spec."""
     result = []
-    axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
+    axis_identities = [(s.param_schema["fqn"], s.path) for s in axes]
     for analysis in fragment.get_default_analyses():
         if analysis.has_data(axis_identities):
             result.append(analysis)
@@ -337,9 +337,8 @@ def filter_default_analyses(fragment: ExpFragment,
 
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,
-                  short_result_names: Dict[ResultChannel, str]):
-    """Return metadata for the given spec in stringly typed dictionary form, including
-    that for any online analyses that apply to it.
+                  short_result_names: Dict[ResultChannel, str]) -> Dict[str, Any]:
+    """Return metadata for the given spec in stringly typed dictionary form.
 
     :param spec: :class:`.ScanSpec` describing the scan.
     :param fragment: Fragment being scanned.
@@ -365,14 +364,25 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
         for (channel, name) in short_result_names.items() if channel.save_by_default
     }
 
-    axis_identities = [(s.param_schema["fqn"], s.path) for s in spec.axes]
-    context = AnnotationContext(
-        lambda handle: axis_identities.index(handle._store.identity),
-        lambda channel: short_result_names[channel])
+    return desc
 
+
+def describe_analyses(analyses: Iterable[DefaultAnalysis],
+                      context: AnnotationContext) -> Dict[str, Any]:
+    """Return metadata for the given analyses in stringly typed dictionary form.
+
+    :param analyses: The :class:`.DefaultAnalysis` objects to describe (already filtered
+        to those that apply to the scan, and thus are describable by the context).
+    :param context: Used to resolve any references to scanned parameters/results
+        channels/analysis results.
+
+    :return: The analysis metadata (annotations/obline_analyses), with all references to
+        fragment tree objects resolved, and ready for JSON/… serialisation.
+    """
+    desc = {}
     desc["annotations"] = []
     desc["online_analyses"] = {}
-    for analysis in filter_default_analyses(fragment, spec):
+    for analysis in analyses:
         annotations, online_analyses = analysis.describe_online_analyses(context)
         desc["annotations"].extend(annotations)
         for name, spec in online_analyses.items():
@@ -380,5 +390,4 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
                 raise ValueError(
                     "An online analysis with name '{}' already exists".format(name))
             desc["online_analyses"][name] = spec
-
     return desc

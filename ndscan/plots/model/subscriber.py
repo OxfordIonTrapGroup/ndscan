@@ -1,8 +1,9 @@
 import json
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional
 from sipyco.sync_struct import ModAction
 from ...utils import strip_prefix
-from . import Annotation, Context, Model, Root, ScanModel, SinglePointModel
+from . import (Annotation, Context, FixedDataSource, Model, Root, ScanModel,
+               SinglePointModel)
 
 
 class SubscriberRoot(Root):
@@ -58,7 +59,7 @@ class SubscriberRoot(Root):
 
         self._model.data_changed(data, mods)
 
-    def get_model(self) -> Union[Model, None]:
+    def get_model(self) -> Optional[Model]:
         return self._model
 
 
@@ -139,6 +140,8 @@ class SubscriberScanModel(ScanModel):
         self._channel_schemata = None
         self._annotation_json = None
         self._annotations = []
+        self._analysis_results_json = None
+        self._analysis_result_sources = {}
         self._point_data = {}
 
     def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
@@ -163,11 +166,21 @@ class SubscriberScanModel(ScanModel):
             self._set_annotation_schemata(json.loads(annotation_json))
             self._annotation_json = annotation_json
 
+        analysis_results_json = data.get(self._prefix + "analysis_results",
+                                         (False, None))[1]
+        if analysis_results_json != self._analysis_results_json:
+            for name in json.loads(analysis_results_json).keys():
+                # Make sure source exists.
+                self.get_analysis_result_source(name)
+            self._analysis_results_json = analysis_results_json
+        for name, source in self._analysis_result_sources.items():
+            source.set(
+                data.get(self._prefix + "analysis_result." + name, (False, None))[1])
+
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
             self._point_data[name] = data.get(self._prefix + "points." + name,
                                               (False, []))[1]
-
         self.points_appended.emit(self._point_data)
 
     def get_annotations(self) -> List[Annotation]:
@@ -178,3 +191,8 @@ class SubscriberScanModel(ScanModel):
 
     def get_point_data(self) -> Dict[str, Any]:
         return self._point_data
+
+    def get_analysis_result_source(self, name: str) -> Optional[FixedDataSource]:
+        if name not in self._analysis_result_sources:
+            self._analysis_result_sources[name] = FixedDataSource(None)
+        return self._analysis_result_sources[name]
