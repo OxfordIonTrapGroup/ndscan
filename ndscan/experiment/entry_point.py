@@ -29,8 +29,8 @@ from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           describe_analyses, filter_default_analyses)
 from .utils import dump_json, is_kernel, to_metadata_broadcast_type
-from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY,
-                     shorten_to_unambiguous_suffixes)
+from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY, SCHEMA_REVISION,
+                     SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes)
 
 __all__ = [
     "make_fragment_scan_exp", "run_fragment_once", "create_and_run_fragment_once"
@@ -343,6 +343,8 @@ class TopLevelRunner(HasEnvironment):
     def _broadcast_metadata(self):
         def push(name, value):
             self.set_dataset(self.dataset_prefix + name, value, broadcast=True)
+
+        push(SCHEMA_REVISION_KEY, SCHEMA_REVISION)
 
         source_prefix = self.get_dataset("system_id", default="rid")
         push("source_id", "{}_{}".format(source_prefix, self.scheduler.rid))
