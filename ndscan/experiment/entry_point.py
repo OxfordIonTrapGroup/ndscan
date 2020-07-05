@@ -294,6 +294,11 @@ class TopLevelRunner(HasEnvironment):
                              dump_json(annotations),
                              broadcast=True)
 
+        return {
+            name: channel.sink.get_last()
+            for name, channel in self._analysis_results.items()
+        }
+
     def _run_continuous(self):
         try:
             with suppress(TerminationRequested):
