@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 import h5py
 from . import (Context, FixedDataSource, Model, Root, ScanModel, SinglePointModel)
 from .utils import call_later, emit_later
+from ...utils import SCHEMA_REVISION_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +14,18 @@ class HDF5Root(Root):
     def __init__(self, datasets: h5py.Group, context: Context):
         super().__init__()
 
+        try:
+            schema_revision = datasets["ndscan." + SCHEMA_REVISION_KEY][()]
+        except KeyError:
+            # Backwards-compatbility with old files without SCHEMA_REVISION_KEY.
+            schema_revision = 1
+
         axes = json.loads(datasets["ndscan.axes"][()])
         dim = len(axes)
         if dim == 0:
-            self._model = HDF5SingleShotModel(datasets, context)
+            self._model = HDF5SingleShotModel(datasets, schema_revision, context)
         else:
-            self._model = HDF5ScanModel(axes, datasets, context)
+            self._model = HDF5ScanModel(axes, datasets, schema_revision, context)
         emit_later(self.model_changed, self._model)
 
     def get_model(self) -> Optional[Model]:
@@ -26,8 +33,8 @@ class HDF5Root(Root):
 
 
 class HDF5SingleShotModel(SinglePointModel):
-    def __init__(self, datasets: h5py.Group, context: Context):
-        super().__init__(context)
+    def __init__(self, datasets: h5py.Group, schema_revision: int, context: Context):
+        super().__init__(schema_revision, context)
 
         self._channel_schemata = json.loads(datasets["ndscan.channels"][()])
         emit_later(self.channel_schemata_changed, self._channel_schemata)
@@ -46,8 +53,8 @@ class HDF5SingleShotModel(SinglePointModel):
 
 class HDF5ScanModel(ScanModel):
     def __init__(self, axes: List[Dict[str, Any]], datasets: h5py.Group,
-                 context: Context):
-        super().__init__(axes, context)
+                 schema_revision: int, context: Context):
+        super().__init__(axes, schema_revision, context)
 
         self._channel_schemata = json.loads(datasets["ndscan.channels"][()])
         emit_later(self.channel_schemata_changed, self._channel_schemata)

@@ -6,7 +6,7 @@ import numpy
 
 class SelectPointFromScanModel(SinglePointModel):
     def __init__(self, source: ScanModel):
-        super().__init__(source.context)
+        super().__init__(source.schema_revision, source.context)
         self._source = source
         self._source_index = None
         self._point = None

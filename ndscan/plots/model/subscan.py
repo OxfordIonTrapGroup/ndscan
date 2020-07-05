@@ -53,7 +53,7 @@ class SubscanModel(ScanModel):
     """
     def __init__(self, schema: Dict[str, Any], parent: SinglePointModel,
                  result_prefix: str):
-        super().__init__(schema["axes"], parent.context)
+        super().__init__(schema["axes"], parent.schema_revision, parent.context)
 
         self._channel_schemata = schema["channels"]
 
