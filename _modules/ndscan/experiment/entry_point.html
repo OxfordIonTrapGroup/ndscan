@@ -162,7 +162,7 @@
 <span class="kn">from</span> <span class="nn">artiq.coredevice.exceptions</span> <span class="kn">import</span> <span class="n">RTIOUnderflow</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
-<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">time</span>
@@ -175,9 +175,10 @@
                               <span class="n">ResultChannel</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="kn">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">describe_scan</span><span class="p">,</span>
-                          <span class="n">filter_default_analyses</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">is_kernel</span>
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">NoAxesMode</span><span class="p">,</span> <span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span>
+                          <span class="n">describe_analyses</span><span class="p">,</span> <span class="n">filter_default_analyses</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">dump_json</span><span class="p">,</span> <span class="n">is_kernel</span><span class="p">,</span> <span class="n">to_metadata_broadcast_type</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">merge_no_duplicates</span><span class="p">,</span> <span class="n">NoAxesMode</span><span class="p">,</span> <span class="n">PARAMS_ARG_KEY</span><span class="p">,</span>
+                     <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span> <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
@@ -359,6 +360,26 @@
             <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">sink</span>
 
+        <span class="c1"># Filter analyses, set up analysis result channels, and keep track of all the</span>
+        <span class="c1"># names in the annotation context.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="n">merge_no_duplicates</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;analysis result&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">get_analysis_results</span><span class="p">()</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span><span class="p">),</span> <span class="p">{})</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span>
+                <span class="n">ScalarDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;analysis_result.&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">))</span>
+
+        <span class="n">axis_indices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">):</span>
+            <span class="n">axis_indices</span><span class="p">[(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">.</span><span class="n">path</span><span class="p">)]</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_annotation_context</span> <span class="o">=</span> <span class="n">AnnotationContext</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">handle</span><span class="p">:</span> <span class="n">axis_indices</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">],</span>
+            <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">],</span>
+            <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span> <span class="o">=</span> <span class="kc">None</span>
@@ -403,28 +424,19 @@
             <span class="c1"># analyse – gracefully ignore this to keep FragmentScanExperiment</span>
             <span class="c1"># implementation simple.</span>
             <span class="k">return</span>
-
-        <span class="n">analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">analyses</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="n">axis_indices</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">):</span>
-            <span class="n">axis_indices</span><span class="p">[(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">.</span><span class="n">path</span><span class="p">)]</span> <span class="o">=</span> <span class="n">i</span>
-
-        <span class="n">context</span> <span class="o">=</span> <span class="n">AnnotationContext</span><span class="p">(</span>
-            <span class="k">lambda</span> <span class="n">handle</span><span class="p">:</span> <span class="n">axis_indices</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">],</span>
-            <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">])</span>
-
         <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">analyses</span><span class="p">:</span>
-            <span class="n">annotations</span> <span class="o">+=</span> <span class="n">a</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value_data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span><span class="p">:</span>
+            <span class="n">annotations</span> <span class="o">+=</span> <span class="n">a</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value_data</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">_annotation_context</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">annotations</span><span class="p">:</span>
             <span class="c1"># Replace existing (online-fit) annotations if any analysis produced custom</span>
             <span class="c1"># ones. This could be made configurable in the future.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;annotations&quot;</span><span class="p">,</span>
-                             <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">annotations</span><span class="p">),</span>
+                             <span class="n">dump_json</span><span class="p">(</span><span class="n">annotations</span><span class="p">),</span>
                              <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_run_continuous</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -487,12 +499,20 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_scan_desc</span> <span class="o">=</span> <span class="n">describe_scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span>
                                         <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan_desc</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">describe_analyses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_annotation_context</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan_desc</span><span class="p">[</span><span class="s2">&quot;analysis_results&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">channel</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_desc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="c1"># Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-                <span class="n">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">ds_value</span> <span class="o">=</span> <span class="n">to_metadata_broadcast_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ds_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">dump_json</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+                <span class="n">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ds_value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">create_applet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ndscan&quot;</span><span class="p">):</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;$</span><span class="si">{python}</span><span class="s2"> -m ndscan.applet &quot;</span>

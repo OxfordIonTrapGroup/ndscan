@@ -149,7 +149,7 @@
 <span></span><span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterator</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;ScanGenerator&quot;</span><span class="p">,</span> <span class="s2">&quot;RefiningGenerator&quot;</span><span class="p">,</span> <span class="s2">&quot;LinearGenerator&quot;</span><span class="p">,</span> <span class="s2">&quot;ListGenerator&quot;</span><span class="p">,</span>
@@ -285,7 +285,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span></div>
 
 
-<span class="k">def</span> <span class="nf">generate_points</span><span class="p">(</span><span class="n">axis_generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanGenerator</span><span class="p">],</span> <span class="n">options</span><span class="p">:</span> <span class="n">ScanOptions</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">generate_points</span><span class="p">(</span><span class="n">axis_generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanGenerator</span><span class="p">],</span>
+                    <span class="n">options</span><span class="p">:</span> <span class="n">ScanOptions</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
     <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
 
     <span class="c1"># Stores computed coordinates for each axis, indexed first by</span>

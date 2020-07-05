@@ -147,8 +147,22 @@
             
   <h1>Source code for ndscan.experiment.default_analysis</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Declarative fits, to be excecuted locally by the user interface displaying the data as</span>
-<span class="sd">it comes in.</span>
+<span class="sd">Interfaces and declarations for analyses.</span>
+
+<span class="sd">Conceptually, analyses are attached to a fragment, and produce results &quot;the next level</span>
+<span class="sd">up&quot; – that is, they condense all the points from a scan over a particular choice of</span>
+<span class="sd">parameters into a few parameters.</span>
+
+<span class="sd">Two modalities are supported:</span>
+<span class="sd"> - Declarative fits of a number of pre-defined functions, to be excecuted locally by the</span>
+<span class="sd">   user interface displaying the result data, and updated as data continues to</span>
+<span class="sd">   accumulate (&quot;online analysis&quot;).</span>
+<span class="sd"> - A separate analysis step executed at the end, after a scan has been completed. This</span>
+<span class="sd">   is the equivalent of ARTIQ&#39;s ``EnvExperiment.analyze()``, and is executed within the</span>
+<span class="sd">   master worker process (&quot;execute an analysis&quot;, &quot;analysis results&quot;).</span>
+
+<span class="sd">Both can produce annotations; particular values or plot locations highlighted in the</span>
+<span class="sd">user interface.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
@@ -163,15 +177,33 @@
 
 
 <span class="k">class</span> <span class="nc">AnnotationValueRef</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Marker type to distinguish an already-serialised annotation value source</span>
+<span class="sd">    specification from an user-supplied value of dictionary type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spec</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
 
 
 <span class="k">class</span> <span class="nc">AnnotationContext</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Resolves entities in user-specified annotation schemata to stringly-typed</span>
+<span class="sd">    dictionary form.</span>
+
+<span class="sd">    The user-facing interface to annotations allows references to parameters, result</span>
+<span class="sd">    channels, etc. to be given as their representation in the fragment tree. Thus, to</span>
+<span class="sd">    write annotations to scan metadata, it is necessary to resolve these to a</span>
+<span class="sd">    JSON-compatible form to funnel them to the applet (or any number of other dataset</span>
+<span class="sd">    consumers).</span>
+
+<span class="sd">    This class encapsulates the knowledge of the order of scan axes, shortened names of</span>
+<span class="sd">    result channels, etc. – that is, the global state – necessary to produce these</span>
+<span class="sd">    schema descriptions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_axis_index</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ParamHandle</span><span class="p">],</span> <span class="nb">int</span><span class="p">],</span>
-                 <span class="n">name_channel</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ResultChannel</span><span class="p">],</span> <span class="nb">str</span><span class="p">]):</span>
+                 <span class="n">name_channel</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ResultChannel</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
+                 <span class="n">analysis_result_is_exported</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ResultChannel</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_axis_index</span> <span class="o">=</span> <span class="n">get_axis_index</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name_channel</span> <span class="o">=</span> <span class="n">name_channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_result_is_exported</span> <span class="o">=</span> <span class="n">analysis_result_is_exported</span>
 
     <span class="k">def</span> <span class="nf">describe_coordinate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ParamHandle</span><span class="p">):</span>
@@ -184,13 +216,11 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">AnnotationValueRef</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">obj</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;result_channel&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name_channel</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
-        <span class="c1"># TODO: We would really like to avoid serialising large fit data into the JSON</span>
-        <span class="c1"># schemata and push it to an appropriately-typed store instead. However, we</span>
-        <span class="c1"># cannot do this for subscans, as we would need to set up appropriate result</span>
-        <span class="c1"># channels beforehand. We could (and probably should) set up a different `kind`</span>
-        <span class="c1"># (e.g. &quot;annotation_data&quot;) for top-level scans though that loads from a dataset</span>
-        <span class="c1"># subtree (e.g. &quot;ndscan.annotation_data.&lt;annotation_name&gt;_&lt;value_key&gt;&quot;).</span>
+            <span class="c1"># Only emit analysis result reference if it is actually exported (might not</span>
+            <span class="c1"># be for a subscan) – emit direct value reference otherwise.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_result_is_exported</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;analysis_result&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
 
 
@@ -224,20 +254,22 @@
         <span class="k">return</span> <span class="n">spec</span></div>
 
 
+<span class="c1">#: A tuple ``(fqn, path_spec)`` describing an axis being scanned over. This is the</span>
+<span class="c1">#: correct concept of identity to use (rather than e.g. directly parameter handles), as</span>
+<span class="c1">#: an analysis typically doesn&#39;t care whether a parameter was for instance scanned via</span>
+<span class="c1">#: the path of the particular handle given or a wildcard path spec.</span>
+<span class="n">AxisIdentity</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+
+
 <div class="viewcode-block" id="DefaultAnalysis"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis">[docs]</a><span class="k">class</span> <span class="nc">DefaultAnalysis</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Analysis functionality associated with an `ExpFragment` to be executed when that</span>
 <span class="sd">    fragment is scanned in a particular way.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="DefaultAnalysis.has_data"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.has_data">[docs]</a>    <span class="k">def</span> <span class="nf">has_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="DefaultAnalysis.has_data"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.has_data">[docs]</a>    <span class="k">def</span> <span class="nf">has_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return whether the scanned axes contain the data necessary for this analysis</span>
 <span class="sd">        to be applicable.</span>
 
-<span class="sd">        :param scanned_axes: A list of axis identities, i.e. ``(fqn, path_spec)``</span>
-<span class="sd">            tuples, being scanned over. This is the correct concept of identity to use</span>
-<span class="sd">            (rather than e.g. directly parameter handles), as an analysis typically</span>
-<span class="sd">            doesn&#39;t care whether a parameter was for instance scanned via the path of</span>
-<span class="sd">            the particular handle given or a wildcard path spec.</span>
-
+<span class="sd">        :param scanned_axes: A list of axis identities being scanned over.</span>
 <span class="sd">        :return: Whether this analysis applies or not.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
@@ -248,17 +280,23 @@
         <span class="sd">&quot;&quot;&quot;Exceute analysis and serialise information about resulting annotations and</span>
 <span class="sd">        online analyses to stringly typed metadata.</span>
 
-<span class="sd">        :param context: The AnnotationContext to use to describe the coordinate axes/</span>
-<span class="sd">            result channels in the resulting metadata.</span>
+<span class="sd">        :param context: The :class:`.AnnotationContext` to use to resolve references to</span>
+<span class="sd">            fragment tree objects in user-specified data to m.</span>
 
 <span class="sd">        :return: A tuple of string dictionary representations for annotations and</span>
-<span class="sd">            online analyses.</span>
+<span class="sd">            online analyses (with all the fragment tree references resolved).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
-<div class="viewcode-block" id="DefaultAnalysis.execute"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-                                      <span class="nb">list</span><span class="p">],</span> <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
-                <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+<div class="viewcode-block" id="DefaultAnalysis.execute"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
         <span class="sd">&quot;&quot;&quot;Exceute analysis and serialise information about resulting annotations to</span>
 <span class="sd">        stringly typed metadata.</span>
 
@@ -285,11 +323,22 @@
 <span class="sd">        broadcast.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">],</span>
-        <span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">]],</span>
-                             <span class="n">List</span><span class="p">[</span><span class="n">Annotation</span><span class="p">]]):</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">],</span>
+            <span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">]],</span>
+                                 <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Annotation</span><span class="p">]]],</span>
+            <span class="n">analysis_results</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">required_axes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_fn</span> <span class="o">=</span> <span class="n">analyze_fn</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">analysis_results</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">path</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">:</span>
+                <span class="n">axes</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Duplicate analysis result channel name &#39;&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span>
+                                 <span class="s2">&quot;&#39; in analysis for axes &#39;&quot;</span> <span class="o">+</span> <span class="n">axes</span> <span class="o">+</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
 
     <span class="k">def</span> <span class="nf">has_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="s2">&quot;&quot;</span>
@@ -302,14 +351,28 @@
         <span class="s2">&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[],</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-                                      <span class="nb">list</span><span class="p">],</span> <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
-                <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+        <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="n">user_axis_data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span><span class="p">:</span>
             <span class="n">user_axis_data</span><span class="p">[</span><span class="n">handle</span><span class="p">]</span> <span class="o">=</span> <span class="n">axis_data</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">]</span>
-        <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_fn</span><span class="p">(</span><span class="n">user_axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_fn</span><span class="p">(</span><span class="n">user_axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="c1"># Tolerate old analysis functions that do not take analysis result channels.</span>
+            <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_fn</span><span class="p">(</span><span class="n">user_axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">annotations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Tolerate the user forgetting the return statement.</span>
             <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
@@ -426,7 +489,7 @@
             <span class="n">analysis_identifier</span> <span class="o">=</span> <span class="s2">&quot;fit_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">analysis_ref</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;analysis_result&quot;</span><span class="p">,</span>
+            <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;online_result&quot;</span><span class="p">,</span>
                                       <span class="n">analysis_name</span><span class="o">=</span><span class="n">analysis_identifier</span><span class="p">,</span>
                                       <span class="n">result_key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
 
@@ -467,9 +530,17 @@
             <span class="p">}</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-                                      <span class="nb">list</span><span class="p">],</span> <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
-                <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+        <span class="s2">&quot;&quot;</span>
+        <span class="c1"># Could return annotation locations in the future.</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="c1"># Nothing to do off-line for online fits.</span>
         <span class="k">return</span> <span class="p">[]</span></div>

@@ -535,16 +535,18 @@
 <span class="sd">        :return: The newly created result channel instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="s2">&quot;Can only call setattr_result() during build_fragment()&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="n">channel</span> <span class="o">=</span> <span class="n">channel_class</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_register_result_channel</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">channel</span></div>
+
+    <span class="k">def</span> <span class="nf">_register_result_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                                 <span class="n">channel</span><span class="p">:</span> <span class="n">ResultChannel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="p">(</span><span class="s2">&quot;Result channel name must be a valid &quot;</span>
                                      <span class="s2">&quot;Python identifier&quot;</span><span class="p">)</span>
         <span class="k">assert</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-
-        <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">name</span><span class="p">])</span>
-        <span class="n">channel</span> <span class="o">=</span> <span class="n">channel_class</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">channel</span></div>
 
 <div class="viewcode-block" id="Fragment.override_param"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.override_param">[docs]</a>    <span class="k">def</span> <span class="nf">override_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                        <span class="n">param_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
