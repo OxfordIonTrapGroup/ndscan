@@ -221,9 +221,14 @@ class CustomAnalysis(DefaultAnalysis):
         try:
             annotations = self._analyze_fn(user_axis_data, result_data,
                                            self._result_channels)
-        except TypeError:
+        except TypeError as orignal_exception:
             # Tolerate old analysis functions that do not take analysis result channels.
-            annotations = self._analyze_fn(user_axis_data, result_data)
+            try:
+                annotations = self._analyze_fn(user_axis_data, result_data)
+            except TypeError:
+                # KLUDGE: If that also fails (e.g. there is a TypeError in the actual
+                # implementation), let the original exception bubble up.
+                raise orignal_exception
 
         if annotations is None:
             # Tolerate the user forgetting the return statement.
