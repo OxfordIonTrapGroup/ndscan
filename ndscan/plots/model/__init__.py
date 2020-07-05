@@ -26,7 +26,7 @@ situations.)
 import logging
 import numpy
 from quamash import QtCore
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 from .online_analysis import OnlineNamedFitAnalysis
 
 logger = logging.getLogger(__name__)
@@ -141,7 +141,7 @@ class Root(QtCore.QObject):
 
     model_changed = QtCore.pyqtSignal(object)
 
-    def get_model(self) -> Union["Model", None]:
+    def get_model(self) -> Optional["Model"]:
         raise NotImplementedError
 
 
