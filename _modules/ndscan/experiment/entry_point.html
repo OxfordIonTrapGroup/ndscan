@@ -177,8 +177,8 @@
 <span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">describe_scan</span><span class="p">,</span>
                           <span class="n">describe_analyses</span><span class="p">,</span> <span class="n">filter_default_analyses</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">dump_json</span><span class="p">,</span> <span class="n">is_kernel</span><span class="p">,</span> <span class="n">to_metadata_broadcast_type</span>
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">merge_no_duplicates</span><span class="p">,</span> <span class="n">NoAxesMode</span><span class="p">,</span> <span class="n">PARAMS_ARG_KEY</span><span class="p">,</span>
-                     <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">merge_no_duplicates</span><span class="p">,</span> <span class="n">NoAxesMode</span><span class="p">,</span> <span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">SCHEMA_REVISION</span><span class="p">,</span>
+                     <span class="n">SCHEMA_REVISION_KEY</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span> <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
@@ -491,6 +491,8 @@
     <span class="k">def</span> <span class="nf">_broadcast_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">push</span><span class="p">(</span><span class="n">SCHEMA_REVISION_KEY</span><span class="p">,</span> <span class="n">SCHEMA_REVISION</span><span class="p">)</span>
 
         <span class="n">source_prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="s2">&quot;system_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rid&quot;</span><span class="p">)</span>
         <span class="n">push</span><span class="p">(</span><span class="s2">&quot;source_id&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">source_prefix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">))</span>
