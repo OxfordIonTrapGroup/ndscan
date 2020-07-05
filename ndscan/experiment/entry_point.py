@@ -232,9 +232,9 @@ class TopLevelRunner(HasEnvironment):
             lambda channel: self._short_child_channel_names[channel],
             lambda channel: True)
 
-        self.fragment.prepare()
+        self._coordinate_sinks = None
 
-        self._coordinate_data = None
+        self.fragment.prepare()
 
     def run(self):
         """Run the (possibly trivial) scan."""
@@ -244,11 +244,10 @@ class TopLevelRunner(HasEnvironment):
             self._run_continuous()
             return None, {c: s.get_last() for c, s in self._scan_result_sinks.items()}
 
-        coordinate_sinks = None
         if self._is_time_series:
             self._timestamp_sink = AppendingDatasetSink(
                 self, self.dataset_prefix + "points.axis_0")
-            coordinate_sinks = [self._timestamp_sink]
+            self._coordinate_sinks = [self._timestamp_sink]
             self._time_series_start = time.monotonic()
             self._run_continuous()
         else:
@@ -256,23 +255,26 @@ class TopLevelRunner(HasEnvironment):
                 self,
                 max_rtio_underflow_retries=self.max_rtio_underflow_retries,
                 max_transitory_error_retries=self.max_transitory_error_retries)
-            coordinate_sinks = [
+            self._coordinate_sinks = [
                 AppendingDatasetSink(self,
                                      self.dataset_prefix + "points.axis_{}".format(i))
                 for i in range(len(self.spec.axes))
             ]
-            runner.run(self.fragment, self.spec, coordinate_sinks)
+            runner.run(self.fragment, self.spec, self._coordinate_sinks)
             self._set_completed()
 
-        self._coordinate_data = OrderedDict(
-            ((a.param_schema["fqn"], a.path), s.get_all())
-            for a, s in zip(self.spec.axes, coordinate_sinks))
-        self._value_data = {c: s.get_all() for c, s in self._scan_result_sinks.items()}
-        return self._coordinate_data, self._value_data
+        return self._make_coordinate_dict(), self._make_value_dict()
+
+    def _make_coordinate_dict(self):
+        return OrderedDict(((a.param_schema["fqn"], a.path), s.get_all())
+                           for a, s in zip(self.spec.axes, self._coordinate_sinks))
+
+    def _make_value_dict(self):
+        return {c: s.get_all() for c, s in self._scan_result_sinks.items()}
 
     def analyze(self):
-        if self._coordinate_data is None:
-            # Experiment was actually terminated by exception, so there is no data to
+        if self._coordinate_sinks is None:
+            # Continuous scan or got an exception early on, so there is no data to
             # analyse – gracefully ignore this to keep FragmentScanExperiment
             # implementation simple.
             return
@@ -280,9 +282,10 @@ class TopLevelRunner(HasEnvironment):
             return
 
         annotations = []
+        coordinates = self._make_coordinate_dict()
+        values = self._make_value_dict()
         for a in self._analyses:
-            annotations += a.execute(self._coordinate_data, self._value_data,
-                                     self._annotation_context)
+            annotations += a.execute(coordinates, values, self._annotation_context)
 
         if annotations:
             # Replace existing (online-fit) annotations if any analysis produced custom
