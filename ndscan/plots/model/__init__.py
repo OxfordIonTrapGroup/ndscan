@@ -205,7 +205,11 @@ class ScanModel(Model):
             kind = spec["kind"]
             if kind == "fixed":
                 return FixedDataSource(spec["value"])
-            if kind == "online_result":
+
+            # `online_result` was called `analysis_result` prior to revision 2, with
+            # identical semantics; analysis results proper didn't exit.
+            if kind == "online_result" or (self.schema_revision < 2
+                                           and kind == "analysis_result"):
                 analysis = self._online_analyses.get(spec["analysis_name"], None)
                 if analysis is None:
                     return None
@@ -216,6 +220,7 @@ class ScanModel(Model):
                 if source is None:
                     logger.info("Analysis result data source not found: %s", name)
                 return source
+
             logger.info("Ignoring unsupported annotation data source type: '%s'", kind)
             return None
 
