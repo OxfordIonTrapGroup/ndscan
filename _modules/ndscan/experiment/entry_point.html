@@ -442,6 +442,11 @@
                              <span class="n">dump_json</span><span class="p">(</span><span class="n">annotations</span><span class="p">),</span>
                              <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
     <span class="k">def</span> <span class="nf">_run_continuous</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
