@@ -5,6 +5,7 @@ Tests for ndscan.experiment top-level runners.
 import json
 from artiq.language import HasEnvironment
 from ndscan.experiment import *
+from ndscan.utils import SCHEMA_REVISION_KEY, SCHEMA_REVISION
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
                       TransitoryErrorFragment)
 from mock_environment import HasEnvironmentCase
@@ -28,6 +29,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         def d(key):
             return self.dataset_db.get("ndscan." + key)
 
+        self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
         self.assertEqual(json.loads(d("axes")), [])
         self.assertEqual(d("completed"), True)
         self.assertEqual(d("fragment_fqn"), "fixtures.AddOneFragment")
@@ -154,6 +156,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
             },
             "path": "*"
         }])
+        self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
         self.assertEqual(d("completed"), True)
         self.assertEqual(d("points.axis_0"), [0, 1, 2])
         self.assertEqual(d("points.channel_result"), [1, 2, 3])
