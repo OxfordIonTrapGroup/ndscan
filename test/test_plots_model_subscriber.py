@@ -3,6 +3,7 @@ import unittest
 
 from sipyco.sync_struct import Notifier
 
+from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from ndscan.plots.model import Context
 from ndscan.plots.model.subscriber import SubscriberRoot
 
@@ -27,7 +28,8 @@ class SinglePointTest(unittest.TestCase):
                                         "type": "int",
                                         "unit": ""
                                     }
-                                }))
+                                })),
+            ("ndscan." + SCHEMA_REVISION_KEY): (False, SCHEMA_REVISION),
         })
         self.pending_mods = []
         self.datasets.publish = lambda a: self.pending_mods.append(a)

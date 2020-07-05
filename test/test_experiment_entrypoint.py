@@ -5,7 +5,7 @@ Tests for ndscan.experiment top-level runners.
 import json
 from artiq.language import HasEnvironment
 from ndscan.experiment import *
-from ndscan.utils import SCHEMA_REVISION_KEY, SCHEMA_REVISION
+from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
                       TransitoryErrorFragment)
 from mock_environment import HasEnvironmentCase

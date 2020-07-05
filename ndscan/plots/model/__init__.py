@@ -148,9 +148,10 @@ class Root(QtCore.QObject):
 class Model(QtCore.QObject):
     channel_schemata_changed = QtCore.pyqtSignal(dict)
 
-    def __init__(self, context: Context):
+    def __init__(self, schema_revision: int, context: Context):
         super().__init__()
         self.context = context
+        self.schema_revision = schema_revision
 
     def get_channel_schemata(self) -> Dict[str, Any]:
         raise NotImplementedError
@@ -168,8 +169,9 @@ class ScanModel(Model):
     points_appended = QtCore.pyqtSignal(dict)
     annotations_changed = QtCore.pyqtSignal(list)
 
-    def __init__(self, axes: List[Dict[str, Any]], context: Context):
-        super().__init__(context)
+    def __init__(self, axes: List[Dict[str, Any]], schema_revision: int,
+                 context: Context):
+        super().__init__(schema_revision, context)
         self.axes = axes
         self._annotations = []
         self._annotation_schemata = []

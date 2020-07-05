@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, Iterable, List, Optional
 from sipyco.sync_struct import ModAction
-from ...utils import strip_prefix
+from ...utils import SCHEMA_REVISION_KEY, strip_prefix
 from . import (Annotation, Context, FixedDataSource, Model, Root, ScanModel,
                SinglePointModel)
 
@@ -21,6 +21,7 @@ class SubscriberRoot(Root):
         self._model = None
 
         # For root dataset sources, scan metadata doesn't change once it's been set.
+        self._schema_revision = None
         self._title_set = False
         self._source_id_set = False
         self._axes_initialised = False
@@ -29,6 +30,11 @@ class SubscriberRoot(Root):
                                                                      Any]]) -> None:
         def d(name):
             return data.get(self._prefix + name, (False, None))[1]
+
+        # Wait until schema revision is set before proceeding.
+        schema_revision = d(SCHEMA_REVISION_KEY)
+        if schema_revision is None:
+            return
 
         if not self._title_set:
             fqn = d("fragment_fqn")
@@ -50,9 +56,11 @@ class SubscriberRoot(Root):
 
             dim = len(axes)
             if dim == 0:
-                self._model = SubscriberSinglePointModel(self._prefix, self._context)
+                self._model = SubscriberSinglePointModel(self._prefix, schema_revision,
+                                                         self._context)
             else:
-                self._model = SubscriberScanModel(axes, self._prefix, self._context)
+                self._model = SubscriberScanModel(axes, self._prefix, schema_revision,
+                                                  self._context)
 
             self._axes_initialised = True
             self.model_changed.emit(self._model)
@@ -64,8 +72,8 @@ class SubscriberRoot(Root):
 
 
 class SubscriberSinglePointModel(SinglePointModel):
-    def __init__(self, prefix: str, context: Context):
-        super().__init__(context)
+    def __init__(self, prefix: str, schema_revision: int, context: Context):
+        super().__init__(schema_revision, context)
         self._prefix = prefix
         self._series_initialised = False
         self._channel_schemata = None
@@ -132,8 +140,9 @@ class SubscriberSinglePointModel(SinglePointModel):
 
 
 class SubscriberScanModel(ScanModel):
-    def __init__(self, axes: List[Dict[str, Any]], prefix: str, context: Context):
-        super().__init__(axes, context)
+    def __init__(self, axes: List[Dict[str, Any]], prefix: str, schema_revision: int,
+                 context: Context):
+        super().__init__(axes, schema_revision, context)
         self._prefix = prefix
         self._series_initialised = False
         self._online_analyses_initialised = False
