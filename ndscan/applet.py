@@ -7,6 +7,7 @@ from artiq.applets.simple import SimpleApplet
 import asyncio
 import logging
 import pyqtgraph
+from sipyco import common_args
 from sipyco.pc_rpc import AsyncioClient
 from sipyco.sync_struct import Subscriber
 from typing import Any, Dict, Iterable
@@ -21,6 +22,8 @@ logger = logging.getLogger(__name__)
 class _MainWidget(RootWidget):
     def __init__(self, args):
         self.args = args
+
+        common_args.init_logger_from_args(args)
 
         # TODO: Consider exposing Context in Root.
         context = Context(self.set_dataset)
@@ -70,6 +73,8 @@ class NdscanApplet(SimpleApplet):
                                     type=str,
                                     help="Root of the ndscan dataset tree")
         self.argparser.add_argument("--rid", help="RID of the experiment to plot")
+
+        common_args.verbosity_args(self.argparser)
 
     def subscribe(self):
         # We want to subscribe only to the experiment-local datasets for our RID
