@@ -380,9 +380,9 @@
             <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">[</span><span class="n">channel</span><span class="p">],</span>
             <span class="k">lambda</span> <span class="n">channel</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run the (possibly trivial) scan.&quot;&quot;&quot;</span>
@@ -392,11 +392,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous</span><span class="p">()</span>
             <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
-        <span class="n">coordinate_sinks</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp_sink</span> <span class="o">=</span> <span class="n">AppendingDatasetSink</span><span class="p">(</span>
                 <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;points.axis_0&quot;</span><span class="p">)</span>
-            <span class="n">coordinate_sinks</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_timestamp_sink</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_timestamp_sink</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_time_series_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
@@ -404,23 +403,26 @@
                 <span class="bp">self</span><span class="p">,</span>
                 <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
                 <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span>
-            <span class="n">coordinate_sinks</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">AppendingDatasetSink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                      <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;points.axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
             <span class="p">]</span>
-            <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="p">,</span> <span class="n">coordinate_sinks</span><span class="p">)</span>
+            <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">((</span><span class="n">a</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">a</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span>
-            <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">coordinate_sinks</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_value_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value_data</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_coordinate_dict</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_value_dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_make_coordinate_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(((</span><span class="n">a</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">a</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span>
+                           <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_make_value_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
     <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Experiment was actually terminated by exception, so there is no data to</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Continuous scan or got an exception early on, so there is no data to</span>
             <span class="c1"># analyse – gracefully ignore this to keep FragmentScanExperiment</span>
             <span class="c1"># implementation simple.</span>
             <span class="k">return</span>
@@ -428,9 +430,10 @@
             <span class="k">return</span>
 
         <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_coordinate_dict</span><span class="p">()</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_value_dict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span><span class="p">:</span>
-            <span class="n">annotations</span> <span class="o">+=</span> <span class="n">a</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value_data</span><span class="p">,</span>
-                                     <span class="bp">self</span><span class="o">.</span><span class="n">_annotation_context</span><span class="p">)</span>
+            <span class="n">annotations</span> <span class="o">+=</span> <span class="n">a</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_annotation_context</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">annotations</span><span class="p">:</span>
             <span class="c1"># Replace existing (online-fit) annotations if any analysis produced custom</span>
