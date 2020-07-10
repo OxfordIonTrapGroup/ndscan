@@ -286,13 +286,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         main_item.setFont(0, font)
 
         entry = self._make_override_entry(fqn, path)
-
-        # KLUDGE: On dashboard startup, the datasets have not necessarily been
-        # synced yet (self.manager.datasets is still an empty dict). However,
-        # all experiments opened on startup were open previously, so all parameters
-        # should have override values set.
-        datasets = getattr(self.manager.datasets, "backing_store", {})
-        entry.read_from_params(self._ndscan_params, datasets)
+        entry.read_from_params(self._ndscan_params, self.manager.datasets)
 
         entry.value_changed.connect(self._set_save_timer)
         self._param_entries[(fqn, path)] = entry
@@ -493,8 +487,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.updateGeometries()
 
     def _reset_entry_to_default(self, fqn, path):
-        self._param_entries[(fqn, path)].read_from_params(
-            {}, self.manager.datasets.backing_store)
+        self._param_entries[(fqn, path)].read_from_params({}, self.manager.datasets)
 
     def _remove_override(self, fqn, path):
         items = self._override_items[(fqn, path)]
@@ -599,7 +592,7 @@ class OverrideEntry(LayoutWidget):
         self.scan_type.currentIndexChanged.connect(self.widget_stack.setCurrentIndex)
         self.addWidget(self.widget_stack, col=1)
 
-    def read_from_params(self, params: dict, datasets) -> None:
+    def read_from_params(self, params: dict, manager_datasets) -> None:
         for o in params.get("overrides", {}).get(self.schema["fqn"], []):
             if o["path"] == self.path:
                 self._set_fixed_value(o["value"])
@@ -608,10 +601,17 @@ class OverrideEntry(LayoutWidget):
 
             def get_dataset(key, default):
                 try:
-                    return datasets[key][1]
+                    bs = manager_datasets.backing_store
+                except AttributeError:
+                    logger.error(
+                        "Datasets still synchronising with master, " +
+                        "cannot access '%s'", key)
+                    bs = {}
+                try:
+                    return bs[key][1]
                 except KeyError:
                     return default
-                return datasets
+                return bs
 
             value = eval_param_default(self.schema["default"], get_dataset)
         except Exception as e:
