@@ -91,7 +91,7 @@ class ComputedCurveItem(AnnotationItem):
             x_lims[1] = min(x_lims[1], self._x_limits[1])
 
         # Choose number of points based on width of plot on screen (in pixels).
-        fn_xs = numpy.linspace(*x_lims, self._view_box.width())
+        fn_xs = numpy.linspace(*x_lims, int(self._view_box.width()))
 
         fn_ys = self._function(fn_xs, params)
         self._curve_item.setData(fn_xs, fn_ys)
