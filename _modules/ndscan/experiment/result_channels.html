@@ -35,6 +35,7 @@
   
   <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
@@ -157,7 +158,7 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span> <span class="s2">&quot;AppendingDatasetSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ScalarDatasetSink&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
+    <span class="s2">&quot;ResultChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
 <span class="p">]</span>
 
 
@@ -242,8 +243,40 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="k">else</span> <span class="kc">None</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">ResultChannel</span><span class="p">:</span>
+<div class="viewcode-block" id="ResultChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel">[docs]</a><span class="k">class</span> <span class="nc">ResultChannel</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param display_hints: A dictionary of additional settings that can be used to</span>
+<span class="sd">        indicate how to best display results to the user (see above):</span>
+
+<span class="sd">        .. list-table::</span>
+<span class="sd">          :header-rows: 1</span>
+<span class="sd">          :widths: 10 20 40</span>
+
+<span class="sd">          * - Key</span>
+<span class="sd">            - Argument</span>
+<span class="sd">            - Description</span>
+<span class="sd">          * - ``coordinate_type``</span>
+<span class="sd">            - String describing the coordinate type.</span>
+<span class="sd">            - For numeric channels, describes the coordinate system for the resulting</span>
+<span class="sd">              values, which can be used to select a more appropriate visualisation than</span>
+<span class="sd">              the default, which corresponds to straightforward linear coordinates</span>
+<span class="sd">              (optionally bounded if ``min``/``max`` are set). Currently implemented:</span>
+<span class="sd">              ``cyclic``, where the values are cyclical between ``min`` and ``max``</span>
+<span class="sd">              (e.g. a phase between 0 and 2π).</span>
+<span class="sd">          * - ``error_bar_for``</span>
+<span class="sd">            - Path of the linked result channel</span>
+<span class="sd">            - Indicates that this (numeric) result channel should be used to determine</span>
+<span class="sd">              the size of the error bars for the given other channel.</span>
+<span class="sd">          * - ``priority``</span>
+<span class="sd">            - Integer</span>
+<span class="sd">            - Specifies a sort order between result channels, used e.g. to control the</span>
+<span class="sd">              way various axes are laid out. Channels are sorted from highest to lowest</span>
+<span class="sd">              priority (default: 0). Channels with negative priorities are not displayed</span>
+<span class="sd">              by default unless explicitly enabled.</span>
+<span class="sd">          * - ``share_axis_with``</span>
+<span class="sd">            - Path of the linked result channel</span>
+<span class="sd">            - Indicates that this result channel should be drawn on the same plot axis</span>
+<span class="sd">              as the given other channel.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -259,7 +292,7 @@
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;&lt;</span><span class="si">{}</span><span class="s2">@</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">hex</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<div class="viewcode-block" id="ResultChannel.describe"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.describe">[docs]</a>    <span class="k">def</span> <span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
@@ -270,32 +303,32 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_hints</span><span class="p">:</span>
             <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;display_hints&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_hints</span>
-        <span class="k">return</span> <span class="n">desc</span>
+        <span class="k">return</span> <span class="n">desc</span></div>
 
-    <span class="k">def</span> <span class="nf">is_muted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="ResultChannel.is_muted"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.is_muted">[docs]</a>    <span class="k">def</span> <span class="nf">is_muted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># TODO: Implement muting interface?</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
 
-    <span class="k">def</span> <span class="nf">set_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sink</span><span class="p">:</span> <span class="n">ResultSink</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="ResultChannel.set_sink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.set_sink">[docs]</a>    <span class="k">def</span> <span class="nf">set_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sink</span><span class="p">:</span> <span class="n">ResultSink</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">sink</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">sink</span></div>
 
-    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+<div class="viewcode-block" id="ResultChannel.push"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.push">[docs]</a>    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coerce_to_type</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_coerce_to_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
 
 
 <span class="k">class</span> <span class="nc">NumericChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
