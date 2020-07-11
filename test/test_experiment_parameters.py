@@ -15,7 +15,8 @@ class FloatParamCase(unittest.TestCase):
                     "max": 2.0,
                     "unit": "baz",
                     "scale": 1.0,
-                    "step": 0.1
+                    "step": 0.1,
+                    "is_scannable": True,
                 },
                 "type": "float"
             })
@@ -33,7 +34,8 @@ class IntParamCase(unittest.TestCase):
                     "min": -1,
                     "max": 1,
                     "unit": "baz",
-                    "scale": 1
+                    "scale": 1,
+                    "is_scannable": True,
                 },
                 "type": "int"
             })

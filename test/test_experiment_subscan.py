@@ -136,6 +136,7 @@ class SubscanCase(ExpFragmentCase):
                 "default": "0.0",
                 "fqn": "fixtures.AddOneFragment.value",
                 "spec": {
+                    "is_scannable": True,
                     "scale": 1.0,
                     "step": 0.1
                 },

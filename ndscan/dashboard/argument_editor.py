@@ -563,13 +563,15 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             entry_class = StringOverrideEntry
         # TODO: Properly handle int, add errors (or default to PYON value).
 
-        return entry_class(schema, path, self._randomise_scan_icon)
+        # TODO: AND with global scan enable to support non-FragmentScanExperiments.
+        is_scannable = schema.get("spec", {}).get("is_scannable", True)
+        return entry_class(schema, path, is_scannable, self._randomise_scan_icon)
 
 
 class OverrideEntry(LayoutWidget):
     value_changed = QtCore.pyqtSignal()
 
-    def __init__(self, schema, path, randomise_icon, *args):
+    def __init__(self, schema, path, is_scannable: bool, randomise_icon, *args):
         super().__init__(*args)
 
         self.schema = schema
@@ -581,7 +583,7 @@ class OverrideEntry(LayoutWidget):
 
         self.widget_stack = QtWidgets.QStackedWidget()
 
-        scan_type_names = self._scan_type_names()
+        scan_type_names = self._scan_type_names() if is_scannable else ["Fixed"]
         if len(scan_type_names) == 1:
             self.scan_type.setEnabled(False)
         for name in scan_type_names:
@@ -755,7 +757,7 @@ class FloatOverrideEntry(OverrideEntry):
         self.box_linear_points.setValue(21)
 
         # Somewhat gratuitously restrict the number of scan points for sizing, and to
-        # avoid the user accidentally pasting in millions of poitns, etc.
+        # avoid the user accidentally pasting in millions of points, etc.
         self.box_linear_points.setMaximum(0xffff)
 
         self.box_linear_points.setSuffix(" pts")
