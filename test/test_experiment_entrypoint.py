@@ -123,7 +123,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
     def _test_run_1d(self, klass, fragment_fqn):
         exp = self.create(klass)
         fqn = fragment_fqn + ".value"
-        exp._params["scan"]["axes"].append({
+        exp.args._params["scan"]["axes"].append({
             "type": "linear",
             "range": {
                 "start": 0,

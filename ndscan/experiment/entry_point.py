@@ -18,11 +18,12 @@ from functools import reduce
 import logging
 import random
 import time
-from typing import Any, Callable, Dict, Iterable, Type
+from typing import Any, Callable, Dict, Iterable, List, Tuple, Type
 
 from .default_analysis import AnnotationContext
-from .fragment import ExpFragment, RestartKernelTransitoryError, TransitoryError
-from .parameters import type_string_to_param
+from .fragment import (ExpFragment, Fragment, RestartKernelTransitoryError,
+                       TransitoryError)
+from .parameters import ParamStore, type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
@@ -71,13 +72,47 @@ class FragmentScanExperiment(EnvExperiment):
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
 
+        self.args = ArgumentInterface(self, [self.fragment])
+
+    def prepare(self):
+        """Collect parameters to set from both scan axes and simple overrides, and
+        initialise result channels.
+        """
+        param_stores = self.args.make_override_stores()
+
+        spec, no_axes_mode = self.args.make_scan_spec()
+        for ax in spec.axes:
+            fqn = ax.param_schema["fqn"]
+            param_stores.setdefault(fqn, []).append((ax.path, ax.param_store))
+
+        self.fragment.init_params(param_stores)
+        self.tlr = TopLevelRunner(self, self.fragment, spec, no_axes_mode,
+                                  self.max_rtio_underflow_retries,
+                                  self.max_transitory_error_retries)
+
+    def run(self):
+        self.tlr.create_applet(title="ndscan: " + self.fragment.fqn)
+        with suppress(TerminationRequested):
+            self.tlr.run()
+
+    def analyze(self):
+        self.tlr.analyze()
+
+
+class ArgumentInterface(HasEnvironment):
+    def build(self, fragments: List[Fragment]) -> None:
+        self._fragments = fragments
+
         instances = dict()
-        self.schemata = dict()
-        self.fragment._collect_params(instances, self.schemata)
+        self._schemata = dict()
+        always_shown_params = []
+        for fragment in fragments:
+            fragment._collect_params(instances, self._schemata)
+            always_shown_params += fragment._get_always_shown_params()
         desc = {
             "instances": instances,
-            "schemata": self.schemata,
-            "always_shown": self.fragment._get_always_shown_params(),
+            "schemata": self._schemata,
+            "always_shown": always_shown_params,
             "overrides": {},
             "scan": {
                 "axes": [],
@@ -88,24 +123,21 @@ class FragmentScanExperiment(EnvExperiment):
         }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
-    def prepare(self):
-        """Collect parameters to set from both scan axes and simple overrides, and
-        initialise result channels.
-        """
-
-        # Create scan and parameter overrides.
-        param_stores = {}
+    def make_override_stores(self) -> Dict[str, Tuple[str, ParamStore]]:
+        stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
             try:
-                store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
+                store_type = type_string_to_param(self._schemata[fqn]["type"]).StoreType
             except KeyError:
                 raise KeyError("Parameter schema not found (likely due to outdated "
                                "argument editor after changes to experiment; "
                                "try Recompute All Arguments)")
 
-            param_stores[fqn] = [(s["path"], store_type((fqn, s["path"]), s["value"]))
-                                 for s in specs]
+            stores[fqn] = [(s["path"], store_type((fqn, s["path"]), s["value"]))
+                           for s in specs]
+        return stores
 
+    def make_scan_spec(self) -> Tuple[ScanSpec, NoAxesMode]:
         scan = self._params.get("scan", {})
 
         generators = []
@@ -121,28 +153,16 @@ class FragmentScanExperiment(EnvExperiment):
             fqn = axspec["fqn"]
             pathspec = axspec["path"]
 
-            store_type = type_string_to_param(self.schemata[fqn]["type"]).StoreType
+            store_type = type_string_to_param(self._schemata[fqn]["type"]).StoreType
             store = store_type((fqn, pathspec),
                                generator.points_for_level(0, random)[0])
-            param_stores.setdefault(fqn, []).append((pathspec, store))
-            axes.append(ScanAxis(self.schemata[fqn], pathspec, store))
-        self.fragment.init_params(param_stores)
+            axes.append(ScanAxis(self._schemata[fqn], pathspec, store))
 
         options = ScanOptions(scan.get("num_repeats", 1),
                               scan.get("randomise_order_globally", False))
         no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
         spec = ScanSpec(axes, generators, options)
-        self.tlr = TopLevelRunner(self, self.fragment, spec, no_axes_mode,
-                                  self.max_rtio_underflow_retries,
-                                  self.max_transitory_error_retries)
-
-    def run(self):
-        self.tlr.create_applet(title="ndscan: " + self.fragment.fqn)
-        with suppress(TerminationRequested):
-            self.tlr.run()
-
-    def analyze(self):
-        self.tlr.analyze()
+        return spec, no_axes_mode
 
 
 class TopLevelRunner(HasEnvironment):
