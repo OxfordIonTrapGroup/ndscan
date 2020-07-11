@@ -9,7 +9,7 @@ from .utils import dump_json
 
 __all__ = [
     "LastValueSink", "ArraySink", "AppendingDatasetSink", "ScalarDatasetSink",
-    "FloatChannel", "IntChannel", "OpaqueChannel"
+    "ResultChannel", "FloatChannel", "IntChannel", "OpaqueChannel"
 ]
 
 
@@ -96,6 +96,38 @@ class ScalarDatasetSink(ResultSink, HasEnvironment):
 
 class ResultChannel:
     """
+    :param display_hints: A dictionary of additional settings that can be used to
+        indicate how to best display results to the user (see above):
+
+        .. list-table::
+          :header-rows: 1
+          :widths: 10 20 40
+
+          * - Key
+            - Argument
+            - Description
+          * - ``coordinate_type``
+            - String describing the coordinate type.
+            - For numeric channels, describes the coordinate system for the resulting
+              values, which can be used to select a more appropriate visualisation than
+              the default, which corresponds to straightforward linear coordinates
+              (optionally bounded if ``min``/``max`` are set). Currently implemented:
+              ``cyclic``, where the values are cyclical between ``min`` and ``max``
+              (e.g. a phase between 0 and 2π).
+          * - ``error_bar_for``
+            - Path of the linked result channel
+            - Indicates that this (numeric) result channel should be used to determine
+              the size of the error bars for the given other channel.
+          * - ``priority``
+            - Integer
+            - Specifies a sort order between result channels, used e.g. to control the
+              way various axes are laid out. Channels are sorted from highest to lowest
+              priority (default: 0). Channels with negative priorities are not displayed
+              by default unless explicitly enabled.
+          * - ``share_axis_with``
+            - Path of the linked result channel
+            - Indicates that this result channel should be drawn on the same plot axis
+              as the given other channel.
     """
     def __init__(self,
                  path: str,
