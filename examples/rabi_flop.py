@@ -7,7 +7,11 @@ import time
 
 class Readout(Fragment):
     def build_fragment(self):
-        self.setattr_param("num_shots", IntParam, "Number of shots", 100)
+        self.setattr_param("num_shots",
+                           IntParam,
+                           "Number of shots",
+                           100,
+                           is_scannable=False)
         self.setattr_param("mean_0", FloatParam, "Dark counts over readout duration",
                            0.1)
         self.setattr_param("mean_1", FloatParam, "Bright counts over readout duration",

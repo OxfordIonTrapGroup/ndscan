@@ -149,6 +149,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
                 "description": "Value to return",
                 "fqn": fqn,
                 "spec": {
+                    "is_scannable": True,
                     "scale": 1.0,
                     "step": 0.1
                 },

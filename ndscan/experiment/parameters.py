@@ -200,7 +200,8 @@ class FloatParam:
                  max: Optional[float] = None,
                  unit: str = "",
                  scale: Optional[float] = None,
-                 step: Optional[float] = None):
+                 step: Optional[float] = None,
+                 is_scannable: bool = True):
 
         self.fqn = fqn
         self.description = description
@@ -212,9 +213,14 @@ class FloatParam:
         self.scale = resolve_numeric_scale(scale, unit)
 
         self.step = step if step is not None else self.scale / 10.0
+        self.is_scannable = is_scannable
 
     def describe(self) -> Dict[str, Any]:
-        spec = {"scale": self.scale, "step": self.step}
+        spec = {
+            "is_scannable": self.is_scannable,
+            "scale": self.scale,
+            "step": self.step
+        }
         if self.min is not None:
             spec["min"] = self.min
         if self.max is not None:
@@ -227,7 +233,7 @@ class FloatParam:
             "description": self.description,
             "type": "float",
             "default": str(self.default),
-            "spec": spec
+            "spec": spec,
         }
 
     def eval_default(self, get_dataset: Callable) -> float:
@@ -258,7 +264,8 @@ class IntParam:
                  min: Optional[int] = 0,
                  max: Optional[int] = None,
                  unit: str = "",
-                 scale: Optional[int] = None):
+                 scale: Optional[int] = None,
+                 is_scannable: bool = True):
         self.fqn = fqn
         self.description = description
         self.default = default
@@ -271,8 +278,10 @@ class IntParam:
             raise NotImplementedError(
                 "Non-unity scales not implemented for integer parameters")
 
+        self.is_scannable = is_scannable
+
     def describe(self) -> Dict[str, Any]:
-        spec = {"scale": self.scale}
+        spec = {"is_scannable": self.is_scannable, "scale": self.scale}
         if self.min is not None:
             spec["min"] = self.min
         if self.max is not None:
@@ -307,17 +316,25 @@ class StringParam:
     StoreType = StringParamStore
     CompilerType = TStr
 
-    def __init__(self, fqn: str, description: str, default: str):
+    def __init__(self,
+                 fqn: str,
+                 description: str,
+                 default: str,
+                 is_scannable: bool = True):
         self.fqn = fqn
         self.description = description
         self.default = default
+        self.is_scannable = is_scannable
 
     def describe(self) -> Dict[str, Any]:
         return {
             "fqn": self.fqn,
             "description": self.description,
             "type": "string",
-            "default": str(self.default)
+            "default": str(self.default),
+            "spec": {
+                "is_scannable": self.is_scannable
+            }
         }
 
     def eval_default(self, get_dataset: Callable) -> str:
