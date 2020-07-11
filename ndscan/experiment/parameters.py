@@ -195,11 +195,11 @@ class FloatParam:
                  fqn: str,
                  description: str,
                  default: Union[str, float],
-                 min: Union[float, None] = None,
-                 max: Union[float, None] = None,
+                 min: Optional[float] = None,
+                 max: Optional[float] = None,
                  unit: str = "",
-                 scale: Union[float, None] = None,
-                 step: Union[float, None] = None):
+                 scale: Optional[float] = None,
+                 step: Optional[float] = None):
 
         self.fqn = fqn
         self.description = description
@@ -253,10 +253,10 @@ class IntParam:
                  fqn: str,
                  description: str,
                  default: Union[str, int],
-                 min: Union[int, None] = 0,
-                 max: Union[int, None] = None,
+                 min: Optional[int] = 0,
+                 max: Optional[int] = None,
                  unit: str = "",
-                 scale=None):
+                 scale: Optional[int] = None):
         self.fqn = fqn
         self.description = description
         self.default = default
