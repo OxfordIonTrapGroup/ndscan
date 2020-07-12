@@ -167,11 +167,12 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span>
 
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">AnnotationContext</span>
-<span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span><span class="p">,</span> <span class="n">TransitoryError</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">type_string_to_param</span>
+<span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ExpFragment</span><span class="p">,</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span><span class="p">,</span>
+                       <span class="n">TransitoryError</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">type_string_to_param</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="p">(</span><span class="n">AppendingDatasetSink</span><span class="p">,</span> <span class="n">LastValueSink</span><span class="p">,</span> <span class="n">ScalarDatasetSink</span><span class="p">,</span>
                               <span class="n">ResultChannel</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="kn">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">ScanOptions</span>
@@ -220,41 +221,73 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span> <span class="o">=</span> <span class="n">max_rtio_underflow_retries</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span> <span class="o">=</span> <span class="n">max_transitory_error_retries</span>
 
-        <span class="n">instances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">schemata</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">)</span>
-        <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;instances&quot;</span><span class="p">:</span> <span class="n">instances</span><span class="p">,</span>
-            <span class="s2">&quot;schemata&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">,</span>
-            <span class="s2">&quot;always_shown&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">_get_always_shown_params</span><span class="p">(),</span>
-            <span class="s2">&quot;overrides&quot;</span><span class="p">:</span> <span class="p">{},</span>
-            <span class="s2">&quot;scan&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;axes&quot;</span><span class="p">:</span> <span class="p">[],</span>
-                <span class="s2">&quot;num_repeats&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="s2">&quot;no_axes_mode&quot;</span><span class="p">:</span> <span class="s2">&quot;single&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;randomise_order_globally&quot;</span><span class="p">:</span> <span class="kc">False</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">PYONValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">desc</span><span class="p">))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">ArgumentInterface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">],</span> <span class="n">scannable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="FragmentScanExperiment.prepare"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Collect parameters to set from both scan axes and simple overrides, and</span>
 <span class="sd">        initialise result channels.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">param_stores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">make_override_stores</span><span class="p">()</span>
 
-        <span class="c1"># Create scan and parameter overrides.</span>
-        <span class="n">param_stores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">spec</span><span class="p">,</span> <span class="n">no_axes_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">make_scan_spec</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
+            <span class="n">fqn</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">]</span>
+            <span class="n">param_stores</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">fqn</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ax</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">param_store</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">(</span><span class="n">param_stores</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span> <span class="o">=</span> <span class="n">TopLevelRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">no_axes_mode</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">create_applet</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;ndscan: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FragmentScanExperiment.analyze"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">analyze</span><span class="p">()</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">ArgumentInterface</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Fragment</span><span class="p">],</span> <span class="n">scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fragments</span> <span class="o">=</span> <span class="n">fragments</span>
+
+        <span class="n">instances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">always_shown_params</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">fragment</span> <span class="ow">in</span> <span class="n">fragments</span><span class="p">:</span>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">)</span>
+            <span class="n">always_shown_params</span> <span class="o">+=</span> <span class="n">fragment</span><span class="o">.</span><span class="n">_get_always_shown_params</span><span class="p">()</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;instances&quot;</span><span class="p">:</span> <span class="n">instances</span><span class="p">,</span>
+            <span class="s2">&quot;schemata&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">,</span>
+            <span class="s2">&quot;always_shown&quot;</span><span class="p">:</span> <span class="n">always_shown_params</span><span class="p">,</span>
+            <span class="s2">&quot;overrides&quot;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">scannable</span><span class="p">:</span>
+            <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;scan&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;axes&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;num_repeats&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;no_axes_mode&quot;</span><span class="p">:</span> <span class="s2">&quot;single&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;randomise_order_globally&quot;</span><span class="p">:</span> <span class="kc">False</span>
+            <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">PYONValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">desc</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">make_override_stores</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]:</span>
+        <span class="n">stores</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">specs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;overrides&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
+                <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
             <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Parameter schema not found (likely due to outdated &quot;</span>
                                <span class="s2">&quot;argument editor after changes to experiment; &quot;</span>
                                <span class="s2">&quot;try Recompute All Arguments)&quot;</span><span class="p">)</span>
 
-            <span class="n">param_stores</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]),</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]))</span>
-                                 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">]</span>
+            <span class="n">stores</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]),</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]))</span>
+                           <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">stores</span>
 
+    <span class="k">def</span> <span class="nf">make_scan_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ScanSpec</span><span class="p">,</span> <span class="n">NoAxesMode</span><span class="p">]:</span>
         <span class="n">scan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="p">{})</span>
 
         <span class="n">generators</span> <span class="o">=</span> <span class="p">[]</span>
@@ -270,28 +303,16 @@
             <span class="n">fqn</span> <span class="o">=</span> <span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">]</span>
             <span class="n">pathspec</span> <span class="o">=</span> <span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span>
 
-            <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
+            <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
             <span class="n">store</span> <span class="o">=</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">pathspec</span><span class="p">),</span>
                                <span class="n">generator</span><span class="o">.</span><span class="n">points_for_level</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">random</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">param_stores</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">fqn</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pathspec</span><span class="p">,</span> <span class="n">store</span><span class="p">))</span>
-            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ScanAxis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">],</span> <span class="n">pathspec</span><span class="p">,</span> <span class="n">store</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">(</span><span class="n">param_stores</span><span class="p">)</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ScanAxis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">],</span> <span class="n">pathspec</span><span class="p">,</span> <span class="n">store</span><span class="p">))</span>
 
         <span class="n">options</span> <span class="o">=</span> <span class="n">ScanOptions</span><span class="p">(</span><span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_repeats&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
                               <span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;randomise_order_globally&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
         <span class="n">no_axes_mode</span> <span class="o">=</span> <span class="n">NoAxesMode</span><span class="p">[</span><span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;no_axes_mode&quot;</span><span class="p">,</span> <span class="s2">&quot;single&quot;</span><span class="p">)]</span>
         <span class="n">spec</span> <span class="o">=</span> <span class="n">ScanSpec</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span> <span class="o">=</span> <span class="n">TopLevelRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">no_axes_mode</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">create_applet</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;ndscan: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
-
-<div class="viewcode-block" id="FragmentScanExperiment.analyze"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">analyze</span><span class="p">()</span></div></div>
+        <span class="k">return</span> <span class="n">spec</span><span class="p">,</span> <span class="n">no_axes_mode</span>
 
 
 <span class="k">class</span> <span class="nc">TopLevelRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
