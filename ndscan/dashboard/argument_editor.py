@@ -3,7 +3,7 @@ from collections import Counter, OrderedDict
 from functools import partial
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 from PyQt5 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
@@ -18,7 +18,14 @@ from ..utils import (NoAxesMode, PARAMS_ARG_KEY, eval_param_default,
 logger = logging.getLogger(__name__)
 
 
-def _try_extract_ndscan_params(arguments):
+def _try_extract_ndscan_params(
+        arguments: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+    """From a passed dictionary of upstream ARTIQ arguments, extracts the ndscan
+    arguments, if there are any.
+
+    :return: A tuple of the (decoded) ndscan parameter schema (``None`` if there
+        wasn't one), and the remaining dictionary with that argument (if any) removed.
+    """
     if not arguments:
         return None, arguments
     arg = arguments.get(PARAMS_ARG_KEY, None)
