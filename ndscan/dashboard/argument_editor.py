@@ -3,7 +3,7 @@ from collections import Counter, OrderedDict
 from functools import partial
 import logging
 import os
-from typing import List
+from typing import Any, Dict, List
 from PyQt5 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
@@ -36,6 +36,75 @@ def _try_extract_ndscan_params(arguments):
 
 def _update_ndscan_params(arguments, params):
     arguments[PARAMS_ARG_KEY]["state"] = pyon.encode(params)
+
+
+class ScanOptions:
+    def __init__(self, current_scan: Dict[str, Any]):
+        self.num_repeats_container = QtWidgets.QWidget()
+        num_repeats_layout = QtWidgets.QHBoxLayout()
+        self.num_repeats_container.setLayout(num_repeats_layout)
+
+        num_repeats_label = QtWidgets.QLabel("Number of repeats: ")
+        num_repeats_layout.addWidget(num_repeats_label)
+        num_repeats_layout.setStretchFactor(num_repeats_label, 0)
+
+        self.num_repeats_box = QtWidgets.QSpinBox()
+        self.num_repeats_box.setMinimum(1)
+        # A gratuitous, but hopefully generous restriction
+        self.num_repeats_box.setMaximum(2**16)
+        self.num_repeats_box.setValue(current_scan.get("num_repeats", 1))
+        num_repeats_layout.addWidget(self.num_repeats_box)
+        num_repeats_layout.setStretchFactor(self.num_repeats_box, 0)
+
+        num_repeats_layout.addStretch()
+
+        #
+
+        self.no_axis_container = QtWidgets.QWidget()
+        no_axis_layout = QtWidgets.QHBoxLayout()
+        self.no_axis_container.setLayout(no_axis_layout)
+
+        no_axis_label = QtWidgets.QLabel("No-axis mode: ")
+        no_axis_layout.addWidget(no_axis_label)
+        no_axis_layout.setStretchFactor(no_axis_label, 0)
+
+        self.no_axes_box = QtWidgets.QComboBox()
+        self.no_axes_box.addItems([m.value for m in NoAxesMode])
+        mode = NoAxesMode[current_scan.get("no_axes_mode", "single")]
+        self.no_axes_box.setCurrentText(mode.value)
+        no_axis_layout.addWidget(self.no_axes_box)
+        no_axis_layout.setStretchFactor(self.no_axes_box, 0)
+
+        no_axis_layout.addStretch()
+
+        #
+
+        self.randomise_globally_container = QtWidgets.QWidget()
+        randomise_globally_layout = QtWidgets.QHBoxLayout()
+        self.randomise_globally_container.setLayout(randomise_globally_layout)
+
+        randomise_globally_label = QtWidgets.QLabel(
+            "Randomise point order across axes: ")
+        randomise_globally_layout.addWidget(randomise_globally_label)
+        randomise_globally_layout.setStretchFactor(randomise_globally_label, 0)
+
+        self.randomise_globally_box = QtWidgets.QCheckBox()
+        self.randomise_globally_box.setChecked(
+            current_scan.get("randomise_order_globally", False))
+        randomise_globally_layout.addWidget(self.randomise_globally_box)
+        randomise_globally_layout.setStretchFactor(self.randomise_globally_box, 1)
+
+    def get_widgets(self) -> List[QtWidgets.QWidget]:
+        return [
+            self.num_repeats_container, self.no_axis_container,
+            self.randomise_globally_container
+        ]
+
+    def write_to_params(self, params: Dict[str, Any]) -> None:
+        scan = params.setdefault("scan", {})
+        scan["num_repeats"] = self.num_repeats_box.value()
+        scan["no_axes_mode"] = NoAxesMode(self.no_axes_box.currentText()).name
+        scan["randomise_order_globally"] = self.randomise_globally_box.isChecked()
 
 
 class ArgumentEditor(QtWidgets.QTreeWidget):
@@ -127,73 +196,11 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             scan_options_group = self._make_group_header_item("Scan options")
             self.addTopLevelItem(scan_options_group)
 
-            #
-
-            num_repeats_container = QtWidgets.QWidget()
-            num_repeats_layout = QtWidgets.QHBoxLayout()
-            num_repeats_container.setLayout(num_repeats_layout)
-
-            num_repeats_label = QtWidgets.QLabel("Number of repeats: ")
-            num_repeats_layout.addWidget(num_repeats_label)
-            num_repeats_layout.setStretchFactor(num_repeats_label, 0)
-
-            self.num_repeats_box = QtWidgets.QSpinBox()
-            self.num_repeats_box.setMinimum(1)
-            self.num_repeats_box.setMaximum(
-                2**16)  # A gratuitous, but hopefully generous restriction
-            self.num_repeats_box.setValue(ndscan_params["scan"].get("num_repeats", 1))
-            num_repeats_layout.addWidget(self.num_repeats_box)
-            num_repeats_layout.setStretchFactor(self.num_repeats_box, 0)
-
-            num_repeats_layout.addStretch()
-
-            num_repeats_item = QtWidgets.QTreeWidgetItem()
-            scan_options_group.addChild(num_repeats_item)
-            self.setItemWidget(num_repeats_item, 1, num_repeats_container)
-
-            #
-
-            no_axis_container = QtWidgets.QWidget()
-            no_axis_layout = QtWidgets.QHBoxLayout()
-            no_axis_container.setLayout(no_axis_layout)
-
-            no_axis_label = QtWidgets.QLabel("No-axis mode: ")
-            no_axis_layout.addWidget(no_axis_label)
-            no_axis_layout.setStretchFactor(no_axis_label, 0)
-
-            self.no_axes_box = QtWidgets.QComboBox()
-            self.no_axes_box.addItems([m.value for m in NoAxesMode])
-            mode = NoAxesMode[ndscan_params["scan"].get("no_axes_mode", "single")]
-            self.no_axes_box.setCurrentText(mode.value)
-            no_axis_layout.addWidget(self.no_axes_box)
-            no_axis_layout.setStretchFactor(self.no_axes_box, 0)
-
-            no_axis_layout.addStretch()
-
-            no_axis_item = QtWidgets.QTreeWidgetItem()
-            scan_options_group.addChild(no_axis_item)
-            self.setItemWidget(no_axis_item, 1, no_axis_container)
-
-            #
-
-            randomise_globally_container = QtWidgets.QWidget()
-            randomise_globally_layout = QtWidgets.QHBoxLayout()
-            randomise_globally_container.setLayout(randomise_globally_layout)
-
-            randomise_globally_label = QtWidgets.QLabel(
-                "Randomise point order across axes: ")
-            randomise_globally_layout.addWidget(randomise_globally_label)
-            randomise_globally_layout.setStretchFactor(randomise_globally_label, 0)
-
-            self.randomise_globally_box = QtWidgets.QCheckBox()
-            self.randomise_globally_box.setChecked(ndscan_params["scan"].get(
-                "randomise_order_globally", False))
-            randomise_globally_layout.addWidget(self.randomise_globally_box)
-            randomise_globally_layout.setStretchFactor(self.randomise_globally_box, 1)
-
-            randomise_globally_item = QtWidgets.QTreeWidgetItem()
-            scan_options_group.addChild(randomise_globally_item)
-            self.setItemWidget(randomise_globally_item, 1, randomise_globally_container)
+            self.scan_options = ScanOptions(ndscan_params["scan"])
+            for widget in self.scan_options.get_widgets():
+                twi = QtWidgets.QTreeWidgetItem()
+                scan_options_group.addChild(twi)
+                self.setItemWidget(twi, 1, widget)
 
         buttons_item = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(buttons_item)
@@ -549,9 +556,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             item.write_to_params(self._ndscan_params)
 
         # Store scan parameters.
-        scan["num_repeats"] = self.num_repeats_box.value()
-        scan["no_axes_mode"] = NoAxesMode(self.no_axes_box.currentText()).name
-        scan["randomise_order_globally"] = self.randomise_globally_box.isChecked()
+        self.scan_options.write_to_params(self._ndscan_params)
 
         _update_ndscan_params(self._arguments, self._ndscan_params)
 
