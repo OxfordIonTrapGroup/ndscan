@@ -180,6 +180,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
             self._build_shortened_fqns()
 
+            self.scan_options = None
+            if "scan" in ndscan_params:
+                self.scan_options = ScanOptions(ndscan_params["scan"])
+
             for fqn, path in ndscan_params["always_shown"]:
                 self._make_param_items(fqn, path, True)
 
@@ -191,7 +195,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             self._make_add_override_prompt_item()
             self._set_override_line_idle()
 
-            for ax in ndscan_params["scan"]["axes"]:
+            for ax in ndscan_params.get("scan", {}).get("axes", []):
                 self._make_override_item(ax["fqn"], ax["path"])
 
             for fqn, overrides in ndscan_params["overrides"].items():
@@ -200,14 +204,13 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
             self._make_line_separator()
 
-            scan_options_group = self._make_group_header_item("Scan options")
-            self.addTopLevelItem(scan_options_group)
-
-            self.scan_options = ScanOptions(ndscan_params["scan"])
-            for widget in self.scan_options.get_widgets():
-                twi = QtWidgets.QTreeWidgetItem()
-                scan_options_group.addChild(twi)
-                self.setItemWidget(twi, 1, widget)
+            if self.scan_options:
+                scan_options_group = self._make_group_header_item("Scan options")
+                self.addTopLevelItem(scan_options_group)
+                for widget in self.scan_options.get_widgets():
+                    twi = QtWidgets.QTreeWidgetItem()
+                    scan_options_group.addChild(twi)
+                    self.setItemWidget(twi, 1, widget)
 
         buttons_item = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(buttons_item)
@@ -555,15 +558,19 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         # Stop timer if it is still running.
         self._save_timer.stop()
 
-        # Reset previous overrides, repopulate with currently active ones.
-        scan = self._ndscan_params["scan"]
-        scan["axes"] = []
+        # Reset previous overrides/scan axes, repopulate with currently active ones.
+        self._ndscan_params.setdefault("scan", {})["axes"] = []
         self._ndscan_params["overrides"] = {}
         for item in self._param_entries.values():
             item.write_to_params(self._ndscan_params)
 
-        # Store scan parameters.
-        self.scan_options.write_to_params(self._ndscan_params)
+        if self.scan_options is None:
+            # Not actually a scannable experiment – delete the scan metadata key, which
+            # we've set above to keep code straightforward.
+            del self._ndscan_params["scan"]
+        else:
+            # Store scan parameters.
+            self.scan_options.write_to_params(self._ndscan_params)
 
         _update_ndscan_params(self._arguments, self._ndscan_params)
 
@@ -575,8 +582,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             entry_class = StringOverrideEntry
         # TODO: Properly handle int, add errors (or default to PYON value).
 
-        # TODO: AND with global scan enable to support non-FragmentScanExperiments.
-        is_scannable = schema.get("spec", {}).get("is_scannable", True)
+        is_scannable = ((self.scan_options is not None)
+                        and schema.get("spec", {}).get("is_scannable", True))
         return entry_class(schema, path, is_scannable, self._randomise_scan_icon)
 
 

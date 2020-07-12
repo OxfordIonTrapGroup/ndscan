@@ -72,7 +72,7 @@ class FragmentScanExperiment(EnvExperiment):
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
 
-        self.args = ArgumentInterface(self, [self.fragment])
+        self.args = ArgumentInterface(self, [self.fragment], scannable=True)
 
     def prepare(self):
         """Collect parameters to set from both scan axes and simple overrides, and
@@ -100,7 +100,7 @@ class FragmentScanExperiment(EnvExperiment):
 
 
 class ArgumentInterface(HasEnvironment):
-    def build(self, fragments: List[Fragment]) -> None:
+    def build(self, fragments: List[Fragment], scannable: bool = False) -> None:
         self._fragments = fragments
 
         instances = dict()
@@ -113,14 +113,15 @@ class ArgumentInterface(HasEnvironment):
             "instances": instances,
             "schemata": self._schemata,
             "always_shown": always_shown_params,
-            "overrides": {},
-            "scan": {
+            "overrides": {}
+        }
+        if scannable:
+            desc["scan"] = {
                 "axes": [],
                 "num_repeats": 1,
                 "no_axes_mode": "single",
                 "randomise_order_globally": False
             }
-        }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
     def make_override_stores(self) -> Dict[str, Tuple[str, ParamStore]]:
