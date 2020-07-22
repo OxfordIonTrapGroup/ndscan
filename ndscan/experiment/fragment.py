@@ -34,6 +34,9 @@ class Fragment(HasEnvironment):
         """
         self._fragment_path = fragment_path
         self._subfragments = []
+
+        #: Maps names of non-overridden parameters of this fragment (i.e., matching the
+        #: attribute names of the respective ParamHandles) to *Param instances.
         self._free_params = OrderedDict()
 
         #: Maps own attribute name to the ParamHandles of the rebound parameters in
@@ -520,11 +523,40 @@ class Fragment(HasEnvironment):
         """
         return "/".join(self._fragment_path + [name])
 
+    def get_always_shown_params(self) -> List[ParamHandle]:
+        """Return handles of parameters to always show in user interfaces when this
+        fragment is the root of the fragment tree (vs. other parameters for which
+        overrides need to be explicitly added).
+
+        This can be overridden in fragment implementations to customise the user
+        interface; by default, all free parameters are shown in the order they were
+        created in :meth:`build_fragment`.
+
+        Example::
+
+            class MyFragment(Fragment):
+                def build_fragment(self):
+                    setattr_fragment("child", MyChildFragment)
+                    setattr_param("foo", ...)
+                    setattr_param("bar", ...)
+                    setattr_param("baz", ...)
+
+                def get_always_shown_params(self):
+                    shown = super().get_always_shown_params()
+
+                    # Don't show self.bar.
+                    shown.remove(self.bar)
+
+                    # Always show an important parameter from a
+                    # child fragment.
+                    shown.add(self.child.very_important_param)
+
+                    return shown
+        """
+        return [getattr(self, name) for name in self._free_params.keys()]
+
     def _get_all_handles_for_param(self, name: str) -> List[ParamHandle]:
         return [getattr(self, name)] + self._rebound_subfragment_params.get(name, [])
-
-    def _get_always_shown_params(self) -> List[Tuple[str, str]]:
-        return [(p.fqn, self._stringize_path()) for p in self._free_params.values()]
 
     def _stringize_path(self) -> str:
         return "/".join(self._fragment_path)
