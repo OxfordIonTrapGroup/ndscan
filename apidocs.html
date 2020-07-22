@@ -527,6 +527,38 @@ conflict with each other.</p>
 and slashes.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt id="ndscan.experiment.fragment.Fragment.get_always_shown_params">
+<code class="sig-name descname">get_always_shown_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.get_always_shown_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.get_always_shown_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return handles of parameters to always show in user interfaces when this
+fragment is the root of the fragment tree (vs. other parameters for which
+overrides need to be explicitly added).</p>
+<p>This can be overridden in fragment implementations to customise the user
+interface; by default, all free parameters are shown in the order they were
+created in <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;child&quot;</span><span class="p">,</span> <span class="n">MyChildFragment</span><span class="p">)</span>
+        <span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+        <span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+        <span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;baz&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">shown</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_always_shown_params</span><span class="p">()</span>
+
+        <span class="c1"># Don&#39;t show self.bar.</span>
+        <span class="n">shown</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bar</span><span class="p">)</span>
+
+        <span class="c1"># Always show an important parameter from a</span>
+        <span class="c1"># child fragment.</span>
+        <span class="n">shown</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">very_important_param</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">shown</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">

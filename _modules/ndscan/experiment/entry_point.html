@@ -257,7 +257,16 @@
         <span class="n">always_shown_params</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">fragment</span> <span class="ow">in</span> <span class="n">fragments</span><span class="p">:</span>
             <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">)</span>
-            <span class="n">always_shown_params</span> <span class="o">+=</span> <span class="n">fragment</span><span class="o">.</span><span class="n">_get_always_shown_params</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_always_shown_params</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">param</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Parameter &#39;</span><span class="si">%s</span><span class="s2">&#39; specified in get_always_shown_params()&quot;</span>
+                        <span class="s2">&quot; is not a free parameter of fragment &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">handle</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+                <span class="n">always_shown_params</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="n">handle</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())]</span>
+
         <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;instances&quot;</span><span class="p">:</span> <span class="n">instances</span><span class="p">,</span>
             <span class="s2">&quot;schemata&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">,</span>

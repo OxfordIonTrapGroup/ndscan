@@ -183,6 +183,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">=</span> <span class="n">fragment_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1">#: Maps names of non-overridden parameters of this fragment (i.e., matching the</span>
+        <span class="c1">#: attribute names of the respective ParamHandles) to *Param instances.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
         <span class="c1">#: Maps own attribute name to the ParamHandles of the rebound parameters in</span>
@@ -456,7 +459,7 @@
         <span class="n">fqn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fqn</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param_class</span><span class="p">(</span><span class="n">fqn</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="n">handle</span> <span class="o">=</span> <span class="n">param_class</span><span class="o">.</span><span class="n">HandleType</span><span class="p">()</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">param_class</span><span class="o">.</span><span class="n">HandleType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">handle</span></div>
 
@@ -505,7 +508,7 @@
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
-        <span class="n">handle</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">HandleType</span><span class="p">()</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">HandleType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
 
         <span class="c1"># Deregister it from the original owner and make sure we set the store</span>
@@ -669,11 +672,40 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">name</span><span class="p">])</span></div>
 
+<div class="viewcode-block" id="Fragment.get_always_shown_params"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.get_always_shown_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return handles of parameters to always show in user interfaces when this</span>
+<span class="sd">        fragment is the root of the fragment tree (vs. other parameters for which</span>
+<span class="sd">        overrides need to be explicitly added).</span>
+
+<span class="sd">        This can be overridden in fragment implementations to customise the user</span>
+<span class="sd">        interface; by default, all free parameters are shown in the order they were</span>
+<span class="sd">        created in :meth:`build_fragment`.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            class MyFragment(Fragment):</span>
+<span class="sd">                def build_fragment(self):</span>
+<span class="sd">                    setattr_fragment(&quot;child&quot;, MyChildFragment)</span>
+<span class="sd">                    setattr_param(&quot;foo&quot;, ...)</span>
+<span class="sd">                    setattr_param(&quot;bar&quot;, ...)</span>
+<span class="sd">                    setattr_param(&quot;baz&quot;, ...)</span>
+
+<span class="sd">                def get_always_shown_params(self):</span>
+<span class="sd">                    shown = super().get_always_shown_params()</span>
+
+<span class="sd">                    # Don&#39;t show self.bar.</span>
+<span class="sd">                    shown.remove(self.bar)</span>
+
+<span class="sd">                    # Always show an important parameter from a</span>
+<span class="sd">                    # child fragment.</span>
+<span class="sd">                    shown.add(self.child.very_important_param)</span>
+
+<span class="sd">                    return shown</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span></div>
+
     <span class="k">def</span> <span class="nf">_get_all_handles_for_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span>
-
-    <span class="k">def</span> <span class="nf">_get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
-        <span class="k">return</span> <span class="p">[(</span><span class="n">p</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
 
     <span class="k">def</span> <span class="nf">_stringize_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">)</span>
