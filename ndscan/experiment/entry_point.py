@@ -108,7 +108,16 @@ class ArgumentInterface(HasEnvironment):
         always_shown_params = []
         for fragment in fragments:
             fragment._collect_params(instances, self._schemata)
-            always_shown_params += fragment._get_always_shown_params()
+
+            for handle in fragment.get_always_shown_params():
+                try:
+                    param = handle.owner._free_params[handle.name]
+                except KeyError:
+                    logger.warning(
+                        "Parameter '%s' specified in get_always_shown_params()"
+                        " is not a free parameter of fragment '%s'", handle.name, path)
+                always_shown_params += [(param.fqn, handle.owner._stringize_path())]
+
         desc = {
             "instances": instances,
             "schemata": self._schemata,
