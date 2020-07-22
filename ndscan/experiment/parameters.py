@@ -9,7 +9,7 @@
 
 from artiq.language import *
 from artiq.language import units
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 from ..utils import eval_param_default
 
 __all__ = ["FloatParam", "IntParam", "StringParam"]
@@ -120,7 +120,20 @@ class StringParamStore(ParamStore):
 
 
 class ParamHandle:
-    def __init__(self):
+    """
+    Each instance of this class corresponds to exactly one attribute of a fragment that
+    can be used to access the underlying parameter store.
+
+    :param owner: The owning fragment.
+    :param name: The name of the attribute in the owning fragment bound to this
+        object.
+    """
+    def __init__(self, owner: Type["Fragment"], name: str):
+        self.owner = owner
+        self.name = name
+        assert name.isidentifier(), ("ParamHandle name should be the identifier it is "
+                                     "referred to as in the owning fragment.")
+
         self._store = None
         self._changed_after_use = True
 

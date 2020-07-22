@@ -307,7 +307,7 @@ class Fragment(HasEnvironment):
         fqn = self.fqn + "." + name
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
 
-        handle = param_class.HandleType()
+        handle = param_class.HandleType(self, name)
         setattr(self, name, handle)
         return handle
 
@@ -356,7 +356,7 @@ class Fragment(HasEnvironment):
         for k, v in kwargs.items():
             setattr(param, k, v)
         self._free_params[name] = param
-        handle = param.HandleType()
+        handle = param.HandleType(self, name)
         setattr(self, name, handle)
 
         # Deregister it from the original owner and make sure we set the store
