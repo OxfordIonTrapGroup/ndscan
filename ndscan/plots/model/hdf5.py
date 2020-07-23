@@ -27,13 +27,17 @@ class HDF5Root(Root):
 
         axes = json.loads(datasets[prefix + "axes"][()])
         dim = len(axes)
+
+        # KLUDGE: Queue up this change event before constructing models, so that signals
+        # are emitted in order.
+        call_later(lambda: self.model_changed.emit(self._model))
+
         if dim == 0:
             self._model = HDF5SingleShotModel(datasets, prefix, schema_revision,
                                               context)
         else:
             self._model = HDF5ScanModel(axes, datasets, prefix, schema_revision,
                                         context)
-        emit_later(self.model_changed, self._model)
 
     def get_model(self) -> Optional[Model]:
         return self._model
