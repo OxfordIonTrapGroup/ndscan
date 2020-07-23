@@ -115,6 +115,7 @@ def main():
                             roots)), context)
 
     widget.show()
+    widget.resize(800, 600)
     sys.exit(app.exec_())
 
 
