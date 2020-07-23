@@ -81,8 +81,11 @@ class HDF5ScanModel(ScanModel):
         if ark in datasets:
             for name in json.loads(datasets[ark][()]).keys():
                 # FIXME: Need different HDF5 dataset operation for arrays?!
-                self._analysis_result_sources[name] = FixedDataSource(
-                    datasets[prefix + "analysis_result." + name][()])
+                try:
+                    self._analysis_result_sources[name] = FixedDataSource(
+                        datasets[prefix + "analysis_result." + name][()])
+                except KeyError:
+                    pass
 
         self._point_data = {}
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
