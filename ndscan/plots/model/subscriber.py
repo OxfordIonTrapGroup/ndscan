@@ -8,12 +8,12 @@ from . import (Annotation, Context, FixedDataSource, Model, Root, ScanModel,
 
 class SubscriberRoot(Root):
     """Scan root fed from artiq.applets.simple data_changed callbacks, listening to the
-    top-level ndscan dataset."""
+    top-level ndscan dataset.
+
+    :param prefix: Prefix of the ndscan dataset tree to represent, e.g.
+        ``"ndscan."`` for the default location.
+    """
     def __init__(self, prefix: str, context: Context):
-        """
-        :param prefix: Prefix of the ndscan dataset tree to represent, e.g.
-            ``"ndscan."`` for the default location.
-        """
         super().__init__()
 
         self._prefix = prefix

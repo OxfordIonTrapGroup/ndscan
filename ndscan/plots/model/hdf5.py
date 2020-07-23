@@ -10,22 +10,29 @@ logger = logging.getLogger(__name__)
 
 
 class HDF5Root(Root):
-    """Scan root fed from an HDF5 results file."""
-    def __init__(self, datasets: h5py.Group, context: Context):
+    """Scan root fed from an HDF5 results file.
+
+    :param datasets: The HDF5 group below which the dataset keys are found.
+    :param prefix: Prefix of the ndscan dataset tree to represent, e.g.
+        ``"ndscan."`` for the default location.
+    """
+    def __init__(self, datasets: h5py.Group, prefix: str, context: Context):
         super().__init__()
 
         try:
-            schema_revision = datasets["ndscan." + SCHEMA_REVISION_KEY][()]
+            schema_revision = datasets[prefix + SCHEMA_REVISION_KEY][()]
         except KeyError:
             # Backwards-compatbility with old files without SCHEMA_REVISION_KEY.
             schema_revision = 1
 
-        axes = json.loads(datasets["ndscan.axes"][()])
+        axes = json.loads(datasets[prefix + "axes"][()])
         dim = len(axes)
         if dim == 0:
-            self._model = HDF5SingleShotModel(datasets, schema_revision, context)
+            self._model = HDF5SingleShotModel(datasets, prefix, schema_revision,
+                                              context)
         else:
-            self._model = HDF5ScanModel(axes, datasets, schema_revision, context)
+            self._model = HDF5ScanModel(axes, datasets, prefix, schema_revision,
+                                        context)
         emit_later(self.model_changed, self._model)
 
     def get_model(self) -> Optional[Model]:
@@ -33,15 +40,16 @@ class HDF5Root(Root):
 
 
 class HDF5SingleShotModel(SinglePointModel):
-    def __init__(self, datasets: h5py.Group, schema_revision: int, context: Context):
+    def __init__(self, datasets: h5py.Group, prefix: str, schema_revision: int,
+                 context: Context):
         super().__init__(schema_revision, context)
 
-        self._channel_schemata = json.loads(datasets["ndscan.channels"][()])
+        self._channel_schemata = json.loads(datasets[prefix + "channels"][()])
         emit_later(self.channel_schemata_changed, self._channel_schemata)
 
         self._point = {}
         for key in self._channel_schemata:
-            self._point[key] = datasets["ndscan.point." + key][()]
+            self._point[key] = datasets[prefix + "point." + key][()]
         emit_later(self.point_changed, self._point)
 
     def get_channel_schemata(self) -> Dict[str, Any]:
@@ -52,30 +60,30 @@ class HDF5SingleShotModel(SinglePointModel):
 
 
 class HDF5ScanModel(ScanModel):
-    def __init__(self, axes: List[Dict[str, Any]], datasets: h5py.Group,
+    def __init__(self, axes: List[Dict[str, Any]], datasets: h5py.Group, prefix: str,
                  schema_revision: int, context: Context):
         super().__init__(axes, schema_revision, context)
 
-        self._channel_schemata = json.loads(datasets["ndscan.channels"][()])
+        self._channel_schemata = json.loads(datasets[prefix + "channels"][()])
         emit_later(self.channel_schemata_changed, self._channel_schemata)
 
         call_later(lambda: self._set_online_analyses(
-            json.loads(datasets["ndscan.online_analyses"][()])))
+            json.loads(datasets[prefix + "online_analyses"][()])))
         call_later(lambda: self._set_annotation_schemata(
-            json.loads(datasets["ndscan.annotations"][()])))
+            json.loads(datasets[prefix + "annotations"][()])))
 
         self._analysis_result_sources = {}
-        ark = "ndscan.analysis_results"
+        ark = prefix + "analysis_results"
         if ark in datasets:
             for name in json.loads(datasets[ark][()]).keys():
                 # FIXME: Need different HDF5 dataset operation for arrays?!
                 self._analysis_result_sources[name] = FixedDataSource(
-                    datasets["ndscan.analysis_result." + name][()])
+                    datasets[prefix + "analysis_result." + name][()])
 
         self._point_data = {}
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
-            self._point_data[name] = datasets["ndscan.points." + name][:]
+            self._point_data[name] = datasets[prefix + "points." + name][:]
         emit_later(self.points_appended, self._point_data)
 
     def get_channel_schemata(self) -> Dict[str, Any]:
