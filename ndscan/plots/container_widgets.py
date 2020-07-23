@@ -147,3 +147,21 @@ class PlotContainerWidget(QtWidgets.QWidget):
 
     def _get_alternate_names(self):
         return list(self._alternate_plots.keys())
+
+
+class MultiRootWidget(QtWidgets.QWidget):
+    """Window with tabs for multiple plot roots."""
+    def __init__(self, roots, context):
+        super().__init__()
+
+        self.root_widgets = OrderedDict(
+            (label, RootWidget(root, context)) for label, root in roots.items())
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
+
+        self.tab_widget = QtWidgets.QTabWidget()
+        for label, widget in self.root_widgets.items():
+            self.tab_widget.addTab(widget, label)
+        self.layout.addWidget(self.tab_widget)
