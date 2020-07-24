@@ -376,8 +376,9 @@ def describe_analyses(analyses: Iterable[DefaultAnalysis],
     :param context: Used to resolve any references to scanned parameters/results
         channels/analysis results.
 
-    :return: The analysis metadata (annotations/obline_analyses), with all references to
-        fragment tree objects resolved, and ready for JSON/… serialisation.
+    :return: The analysis metadata (``annotations``/``online_analyses``), with all
+        references to fragment tree objects resolved, and ready for JSON/…
+        serialisation.
     """
     desc = {}
     desc["annotations"] = []
