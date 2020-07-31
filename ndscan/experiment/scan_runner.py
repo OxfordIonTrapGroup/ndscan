@@ -19,6 +19,11 @@ from .result_channels import ResultChannel, ResultSink
 from .scan_generator import generate_points, ScanGenerator, ScanOptions
 from .utils import is_kernel
 
+__all__ = [
+    "ScanAxis", "ScanSpec", "ScanRunner", "filter_default_analyses", "describe_scan",
+    "describe_analyses"
+]
+
 
 class ScanFinished(Exception):
     """Used internally to signal that a scan has been successfully completed (points

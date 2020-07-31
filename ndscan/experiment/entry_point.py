@@ -34,6 +34,7 @@ from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY, SCHEMA_REV
                      SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes)
 
 __all__ = [
+    "FragmentScanExperiment", "ArgumentInterface", "TopLevelRunner",
     "make_fragment_scan_exp", "run_fragment_once", "create_and_run_fragment_once"
 ]
 
