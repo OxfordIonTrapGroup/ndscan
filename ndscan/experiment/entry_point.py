@@ -332,21 +332,20 @@ class TopLevelRunner(HasEnvironment):
 
     def _run_continuous(self):
         try:
-            with suppress(TerminationRequested):
-                while True:
-                    try:
-                        self.fragment.host_setup()
-                        self._point_phase = False
-                        if is_kernel(self.fragment.run_once):
-                            self._run_continuous_kernel()
-                            self.core.comm.close()
-                        else:
-                            self._continuous_loop()
-                    finally:
-                        self.fragment.host_cleanup()
-                    if not self._continue_running:
-                        return
-                    self.scheduler.pause()
+            while True:
+                try:
+                    self.fragment.host_setup()
+                    self._point_phase = False
+                    if is_kernel(self.fragment.run_once):
+                        self._run_continuous_kernel()
+                        self.core.comm.close()
+                    else:
+                        self._continuous_loop()
+                finally:
+                    self.fragment.host_cleanup()
+                if not self._continue_running:
+                    return
+                self.scheduler.pause()
         finally:
             self._set_completed()
 

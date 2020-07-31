@@ -113,3 +113,15 @@ class TransitoryErrorFragment(ExpFragment):
             self.num_run_once_to_fail -= 1
             raise TransitoryError
         self.result.push(42)
+
+
+class RequestTerminationFragment(ExpFragment):
+    """To test handling of TerminationRequested exceptions without having to implement
+    actual termination requests in a mock scheduler, raises TerminationRequested as
+    soon as it is run.
+    """
+    def build_fragment(self):
+        pass
+
+    def run_once(self):
+        raise TerminationRequested

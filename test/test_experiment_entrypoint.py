@@ -7,7 +7,7 @@ from artiq.language import HasEnvironment
 from ndscan.experiment import *
 from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
-                      TransitoryErrorFragment)
+                      TransitoryErrorFragment, RequestTerminationFragment)
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
@@ -208,3 +208,13 @@ class RunOnceCase(HasEnvironmentCase):
         fragment.num_run_once_to_restart_fail = 3
         with self.assertRaises(RestartKernelTransitoryError):
             run_fragment_once(fragment, max_transitory_error_retries=2)
+
+
+class TopLevelRunnerCase(HasEnvironmentCase):
+    def test_single_run_termination_requested(self):
+        """Make sure TerminationRequested is not suppressed for non-scans."""
+
+        fragment = self.create(RequestTerminationFragment, [])
+        tlr = self.create(TopLevelRunner, fragment, ScanSpec([], [], ScanOptions()))
+        with self.assertRaises(TerminationRequested):
+            tlr.run()
