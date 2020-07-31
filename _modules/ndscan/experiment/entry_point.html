@@ -183,9 +183,16 @@
                      <span class="n">SCHEMA_REVISION_KEY</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;FragmentScanExperiment&quot;</span><span class="p">,</span> <span class="s2">&quot;ArgumentInterface&quot;</span><span class="p">,</span> <span class="s2">&quot;TopLevelRunner&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span> <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
+    <span class="s2">&quot;ArgumentInterface&quot;</span><span class="p">,</span> <span class="s2">&quot;TopLevelRunner&quot;</span><span class="p">,</span> <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span> <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
 <span class="p">]</span>
+
+<span class="c1"># Hack: Only export FragmentScanExperiment when imported from Sphinx autodoc, so</span>
+<span class="c1"># documentation is generated, but ARTIQ master doesn&#39;t try (and fail) to instantiate it</span>
+<span class="c1"># when building the experiment list for modules using ndscan.experiment star imports.</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="s2">&quot;sphinx&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;FragmentScanExperiment&quot;</span><span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
