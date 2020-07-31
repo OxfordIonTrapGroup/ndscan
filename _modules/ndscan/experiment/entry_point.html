@@ -183,6 +183,7 @@
                      <span class="n">SCHEMA_REVISION_KEY</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;FragmentScanExperiment&quot;</span><span class="p">,</span> <span class="s2">&quot;ArgumentInterface&quot;</span><span class="p">,</span> <span class="s2">&quot;TopLevelRunner&quot;</span><span class="p">,</span>
     <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span> <span class="s2">&quot;run_fragment_once&quot;</span><span class="p">,</span> <span class="s2">&quot;create_and_run_fragment_once&quot;</span>
 <span class="p">]</span>
 
@@ -480,21 +481,20 @@
 
     <span class="k">def</span> <span class="nf">_run_continuous</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
-                <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
-                        <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
-                    <span class="k">finally</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
-                        <span class="k">return</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
+                    <span class="k">return</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
 

@@ -168,15 +168,20 @@
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="kn">import</span> <span class="n">generate_points</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">is_kernel</span>
 
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ScanAxis&quot;</span><span class="p">,</span> <span class="s2">&quot;ScanSpec&quot;</span><span class="p">,</span> <span class="s2">&quot;ScanRunner&quot;</span><span class="p">,</span> <span class="s2">&quot;filter_default_analyses&quot;</span><span class="p">,</span> <span class="s2">&quot;describe_scan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;describe_analyses&quot;</span>
+<span class="p">]</span>
 
-<div class="viewcode-block" id="ScanFinished"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanFinished">[docs]</a><span class="k">class</span> <span class="nc">ScanFinished</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+
+<span class="k">class</span> <span class="nc">ScanFinished</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Used internally to signal that a scan has been successfully completed (points</span>
 <span class="sd">    exhausted).</span>
 
 <span class="sd">    This is a kludge to work around a bug where tuples of empty lists crash the ARTIQ</span>
 <span class="sd">    RPC code (kernel aborts), and should never be visible to the user.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">pass</span></div>
+    <span class="k">pass</span>
 
 
 <div class="viewcode-block" id="ScanAxis"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanAxis">[docs]</a><span class="k">class</span> <span class="nc">ScanAxis</span><span class="p">:</span>

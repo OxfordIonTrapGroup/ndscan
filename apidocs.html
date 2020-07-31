@@ -1042,15 +1042,6 @@ a dictionary mapping fit parameter names to the respective values, forwarded to
 contains the implementation to actually execute one within an ARTIQ experiment. This
 will likely be used by end users via
 <a class="reference internal" href="#ndscan.experiment.entry_point.FragmentScanExperiment" title="ndscan.experiment.entry_point.FragmentScanExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">FragmentScanExperiment</span></code></a> or subscans.</p>
-<dl class="py exception">
-<dt id="ndscan.experiment.scan_runner.ScanFinished">
-<em class="property">exception </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanFinished</code><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanFinished"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanFinished" title="Permalink to this definition">¶</a></dt>
-<dd><p>Used internally to signal that a scan has been successfully completed (points
-exhausted).</p>
-<p>This is a kludge to work around a bug where tuples of empty lists crash the ARTIQ
-RPC code (kernel aborts), and should never be visible to the user.</p>
-</dd></dl>
-
 <dl class="py class">
 <dt id="ndscan.experiment.scan_runner.ScanAxis">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">ScanAxis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_schema</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">param_store</span><span class="p">:</span> <span class="n">ndscan.experiment.parameters.ParamStore</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#ScanAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.ScanAxis" title="Permalink to this definition">¶</a></dt>
