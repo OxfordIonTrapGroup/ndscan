@@ -25,6 +25,7 @@ from .fragment import *
 from .parameters import *
 from .result_channels import *
 from .scan_generator import *
+from .scan_runner import *
 from .subscan import *
 
 __all__ = []
@@ -35,4 +36,5 @@ __all__.extend(fragment.__all__)
 __all__.extend(parameters.__all__)
 __all__.extend(result_channels.__all__)
 __all__.extend(scan_generator.__all__)
+__all__.extend(scan_runner.__all__)
 __all__.extend(subscan.__all__)
