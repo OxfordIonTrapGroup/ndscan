@@ -9,8 +9,8 @@ from typing import Any, Callable, Dict, Iterable
 FIT_OBJECTS = {
     n: getattr(oitg.fitting, n)
     for n in [
-        "cos", "decaying_sinusoid", "detuned_square_pulse", "exponential_decay", "line",
-        "lorentzian", "rabi_flop", "sinusoid"
+        "cos", "decaying_sinusoid", "detuned_square_pulse", "exponential_decay",
+        "gaussian", "line", "lorentzian", "rabi_flop", "sinusoid", "v_function"
     ]
 }
 FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola

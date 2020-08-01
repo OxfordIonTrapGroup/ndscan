@@ -254,6 +254,11 @@ DEFAULT_FIT_ANNOTATIONS = {
             "x": "t_1_e"
         }
     },
+    "gaussian": {
+        "centre": {
+            "x": "x0"
+        }
+    },
     "lorentzian": {
         "extremum": {
             "x": "x0"
@@ -272,6 +277,11 @@ DEFAULT_FIT_ANNOTATIONS = {
     "sinusoid": {
         "pi_time": {
             "x": "t_pi"
+        }
+    },
+    "v_function": {
+        "centre": {
+            "x": "x0"
         }
     },
 }
