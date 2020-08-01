@@ -421,7 +421,7 @@ class TopLevelRunner(HasEnvironment):
         cmd += " --rid={}".format(self.scheduler.rid)
         if self.dataset_prefix != "ndscan.":
             cmd += " --prefix={}".format(self.dataset_prefix)
-        self.ccb.issue("create_applet", title, cmd, group=group, is_transient=True)
+        self.ccb.issue("create_applet", title, cmd, group=group)
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
