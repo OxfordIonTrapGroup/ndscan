@@ -11,11 +11,17 @@ to acquire data by iterating over (“scanning”) any number of them at a time.
 See the [documentation](https://oxfordiontrapgroup.github.io/ndscan) for more
 information. 
 
-**`ndscan` is pre-alpha software. While the system has been carefully
+**`ndscan` is beta-grade software. While the system has been carefully
 architected and the library is in active use within the
 [Ion Trap Quantum Computing Group](https://www.physics.ox.ac.uk/research/ion-trap-quantum-computing-group),
-the current implementation is very much a minimum viable product in spirit
-and mostly lacks documentation and tests.**
+large parts of the implementation are still best considered a minimum viable
+product.** If you cannot work out how a particular use case would be addressed
+using the library, please do get in touch: Many common lab scenarios will already
+be accommodated by the current design, but perhaps the necessary interfaces were
+not publicly exposed to keep the library easy to learn and flexible in terms
+of implementation during initial development. Other tasks might require
+extensions to the library, but detailed design ideas for them might already
+exist.
 
 
 Quickstart guide
