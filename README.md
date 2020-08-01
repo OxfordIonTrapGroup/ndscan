@@ -22,13 +22,13 @@ Quickstart guide
 ----------------
 
 To get started with `ndscan`, first prepare a Python 3.5+ environment with
-ARTIQ as usual (Conda or some form of virtualenv is recommended). While the
-intention is for ndscan to be a pure add-on to ARTIQ, some required patches
-have not made their way into the official (m-labs) upstream repository yet.
-For now, use the
+ARTIQ as usual (Nix, Conda or some form of virtualenv is recommended). While
+the intention is for ndscan to be a pure add-on to ARTIQ, some **required**
+**patches** have not made their way into the official (M-Labs) upstream
+repository yet. For now, use the
 [ion-trap/master](http://gitlab.physics.ox.ac.uk/ion-trap/artiq/) 
-branch; if you are an external user, you can find the necessary commits at
-[dnadlinger/artiq@ndscan](https://github.com/dnadlinger/artiq/tree/ndscan).
+branch; if you are an external user, you can find a summary patch in
+[Issue 1](https://github.com/OxfordIonTrapGroup/ndscan/issues/1#issuecomment-667569040).
 
 Once your environment is set up, install this package. For example, to use
 ndscan directly from the Git checkout:
