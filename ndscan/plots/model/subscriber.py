@@ -134,9 +134,14 @@ class SubscriberSinglePointModel(SinglePointModel):
 
         if (self._current_point is None and data.get(self._prefix + "completed",
                                                      (False, False))[1]):
-            # If the scan is already completed on the initial sync, we still
-            # need to emit at least one point.
-            emit_point()
+            # If the scan is already completed on the initial sync, we still need to
+            # emit at least one point.
+            #
+            # The flag is also set when an experiment fails, though, so avoid producing
+            # errors for missing data if no channel has been pushed (i.e. the point
+            # failed cleanly).
+            if self._next_point:
+                emit_point()
 
 
 class SubscriberScanModel(ScanModel):
