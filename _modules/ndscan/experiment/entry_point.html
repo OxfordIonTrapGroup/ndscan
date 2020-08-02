@@ -487,20 +487,22 @@
         <span class="p">}</span>
 
     <span class="k">def</span> <span class="nf">_run_continuous</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># TODO: Unify with _FragmentRunner.</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
                     <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
+                        <span class="n">done</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">done</span><span class="p">:</span>
+                            <span class="k">break</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">():</span>
+                            <span class="k">break</span>
                 <span class="k">finally</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
-                    <span class="k">return</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
@@ -508,19 +510,44 @@
     <span class="nd">@kernel</span>
     <span class="k">def</span> <span class="nf">_run_continuous_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
 
     <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">_continuous_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># TODO: Unify with _FragmentRunner.</span>
         <span class="k">try</span><span class="p">:</span>
+            <span class="n">num_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">num_underflows</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_finish_continuous_point</span><span class="p">()</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
-                    <span class="k">return</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_finish_continuous_point</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">except</span> <span class="n">RTIOUnderflow</span><span class="p">:</span>
+                    <span class="n">num_underflows</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">num_underflows</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">:</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span> <span class="n">num_underflows</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
+                    <span class="n">num_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">num_transitory_errors</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">:</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error, restarting kernel&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
+                    <span class="n">num_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">num_transitory_errors</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">:</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span> <span class="n">num_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span> <span class="s2">&quot;), retrying&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span> <span class="nf">_finish_continuous_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -630,6 +657,7 @@
 <span class="sd">        :return: ``True`` if execution completed, ``False`` if it should be attempted</span>
 <span class="sd">            again (RestartKernelTransitoryError).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Unify with FragmentScanExperiment._run_continuous().</span>
         <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_on_kernel</span><span class="p">()</span>
