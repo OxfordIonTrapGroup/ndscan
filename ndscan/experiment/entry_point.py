@@ -338,20 +338,22 @@ class TopLevelRunner(HasEnvironment):
         }
 
     def _run_continuous(self):
+        self._point_phase = False
+        # TODO: Unify with _FragmentRunner.
         try:
             while True:
                 try:
                     self.fragment.host_setup()
-                    self._point_phase = False
                     if is_kernel(self.fragment.run_once):
-                        self._run_continuous_kernel()
+                        done = self._run_continuous_kernel()
                         self.core.comm.close()
+                        if done:
+                            break
                     else:
-                        self._continuous_loop()
+                        if self._continuous_loop():
+                            break
                 finally:
                     self.fragment.host_cleanup()
-                if not self._continue_running:
-                    return
                 self.scheduler.pause()
         finally:
             self._set_completed()
@@ -359,19 +361,44 @@ class TopLevelRunner(HasEnvironment):
     @kernel
     def _run_continuous_kernel(self):
         self.core.reset()
-        self._continuous_loop()
+        return self._continuous_loop()
 
     @portable
     def _continuous_loop(self):
+        # TODO: Unify with _FragmentRunner.
         try:
+            num_transitory_errors = 0
+            num_underflows = 0
             while not self.scheduler.check_pause():
-                self.fragment.device_setup()
-                self.fragment.run_once()
-                self._finish_continuous_point()
-                if not self._continue_running:
-                    return
+                try:
+                    self.fragment.device_setup()
+                    self.fragment.run_once()
+                    self._finish_continuous_point()
+                    if not self._continue_running:
+                        return True
+                except RTIOUnderflow:
+                    num_underflows += 1
+                    if num_underflows > self.max_rtio_underflow_retries:
+                        raise
+                    print("Ignoring RTIOUnderflow (", num_underflows, "/",
+                          self.max_rtio_underflow_retries, ")")
+                except RestartKernelTransitoryError:
+                    num_transitory_errors += 1
+                    if num_transitory_errors > self.max_transitory_error_retries:
+                        raise
+                    print("Caught transitory error, restarting kernel")
+                    return False
+                except TransitoryError:
+                    num_transitory_errors += 1
+                    if num_transitory_errors > self.max_transitory_error_retries:
+                        raise
+                    print("Caught transitory error (", num_transitory_errors, "/",
+                          self.max_transitory_error_retries, "), retrying")
+            return False
         finally:
             self.fragment.device_cleanup()
+        assert False, "Execution never reaches here, return is just to pacify compiler."
+        return True
 
     @rpc(flags={"async"})
     def _finish_continuous_point(self):
@@ -481,6 +508,7 @@ class _FragmentRunner(HasEnvironment):
         :return: ``True`` if execution completed, ``False`` if it should be attempted
             again (RestartKernelTransitoryError).
         """
+        # TODO: Unify with FragmentScanExperiment._run_continuous().
         if is_kernel(self.fragment.run_once):
             self.setattr_device("core")
             return self._run_on_kernel()
