@@ -168,7 +168,8 @@ class CustomAnalysis(DefaultAnalysis):
     No analysis is run online.
 
     :param required_axes: List of parameters (given by their :class:`.ParamHandle`\ s)
-        required to be scanend for the analysis to be applicable.
+        required to be scanend for the analysis to be applicable. (The order is not
+        relevant.)
     :param analyze_fn: The function to invoke in the analysis step. It is passed two
         dictionaries giving list of axis/result channel values for each point of the
         scan to analyse. The function can return a list of :class:`Annotation`\ s to be
@@ -194,8 +195,8 @@ class CustomAnalysis(DefaultAnalysis):
 
     def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
         ""
-        return all(h._store.identity in scanned_axes
-                   for h in self._required_axis_handles)
+        return set(h._store.identity
+                   for h in self._required_axis_handles) == set(scanned_axes)
 
     def describe_online_analyses(
         self, context: AnnotationContext
