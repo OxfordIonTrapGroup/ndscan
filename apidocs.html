@@ -995,7 +995,8 @@ annotations, if any.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>required_axes</strong> – List of parameters (given by their <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamHandle</span></code>s)
-required to be scanend for the analysis to be applicable.</p></li>
+required to be scanend for the analysis to be applicable. (The order is not
+relevant.)</p></li>
 <li><p><strong>analyze_fn</strong> – The function to invoke in the analysis step. It is passed two
 dictionaries giving list of axis/result channel values for each point of the
 scan to analyse. The function can return a list of <a class="reference internal" href="#ndscan.experiment.default_analysis.Annotation" title="ndscan.experiment.default_analysis.Annotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotation</span></code></a>s to be
