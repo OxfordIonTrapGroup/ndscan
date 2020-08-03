@@ -192,7 +192,7 @@ class CustomAnalysis(DefaultAnalysis):
                                  "' in analysis for axes '" + axes + "'")
             self._result_channels[name] = channel
 
-    def has_data(self, scanned_axes: List[Tuple[str, str]]) -> bool:
+    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
         ""
         return all(h._store.identity in scanned_axes
                    for h in self._required_axis_handles)
@@ -326,7 +326,7 @@ class OnlineFit(DefaultAnalysis):
         self.constants = {} if constants is None else constants
         self.initial_values = {} if initial_values is None else initial_values
 
-    def has_data(self, scanned_axes: List[Tuple[str, str]]):
+    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
         ""
         num_axes = 0
         for arg in self.data.values():
