@@ -19,7 +19,8 @@ class RabiFlopWithAnalysis(RabiFlopSim):
             CustomAnalysis([self.duration], self._analyse_time_scan, [
                 OpaqueChannel("fit_xs"),
                 OpaqueChannel("fit_ys"),
-                FloatChannel("t_pi", "Fitted π time", unit="us")
+                FloatChannel("t_pi", "Fitted π time", unit="us"),
+                FloatChannel("t_pi_err", "Fitted π time error", unit="us")
             ])
         ]
 
@@ -32,13 +33,16 @@ class RabiFlopWithAnalysis(RabiFlopSim):
             x, y, y_err, evaluate_function=True, evaluate_n=100)
 
         analysis_results["t_pi"].push(fit_results["t_pi"])
+        analysis_results["t_pi_err"].push(fit_results["t_pi"])
         analysis_results["fit_xs"].push(fit_xs)
         analysis_results["fit_ys"].push(fit_ys)
 
         # We can also return custom annotations to be displayed, which can make use of
         # the analysis results.
         return [
-            Annotation("location", {self.duration: analysis_results["t_pi"]}),
+            Annotation("location",
+                       coordinates={self.duration: analysis_results["t_pi"]},
+                       data={"axis_0_error": analysis_results["t_pi_err"]}),
             Annotation(
                 "curve", {
                     self.duration: analysis_results["fit_xs"],
