@@ -209,7 +209,7 @@ class VLineItem(AnnotationItem):
             # If the covariance extraction failed, just don't display the
             # confidence interval at all.
             delta_x = 0.0
-            label = str(x)
+            label = str(x * self._x_data_to_display_scale)
         else:
             label = uncertainty_to_string(x * self._x_data_to_display_scale,
                                           delta_x * self._x_data_to_display_scale)
