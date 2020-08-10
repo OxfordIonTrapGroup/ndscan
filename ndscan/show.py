@@ -11,7 +11,8 @@ from quamash import QEventLoop, QtWidgets
 from .plots.container_widgets import MultiRootWidget, PlotContainerWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
-from .utils import SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes, strip_suffix
+from .results.tools import find_ndscan_roots
+from .utils import shorten_to_unambiguous_suffixes, strip_suffix
 
 
 def get_argparser():
@@ -33,14 +34,6 @@ def fetch_explicit_prefix(args):
     if prefix and not prefix[-1] == ".":
         prefix += "."
     return prefix
-
-
-def find_ndscan_roots(datasets):
-    results = []
-    for name in datasets.keys():
-        if name.endswith("." + SCHEMA_REVISION_KEY):
-            results.append(strip_suffix(name, SCHEMA_REVISION_KEY))
-    return results
 
 
 def main():

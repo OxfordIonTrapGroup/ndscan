@@ -74,3 +74,22 @@ Experiment entry points
     .. autofunction:: ndscan.experiment.entry_point.run_fragment_once
 
     .. autofunction:: ndscan.experiment.entry_point.create_and_run_fragment_once
+
+
+ndscan.results API
+==================
+
+.. automodule:: ndscan.results
+
+
+:mod:`ndscan.results.pyplot` module
+-----------------------------------
+
+.. automodule:: ndscan.results.pyplot
+    :members:
+
+:mod:`ndscan.results.tools` module
+----------------------------------
+
+.. automodule:: ndscan.results.tools
+    :members:
