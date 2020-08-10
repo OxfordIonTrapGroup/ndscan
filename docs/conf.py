@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'ndscan'
-copyright = '2019, David Nadlinger'
+copyright = '2020, David Nadlinger'
 author = 'David Nadlinger'
 
 # The short X.Y version
