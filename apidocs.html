@@ -703,7 +703,11 @@ if any.</p>
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">ResultChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">save_by_default: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ResultChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ResultChannel" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>display_hints</strong> – <p>A dictionary of additional settings that can be used to
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The path to the channel in the fragment tree (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;readout/p&quot;</span></code>).</p></li>
+<li><p><strong>description</strong> – A human-readable name of the channel. If non-empty, will be
+preferred to the path to e.g. display in plot axis labels.</p></li>
+<li><p><strong>display_hints</strong> – <p>A dictionary of additional settings that can be used to
 indicate how to best display results to the user (see above):</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
@@ -746,7 +750,8 @@ as the given other channel.</p></td>
 </tr>
 </tbody>
 </table>
-</p>
+</p></li>
+</ul>
 </dd>
 </dl>
 <dl class="py method">
@@ -772,19 +777,45 @@ as the given other channel.</p></td>
 </dd></dl>
 
 <dl class="py class">
+<dt id="ndscan.experiment.result_channels.NumericChannel">
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">NumericChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">min=None</em>, <em class="sig-param">max=None</em>, <em class="sig-param">unit: str =</em>, <em class="sig-param">scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#NumericChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.NumericChannel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for <a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultChannel</span></code></a>s of numerical results, with scale/unit
+semantics and optional range limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min</strong> – Optionally, a lower limit that is not exceeded by data points (can
+be used e.g. by plotting code to determine sensible value ranges to show).</p></li>
+<li><p><strong>max</strong> – Optionally, an upper limit that is not exceeded by data points (can
+be used e.g. by plotting code to determine sensible value ranges to show).</p></li>
+<li><p><strong>unit</strong> – Name of the unit the results are given in (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;ms&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;kHz&quot;</span></code>).</p></li>
+<li><p><strong>scale</strong> – Unit scaling. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the default scaling as per ARTIQ’s unit
+handling machinery (<code class="docutils literal notranslate"><span class="pre">artiq.language.units</span></code>) is used.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
 <dt id="ndscan.experiment.result_channels.FloatChannel">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">FloatChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">min=None</em>, <em class="sig-param">max=None</em>, <em class="sig-param">unit: str =</em>, <em class="sig-param">scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#FloatChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.FloatChannel" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p><a class="reference internal" href="#ndscan.experiment.result_channels.NumericChannel" title="ndscan.experiment.result_channels.NumericChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NumericChannel</span></code></a> that accepts floating-point results.</p>
+</dd></dl>
 
 <dl class="py class">
 <dt id="ndscan.experiment.result_channels.IntChannel">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">IntChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">min=None</em>, <em class="sig-param">max=None</em>, <em class="sig-param">unit: str =</em>, <em class="sig-param">scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#IntChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.IntChannel" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p><a class="reference internal" href="#ndscan.experiment.result_channels.NumericChannel" title="ndscan.experiment.result_channels.NumericChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NumericChannel</span></code></a> that accepts integer results.</p>
+</dd></dl>
 
 <dl class="py class">
 <dt id="ndscan.experiment.result_channels.OpaqueChannel">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">OpaqueChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">save_by_default: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#OpaqueChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.OpaqueChannel" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Channel that stores arbitrary data, with ndscan making no attempts to further
+interpret or display it.</p>
+<p>Any values pushed are just passed through to the ARTIQ dataset layer; it is up to
+the user to choose something compatibile with HDF5 and PYON.</p>
+</dd></dl>
 
 </div>
 </div>

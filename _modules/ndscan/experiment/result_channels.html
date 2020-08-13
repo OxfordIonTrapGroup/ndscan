@@ -158,7 +158,7 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span> <span class="s2">&quot;AppendingDatasetSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ScalarDatasetSink&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ResultChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
+    <span class="s2">&quot;ResultChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;NumericChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
 <span class="p">]</span>
 
 
@@ -245,6 +245,9 @@
 
 <div class="viewcode-block" id="ResultChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel">[docs]</a><span class="k">class</span> <span class="nc">ResultChannel</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param path: The path to the channel in the fragment tree (e.g. ``&quot;readout/p&quot;``).</span>
+<span class="sd">    :param description: A human-readable name of the channel. If non-empty, will be</span>
+<span class="sd">        preferred to the path to e.g. display in plot axis labels.</span>
 <span class="sd">    :param display_hints: A dictionary of additional settings that can be used to</span>
 <span class="sd">        indicate how to best display results to the user (see above):</span>
 
@@ -331,9 +334,18 @@
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
 
 
-<span class="k">class</span> <span class="nc">NumericChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for channels of numerical results, with scale/unit semantics and</span>
-<span class="sd">    optional range limits.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NumericChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.NumericChannel">[docs]</a><span class="k">class</span> <span class="nc">NumericChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base class for :class:`ResultChannel`\ s of numerical results, with scale/unit</span>
+<span class="sd">    semantics and optional range limits.</span>
+
+<span class="sd">    :param min: Optionally, a lower limit that is not exceeded by data points (can</span>
+<span class="sd">        be used e.g. by plotting code to determine sensible value ranges to show).</span>
+<span class="sd">    :param max: Optionally, an upper limit that is not exceeded by data points (can</span>
+<span class="sd">        be used e.g. by plotting code to determine sensible value ranges to show).</span>
+<span class="sd">    :param unit: Name of the unit the results are given in (e.g. ``&quot;ms&quot;``, ``&quot;kHz&quot;``).</span>
+<span class="sd">    :param scale: Unit scaling. If ``None``, the default scaling as per ARTIQ&#39;s unit</span>
+<span class="sd">        handling machinery (``artiq.language.units``) is used.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -368,10 +380,11 @@
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span>
-        <span class="k">return</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="FloatChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.FloatChannel">[docs]</a><span class="k">class</span> <span class="nc">FloatChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;:class:`NumericChannel` that accepts floating-point results.&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;float&quot;</span>
 
@@ -380,6 +393,7 @@
 
 
 <div class="viewcode-block" id="IntChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.IntChannel">[docs]</a><span class="k">class</span> <span class="nc">IntChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;:class:`NumericChannel` that accepts integer results.&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;int&quot;</span>
 
@@ -388,12 +402,16 @@
 
 
 <div class="viewcode-block" id="OpaqueChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.OpaqueChannel">[docs]</a><span class="k">class</span> <span class="nc">OpaqueChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Channel that stores arbitrary data, with ndscan making no attempts to further</span>
+<span class="sd">    interpret or display it.</span>
+
+<span class="sd">    Any values pushed are just passed through to the ARTIQ dataset layer; it is up to</span>
+<span class="sd">    the user to choose something compatibile with HDF5 and PYON.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;opaque&quot;</span>
 
     <span class="k">def</span> <span class="nf">_coerce_to_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="c1"># Just pass through values, leaving it to the user to choose something</span>
-        <span class="c1"># HD5- and PYON-compatible.</span>
         <span class="k">return</span> <span class="n">value</span></div>
 
 
