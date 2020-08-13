@@ -253,8 +253,13 @@ class IntChannel(NumericChannel):
 
 
 class OpaqueChannel(ResultChannel):
-    """Channel that stores arbitrary data, with ndscan making no attempts to further
-    interpret or display it.
+    """:class:`ResultChannel` that stores arbitrary data, with ndscan making no attempts
+    to further interpret or display it.
+
+    As such, opaque channels can be used to store any ancillary data for scan points,
+    which can later be used in custom analysis code (whether as part of a default
+    analysis that runs as part of the experiment code, or when manually analysing the
+    experimental data later).
 
     Any values pushed are just passed through to the ARTIQ dataset layer; it is up to
     the user to choose something compatibile with HDF5 and PYON.
