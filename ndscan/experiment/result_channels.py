@@ -9,7 +9,7 @@ from .utils import dump_json
 
 __all__ = [
     "LastValueSink", "ArraySink", "AppendingDatasetSink", "ScalarDatasetSink",
-    "ResultChannel", "FloatChannel", "IntChannel", "OpaqueChannel"
+    "ResultChannel", "NumericChannel", "FloatChannel", "IntChannel", "OpaqueChannel"
 ]
 
 
@@ -96,6 +96,9 @@ class ScalarDatasetSink(ResultSink, HasEnvironment):
 
 class ResultChannel:
     """
+    :param path: The path to the channel in the fragment tree (e.g. ``"readout/p"``).
+    :param description: A human-readable name of the channel. If non-empty, will be
+        preferred to the path to e.g. display in plot axis labels.
     :param display_hints: A dictionary of additional settings that can be used to
         indicate how to best display results to the user (see above):
 
@@ -183,8 +186,17 @@ class ResultChannel:
 
 
 class NumericChannel(ResultChannel):
-    """Base class for channels of numerical results, with scale/unit semantics and
-    optional range limits."""
+    r"""Base class for :class:`ResultChannel`\ s of numerical results, with scale/unit
+    semantics and optional range limits.
+
+    :param min: Optionally, a lower limit that is not exceeded by data points (can
+        be used e.g. by plotting code to determine sensible value ranges to show).
+    :param max: Optionally, an upper limit that is not exceeded by data points (can
+        be used e.g. by plotting code to determine sensible value ranges to show).
+    :param unit: Name of the unit the results are given in (e.g. ``"ms"``, ``"kHz"``).
+    :param scale: Unit scaling. If ``None``, the default scaling as per ARTIQ's unit
+        handling machinery (``artiq.language.units``) is used.
+    """
     def __init__(self,
                  path: str,
                  description: str = "",
@@ -223,6 +235,7 @@ class NumericChannel(ResultChannel):
 
 
 class FloatChannel(NumericChannel):
+    """:class:`NumericChannel` that accepts floating-point results."""
     def _get_type_string(self):
         return "float"
 
@@ -231,6 +244,7 @@ class FloatChannel(NumericChannel):
 
 
 class IntChannel(NumericChannel):
+    """:class:`NumericChannel` that accepts integer results."""
     def _get_type_string(self):
         return "int"
 
@@ -239,12 +253,16 @@ class IntChannel(NumericChannel):
 
 
 class OpaqueChannel(ResultChannel):
+    """Channel that stores arbitrary data, with ndscan making no attempts to further
+    interpret or display it.
+
+    Any values pushed are just passed through to the ARTIQ dataset layer; it is up to
+    the user to choose something compatibile with HDF5 and PYON.
+    """
     def _get_type_string(self):
         return "opaque"
 
     def _coerce_to_type(self, value):
-        # Just pass through values, leaving it to the user to choose something
-        # HD5- and PYON-compatible.
         return value
 
 
