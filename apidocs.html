@@ -811,8 +811,12 @@ handling machinery (<code class="docutils literal notranslate"><span class="pre"
 <dl class="py class">
 <dt id="ndscan.experiment.result_channels.OpaqueChannel">
 <em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.result_channels.</code><code class="sig-name descname">OpaqueChannel</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">description: str =</em>, <em class="sig-param">display_hints: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">save_by_default: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#OpaqueChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.result_channels.OpaqueChannel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Channel that stores arbitrary data, with ndscan making no attempts to further
-interpret or display it.</p>
+<dd><p><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultChannel</span></code></a> that stores arbitrary data, with ndscan making no attempts
+to further interpret or display it.</p>
+<p>As such, opaque channels can be used to store any ancillary data for scan points,
+which can later be used in custom analysis code (whether as part of a default
+analysis that runs as part of the experiment code, or when manually analysing the
+experimental data later).</p>
 <p>Any values pushed are just passed through to the ARTIQ dataset layer; it is up to
 the user to choose something compatibile with HDF5 and PYON.</p>
 </dd></dl>

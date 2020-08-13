@@ -402,8 +402,13 @@
 
 
 <div class="viewcode-block" id="OpaqueChannel"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.OpaqueChannel">[docs]</a><span class="k">class</span> <span class="nc">OpaqueChannel</span><span class="p">(</span><span class="n">ResultChannel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Channel that stores arbitrary data, with ndscan making no attempts to further</span>
-<span class="sd">    interpret or display it.</span>
+    <span class="sd">&quot;&quot;&quot;:class:`ResultChannel` that stores arbitrary data, with ndscan making no attempts</span>
+<span class="sd">    to further interpret or display it.</span>
+
+<span class="sd">    As such, opaque channels can be used to store any ancillary data for scan points,</span>
+<span class="sd">    which can later be used in custom analysis code (whether as part of a default</span>
+<span class="sd">    analysis that runs as part of the experiment code, or when manually analysing the</span>
+<span class="sd">    experimental data later).</span>
 
 <span class="sd">    Any values pushed are just passed through to the ARTIQ dataset layer; it is up to</span>
 <span class="sd">    the user to choose something compatibile with HDF5 and PYON.</span>
