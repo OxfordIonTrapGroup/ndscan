@@ -117,7 +117,7 @@ class DefaultAnalysis:
     """Analysis functionality associated with an `ExpFragment` to be executed when that
     fragment is scanned in a particular way.
     """
-    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
+    def has_data(self, scanned_axes: List[AxisIdentity], allow_axes_subset: bool = False) -> bool:
         """Return whether the scanned axes contain the data necessary for this analysis
         to be applicable.
 
@@ -193,10 +193,18 @@ class CustomAnalysis(DefaultAnalysis):
                                  "' in analysis for axes '" + axes + "'")
             self._result_channels[name] = channel
 
-    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
+    def has_data(self, scanned_axes: List[AxisIdentity], allow_axes_subset: bool = False) -> bool:
         ""
-        return set(h._store.identity
-                   for h in self._required_axis_handles) == set(scanned_axes)
+        identities = set()
+        for h in self._required_axis_handles:
+            # If any of the stores has not been created yet, analysis not
+            # applicable at this point
+            if h._store is None:
+                return False
+            identities.add(h._store.identity)
+        if allow_axes_subset:
+            return identities.issubset(set(scanned_axes))
+        return identities == set(scanned_axes)
 
     def describe_online_analyses(
         self, context: AnnotationContext
@@ -327,7 +335,7 @@ class OnlineFit(DefaultAnalysis):
         self.constants = {} if constants is None else constants
         self.initial_values = {} if initial_values is None else initial_values
 
-    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
+    def has_data(self, scanned_axes: List[AxisIdentity], allow_axes_subset: bool = False) -> bool:
         ""
         num_axes = 0
         for arg in self.data.values():

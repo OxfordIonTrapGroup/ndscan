@@ -147,13 +147,12 @@ class Subscan:
         analysis_sinks = {}
 
         if len(self._parent_analysis_result_channels) > 0 or always_run:
+            annotations = []
             for a in analyses:
                 for name, channel in a.get_analysis_results().items():
                     sink = LastValueSink()
                     channel.set_sink(sink)
                     analysis_sinks[name] = sink
-            annotations = []
-            for a in self._analyses:
                 annotations += a.execute(axis_data, result_data, context)
             if annotations:
                 # Replace existing (online-fit) annotations if any analysis produced
@@ -261,7 +260,9 @@ def setattr_subscan(owner: Fragment,
 
     spec_channel = owner.setattr_result(scan_name + "_spec", SubscanChannel)
 
-    analyses = filter_default_analyses(fragment, axes.values())
+    # Obtain all analyses that could possibly be executed for this subscan
+    analyses = filter_default_analyses(fragment, axes.values(),
+                                       allow_axes_subset=True)
     parent_analysis_result_channels = {}
     if expose_analysis_results:
         analysis_results = reduce(

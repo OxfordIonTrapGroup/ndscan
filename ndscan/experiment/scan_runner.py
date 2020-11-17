@@ -330,13 +330,14 @@ class ScanRunner(HasEnvironment):
 
 
 def filter_default_analyses(fragment: ExpFragment,
-                            axes: Iterable[ScanAxis]) -> List[DefaultAnalysis]:
+                            axes: Iterable[ScanAxis],
+                            allow_axes_subset: bool = False) -> List[DefaultAnalysis]:
     """Return the default analyses of the given fragment that can be executed for the
     given scan spec."""
     result = []
     axis_identities = [(s.param_schema["fqn"], s.path) for s in axes]
     for analysis in fragment.get_default_analyses():
-        if analysis.has_data(axis_identities):
+        if analysis.has_data(axis_identities, allow_axes_subset):
             result.append(analysis)
     return result
 
