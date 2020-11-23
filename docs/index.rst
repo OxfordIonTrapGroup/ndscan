@@ -6,3 +6,5 @@ ndscan
    :caption: Contents:
 
    apidocs
+   coding-conventions
+   design-retrospective
