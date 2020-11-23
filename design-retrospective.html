@@ -1,0 +1,257 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Design retrospective &mdash; ndscan  documentation</title>
+  
+
+  
+  
+  
+  
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/design-retrospective.html"/>
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Coding conventions" href="coding-conventions.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ndscan
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="apidocs.html">ndscan.experiment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding-conventions.html">Coding conventions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Design retrospective</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#comments-on-specific-design-facets">Comments on specific design facets</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ndscan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Design retrospective</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/OxfordIonTrapGroup/ndscan/blob/master/docs/design-retrospective.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="design-retrospective">
+<h1>Design retrospective<a class="headerlink" href="#design-retrospective" title="Permalink to this headline">¶</a></h1>
+<p><em>DPN’s ill-organised, semi-coherent ramblings on some aspects of ndscan design. Ideally somewhat helpful for those trying to work on the library, or to understand its architecture.</em></p>
+<p>Bare ARTIQ experiments are perfectly usable in the same way bare assembly code is perfectly Turing-complete: They do an admirable job at combining hardware abstractions, pipeline scheduling, FPGA integration, and basic data storage, but are dangerously close to the Turing tarpit for daily lab use. To some extent, this is not even ARTIQ’s fault; it just chooses not to have opinions on certain issues – such as how to organise any of the experiment source code beyond the thin surface layer exposed to the master scheduler (i. e., a top-level entry point implementing <code class="docutils literal notranslate"><span class="pre">EnvExperiment</span></code>).</p>
+<p>This is a perfectly valid choice; indeed, whether to prefer coherent, opinionated frameworks or flexible, independent libraries is a debate cultivated with much vigour in many parts of the software engineering world. The more opinionated – whether in terms of program architecture, or formalities like the layout of source code on disk – a framework is, the quicker it tends to be to get started and to implement programs that fit the framework’s design target reasonably well. Conversely, however, such framework can become a nuisance if the application evolves to no longer align with the guiding framework as well, sometimes just on account of its growing size and complexity.</p>
+<p>Thankfully, however, one does not necessarily need to commit to many opinions beyond the common wisdom in order to provide helpful abstractions for typical ion-trap – or indeed, AMO – research applications.</p>
+<p><strong>Greater principles:</strong></p>
+<ul class="simple">
+<li><p><em>Explorability</em>: It should be easy for the physicist user to reach in below the hood and fiddle with pretty much any knob to see what its effect on the experiment is. In practice, this means that everything should be scannable/overridable, and there shouldn’t be an excuse for users not to make their experiments such.</p></li>
+<li><p><em>Composability</em> (… Composability! Composability!): A better name for the library would really be <strong>fragments</strong>. Have a calibration experiment? Great – now it should be trivial to look at how that calibration result changes as a function of another parameter in the system!</p></li>
+<li><p><em>Introspectability</em>: A fancy way of saying that you need a way to figure out why s#$% doesn’t work in the lab. As a consequence, even for a scan of a calibration routine that itself consists of a scan of a scan, by default all the data should be saved.</p></li>
+<li><p><em>Functional-ness</em>: Functional programming is great, with its explicit effect and lack of global state. However, here we are in the business of coaxing experimental data out of control hardware. Not acknowledging the existence of global state would be an expensive mistake. By providing the right set of tools and conventions, though, we can encourage users to write code in a way where e.g. executing a fragment has well-defined semantics.</p></li>
+</ul>
+<p><strong>Lesser principles:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><em>Discoverability</em>: With apologies to anybody for whom the quote might evoke painful Perl memories, ndscan was very much designed to <strong>make the easy things easy, and the hard things possible</strong>. Scans are the spreadsheets of the working quantum optician. Accordingly, they should be well-supported, without the user having to care much about how they are implemented behind the scenes. It should, however, then still be possible for the typical physicist user to incrementally replace parts of this solution with bespoke components that might be a better fit for the application at hand. <em>(Note: ndscan currently does not do a very great job at this.)</em></p></li>
+<li><p><em>Provenance</em>: ndscan can’t solve your data archival problem for you. But it can encourage. For instance, each plot includes the source id (experiment run id) in the bottom-left corner of the display, so it is hard <em>not</em> to include it in screen shots pasted into lab books, etc., which means the origin is traceable. Nested subscans, by default, preserve all the data produced by the inner scans, such that it can be inspected later, should questions of fit quality come up, etc.</p></li>
+<li><p><em>ARTIQ-likeness</em>: At least in the short term, that is, during initial roll-out, most people who are starting to write <code class="docutils literal notranslate"><span class="pre">ndscan</span></code> code will already be familiar with the basic concepts of how to write ARTIQ experiments. Thus, similarities in structure (e.g. to the <code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> tree) that make the library seem familiar might be desirable.</p></li>
+</ul>
+</div></blockquote>
+<div class="section" id="comments-on-specific-design-facets">
+<h2>Comments on specific design facets<a class="headerlink" href="#comments-on-specific-design-facets" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><blockquote>
+<div><ul class="simple">
+<li><p>I made an effort to make the library hard to misuse. Especially in the beginning, it was important for it to be visible what the intended way of doing things was (and for which things such provisions do not exist), as I didn’t have the time or resources to teach everyone how to use the library. (See point about god objects and familiarity of users with plain ARTIQ code.)</p>
+<ul>
+<li><p>For instance, all the <code class="docutils literal notranslate"><span class="pre">setattr_*</span></code> stuff is a bit clunky, but makes it impossible for users to create parameters without respecting the need for a well-defined, static parameter tree. In particular, the steps in the logical parameter path must match the attribute names down the Python object tree. Using <code class="docutils literal notranslate"><span class="pre">setattr_*</span></code> functions prevents any mismatches there. Jury is still out on that one; still feels oddly restricting (and encouraging god-object megalomania), but still appears to work out. Breaks IDE type inference, unfortunately. (Perhaps hints could be added for this?)</p></li>
+<li><p>All data that is not intended to be manipulated from outside ndscan is prefixed with an underscore; see <a class="reference internal" href="coding-conventions.html#coding-conventions"><span class="std std-ref">Coding conventions</span></a>. (This applies in particular to central classes like Fragment; some data objects are exempt from this.) However, combined with the nature of the library as barely more than a minimum viable project, this makes it hard to be creative where solutions don’t exist yet.</p></li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>I am still unsure about parameter change (“dirtyness”) tracking. There are basically two ways of going about this: Explicitly passing around a list of changes (i.e., effectively implementing reactive programming), or just making the changes centrally and keeping flags to track them happening at the site of use. I went with the second approach, which has the advantage of being easy to implement on the core device, and it seems to work out reasonably well in practice (although no really complex use cases have developed for this yet). However, conceptual difficulties in having just a binary “changed” flag are starting to become apparent, as that only works well when the only source of changes to the system state is the user (or a scan) modifying the parameter values. This is not the case when, for example, another experiment is scheduled in, or execution flow switches between multiple <code class="docutils literal notranslate"><span class="pre">ExpFragment</span></code>s as part of a (near-future) multi-fragment inverted kernel runner. Perhaps it is still a workable approximation, though – we typically only care about the last cycle in cost in a tight data acquisition loop (e. g. a scan of some description), so it could be fine to just conservatively reset all the use trackers in those cases. Perhaps the user could manually whitelist a set of fragments not to be reset as part of this context switching operation.</p>
+<ul>
+<li><p>There is an implicit assumption in the above, which is that it is impossible to treat ndscan and the wider experimental code as a layer that just outputs a description of a target hardware state, which can then be diffed against the present hardware state to derive a list of hardware changes to apply. This is a good assumption, not only because of the restrictions of ARTIQ core device code, but also because that would be solving the wrong problem: We are not primarily interested in reducing the hardware write bandwidth necessary (although that might become a significant factor for complex transport sequences, etc). Rather, computing the hardware settings itself might be expensive in terms of computation time or latency.</p></li>
+</ul>
+</li>
+<li><p>The design space in terms of data representation is severely limited by having to fit through the funnel that are ARTIQ datasets. Since dataset values must be compatible with both PYON serialisation and HDF5 (via <code class="docutils literal notranslate"><span class="pre">h5py</span></code>, without being able to pass extra storage arguments), representing more complex type aggregates is hard. As a result, metadata (e.g. information about the scan or parameter schemata) is written in the form of strings in various places, which is less than ideal. This has knock-on effects into various corners of the design that might seem unnecessarily clumsy, for instance:</p>
+<ul>
+<li><p>Subscans are more convoluted than necessary: One would hope to do the straightforward thing and just re-use the code used for serialising top-level scans, but this would require nesting the entire set of results data for that subscan into a JSON/PYON-formatted string, which would be less than ideal for large amounts of numerical results data. Thus, subscans instead refer to result data stored in a flat fashion in the outermost scan, with the structure at that level only encoded by the name nesting scheme.</p></li>
+<li><p>Another, more indirect consequence of this is the lack of a common code representation for the elements of the ndscan ontology (parameters, result channels, etc.) between experiment and applet/results analysis code, even though all of them are (typically) written in Python. The objects on the experiment side (integrated with the fragment tree structure) need to be represented as JSON/PYON anyway, so it was easier to just make the applet work on <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code>s instead of also writing a validating parser.</p></li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="coding-conventions.html" class="btn btn-neutral float-left" title="Coding conventions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, David Nadlinger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
