@@ -62,17 +62,18 @@ enable/disable applets" in the applets dock.)
 Developer notes
 ---------------
 
- - Format _all_ code using [YAPF](https://github.com/google/yapf), and make
-   sure `flake8 ndscan` passes. Configuration files for both are included, and
-   are picked up automatically. It is just not worth spending time to obsess
-   or argue about formatting details.
+Please refer to the [documentation](https://oxfordiontrapgroup.github.io/ndscan)
+for more details, in particular the
+[coding conventions](https://oxfordiontrapgroup.github.io/ndscan/coding-conventions.html)
+and
+[design retrospective](https://oxfordiontrapgroup.github.io/ndscan/design-retrospective.html)
+sections.
 
- - Unit tests are run using `python -m unittest -v discover test`.
-
- - `conda` contains a very rudimentary [Conda](https://conda.io/en/latest/)
-   package definition for integration with the continuous integration pipeline
-   internal to the Ion Trap Quantum Computing group. The package is not 
-   currently published on a public Conda channel, and likely won't ever be.
+`conda/` contains a very rudimentary [Conda](https://conda.io/en/latest/)
+package definition for ease of integration with a custom continuous
+integration pipeline used in the Oxford Ion Trap Quantum Computing group. The
+package has a number of issues (e.g. missing dependencies), and currently is not
+published on a public Conda channel (nor will it likely ever be).
 
 
 Contact
