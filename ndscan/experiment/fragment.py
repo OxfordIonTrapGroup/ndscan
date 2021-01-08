@@ -589,7 +589,7 @@ class Fragment(HasEnvironment):
 
 class ExpFragment(Fragment):
     """Fragment that supports the notion of being run to produce results."""
-    def prepare(self):
+    def prepare(self) -> None:
         """Prepare this instance for execution
         (see ``artiq.language.environment.Experiment.prepare``).
 
@@ -602,7 +602,7 @@ class ExpFragment(Fragment):
         """
         pass
 
-    def run_once(self):
+    def run_once(self) -> None:
         """Execute the experiment described by the fragment once with the current
         parameters, producing one set of results (if any)."""
         pass
