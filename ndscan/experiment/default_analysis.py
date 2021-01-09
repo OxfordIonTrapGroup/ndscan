@@ -163,24 +163,36 @@ class DefaultAnalysis:
 
 class CustomAnalysis(DefaultAnalysis):
     r""":class:`DefaultAnalysis` that executes a user-defined analysis function in the
-    `execute()` step.
+    :meth:`execute` step.
 
     No analysis is run online.
 
     :param required_axes: List of parameters (given by their :class:`.ParamHandle`\ s)
         required to be scanend for the analysis to be applicable. (The order is not
         relevant.)
-    :param analyze_fn: The function to invoke in the analysis step. It is passed two
-        dictionaries giving list of axis/result channel values for each point of the
-        scan to analyse. The function can return a list of :class:`Annotation`\ s to be
-        broadcast.
+    :param analyze_fn: The function to invoke in the analysis step. It is passed three
+        dictionaries:
+
+            1. a map from parameter handles to lists of the respective values for each\
+               scan point,
+
+            2. a map from result channels to lists of results for each scan point,
+
+            3. channels for each of the optional analysis results specified in\
+               ``analysis_results``, given as a dictionary indexed by channel name.
+
+        For backwards-compatibility, the third parameter can be omitted. Optionally, a
+        list of annotations to broadcast can be returned.
+    :param analysis_results: Optionally, a number of result channels for analysis
+        results. They are later passed to ``analyze_fn``.
     """
-    def __init__(
-            self,
-            required_axes: Iterable[ParamHandle],
-            analyze_fn: Callable[[Dict[ParamHandle, list], Dict[ResultChannel, list]],
-                                 Tuple[Dict[str, Any], List[Annotation]]],
-            analysis_results: Iterable[ResultChannel] = []):
+    def __init__(self,
+                 required_axes: Iterable[ParamHandle],
+                 analyze_fn: Callable[[
+                     Dict[ParamHandle, list], Dict[ResultChannel,
+                                                   list], Dict[str, ResultChannel]
+                 ], Optional[List[Annotation]]],
+                 analysis_results: Iterable[ResultChannel] = []):
         self._required_axis_handles = set(required_axes)
         self._analyze_fn = analyze_fn
 
