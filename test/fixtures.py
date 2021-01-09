@@ -133,7 +133,11 @@ class TwoAnalysisFragment(ExpFragment):
         self.setattr_param("b", FloatParam, "b", 0.0)
 
     def get_default_analyses(self):
+        def analyse(coords, values, results):
+            next(iter(results.values())).push(42.0)
+            return []
+
         return [
-            CustomAnalysis([self.a], lambda *_: []),
-            CustomAnalysis([self.b], lambda *_: [])
+            CustomAnalysis([self.a], analyse, [FloatChannel("result_a")]),
+            CustomAnalysis([self.b], analyse, [FloatChannel("result_b")])
         ]

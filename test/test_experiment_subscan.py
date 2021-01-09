@@ -213,6 +213,10 @@ class SubscanAnalysisFragment(ExpFragment):
 
 
 class SubscanAnalysisCase(ExpFragmentCase):
-    def test_analysis_filtering(self):
+    def test_simple_filtering(self):
         parent = self.create(SubscanAnalysisFragment)
-        run_fragment_once(parent)
+        results = run_fragment_once(parent)
+
+        spec = json.loads(results[parent.scan_spec])
+        self.assertEqual(spec["analysis_results"], {"result_a": "scan_result_a"})
+        self.assertEqual(results[parent.scan_result_a], 42.0)
