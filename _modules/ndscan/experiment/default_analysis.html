@@ -176,7 +176,7 @@
 <span class="sd">user interface.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span>
@@ -276,13 +276,9 @@
     <span class="sd">&quot;&quot;&quot;Analysis functionality associated with an `ExpFragment` to be executed when that</span>
 <span class="sd">    fragment is scanned in a particular way.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="DefaultAnalysis.has_data"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.has_data">[docs]</a>    <span class="k">def</span> <span class="nf">has_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return whether the scanned axes contain the data necessary for this analysis</span>
-<span class="sd">        to be applicable.</span>
-
-<span class="sd">        :param scanned_axes: A list of axis identities being scanned over.</span>
-<span class="sd">        :return: Whether this analysis applies or not.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DefaultAnalysis.required_axes"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.required_axes">[docs]</a>    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return the scan axes necessary for the analysis to apply, in form of the</span>
+<span class="sd">        parameter handles.&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 <div class="viewcode-block" id="DefaultAnalysis.describe_online_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.describe_online_analyses">[docs]</a>    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
@@ -322,24 +318,36 @@
 
 <div class="viewcode-block" id="CustomAnalysis"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.CustomAnalysis">[docs]</a><span class="k">class</span> <span class="nc">CustomAnalysis</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;:class:`DefaultAnalysis` that executes a user-defined analysis function in the</span>
-<span class="sd">    `execute()` step.</span>
+<span class="sd">    :meth:`execute` step.</span>
 
 <span class="sd">    No analysis is run online.</span>
 
 <span class="sd">    :param required_axes: List of parameters (given by their :class:`.ParamHandle`\ s)</span>
 <span class="sd">        required to be scanend for the analysis to be applicable. (The order is not</span>
 <span class="sd">        relevant.)</span>
-<span class="sd">    :param analyze_fn: The function to invoke in the analysis step. It is passed two</span>
-<span class="sd">        dictionaries giving list of axis/result channel values for each point of the</span>
-<span class="sd">        scan to analyse. The function can return a list of :class:`Annotation`\ s to be</span>
-<span class="sd">        broadcast.</span>
+<span class="sd">    :param analyze_fn: The function to invoke in the analysis step. It is passed three</span>
+<span class="sd">        dictionaries:</span>
+
+<span class="sd">            1. a map from parameter handles to lists of the respective values for each\</span>
+<span class="sd">               scan point,</span>
+
+<span class="sd">            2. a map from result channels to lists of results for each scan point,</span>
+
+<span class="sd">            3. channels for each of the optional analysis results specified in\</span>
+<span class="sd">               ``analysis_results``, given as a dictionary indexed by channel name.</span>
+
+<span class="sd">        For backwards-compatibility, the third parameter can be omitted. Optionally, a</span>
+<span class="sd">        list of annotations to broadcast can be returned.</span>
+<span class="sd">    :param analysis_results: Optionally, a number of result channels for analysis</span>
+<span class="sd">        results. They are later passed to ``analyze_fn``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">],</span>
-            <span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">]],</span>
-                                 <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Annotation</span><span class="p">]]],</span>
-            <span class="n">analysis_results</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">],</span>
+                 <span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span>
+                     <span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span>
+                                                   <span class="nb">list</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]</span>
+                 <span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Annotation</span><span class="p">]]],</span>
+                 <span class="n">analysis_results</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">required_axes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_fn</span> <span class="o">=</span> <span class="n">analyze_fn</span>
 
@@ -352,10 +360,9 @@
                                  <span class="s2">&quot;&#39; in analysis for axes &#39;&quot;</span> <span class="o">+</span> <span class="n">axes</span> <span class="o">+</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
 
-    <span class="k">def</span> <span class="nf">has_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="s2">&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span>
-                   <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">scanned_axes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span>
 
     <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
@@ -486,17 +493,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">constants</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">constants</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">constants</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initial_values</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">initial_values</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial_values</span>
 
-    <span class="k">def</span> <span class="nf">has_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="s2">&quot;&quot;</span>
-        <span class="n">num_axes</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">ParamHandle</span><span class="p">):</span>
-                <span class="n">num_axes</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">arg</span><span class="o">.</span><span class="n">_store</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="kc">False</span>
-                <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scanned_axes</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">scanned_axes</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_axes</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ParamHandle</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>

@@ -488,16 +488,31 @@
             <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 
+<span class="k">def</span> <span class="nf">match_default_analysis</span><span class="p">(</span><span class="n">analysis</span><span class="p">:</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return whether the given default analysis can be executed for the given scan</span>
+<span class="sd">    axes.</span>
+
+<span class="sd">    The implementation is currently a bit more convoluted than necessary, as we want to</span>
+<span class="sd">    catch cases where the parameter specified by the analysis is scanned indirectly</span>
+<span class="sd">    through overrides. (TODO: Do we really, though? This matches the behaviour prior to</span>
+<span class="sd">    the refactoring towards exposing a set of required axis handles from</span>
+<span class="sd">    DefaultAnalysis, but we should revisit this.)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">stores</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">param_store</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stores</span><span class="p">,</span> <span class="s2">&quot;Can only match analyses after stores have been created&quot;</span>
+    <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">_store</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">analysis</span><span class="o">.</span><span class="n">required_axes</span><span class="p">())</span> <span class="o">==</span> <span class="n">stores</span>
+
+
 <div class="viewcode-block" id="filter_default_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.filter_default_analyses">[docs]</a><span class="k">def</span> <span class="nf">filter_default_analyses</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
                             <span class="n">axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Return the default analyses of the given fragment that can be executed for the</span>
-<span class="sd">    given scan spec.&quot;&quot;&quot;</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">axis_identities</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">s</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">analysis</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">analysis</span><span class="o">.</span><span class="n">has_data</span><span class="p">(</span><span class="n">axis_identities</span><span class="p">):</span>
-            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">result</span></div>
+<span class="sd">    given scan spec.</span>
+
+<span class="sd">    See :func:`match_default_analysis`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>  <span class="c1"># Don&#39;t exhaust an arbitrary iterable.</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">match_default_analysis</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ax</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="describe_scan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.describe_scan">[docs]</a><span class="k">def</span> <span class="nf">describe_scan</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>

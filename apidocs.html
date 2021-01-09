@@ -582,7 +582,7 @@ created in <a class="reference internal" href="#ndscan.experiment.fragment.Fragm
 <dd><p>Fragment that supports the notion of being run to produce results.</p>
 <dl class="py method">
 <dt id="ndscan.experiment.fragment.ExpFragment.prepare">
-<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.prepare" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.prepare" title="Permalink to this definition">¶</a></dt>
 <dd><p>Prepare this instance for execution
 (see <code class="docutils literal notranslate"><span class="pre">artiq.language.environment.Experiment.prepare</span></code>).</p>
 <p>This is invoked only once per (sub)scan, after <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a> but
@@ -594,7 +594,7 @@ pipeline stage.</p>
 
 <dl class="py method">
 <dt id="ndscan.experiment.fragment.ExpFragment.run_once">
-<code class="sig-name descname">run_once</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.run_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.run_once" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">run_once</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.run_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.run_once" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute the experiment described by the fragment once with the current
 parameters, producing one set of results (if any).</p>
 </dd></dl>
@@ -985,18 +985,10 @@ quantities (e.g. a fit minimizer).</p>
 <dd><p>Analysis functionality associated with an <cite>ExpFragment</cite> to be executed when that
 fragment is scanned in a particular way.</p>
 <dl class="py method">
-<dt id="ndscan.experiment.default_analysis.DefaultAnalysis.has_data">
-<code class="sig-name descname">has_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scanned_axes</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.has_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.has_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return whether the scanned axes contain the data necessary for this analysis
-to be applicable.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>scanned_axes</strong> – A list of axis identities being scanned over.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Whether this analysis applies or not.</p>
-</dd>
-</dl>
+<dt id="ndscan.experiment.default_analysis.DefaultAnalysis.required_axes">
+<code class="sig-name descname">required_axes</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Set<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#DefaultAnalysis.required_axes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.DefaultAnalysis.required_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the scan axes necessary for the analysis to apply, in form of the
+parameter handles.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1037,9 +1029,9 @@ annotations, if any.</p>
 
 <dl class="py class">
 <dt id="ndscan.experiment.default_analysis.CustomAnalysis">
-<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">CustomAnalysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Dict<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">, </span>list<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel">ndscan.experiment.result_channels.ResultChannel</a><span class="p">, </span>list<span class="p">]</span><span class="p">]</span><span class="p">, </span>Tuple<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.default_analysis.Annotation" title="ndscan.experiment.default_analysis.Annotation">ndscan.experiment.default_analysis.Annotation</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analysis_results</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel">ndscan.experiment.result_channels.ResultChannel</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#CustomAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.CustomAnalysis" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">CustomAnalysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Dict<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">, </span>list<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel">ndscan.experiment.result_channels.ResultChannel</a><span class="p">, </span>list<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel">ndscan.experiment.result_channels.ResultChannel</a><span class="p">]</span><span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span>List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.default_analysis.Annotation" title="ndscan.experiment.default_analysis.Annotation">ndscan.experiment.default_analysis.Annotation</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analysis_results</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel">ndscan.experiment.result_channels.ResultChannel</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#CustomAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.CustomAnalysis" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis"><code class="xref py py-class docutils literal notranslate"><span class="pre">DefaultAnalysis</span></code></a> that executes a user-defined analysis function in the
-<cite>execute()</cite> step.</p>
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">execute()</span></code> step.</p>
 <p>No analysis is run online.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1047,10 +1039,20 @@ annotations, if any.</p>
 <li><p><strong>required_axes</strong> – List of parameters (given by their <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamHandle</span></code>s)
 required to be scanend for the analysis to be applicable. (The order is not
 relevant.)</p></li>
-<li><p><strong>analyze_fn</strong> – The function to invoke in the analysis step. It is passed two
-dictionaries giving list of axis/result channel values for each point of the
-scan to analyse. The function can return a list of <a class="reference internal" href="#ndscan.experiment.default_analysis.Annotation" title="ndscan.experiment.default_analysis.Annotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotation</span></code></a>s to be
-broadcast.</p></li>
+<li><p><strong>analyze_fn</strong> – <p>The function to invoke in the analysis step. It is passed three
+dictionaries:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>a map from parameter handles to lists of the respective values for eachscan point,</p></li>
+<li><p>a map from result channels to lists of results for each scan point,</p></li>
+<li><p>channels for each of the optional analysis results specified in<code class="docutils literal notranslate"><span class="pre">analysis_results</span></code>, given as a dictionary indexed by channel name.</p></li>
+</ol>
+</div></blockquote>
+<p>For backwards-compatibility, the third parameter can be omitted. Optionally, a
+list of annotations to broadcast can be returned.</p>
+</p></li>
+<li><p><strong>analysis_results</strong> – Optionally, a number of result channels for analysis
+results. They are later passed to <code class="docutils literal notranslate"><span class="pre">analyze_fn</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1163,6 +1165,7 @@ coordinates for each scan point to, matching <code class="docutils literal notra
 <code class="sig-prename descclassname">ndscan.experiment.scan_runner.</code><code class="sig-name descname">filter_default_analyses</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a></span></em>, <em class="sig-param"><span class="n">axes</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.scan_runner.ScanAxis" title="ndscan.experiment.scan_runner.ScanAxis">ndscan.experiment.scan_runner.ScanAxis</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis">ndscan.experiment.default_analysis.DefaultAnalysis</a><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/scan_runner.html#filter_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.scan_runner.filter_default_analyses" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the default analyses of the given fragment that can be executed for the
 given scan spec.</p>
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">match_default_analysis()</span></code>.</p>
 </dd></dl>
 
 <dl class="py function">
