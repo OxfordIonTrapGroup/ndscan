@@ -109,9 +109,12 @@ class Subscan:
         coordinates = OrderedDict((p, s.get_all()) for p, s in coordinate_sinks.items())
         return coordinates, values, analysis_results
 
-    def _handle_default_analyses(self, axes: List[ScanAxis],
-                                 coordinate_sinks: Dict[ParamHandle,
-                                                        ArraySink], always_run: bool):
+    def _handle_default_analyses(
+        self,
+        axes: List[ScanAxis],
+        coordinate_sinks: Dict[ParamHandle, ArraySink],
+        always_run: bool,
+    ):
         # Re-filter analyses based on actual scan axes to support slightly dodgy use
         # case where a lower-dimensional scan is actually taken than originally
         # announced – should revisit this design.
