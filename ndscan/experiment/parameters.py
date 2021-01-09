@@ -5,7 +5,8 @@
 # of typing.Generic, nor any other), yet requires the inferred types/signatures
 # of fields to match across all instances of a class. Hence, we have no option
 # but to hang our heads in shame and manually instantiate the parameter handling
-# machinery for all supported value types.
+# machinery for all supported value types, in particular to handle cases where e.g.
+# both an int and a float parameter is scanned at the same time.
 
 from artiq.language import *
 from artiq.language import units
@@ -55,6 +56,8 @@ class ParamStore:
         if not self._handles:
             self._notify = self._do_nothing
 
+
+class FloatParamStore(ParamStore):
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -64,8 +67,6 @@ class ParamStore:
     def _do_nothing(self):
         pass
 
-
-class FloatParamStore(ParamStore):
     @portable
     def get_value(self) -> TFloat:
         return self._value
@@ -85,6 +86,15 @@ class FloatParamStore(ParamStore):
 
 class IntParamStore(ParamStore):
     @portable
+    def _notify_handles(self):
+        for h in self._handles:
+            h._changed_after_use = True
+
+    @portable
+    def _do_nothing(self):
+        pass
+
+    @portable
     def get_value(self) -> TInt32:
         return self._value
 
@@ -102,6 +112,15 @@ class IntParamStore(ParamStore):
 
 
 class StringParamStore(ParamStore):
+    @portable
+    def _notify_handles(self):
+        for h in self._handles:
+            h._changed_after_use = True
+
+    @portable
+    def _do_nothing(self):
+        pass
+
     @portable
     def get_value(self) -> TStr:
         return self._value
