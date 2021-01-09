@@ -182,13 +182,14 @@ class CustomAnalysis(DefaultAnalysis):
     :param analysis_results: Optionally, a number of result channels for analysis
         results. They are later passed to ``analyze_fn``.
     """
-    def __init__(self,
-                 required_axes: Iterable[ParamHandle],
-                 analyze_fn: Callable[[
-                     Dict[ParamHandle, list], Dict[ResultChannel,
-                                                   list], Dict[str, ResultChannel]
-                 ], Optional[List[Annotation]]],
-                 analysis_results: Iterable[ResultChannel] = []):
+    def __init__(
+        self,
+        required_axes: Iterable[ParamHandle],
+        analyze_fn: Callable[[
+            Dict[ParamHandle, list], Dict[ResultChannel, list], Dict[str, ResultChannel]
+        ], Optional[List[Annotation]]],
+        analysis_results: Iterable[ResultChannel] = [],
+    ):
         self._required_axis_handles = set(required_axes)
         self._analyze_fn = analyze_fn
 
