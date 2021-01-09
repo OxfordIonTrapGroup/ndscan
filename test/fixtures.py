@@ -125,3 +125,15 @@ class RequestTerminationFragment(ExpFragment):
 
     def run_once(self):
         raise TerminationRequested
+
+
+class TwoAnalysisFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_param("a", FloatParam, "a", 0.0)
+        self.setattr_param("b", FloatParam, "b", 0.0)
+
+    def get_default_analyses(self):
+        return [
+            CustomAnalysis([self.a], lambda *_: []),
+            CustomAnalysis([self.b], lambda *_: [])
+        ]

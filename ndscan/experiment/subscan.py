@@ -14,7 +14,8 @@ from .result_channels import (ArraySink, LastValueSink, OpaqueChannel, ResultCha
                               SubscanChannel)
 from .scan_generator import ScanGenerator, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_analyses,
-                          describe_scan, filter_default_analyses)
+                          describe_scan, filter_default_analyses,
+                          match_default_analysis)
 from ..utils import merge_no_duplicates, shorten_to_unambiguous_suffixes
 
 __all__ = ["setattr_subscan", "Subscan"]
@@ -116,8 +117,7 @@ class Subscan:
         # Re-filter analyses based on actual scan axes to support slightly dodgy use
         # case where a lower-dimensional scan is actually taken than originally
         # announced – should revisit this design.
-        axis_identities = [(ax.param_schema["fqn"], ax.path) for ax in axes]
-        analyses = [a for a in self._analyses if a.has_data(axis_identities)]
+        analyses = [a for a in self._analyses if match_default_analysis(a, axes)]
 
         axis_data = {
             handle._store.identity: sink.get_all()

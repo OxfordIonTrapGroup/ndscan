@@ -4,7 +4,8 @@ Tests for subscan functionality.
 
 import json
 from ndscan.experiment import *
-from fixtures import AddOneFragment, ReboundAddOneFragment, AddOneCustomAnalysisFragment
+from fixtures import (AddOneFragment, ReboundAddOneFragment,
+                      AddOneCustomAnalysisFragment, TwoAnalysisFragment)
 from mock_environment import ExpFragmentCase
 
 
@@ -200,3 +201,18 @@ class RunSubscanTwiceCase(ExpFragmentCase):
             expected_results = [v + 1 for v in expected_values]
             self.assertEqual(coords, {parent.child.value: expected_values})
             self.assertEqual(values, {parent.child.result: expected_results})
+
+
+class SubscanAnalysisFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("child", TwoAnalysisFragment)
+        setattr_subscan(self, "scan", self.child, [(self.child, "a")])
+
+    def run_once(self):
+        self.scan.run([(self.child.a, LinearGenerator(0.0, 1.0, 3, True))])
+
+
+class SubscanAnalysisCase(ExpFragmentCase):
+    def test_analysis_filtering(self):
+        parent = self.create(SubscanAnalysisFragment)
+        run_fragment_once(parent)
