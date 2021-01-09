@@ -329,16 +329,31 @@ class ScanRunner(HasEnvironment):
             axis.param_store.set_value(value)
 
 
+def match_default_analysis(analysis: DefaultAnalysis, axes: Iterable[ScanAxis]) -> bool:
+    """Return whether the given default analysis can be executed for the given scan
+    axes.
+
+    The implementation is currently a bit more convoluted than necessary, as we want to
+    catch cases where the parameter specified by the analysis is scanned indirectly
+    through overrides. (TODO: Do we really, though? This matches the behaviour prior to
+    the refactoring towards exposing a set of required axis handles from
+    DefaultAnalysis, but we should revisit this.)
+    """
+    stores = set(a.param_store for a in axes)
+    assert None not in stores, "Can only match analyses after stores have been created"
+    return set(a._store for a in analysis.required_axes()) == stores
+
+
 def filter_default_analyses(fragment: ExpFragment,
                             axes: Iterable[ScanAxis]) -> List[DefaultAnalysis]:
     """Return the default analyses of the given fragment that can be executed for the
-    given scan spec."""
-    result = []
-    axis_identities = [(s.param_schema["fqn"], s.path) for s in axes]
-    for analysis in fragment.get_default_analyses():
-        if analysis.has_data(axis_identities):
-            result.append(analysis)
-    return result
+    given scan spec.
+
+    See :func:`match_default_analysis`.
+    """
+    ax = list(axes)  # Don't exhaust an arbitrary iterable.
+    return list(a for a in fragment.get_default_analyses()
+                if match_default_analysis(a, ax))
 
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,

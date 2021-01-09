@@ -17,7 +17,7 @@ Both can produce annotations; particular values or plot locations highlighted in
 user interface.
 """
 import logging
-from typing import Any, Callable, Dict, List, Iterable, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Iterable, Optional, Set, Tuple, Union
 
 from ..utils import FIT_OBJECTS
 from .parameters import ParamHandle
@@ -117,13 +117,9 @@ class DefaultAnalysis:
     """Analysis functionality associated with an `ExpFragment` to be executed when that
     fragment is scanned in a particular way.
     """
-    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
-        """Return whether the scanned axes contain the data necessary for this analysis
-        to be applicable.
-
-        :param scanned_axes: A list of axis identities being scanned over.
-        :return: Whether this analysis applies or not.
-        """
+    def required_axes(self) -> Set[ParamHandle]:
+        """Return the scan axes necessary for the analysis to apply, in form of the
+        parameter handles."""
         raise NotImplementedError
 
     def describe_online_analyses(
@@ -205,10 +201,9 @@ class CustomAnalysis(DefaultAnalysis):
                                  "' in analysis for axes '" + axes + "'")
             self._result_channels[name] = channel
 
-    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
+    def required_axes(self) -> Set[ParamHandle]:
         ""
-        return set(h._store.identity
-                   for h in self._required_axis_handles) == set(scanned_axes)
+        return self._required_axis_handles
 
     def describe_online_analyses(
         self, context: AnnotationContext
@@ -339,17 +334,9 @@ class OnlineFit(DefaultAnalysis):
         self.constants = {} if constants is None else constants
         self.initial_values = {} if initial_values is None else initial_values
 
-    def has_data(self, scanned_axes: List[AxisIdentity]) -> bool:
+    def required_axes(self) -> Set[ParamHandle]:
         ""
-        num_axes = 0
-        for arg in self.data.values():
-            if isinstance(arg, ParamHandle):
-                num_axes += 1
-                if not arg._store:
-                    return False
-                if arg._store.identity not in scanned_axes:
-                    return False
-        return len(scanned_axes) == num_axes
+        return set(a for a in self.data.values() if isinstance(a, ParamHandle))
 
     def describe_online_analyses(
         self, context: AnnotationContext
