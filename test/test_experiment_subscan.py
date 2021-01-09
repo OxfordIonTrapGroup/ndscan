@@ -204,19 +204,50 @@ class RunSubscanTwiceCase(ExpFragmentCase):
 
 
 class SubscanAnalysisFragment(ExpFragment):
-    def build_fragment(self):
+    def build_fragment(self,
+                       declare_both_scannable=False,
+                       always_execute_analyses=True):
+        self.always_execute_analyses = always_execute_analyses
         self.setattr_fragment("child", TwoAnalysisFragment)
-        setattr_subscan(self, "scan", self.child, [(self.child, "a")])
+        axes = [(self.child, "a")]
+        if declare_both_scannable:
+            axes.append((self.child, "b"))
+        setattr_subscan(self, "scan", self.child, axes)
+        self.had_result = False
 
     def run_once(self):
-        self.scan.run([(self.child.a, LinearGenerator(0.0, 1.0, 3, True))])
+        _, _, analysis_results = self.scan.run(
+            [(self.child.a, LinearGenerator(0.0, 1.0, 3, True))],
+            execute_default_analyses=self.always_execute_analyses)
+        self.had_result = "result_a" in analysis_results
 
 
 class SubscanAnalysisCase(ExpFragmentCase):
     def test_simple_filtering(self):
         parent = self.create(SubscanAnalysisFragment)
         results = run_fragment_once(parent)
-
         spec = json.loads(results[parent.scan_spec])
         self.assertEqual(spec["analysis_results"], {"result_a": "scan_result_a"})
         self.assertEqual(results[parent.scan_result_a], 42.0)
+        self.assertTrue(parent.had_result)
+
+    def _test_subset_filtering(self, always_execute_analyses):
+        parent = self.create(SubscanAnalysisFragment,
+                             declare_both_scannable=True,
+                             always_execute_analyses=always_execute_analyses)
+        results = run_fragment_once(parent)
+        spec = json.loads(results[parent.scan_spec])
+
+        # Shouldn't have a result channel, since it wasn't statically known which
+        # axes would be scanned.
+        self.assertEqual(spec.get("analysis_results", {}), {})
+
+        # If requested, the analysis should have still been executed at run()-time,
+        # though.
+        self.assertEqual(parent.had_result, always_execute_analyses)
+
+    def test_subset_filtering(self):
+        self._test_subset_filtering(False)
+
+    def test_subset_filtering_2(self):
+        self._test_subset_filtering(True)

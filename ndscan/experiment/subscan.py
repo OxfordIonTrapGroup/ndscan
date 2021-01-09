@@ -14,8 +14,7 @@ from .result_channels import (ArraySink, LastValueSink, OpaqueChannel, ResultCha
                               SubscanChannel)
 from .scan_generator import ScanGenerator, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_analyses,
-                          describe_scan, filter_default_analyses,
-                          match_default_analysis)
+                          describe_scan, filter_default_analyses)
 from ..utils import merge_no_duplicates, shorten_to_unambiguous_suffixes
 
 __all__ = ["setattr_subscan", "Subscan"]
@@ -110,14 +109,15 @@ class Subscan:
         coordinates = OrderedDict((p, s.get_all()) for p, s in coordinate_sinks.items())
         return coordinates, values, analysis_results
 
-    def _handle_default_analyses(self, axes, coordinate_sinks, always_run):
-        if not self._analyses:
-            return {}, {}
-
+    def _handle_default_analyses(self, axes: List[ScanAxis],
+                                 coordinate_sinks: Dict[ParamHandle,
+                                                        ArraySink], always_run: bool):
         # Re-filter analyses based on actual scan axes to support slightly dodgy use
         # case where a lower-dimensional scan is actually taken than originally
         # announced – should revisit this design.
-        analyses = [a for a in self._analyses if match_default_analysis(a, axes)]
+        analyses = filter_default_analyses(self._fragment, axes)
+        if not analyses:
+            return {}, {}
 
         axis_data = {
             handle._store.identity: sink.get_all()
@@ -153,7 +153,7 @@ class Subscan:
                     channel.set_sink(sink)
                     analysis_sinks[name] = sink
             annotations = []
-            for a in self._analyses:
+            for a in analyses:
                 annotations += a.execute(axis_data, result_data, context)
             if annotations:
                 # Replace existing (online-fit) annotations if any analysis produced
@@ -164,7 +164,7 @@ class Subscan:
             name: sink.get_last()
             for name, sink in analysis_sinks.items()
         }
-        # FIXME: Check for None (not-set) values?
+        # FIXME: Check for None (not-set) values to produce better error message?
         for name, value in analysis_results.items():
             channel = self._parent_analysis_result_channels.get(name, None)
             if channel is not None:

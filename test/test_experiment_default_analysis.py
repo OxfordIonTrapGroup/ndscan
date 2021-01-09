@@ -13,6 +13,7 @@ class CustomAnalysisTestCase(unittest.TestCase):
 
         def make_axes(*axes):
             return [ScanAxis(None, None, ax._store) for ax in axes]
+
         a = CustomAnalysis([foo], lambda *a: [])
         self.assertTrue(match_default_analysis(a, make_axes(foo)))
         self.assertFalse(match_default_analysis(a, make_axes(bar)))
