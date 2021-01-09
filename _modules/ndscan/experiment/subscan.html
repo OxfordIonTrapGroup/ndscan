@@ -268,9 +268,12 @@
         <span class="n">coordinates</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
         <span class="k">return</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">analysis_results</span></div>
 
-    <span class="k">def</span> <span class="nf">_handle_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
-                                 <span class="n">coordinate_sinks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span>
-                                                        <span class="n">ArraySink</span><span class="p">],</span> <span class="n">always_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_handle_default_analyses</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
+        <span class="n">coordinate_sinks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ArraySink</span><span class="p">],</span>
+        <span class="n">always_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="c1"># Re-filter analyses based on actual scan axes to support slightly dodgy use</span>
         <span class="c1"># case where a lower-dimensional scan is actually taken than originally</span>
         <span class="c1"># announced – should revisit this design.</span>
