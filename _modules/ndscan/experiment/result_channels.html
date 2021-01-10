@@ -218,18 +218,23 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span> <span class="o">=</span> <span class="n">broadcast</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="o">=</span> <span class="kc">False</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_value</span> <span class="o">=</span> <span class="kc">None</span></div>
 
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="p">[</span><span class="n">value</span><span class="p">],</span> <span class="n">broadcast</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_value</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">append_to_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
+<div class="viewcode-block" id="AppendingDatasetSink.get_last"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.AppendingDatasetSink.get_last">[docs]</a>    <span class="k">def</span> <span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return the last pushed value (or None).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_value</span></div>
+
 <div class="viewcode-block" id="AppendingDatasetSink.get_all"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.AppendingDatasetSink.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Read back the previously pushed values from the target dataset (if any).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="k">else</span> <span class="p">[]</span></div></div>
+        <span class="k">return</span> <span class="p">[]</span> <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="ScalarDatasetSink"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink">[docs]</a><span class="k">class</span> <span class="nc">ScalarDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
