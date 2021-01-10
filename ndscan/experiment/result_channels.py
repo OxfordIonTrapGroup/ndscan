@@ -59,18 +59,23 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
         """
         self.key = key
         self.broadcast = broadcast
-        self.has_pushed = False
+        self.last_value = None
 
     def push(self, value: Any) -> None:
-        if not self.has_pushed:
+        assert value is not None
+        if self.last_value is None:
             self.set_dataset(self.key, [value], broadcast=self.broadcast)
-            self.has_pushed = True
+            self.last_value = value
             return
         self.append_to_dataset(self.key, value)
 
+    def get_last(self) -> Any:
+        """Return the last pushed value (or None)."""
+        return self.last_value
+
     def get_all(self) -> List[Any]:
         """Read back the previously pushed values from the target dataset (if any)."""
-        return self.get_dataset(self.key) if self.has_pushed else []
+        return [] if (self.last_value is None) else self.get_dataset(self.key)
 
 
 class ScalarDatasetSink(ResultSink, HasEnvironment):
