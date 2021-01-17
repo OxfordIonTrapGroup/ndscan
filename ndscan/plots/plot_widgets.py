@@ -8,7 +8,7 @@
 
 import pyqtgraph
 from typing import List
-from quamash import QtCore, QtWidgets
+from qasync import QtCore, QtWidgets
 from .model import Context
 
 

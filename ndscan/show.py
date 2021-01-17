@@ -7,7 +7,7 @@ import h5py
 import os
 import sys
 from oitg import results
-from quamash import QEventLoop, QtWidgets
+from qasync import QEventLoop, QtWidgets
 
 from .plots.container_widgets import MultiRootWidget, PlotContainerWidget
 from .plots.model import Context

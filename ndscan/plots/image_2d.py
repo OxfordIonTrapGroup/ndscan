@@ -4,7 +4,7 @@ from itertools import chain, repeat
 import logging
 import numpy as np
 import pyqtgraph
-from quamash import QtWidgets, QtCore
+from qasync import QtWidgets, QtCore
 from typing import Dict, Union
 
 from . import colormaps

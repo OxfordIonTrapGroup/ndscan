@@ -1,6 +1,6 @@
 import numpy as np
 import pyqtgraph
-from quamash import QtWidgets, QtCore
+from qasync import QtWidgets, QtCore
 
 from .model import SinglePointModel
 from .plot_widgets import add_source_id_label, AlternateMenuPlotWidget

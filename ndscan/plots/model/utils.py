@@ -1,4 +1,4 @@
-from quamash import QtCore
+from qasync import QtCore
 
 
 def call_later(func):

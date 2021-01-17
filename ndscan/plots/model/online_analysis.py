@@ -1,7 +1,7 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from pyqtgraph import SignalProxy
-from quamash import QtCore
+from qasync import QtCore
 from typing import Any, Dict
 from ...utils import FIT_OBJECTS
 
