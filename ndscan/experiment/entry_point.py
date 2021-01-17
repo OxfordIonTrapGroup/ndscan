@@ -161,7 +161,7 @@ class ArgumentInterface(HasEnvironment):
 
         generators = []
         axes = []
-        for axspec in scan["axes"]:
+        for axspec in scan.get("axes", []):
             generator_class = GENERATORS.get(axspec["type"], None)
             if not generator_class:
                 raise ScanSpecError("Axis type '{}' not implemented".format(
