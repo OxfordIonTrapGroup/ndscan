@@ -3,9 +3,9 @@ Tests for ndscan.experiment top-level runners.
 """
 
 import json
-from artiq.language import HasEnvironment
 from ndscan.experiment import *
-from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
+from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
+from sipyco import pyon
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
                       TransitoryErrorFragment, RequestTerminationFragment)
 from mock_environment import HasEnvironmentCase
@@ -15,6 +15,38 @@ ScanReboundAddOneExp = make_fragment_scan_exp(ReboundAddOneFragment)
 
 
 class FragmentScanExpCase(HasEnvironmentCase):
+    def test_wrong_fqn_override(self):
+        exp = self.create(ScanAddOneExp,
+                          env_args={
+                              PARAMS_ARG_KEY:
+                              pyon.encode({
+                                  "overrides": {
+                                      "non_existent": [{
+                                          "path": "*",
+                                          "value": 3
+                                      }]
+                                  }
+                              })
+                          })
+        with self.assertRaises(KeyError):
+            exp.prepare()
+
+    def test_no_path_match_override(self):
+        exp = self.create(ScanAddOneExp,
+                          env_args={
+                              PARAMS_ARG_KEY:
+                              pyon.encode({
+                                  "overrides": {
+                                      "fixtures.AddOneFragment.value": [{
+                                          "path": "non_existent",
+                                          "value": 3
+                                      }]
+                                  }
+                              })
+                          })
+        with self.assertRaises(ValueError):
+            exp.prepare()
+
     def test_run_trivial_scan(self):
         self.dataset_db.data["system_id"] = (True, "system")
         exp = self.create(ScanAddOneExp)

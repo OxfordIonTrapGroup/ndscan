@@ -65,10 +65,10 @@ class HasEnvironmentCase(unittest.TestCase):
                                             "scheduler": self.scheduler
                                         })
 
-    def create(self, klass, *args, **kwargs):
+    def create(self, klass, *args, env_args=None, **kwargs):
         return klass(
-            (self.device_mgr, self.dataset_mgr, ProcessArgumentManager({}), None),
-            *args, **kwargs)
+            (self.device_mgr, self.dataset_mgr, ProcessArgumentManager(
+                env_args or {}), None), *args, **kwargs)
 
 
 class ExpFragmentCase(HasEnvironmentCase):
