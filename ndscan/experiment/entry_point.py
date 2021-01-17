@@ -94,6 +94,21 @@ class FragmentScanExperiment(EnvExperiment):
             param_stores.setdefault(fqn, []).append((ax.path, ax.param_store))
 
         self.fragment.init_params(param_stores)
+
+        for fqn, pairs in param_stores.items():
+            for path, store in pairs:
+                if not store._handles:
+                    # This isn't strictly problem; we could continue on just fine, or
+                    # make this just a warning. However, there is no reason for the user
+                    # to specify an override spec that will be silently ignored in the
+                    # first place, and failing loudly prevents any unnoticed issues if
+                    # the experiment code is modified for an already scheduled servo/
+                    # already open argument UI window/…
+                    raise ValueError(f"Override for '{fqn}' in path '{path}' did not " +
+                                     "match any parameters (likely due to changes " +
+                                     "since made to the experiment code; try " +
+                                     "Recompute All Arguments).")
+
         self.tlr = TopLevelRunner(self, self.fragment, spec, no_axes_mode,
                                   self.max_rtio_underflow_retries,
                                   self.max_transitory_error_retries)
