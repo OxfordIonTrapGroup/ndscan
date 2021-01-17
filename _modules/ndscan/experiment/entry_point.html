@@ -253,6 +253,21 @@
             <span class="n">param_stores</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">fqn</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ax</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">param_store</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">(</span><span class="n">param_stores</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">pairs</span> <span class="ow">in</span> <span class="n">param_stores</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">store</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">store</span><span class="o">.</span><span class="n">_handles</span><span class="p">:</span>
+                    <span class="c1"># This isn&#39;t strictly problem; we could continue on just fine, or</span>
+                    <span class="c1"># make this just a warning. However, there is no reason for the user</span>
+                    <span class="c1"># to specify an override spec that will be silently ignored in the</span>
+                    <span class="c1"># first place, and failing loudly prevents any unnoticed issues if</span>
+                    <span class="c1"># the experiment code is modified for an already scheduled servo/</span>
+                    <span class="c1"># already open argument UI window/…</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Override for &#39;</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">&#39; in path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39; did not &quot;</span> <span class="o">+</span>
+                                     <span class="s2">&quot;match any parameters (likely due to changes &quot;</span> <span class="o">+</span>
+                                     <span class="s2">&quot;since made to the experiment code; try &quot;</span> <span class="o">+</span>
+                                     <span class="s2">&quot;Recompute All Arguments).&quot;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span> <span class="o">=</span> <span class="n">TopLevelRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">no_axes_mode</span><span class="p">,</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span></div>
@@ -277,13 +292,14 @@
             <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_always_shown_params</span><span class="p">():</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">()</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">param</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                    <span class="n">always_shown_params</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="n">path</span><span class="p">)]</span>
                 <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                         <span class="s2">&quot;Parameter &#39;</span><span class="si">%s</span><span class="s2">&#39; specified in get_always_shown_params()&quot;</span>
                         <span class="s2">&quot; is not a free parameter of fragment &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">handle</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-                <span class="n">always_shown_params</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="n">handle</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())]</span>
 
         <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;instances&quot;</span><span class="p">:</span> <span class="n">instances</span><span class="p">,</span>
@@ -319,7 +335,7 @@
 
         <span class="n">generators</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">axspec</span> <span class="ow">in</span> <span class="n">scan</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">axspec</span> <span class="ow">in</span> <span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;axes&quot;</span><span class="p">,</span> <span class="p">[]):</span>
             <span class="n">generator_class</span> <span class="o">=</span> <span class="n">GENERATORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">generator_class</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">ScanSpecError</span><span class="p">(</span><span class="s2">&quot;Axis type &#39;</span><span class="si">{}</span><span class="s2">&#39; not implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
