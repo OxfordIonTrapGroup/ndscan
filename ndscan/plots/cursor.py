@@ -1,5 +1,5 @@
 import numpy as np
-from quamash import QtCore, QtWidgets
+from qasync import QtCore, QtWidgets
 import pyqtgraph
 
 

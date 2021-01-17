@@ -1,6 +1,6 @@
 import logging
 from collections import OrderedDict
-from quamash import QtWidgets
+from qasync import QtWidgets
 
 from .model import Context, Model, Root, SinglePointModel, ScanModel
 from .model.subscan import create_subscan_roots

@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import pyqtgraph
-from quamash import QtCore
+from qasync import QtCore
 
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import LabeledCrosshairCursor
