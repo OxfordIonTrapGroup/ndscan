@@ -610,9 +610,9 @@ def run_fragment_once(
 
 def create_and_run_fragment_once(env: HasEnvironment,
                                  fragment_class: Type[ExpFragment],
+                                 *args,
                                  max_rtio_underflow_retries: int = 3,
                                  max_transitory_error_retries: int = 10,
-                                 *args,
                                  **kwargs) -> Dict[str, Any]:
     """Create an instance of the passed :class:`.ExpFragment` type and runs it once,
     returning the values pushed to any result channels.
