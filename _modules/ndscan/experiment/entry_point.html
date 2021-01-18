@@ -769,9 +769,9 @@
 
 <div class="viewcode-block" id="create_and_run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.create_and_run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span>
                                  <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
+                                 <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                                  <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
                                  <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-                                 <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
 <span class="sd">    returning the values pushed to any result channels.</span>
