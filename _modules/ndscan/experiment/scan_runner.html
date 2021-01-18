@@ -168,7 +168,6 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">artiq.coredevice.exceptions</span> <span class="kn">import</span> <span class="n">RTIOUnderflow</span>
 <span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">DefaultAnalysis</span>
@@ -182,16 +181,6 @@
     <span class="s2">&quot;ScanAxis&quot;</span><span class="p">,</span> <span class="s2">&quot;ScanSpec&quot;</span><span class="p">,</span> <span class="s2">&quot;ScanRunner&quot;</span><span class="p">,</span> <span class="s2">&quot;filter_default_analyses&quot;</span><span class="p">,</span> <span class="s2">&quot;describe_scan&quot;</span><span class="p">,</span>
     <span class="s2">&quot;describe_analyses&quot;</span>
 <span class="p">]</span>
-
-
-<span class="k">class</span> <span class="nc">ScanFinished</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Used internally to signal that a scan has been successfully completed (points</span>
-<span class="sd">    exhausted).</span>
-
-<span class="sd">    This is a kludge to work around a bug where tuples of empty lists crash the ARTIQ</span>
-<span class="sd">    RPC code (kernel aborts), and should never be visible to the user.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">pass</span>
 
 
 <div class="viewcode-block" id="ScanAxis"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanAxis">[docs]</a><span class="k">class</span> <span class="nc">ScanAxis</span><span class="p">:</span>
@@ -337,22 +326,26 @@
                     <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">)</span>
         <span class="n">run_chunk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_kscan_run_chunk</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">))</span>
 
-        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">ScanFinished</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_update_host_param_stores</span><span class="p">()</span>
-            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_loop</span><span class="p">(</span><span class="n">run_chunk</span><span class="p">)</span>
-                <span class="k">finally</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_update_host_param_stores</span><span class="p">()</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_loop</span><span class="p">(</span><span class="n">run_chunk</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_is_out_of_points</span><span class="p">():</span>
+                    <span class="c1"># No more points; finished successfully.</span>
+                    <span class="k">return</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_build_kscan_run_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_axes</span><span class="p">):</span>
         <span class="n">param_decl</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;p</span><span class="si">{0}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_axes</span><span class="p">))</span>
         <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;(</span><span class="si">{}</span><span class="s2">) = self._kscan_param_values_chunk()</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_decl</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;if not p0:</span><span class="se">\n</span><span class="s2">&quot;</span>  <span class="c1"># No more points</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    return True</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;for i in range(len(p0)):</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_axes</span><span class="p">):</span>
             <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    self._kscan_param_setter_</span><span class="si">{0}</span><span class="s2">(p</span><span class="si">{0}</span><span class="s2">[i])</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
@@ -443,8 +436,6 @@
                 <span class="c1"># the regular (float) scans for integers until proper support for int</span>
                 <span class="c1"># scans is implemented.</span>
                 <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="n">ScanFinished</span>
         <span class="k">return</span> <span class="n">values</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
@@ -476,16 +467,20 @@
 <span class="sd">        execute using the expected values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="c1"># Generate the next set of values if we are at a chunk boundary.</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_current_chunk</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_values_chunk</span><span class="p">()</span>
-            <span class="k">except</span> <span class="n">ScanFinished</span><span class="p">:</span>
-                <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_is_out_of_points</span><span class="p">():</span>
+            <span class="k">return</span>
         <span class="c1"># Set the host-side parameter stores.</span>
         <span class="n">next_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_current_chunk</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">next_values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_axes</span><span class="p">):</span>
-            <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+            <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@host_only</span>
+    <span class="k">def</span> <span class="nf">_kscan_is_out_of_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_current_chunk</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># Current chunk is empty, but we might be at a chunk boundary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_param_values_chunk</span><span class="p">()</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_current_chunk</span></div>
 
 
 <span class="k">def</span> <span class="nf">match_default_analysis</span><span class="p">(</span><span class="n">analysis</span><span class="p">:</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
