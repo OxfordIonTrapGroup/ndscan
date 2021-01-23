@@ -82,6 +82,12 @@ ndscan.results API
 .. automodule:: ndscan.results
 
 
+:mod:`ndscan.results.arguments` module
+--------------------------------------
+
+.. automodule:: ndscan.results.arguments
+    :members:
+
 :mod:`ndscan.results.pyplot` module
 -----------------------------------
 

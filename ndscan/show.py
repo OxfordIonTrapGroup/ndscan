@@ -7,11 +7,13 @@ import h5py
 import os
 import sys
 from oitg import results
+from sipyco import pyon
 from qasync import QEventLoop, QtWidgets
 
 from .plots.container_widgets import MultiRootWidget, PlotContainerWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
+from .results.arguments import dump_overrides, dump_scan, extract_param_schema
 from .results.tools import find_ndscan_roots
 from .utils import shorten_to_unambiguous_suffixes, strip_suffix
 
@@ -55,7 +57,6 @@ def main():
             QtWidgets.QMessageBox.critical(None, "Unable to resolve experiment path",
                                            f"Could not resolve '{args.path}: {paths}'")
             sys.exit(1)
-        print(paths)
         path = next(iter(paths.values())).path
     else:
         path = args.path
@@ -95,6 +96,29 @@ def main():
                 None, "Not an ndscan file",
                 "No ndscan result datasets found in file: '{}'".format(args.path))
             sys.exit(1)
+
+    try:
+        schema = extract_param_schema(pyon.decode(file["expid"][()])["arguments"])
+    except Exception as e:
+        print("No ndscan parameter arguments found:", e)
+        schema = None
+
+    if schema is not None:
+        print("Scan settings")
+        print("=============")
+        print()
+        for s in dump_scan(schema):
+            print(s)
+        print()
+
+        print()
+
+        print("Overrides")
+        print("=========")
+        print()
+        for s in dump_overrides(schema):
+            print(s)
+        print()
 
     try:
         context = Context()
