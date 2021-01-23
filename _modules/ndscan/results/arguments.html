@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>ndscan.results.arguments &mdash; ndscan  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/results/arguments.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> ndscan
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html">ndscan.experiment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html#module-ndscan.results">ndscan.results API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../coding-conventions.html">Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../design-retrospective.html">Design retrospective</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ndscan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>ndscan.results.arguments</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ndscan.results.arguments</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions for pretty-printing user argument data (scan parameters, overrides, …) for</span>
+<span class="sd">FragmentScanExperiments from ARTIQ results.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">sipyco</span> <span class="kn">import</span> <span class="n">pyon</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">PARAMS_ARG_KEY</span>
+
+
+<div class="viewcode-block" id="extract_param_schema"><a class="viewcode-back" href="../../../apidocs.html#ndscan.results.arguments.extract_param_schema">[docs]</a><span class="k">def</span> <span class="nf">extract_param_schema</span><span class="p">(</span><span class="n">arguments</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Extract ndscan parameter data from the given ARTIQ arguments directory.</span>
+
+<span class="sd">    :param arguments: The arguments for an ARTIQ experiment, as e.g. obtained using</span>
+<span class="sd">        ``oitg.results.load_hdf5_file(…)[&quot;expid&quot;][&quot;arguments&quot;]``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">arguments</span><span class="p">[</span><span class="n">PARAMS_ARG_KEY</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ndscan argument (</span><span class="si">{</span><span class="n">PARAMS_ARG_KEY</span><span class="si">}</span><span class="s2">) not found&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pyon</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">string</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">format_numeric</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">unit</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;unit&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">unit</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span> <span class="o">/</span> <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">unit</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+<div class="viewcode-block" id="dump_overrides"><a class="viewcode-back" href="../../../apidocs.html#ndscan.results.arguments.dump_overrides">[docs]</a><span class="k">def</span> <span class="nf">dump_overrides</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Format information about overrides as a human-readable string.</span>
+
+<span class="sd">    :return: Generator yielding the output line-by-line.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">overrides</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">[</span><span class="s2">&quot;overrides&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">override</span> <span class="ow">in</span> <span class="n">overrides</span><span class="p">:</span>
+            <span class="n">ps</span> <span class="o">=</span> <span class="n">schema</span><span class="p">[</span><span class="s2">&quot;schemata&quot;</span><span class="p">][</span><span class="n">fqn</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">format_numeric</span><span class="p">(</span><span class="n">override</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">],</span> <span class="n">ps</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">])</span>
+            <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot; - </span><span class="si">{</span><span class="n">ps</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">override</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;*&quot;</span>
+            <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;   (</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+<span class="k">def</span> <span class="nf">format_scan_range</span><span class="p">(</span><span class="n">typ</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rang</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">param_spec</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span>
+                                                                       <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">format_numeric</span><span class="p">(</span><span class="n">rang</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">],</span> <span class="n">param_spec</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">])</span>
+        <span class="n">stop</span> <span class="o">=</span> <span class="n">format_numeric</span><span class="p">(</span><span class="n">rang</span><span class="p">[</span><span class="s2">&quot;stop&quot;</span><span class="p">],</span> <span class="n">param_spec</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">stop</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">rang</span><span class="p">[</span><span class="s1">&#39;num_points&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> points&quot;</span>
+    <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="s2">&quot;refining&quot;</span><span class="p">:</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="n">format_numeric</span><span class="p">(</span><span class="n">rang</span><span class="p">[</span><span class="s2">&quot;lower&quot;</span><span class="p">],</span> <span class="n">param_spec</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">])</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="n">format_numeric</span><span class="p">(</span><span class="n">rang</span><span class="p">[</span><span class="s2">&quot;upper&quot;</span><span class="p">],</span> <span class="n">param_spec</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lower</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">upper</span><span class="si">}</span><span class="s2">, refining&quot;</span>
+    <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;list: [</span><span class="si">{</span><span class="n">rang</span><span class="p">[</span><span class="s1">&#39;values&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">]&quot;</span>
+
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Unknown scan type &#39;</span><span class="si">{</span><span class="n">typ</span><span class="si">}</span><span class="s2">&#39;.&gt;&quot;</span>
+
+
+<div class="viewcode-block" id="dump_scan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.results.arguments.dump_scan">[docs]</a><span class="k">def</span> <span class="nf">dump_scan</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Format information about the configured scan (if any) as a human-readable string.</span>
+
+<span class="sd">    :return: Generator yielding the output line-by-line.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">scan</span> <span class="o">=</span> <span class="n">schema</span><span class="p">[</span><span class="s2">&quot;scan&quot;</span><span class="p">]</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">scan</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">axes</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;No scan (mode: </span><span class="si">{</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;no_axis_mode&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">return</span>
+
+    <span class="k">yield</span> <span class="s2">&quot; - Axes:&quot;</span>
+    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+        <span class="n">fqn</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">]</span>
+        <span class="n">ps</span> <span class="o">=</span> <span class="n">schema</span><span class="p">[</span><span class="s2">&quot;schemata&quot;</span><span class="p">][</span><span class="n">fqn</span><span class="p">]</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;*&quot;</span>
+        <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;   - </span><span class="si">{</span><span class="n">ps</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">):&quot;</span>
+        <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;     </span><span class="si">{</span><span class="n">format_scan_range</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">ax</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">],</span> <span class="n">ps</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot; - Number of repeats: </span><span class="si">{</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;num_repeats&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot; - Randomise order globally: </span><span class="si">{</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;randomise_order_globally&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, David Nadlinger.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

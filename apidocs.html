@@ -110,6 +110,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#module-ndscan.results">ndscan.results API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-ndscan.results.arguments"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.results.arguments</span></code> module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ndscan-results-pyplot-module"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.results.pyplot</span></code> module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-ndscan.results.tools"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.results.tools</span></code> module</a></li>
 </ul>
@@ -1368,6 +1369,45 @@ not pushed to).</p>
 </div>
 <div class="section" id="module-ndscan.results">
 <span id="ndscan-results-api"></span><h1>ndscan.results API<a class="headerlink" href="#module-ndscan.results" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-ndscan.results.arguments">
+<span id="ndscan-results-arguments-module"></span><h2><a class="reference internal" href="#module-ndscan.results.arguments" title="ndscan.results.arguments"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.results.arguments</span></code></a> module<a class="headerlink" href="#module-ndscan.results.arguments" title="Permalink to this headline">¶</a></h2>
+<p>Functions for pretty-printing user argument data (scan parameters, overrides, …) for
+FragmentScanExperiments from ARTIQ results.</p>
+<dl class="py function">
+<dt id="ndscan.results.arguments.extract_param_schema">
+<code class="sig-prename descclassname">ndscan.results.arguments.</code><code class="sig-name descname">extract_param_schema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arguments</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><a class="reference internal" href="_modules/ndscan/results/arguments.html#extract_param_schema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.results.arguments.extract_param_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract ndscan parameter data from the given ARTIQ arguments directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>arguments</strong> – The arguments for an ARTIQ experiment, as e.g. obtained using
+<code class="docutils literal notranslate"><span class="pre">oitg.results.load_hdf5_file(…)[&quot;expid&quot;][&quot;arguments&quot;]</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ndscan.results.arguments.dump_overrides">
+<code class="sig-prename descclassname">ndscan.results.arguments.</code><code class="sig-name descname">dump_overrides</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span>str<span class="p">]</span><a class="reference internal" href="_modules/ndscan/results/arguments.html#dump_overrides"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.results.arguments.dump_overrides" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format information about overrides as a human-readable string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Generator yielding the output line-by-line.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ndscan.results.arguments.dump_scan">
+<code class="sig-prename descclassname">ndscan.results.arguments.</code><code class="sig-name descname">dump_scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span>str<span class="p">]</span><a class="reference internal" href="_modules/ndscan/results/arguments.html#dump_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.results.arguments.dump_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format information about the configured scan (if any) as a human-readable string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Generator yielding the output line-by-line.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="ndscan-results-pyplot-module">
 <h2><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.results.pyplot</span></code> module<a class="headerlink" href="#ndscan-results-pyplot-module" title="Permalink to this headline">¶</a></h2>
 </div>
