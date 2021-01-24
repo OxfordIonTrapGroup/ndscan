@@ -68,7 +68,7 @@ def dump_scan(schema: Dict[str, Any]) -> Iterable[str]:
 
     axes = scan["axes"]
     if not axes:
-        yield f"No scan (mode: {scan['no_axis_mode']})"
+        yield f"No scan (mode: {scan['no_axes_mode']})"
         return
 
     yield " - Axes:"
