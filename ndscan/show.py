@@ -127,7 +127,7 @@ def main():
         # Take source_id from first prefix. This is pretty arbitrary, but for
         # experiment-generated files, they will all be the same anyway.
         if (prefixes[0] + "source_id") in datasets:
-            context.set_source_id(datasets[prefixes[0] + "source_id"][()])
+            context.set_source_id(datasets[prefixes[0] + "source_id"].asstr()[()])
         else:
             # Old ndscan versions had a rid dataset instead of source_id.
             context.set_source_id("rid_{}".format(datasets[prefixes[0] + "rid"][()]))
