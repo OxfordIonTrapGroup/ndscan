@@ -147,7 +147,7 @@ def main():
         widget = MultiRootWidget(
             OrderedDict(zip((strip_suffix(label_map[p], ".") for p in prefixes),
                             roots)), context)
-
+    widget.setWindowTitle(f"{context.get_title()} – ndscan.show")
     widget.show()
     widget.resize(800, 600)
     sys.exit(app.exec_())
