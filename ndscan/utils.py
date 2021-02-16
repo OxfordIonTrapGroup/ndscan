@@ -1,6 +1,5 @@
 """Odds and ends common to all of ndscan."""
 
-from artiq.language import units
 from enum import Enum, unique
 import oitg.fitting
 from typing import Any, Callable, Dict, Iterable
@@ -92,6 +91,7 @@ def shorten_to_unambiguous_suffixes(
 
 
 def eval_param_default(value: str, get_dataset: Callable) -> Any:
+    from artiq.language import units
     env = {name: getattr(units, name) for name in units.__all__}
     env.update({"dataset": get_dataset})
     return eval(value, env)
