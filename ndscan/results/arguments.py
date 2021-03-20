@@ -80,3 +80,28 @@ def dump_scan(schema: Dict[str, Any]) -> Iterable[str]:
         yield f"     {format_scan_range(ax['type'], ax['range'], ps)}"
     yield f" - Number of repeats: {scan['num_repeats']}"
     yield f" - Randomise order globally: {scan['randomise_order_globally']}"
+
+
+def summarise(schema: Dict[str, Any]) -> str:
+    """Convenience method returning a combination of :meth:`dump_overrides` and
+    :meth:`dump_scan` ready to be printed.
+    """
+    result = ""
+
+    result += "Scan settings\n"
+    result += "=============\n"
+    result += "\n"
+    for s in dump_scan(schema):
+        result += s + "\n"
+    result += "\n"
+
+    result += "\n"
+
+    result += "Overrides\n"
+    result += "=========\n"
+    result += "\n"
+    for s in dump_overrides(schema):
+        result += s + "\n"
+    result += "\n"
+
+    return result

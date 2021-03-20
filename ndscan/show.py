@@ -13,7 +13,7 @@ from qasync import QEventLoop, QtWidgets
 from .plots.container_widgets import MultiRootWidget, PlotContainerWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
-from .results.arguments import dump_overrides, dump_scan, extract_param_schema
+from .results.arguments import extract_param_schema, summarise
 from .results.tools import find_ndscan_roots
 from .utils import shorten_to_unambiguous_suffixes, strip_suffix
 
@@ -104,21 +104,7 @@ def main():
         schema = None
 
     if schema is not None:
-        print("Scan settings")
-        print("=============")
-        print()
-        for s in dump_scan(schema):
-            print(s)
-        print()
-
-        print()
-
-        print("Overrides")
-        print("=========")
-        print()
-        for s in dump_overrides(schema):
-            print(s)
-        print()
+        print(summarise(schema))
 
     try:
         context = Context()
