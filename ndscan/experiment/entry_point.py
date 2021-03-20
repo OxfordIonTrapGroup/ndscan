@@ -281,7 +281,8 @@ class TopLevelRunner(HasEnvironment):
 
         # Filter analyses, set up analysis result channels, and keep track of all the
         # names in the annotation context.
-        self._analyses = filter_default_analyses(self.fragment, self.spec.axes)
+        self._analyses = [] if self._is_time_series else filter_default_analyses(
+            self.fragment, self.spec.axes)
 
         self._analysis_results = reduce(
             lambda l, r: merge_no_duplicates(l, r, kind="analysis result"),
