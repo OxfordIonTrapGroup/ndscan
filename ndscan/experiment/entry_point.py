@@ -31,7 +31,7 @@ from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           describe_analyses, filter_default_analyses)
 from .utils import dump_json, is_kernel, to_metadata_broadcast_type
 from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY, SCHEMA_REVISION,
-                     SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes)
+                     SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes, strip_suffix)
 
 __all__ = [
     "ArgumentInterface", "TopLevelRunner", "make_fragment_scan_exp",
@@ -52,6 +52,18 @@ class ScanSpecError(Exception):
     """Raised when the scan specification passed in :data:`PARAMS_ARG_KEY` is not valid
     for the given fragment."""
     pass
+
+
+def get_class_pretty_name(cls: Type[object]) -> str:
+    """Return the "pretty name" for the passed class, as used by ARTIQ to display in the
+    experiment explorer.
+
+    (ARTIQ unfortunately doesn't expose this, so reimplement the lookup here.)
+    """
+    doc = cls.__doc__
+    if not doc:
+        return cls.__name__
+    return strip_suffix(doc.strip().splitlines()[0].strip(), ".")
 
 
 class FragmentScanExperiment(EnvExperiment):
@@ -114,7 +126,8 @@ class FragmentScanExperiment(EnvExperiment):
                                   self.max_transitory_error_retries)
 
     def run(self):
-        self.tlr.create_applet(title="ndscan: " + self.fragment.fqn)
+        name = get_class_pretty_name(self.fragment.__class__)
+        self.tlr.create_applet(title=f"{name} ({self.fragment.fqn})")
         with suppress(TerminationRequested):
             self.tlr.run()
 
