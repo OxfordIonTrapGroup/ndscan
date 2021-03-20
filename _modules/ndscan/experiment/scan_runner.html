@@ -506,8 +506,16 @@
 <span class="sd">    See :func:`match_default_analysis`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ax</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>  <span class="c1"># Don&#39;t exhaust an arbitrary iterable.</span>
-    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">match_default_analysis</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ax</span><span class="p">))</span></div>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">analysis</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">analysis</span><span class="p">,</span> <span class="n">DefaultAnalysis</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unexpected get_default_analyses() return value for </span><span class="si">{</span><span class="n">fragment</span><span class="si">}</span><span class="s2">: &quot;</span>
+                <span class="s2">&quot;Expected list of ndscan.experiment.DefaultAnalysis instances, got &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;element of type &#39;</span><span class="si">{</span><span class="n">analysis</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match_default_analysis</span><span class="p">(</span><span class="n">analysis</span><span class="p">,</span> <span class="n">ax</span><span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="describe_scan"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.describe_scan">[docs]</a><span class="k">def</span> <span class="nf">describe_scan</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
