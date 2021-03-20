@@ -190,7 +190,7 @@
                           <span class="n">describe_analyses</span><span class="p">,</span> <span class="n">filter_default_analyses</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">dump_json</span><span class="p">,</span> <span class="n">is_kernel</span><span class="p">,</span> <span class="n">to_metadata_broadcast_type</span>
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">merge_no_duplicates</span><span class="p">,</span> <span class="n">NoAxesMode</span><span class="p">,</span> <span class="n">PARAMS_ARG_KEY</span><span class="p">,</span> <span class="n">SCHEMA_REVISION</span><span class="p">,</span>
-                     <span class="n">SCHEMA_REVISION_KEY</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">)</span>
+                     <span class="n">SCHEMA_REVISION_KEY</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">,</span> <span class="n">strip_suffix</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;ArgumentInterface&quot;</span><span class="p">,</span> <span class="s2">&quot;TopLevelRunner&quot;</span><span class="p">,</span> <span class="s2">&quot;make_fragment_scan_exp&quot;</span><span class="p">,</span>
@@ -211,6 +211,18 @@
     <span class="sd">&quot;&quot;&quot;Raised when the scan specification passed in :data:`PARAMS_ARG_KEY` is not valid</span>
 <span class="sd">    for the given fragment.&quot;&quot;&quot;</span>
     <span class="k">pass</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_class_pretty_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return the &quot;pretty name&quot; for the passed class, as used by ARTIQ to display in the</span>
+<span class="sd">    experiment explorer.</span>
+
+<span class="sd">    (ARTIQ unfortunately doesn&#39;t expose this, so reimplement the lookup here.)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__doc__</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">doc</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">return</span> <span class="n">strip_suffix</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="FragmentScanExperiment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment">[docs]</a><span class="k">class</span> <span class="nc">FragmentScanExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
@@ -273,7 +285,8 @@
                                   <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">create_applet</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;ndscan: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">get_class_pretty_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">create_applet</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
