@@ -347,8 +347,16 @@ def filter_default_analyses(fragment: ExpFragment,
     See :func:`match_default_analysis`.
     """
     ax = list(axes)  # Don't exhaust an arbitrary iterable.
-    return list(a for a in fragment.get_default_analyses()
-                if match_default_analysis(a, ax))
+    result = []
+    for analysis in fragment.get_default_analyses():
+        if not isinstance(analysis, DefaultAnalysis):
+            raise ValueError(
+                f"Unexpected get_default_analyses() return value for {fragment}: "
+                "Expected list of ndscan.experiment.DefaultAnalysis instances, got "
+                f"element of type '{analysis}'")
+        if match_default_analysis(analysis, ax):
+            result.append(analysis)
+    return result
 
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,
