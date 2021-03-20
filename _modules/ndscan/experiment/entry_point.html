@@ -440,7 +440,8 @@
 
         <span class="c1"># Filter analyses, set up analysis result channels, and keep track of all the</span>
         <span class="c1"># names in the annotation context.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span> <span class="k">else</span> <span class="n">filter_default_analyses</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="n">merge_no_duplicates</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;analysis result&quot;</span><span class="p">),</span>
