@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="ndscan",
-    version="0.1.0",
+    version="0.2.0",
     url="https://github.com/klickverbot/ndscan",
     description="Composable experiment fragments and multidimensional scans for ARTIQ",
     license="LGPLv3+",
