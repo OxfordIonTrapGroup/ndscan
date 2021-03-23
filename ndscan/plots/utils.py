@@ -214,14 +214,12 @@ def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]])
         if unit:
             unit = "/ " + unit + " "
         result += "<b>{} {}</b>".format(description, unit)
-        if identity_string:
-            pt = axis_item.label.font().pointSizeF() * 0.8
-            result += "<i style='font-size: {}pt'>({})</i>".format(pt, identity_string)
         if color is not None:
             result += "</span>"
         return result
 
     axis_item.setLabel("<br>".join(label_html(*a) for a in axes))
+    axis_item.setToolTip("\n".join(identity for _, identity, _, _ in axes if identity))
 
     if len(axes) != 1:
         return "", 1.0
