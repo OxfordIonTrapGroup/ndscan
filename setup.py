@@ -8,9 +8,13 @@ setup(
     license="LGPLv3+",
     author="David Nadlinger",
     packages=find_packages(),
-    package_data={"ndscan.dashboard": ["icons/*.png", "icons/*.svg"]},
     entry_points={"gui_scripts": ["ndscan_show = ndscan.show:main"]},
     # KLUDGE: ARTIQ dependency is not explicitly listed for now to avoid
     # problems with the ion trap group's Conda setup.
-    # install_requires=["artiq"]
+    # install_requires=["artiq"],
+
+    # Include icons. We currently rely on direct filesystem access, so we can't
+    # tolerate installation as a zipped egg.
+    package_data={"ndscan.dashboard": ["icons/*.png", "icons/*.svg"]},
+    zip_safe=False,
 )
