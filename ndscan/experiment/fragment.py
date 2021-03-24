@@ -193,8 +193,8 @@ class Fragment(HasEnvironment):
         for s in self._subfragments[::-1]:
             try:
                 s.host_cleanup()
-            except Exception as e:
-                logger.error("Cleanup failed for '%s': %s", s._stringize_path(), e)
+            except Exception:
+                logger.exception("Cleanup failed for '%s'", s._stringize_path())
 
     @portable
     def device_cleanup(self) -> None:
