@@ -352,8 +352,8 @@
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">s</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cleanup failed for &#39;</span><span class="si">%s</span><span class="s2">&#39;: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">(),</span> <span class="n">e</span><span class="p">)</span></div>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Cleanup failed for &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span></div>
 
 <div class="viewcode-block" id="Fragment.device_cleanup"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_cleanup">[docs]</a>    <span class="nd">@portable</span>
     <span class="k">def</span> <span class="nf">device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
