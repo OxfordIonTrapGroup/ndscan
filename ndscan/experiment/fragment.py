@@ -259,8 +259,7 @@ class Fragment(HasEnvironment):
         :param kwargs: Any extra keyword arguments that were passed to the
             ``HasEnvironment`` constructor.
         """
-        raise NotImplementedError("build_fragment() not implemented; "
-                                  "override it to add parameters/result channels.")
+        pass
 
     def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args,
                          **kwargs) -> "Fragment":
