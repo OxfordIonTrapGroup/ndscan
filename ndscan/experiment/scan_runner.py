@@ -177,7 +177,7 @@ class ScanRunner(HasEnvironment):
                     return
             finally:
                 self._kscan_fragment.host_cleanup()
-            self.core.comm.close()
+                self.core.comm.close()
             self.scheduler.pause()
             self._kscan_fragment.recompute_param_defaults()
 
