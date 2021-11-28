@@ -223,6 +223,10 @@
 <span class="sd">    :return: Generator yielding the output line-by-line.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="k">if</span> <span class="s2">&quot;scan&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="s2">&quot;No scan information present&quot;</span>
+        <span class="k">return</span>
+
     <span class="n">scan</span> <span class="o">=</span> <span class="n">schema</span><span class="p">[</span><span class="s2">&quot;scan&quot;</span><span class="p">]</span>
 
     <span class="n">axes</span> <span class="o">=</span> <span class="n">scan</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]</span>
