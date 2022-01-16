@@ -22,11 +22,6 @@ class Readout(Fragment):
         self.setattr_result("p")
         self.setattr_result("p_err", display_hints={"error_bar_for": self.p.path})
 
-        self.setattr_result("z")
-        self.setattr_result("z_err", display_hints={"error_bar_for": self.z.path})
-
-        self.setattr_result("half", display_hints={"priority": -1})
-
     def simulate_shots(self, p):
         num_shots = self.num_shots.get()
 
@@ -36,19 +31,10 @@ class Readout(Fragment):
             counts[i] = np.random.poisson(mean)
         self.counts.push(counts)
 
-        num_brights = 0
-        for c in counts:
-            if c >= self.threshold.get():
-                num_brights += 1
-
+        num_brights = np.sum(counts >= self.threshold.get())
         p, p_err = binom_onesided(num_brights, num_shots)
         self.p.push(p)
         self.p_err.push(p_err)
-
-        self.z.push(2 * p - 1)
-        self.z_err.push(2 * p_err)
-
-        self.half.push(np.random.normal(0.5, 0.05))
 
 
 class RabiFlopSim(ExpFragment):
@@ -87,12 +73,7 @@ class RabiFlopSim(ExpFragment):
                       },
                       constants={
                           "t_dead": 0,
-                      }),
-            OnlineFit("cos", {
-                "x": self.duration,
-                "y": self.readout.z,
-                "y_err": self.readout.z_err
-            })
+                      })
         ]
 
 
