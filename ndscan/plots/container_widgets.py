@@ -103,7 +103,7 @@ class PlotContainerWidget(QtWidgets.QWidget):
         self._alternate_plots["main plot"] = self.plot
         self.plot.error.connect(self._show_error)
         self.plot.ready.connect(lambda: self._show(self.plot))
-        self.plot.alternate_plot_requested.connect(self._show_alternate_plot)
+        # self.plot.alternate_plot_requested.connect(self._show_alternate_plot)
 
         # All subscan roots, to keep the objects alive.
         self._subscan_roots = None
@@ -140,7 +140,7 @@ class PlotContainerWidget(QtWidgets.QWidget):
         self._alternate_plots["subscan '{}'".format(name)] = plot
         self.widget_stack.addWidget(plot)
         plot.error.connect(self._show_error)
-        plot.alternate_plot_requested.connect(self._show_alternate_plot)
+        # plot.alternate_plot_requested.connect(self._show_alternate_plot)
 
         # TODO: Heuristics for choosing which one to display by default.
         self._show(plot)

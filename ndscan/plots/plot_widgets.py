@@ -9,6 +9,8 @@
 import pyqtgraph
 from typing import List
 from qasync import QtCore, QtWidgets
+
+from ndscan.plots.cursor import LabeledCrosshairCursor
 from .model import Context
 
 
@@ -209,6 +211,42 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
         widget.resize(600, 400)
         widget.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         widget.show()
+
+
+class VerticalPlotStackWidget(pyqtgraph.GraphicsLayoutWidget):
+    def __init__(self):
+        super().__init__()
+        self._num_subplots = 0
+        self.subplots = []
+        self.current_item = None
+        self.crosshair = []
+
+    def new_subplot(self):
+        plot = self.addPlot()
+        self.current_plot = plot
+        plot.showGrid(x=True, y=True)
+        if self._num_subplots > 1:
+            self.setXLink(self.subplots[0])
+
+        self._num_subplots += 1
+        self.subplots.append(plot)
+
+        self.nextRow()
+
+        return plot.getAxis("left"), plot.getViewBox()
+
+    def add_crosshair(self, x_unit_suffix, x_data_to_display_scale, y_unit_suffix,
+                      y_data_to_display_scale):
+        for plot in self.subplots:
+            self.crosshair.append(
+                LabeledCrosshairCursor(self, plot, x_unit_suffix,
+                                       x_data_to_display_scale, y_unit_suffix,
+                                       y_data_to_display_scale))
+
+    def link_x_axes(self):
+        for plot in self.subplots[:-1]:
+            plot.setXLink(self.subplots[-1])
+            plot.hideAxis('bottom')
 
 
 def add_source_id_label(view_box: pyqtgraph.ViewBox,
