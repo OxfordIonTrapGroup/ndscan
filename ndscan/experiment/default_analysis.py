@@ -197,9 +197,10 @@ class CustomAnalysis(DefaultAnalysis):
         for channel in analysis_results:
             name = channel.path
             if name in self._result_channels:
-                axes = ", ".join(h._store.identity for h in self._required_axis_handles)
-                raise ValueError("Duplicate analysis result channel name '" + name +
-                                 "' in analysis for axes '" + axes + "'")
+                axes = ", ".join(h.name + "@" + h.owner._stringize_path()
+                                 for h in self._required_axis_handles)
+                raise ValueError(f"Duplicate analysis result channel name '{name}' " +
+                                 f"in analysis for axes [{axes}]")
             self._result_channels[name] = channel
 
     def required_axes(self) -> Set[ParamHandle]:
