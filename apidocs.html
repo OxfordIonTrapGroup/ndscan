@@ -1043,9 +1043,9 @@ annotations, if any.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>required_axes</strong> – List of parameters (given by their <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamHandle</span></code>s)
-required to be scanend for the analysis to be applicable. (The order is not
-relevant.)</p></li>
+<li><p><strong>required_axes</strong> – List/set/… of parameters that are required as inputs for the
+analysis to run (given by their <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamHandle</span></code>s). The order of elements
+is inconsequential.</p></li>
 <li><p><strong>analyze_fn</strong> – <p>The function to invoke in the analysis step. It is passed three
 dictionaries:</p>
 <blockquote>

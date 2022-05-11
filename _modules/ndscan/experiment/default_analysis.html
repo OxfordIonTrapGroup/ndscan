@@ -322,9 +322,9 @@
 
 <span class="sd">    No analysis is run online.</span>
 
-<span class="sd">    :param required_axes: List of parameters (given by their :class:`.ParamHandle`\ s)</span>
-<span class="sd">        required to be scanend for the analysis to be applicable. (The order is not</span>
-<span class="sd">        relevant.)</span>
+<span class="sd">    :param required_axes: List/set/… of parameters that are required as inputs for the</span>
+<span class="sd">        analysis to run (given by their :class:`.ParamHandle`\ s). The order of elements</span>
+<span class="sd">        is inconsequential.</span>
 <span class="sd">    :param analyze_fn: The function to invoke in the analysis step. It is passed three</span>
 <span class="sd">        dictionaries:</span>
 
@@ -356,9 +356,10 @@
         <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">analysis_results</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">path</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">:</span>
-                <span class="n">axes</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Duplicate analysis result channel name &#39;&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span>
-                                 <span class="s2">&quot;&#39; in analysis for axes &#39;&quot;</span> <span class="o">+</span> <span class="n">axes</span> <span class="o">+</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+                <span class="n">axes</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;@&quot;</span> <span class="o">+</span> <span class="n">h</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">()</span>
+                                 <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicate analysis result channel name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; &quot;</span> <span class="o">+</span>
+                                 <span class="sa">f</span><span class="s2">&quot;in analysis for axes [</span><span class="si">{</span><span class="n">axes</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
 
     <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
