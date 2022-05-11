@@ -163,9 +163,9 @@ class CustomAnalysis(DefaultAnalysis):
 
     No analysis is run online.
 
-    :param required_axes: List of parameters (given by their :class:`.ParamHandle`\ s)
-        required to be scanend for the analysis to be applicable. (The order is not
-        relevant.)
+    :param required_axes: List/set/… of parameters that are required as inputs for the
+        analysis to run (given by their :class:`.ParamHandle`\ s). The order of elements
+        is inconsequential.
     :param analyze_fn: The function to invoke in the analysis step. It is passed three
         dictionaries:
 
