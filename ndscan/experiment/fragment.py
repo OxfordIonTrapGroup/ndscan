@@ -352,7 +352,7 @@ class Fragment(HasEnvironment):
 
         original_owner = original_handle.owner
         original_name = original_handle.name
-        original_param = original_handle._free_params[original_name]
+        original_param = original_owner._free_params[original_name]
 
         new_param = deepcopy(original_param)
         new_param.fqn = self.fqn + "." + name
@@ -362,7 +362,7 @@ class Fragment(HasEnvironment):
         new_handle = new_param.HandleType(self, name)
         setattr(self, name, new_handle)
 
-        rebinds = [original_param] + additional_params
+        rebinds = [original_handle] + additional_handles
         self._rebound_subfragment_params[name] = []
         for handle in rebinds:
             assert handle.name in handle.owner._free_params, (
@@ -370,7 +370,7 @@ class Fragment(HasEnvironment):
             "already rebound?".format(handle.name))
             handles = handle.owner._get_all_handles_for_param(handle.name)
             del handle.owner._free_params[handle.name]
-            self._rebound_subfragment_params[name] += original_handles
+            self._rebound_subfragment_params[name] += handles
 
         return new_handle
 
