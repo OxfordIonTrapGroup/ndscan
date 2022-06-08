@@ -616,7 +616,36 @@ class ExpFragment(Fragment):
 
         This is a class method in spirit, and might become one in the future.
         """
-        return []
+        def wrap_analysis_fn(analysis_fun,
+                             prefix,
+                             axis_values,
+                             result_values,
+                             wrapped_analysis_results):
+            analysis_results = {}
+            for wrapped_name, channel in wrapped_analysis_results.items():
+                assert wrapped_name.startswith(prefix)
+                original_name = wrapped_name[len(prefix):]
+                analysis_results[original_name] = channel
+            return analysis_fun(axis_values, result_values, analysis_results)
+
+        analyses = []
+        for fragment in self._subfragments:
+            if not isinstance(fragment, ExpFragment):
+                continue
+
+            for analysis in fragment.get_default_analyses():
+                if not isinstance(analysis, nd.CustomAnalysis):
+                    analyses.append(analysis)
+                    continue
+
+                prefix = "_".join(self._fragment_path) + "_"
+                anslysis._result_channels = {f"{prefix}{name}": channel
+                    for name, channel in anslysis._result_channels.items()}
+                analysis._analyze_fn = lambda *args: wrap_analysis_fn(
+                    analysis._analyze_fn,
+                    prefix,
+                    *args
+                )
 
 
 class TransitoryError(Exception):
