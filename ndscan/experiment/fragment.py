@@ -3,8 +3,9 @@ from collections import OrderedDict
 from copy import deepcopy
 import logging
 from typing import Any, Dict, List, Iterable, Type, Tuple, Union
+import functools
 
-from .default_analysis import DefaultAnalysis
+from .default_analysis import DefaultAnalysis, CustomAnalysis
 from .parameters import ParamHandle, ParamStore
 from .result_channels import ResultChannel, FloatChannel
 from .utils import path_matches_spec
@@ -634,18 +635,21 @@ class ExpFragment(Fragment):
                 continue
 
             for analysis in fragment.get_default_analyses():
-                if not isinstance(analysis, nd.CustomAnalysis):
+                if not isinstance(analysis, CustomAnalysis):
                     analyses.append(analysis)
                     continue
 
-                prefix = "_".join(self._fragment_path) + "_"
-                anslysis._result_channels = {f"{prefix}{name}": channel
-                    for name, channel in anslysis._result_channels.items()}
-                analysis._analyze_fn = lambda *args: wrap_analysis_fn(
+                prefix = "_".join(fragment._fragment_path) + "_"
+                analysis._result_channels = {f"{prefix}{name}": channel
+                    for name, channel in analysis._result_channels.items()}
+                analysis._analyze_fn = functools.partial(
+                    wrap_analysis_fn,
                     analysis._analyze_fn,
-                    prefix,
-                    *args
+                    prefix
                 )
+                analyses.append(analysis)
+
+        return analyses
 
 
 class TransitoryError(Exception):
