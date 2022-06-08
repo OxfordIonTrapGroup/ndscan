@@ -118,6 +118,14 @@ class ScanRunner(HasEnvironment):
                     fragment.device_cleanup()
             finally:
                 fragment.host_cleanup()
+            if hasattr(self.core, "comm") and hasattr(self.core.comm, "close"):
+                # Host-only scans don't necessarily make a connection to the
+                # core device, but we close any connection that was made here
+                # otherwise the comm can fail after the pause.
+                # We have all the checks above incase core is an
+                # `artiq.sim.devices.Core` or comm is a
+                # `artiq.coredevice.comm_kernel.CommKernelDummy`.
+                self.core.comm.close()
             self.scheduler.pause()
             fragment.recompute_param_defaults()
 
