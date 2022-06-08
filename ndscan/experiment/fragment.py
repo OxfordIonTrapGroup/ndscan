@@ -2,7 +2,7 @@ from artiq.language import *
 from collections import OrderedDict
 from copy import deepcopy
 import logging
-from typing import Any, Dict, List, Iterable, Type, Tuple, Union
+from typing import Any, Dict, List, Iterable, Type, Tuple, Union, Optional
 
 from .default_analysis import DefaultAnalysis
 from .parameters import ParamHandle, ParamStore
@@ -316,25 +316,27 @@ class Fragment(HasEnvironment):
 
     def setattr_param_rebind(self,
                              name: str,
-                             original_owner: "Fragment",
-                             original_name: Union[str, None] = None,
+                             original_handle: ParamHandle,
+                             additional_handles: Optional[List[ParamHandle]]=None,
                              **kwargs) -> ParamHandle:
-        """Create a parameter that overrides the value of a subfragment parameter.
+        """Create a parameter that overrides the value of subfragment parameters.
 
-        The most common use case for this is to specialise the operation of a generic
-        subfragment. For example, there might be a fragment ``Fluoresce`` that drives
-        a cycling transition in an ion with parameters for intensity and detuning.
-        Higher-level fragments for Doppler cooling, readout, etc. might then use
-        ``Fluoresce``, rebinding its intensity and detuning parameters to values and
+        The most common use case for this is to specialise the operation of one or more
+        generic subfragments. For example, there might be a fragment ``Fluoresce`` that
+        drives a cycling transition in an ion with parameters for intensity and
+        detuning. Higher-level fragments for Doppler cooling, readout, etc. might then
+        use ``Fluoresce``, rebinding its intensity and detuning parameters to values and
         defaults appropriate for those particular tasks.
 
         Can only be called during :meth:`build_fragment`.
 
-        :param name: The parameter name, to be part of its FQN. Must be a valid Python
-            identifier; the parameter handle will be accessible as ``self.<name>``.
-        :param original_owner: The fragment owning the parameter to rebind.
-        :param original_name: The name of the original parameter (i.e.
-            ``<original_owner>.<original_name>``). If ``None``, defaults to ``name``.
+        :param name: The new parameter name, to be part of its FQN. Must be a valid
+            Python identifier; the new parameter handle will be accessible as
+            ``self.<name>``.
+        :param original_handle: handle for the overridden parameter. The new parameter
+            will inherent metadata from this parameter unless overridden by kwargs.
+        :param additional_handles: List of additional parameter handles to rebind.
+            Metadata from these parameters will not be inherited by the new parameter.
         :param kwargs: Any attributes to override in the parameter metadata, which
             defaults to that of the original parameter.
         :return: The newly created parameter handle.
@@ -343,33 +345,34 @@ class Fragment(HasEnvironment):
                 ), "Can only call setattr_param_rebind() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
-
-        if original_name is None:
-            original_name = name
-        assert hasattr(original_owner, original_name), \
-            "Original owner does not have a field of name '{}'".format(original_name)
-        assert original_name in original_owner._free_params, (
+        assert original_handle.name in original_handle.owner._free_params, (
             "Field '{}' is not a free parameter of original owner; "
-            "already rebound?".format(original_name))
-
-        # Set up our own copy of the parameter.
-        original_param = original_owner._free_params[original_name]
-        param = deepcopy(original_param)
-        param.fqn = self.fqn + "." + name
-        for k, v in kwargs.items():
-            setattr(param, k, v)
-        self._free_params[name] = param
-        handle = param.HandleType(self, name)
-        setattr(self, name, handle)
-
-        # Deregister it from the original owner and make sure we set the store
-        # to our own later.
-        original_handles = original_owner._get_all_handles_for_param(original_name)
-        del original_owner._free_params[original_name]
+            "already rebound?".format(original_handle.name))
         assert name not in self._rebound_subfragment_params
-        self._rebound_subfragment_params[name] = original_handles
 
-        return handle
+        original_owner = original_handle.owner
+        original_name = original_handle.name
+        original_param = original_handle._free_params[original_name]
+
+        new_param = deepcopy(original_param)
+        new_param.fqn = self.fqn + "." + name
+        for k, v in kwargs.items():
+            setattr(new_param, k, v)
+        self._free_params[name] = new_param
+        new_handle = new_param.HandleType(self, name)
+        setattr(self, name, new_handle)
+
+        rebinds = [original_param] + additional_params
+        self._rebound_subfragment_params[name] = []
+        for handle in rebinds:
+            assert handle.name in handle.owner._free_params, (
+            "Field '{}' is not a free parameter of original owner; "
+            "already rebound?".format(handle.name))
+            handles = handle.owner._get_all_handles_for_param(handle.name)
+            del handle.owner._free_params[handle.name]
+            self._rebound_subfragment_params[name] += original_handles
+
+        return new_handle
 
     def setattr_result(self,
                        name: str,
