@@ -84,6 +84,14 @@ integration pipeline used in the Oxford Ion Trap Quantum Computing group. The
 package has a number of issues (e.g. missing dependencies), and won't ever be
 published on a public channel, as the ARTIQ community is moving away from Conda.
 
+## Poetry
+- Install poetry from https://python-poetry.org/
+- [Poe the poet task runner](https://github.com/nat-n/poethepoet): `pip3 install poethepoet`
+
+Before committing:
+- Format files: `poe fmt`
+- Lint: `poe flake`
+- Run tests: `poe test`
 
 Contact
 -------
