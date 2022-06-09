@@ -49,7 +49,7 @@ class AddOneFragment(ExpFragment):
 class ReboundAddOneFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("add_one", AddOneFragment)
-        self.setattr_param_rebind("value", self.add_one)
+        self.setattr_param_rebind("value", self.add_one.value)
 
     def run_once(self):
         self.add_one.run_once()
@@ -58,7 +58,7 @@ class ReboundAddOneFragment(ExpFragment):
 class ReboundReboundAddOneFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("rebound_add_one", ReboundAddOneFragment)
-        self.setattr_param_rebind("value", self.rebound_add_one)
+        self.setattr_param_rebind("value", self.rebound_add_one.value)
 
     def run_once(self):
         self.rebound_add_one.run_once()
