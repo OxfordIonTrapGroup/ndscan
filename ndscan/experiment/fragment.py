@@ -2,7 +2,7 @@ from artiq.language import *
 from collections import OrderedDict
 from copy import deepcopy
 import logging
-from typing import Any, Dict, List, Iterable, Type, Tuple, Union, Optional
+from typing import Any, Dict, List, Iterable, Type, Tuple, Optional
 
 from .default_analysis import DefaultAnalysis
 from .parameters import ParamHandle, ParamStore
@@ -317,7 +317,7 @@ class Fragment(HasEnvironment):
     def setattr_param_rebind(self,
                              name: str,
                              original_handle: ParamHandle,
-                             additional_handles: Optional[List[ParamHandle]]=None,
+                             additional_handles: Optional[List[ParamHandle]] = None,
                              **kwargs) -> ParamHandle:
         """Create a parameter that overrides the value of one or more subfragment
         parameters.
@@ -350,7 +350,8 @@ class Fragment(HasEnvironment):
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
         assert original_handle.name in original_handle.owner._free_params, (
             "Field '{}' is not a free parameter of original owner; "
-            "already rebound?".format(original_handle.name))
+            "already rebound?".format(original_handle.name)
+        )
         assert name not in self._rebound_subfragment_params
 
         original_owner = original_handle.owner
@@ -368,12 +369,12 @@ class Fragment(HasEnvironment):
         rebinds = [original_handle]
         if additional_handles is not None:
             rebinds += additional_handles
-            
+
         self._rebound_subfragment_params[name] = []
         for handle in rebinds:
             assert handle.name in handle.owner._free_params, (
-            "Field '{}' is not a free parameter of original owner; "
-            "already rebound?".format(handle.name))
+                "Field '{}' is not a free parameter of original owner; "
+                "already rebound?".format(handle.name))
             handles = handle.owner._get_all_handles_for_param(handle.name)
             del handle.owner._free_params[handle.name]
             self._rebound_subfragment_params[name] += handles
