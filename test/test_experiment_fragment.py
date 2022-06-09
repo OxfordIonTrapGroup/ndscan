@@ -4,9 +4,7 @@ Tests for general fragment tree behaviour.
 
 from ndscan.experiment import *
 from ndscan.experiment.parameters import IntParamStore
-from fixtures import (AddOneFragment,
-                      ReboundReboundAddOneFragment,
-                      MultipleRebindsFragment)
+from fixtures import AddOneFragment, ReboundReboundAddOneFragment
 from mock_environment import HasEnvironmentCase
 
 
@@ -53,11 +51,6 @@ class TestRebinding(HasEnvironmentCase):
         result = run_fragment_once(rrf)[rrf.rebound_add_one.add_one.result]
         self.assertEqual(result, 3)
 
-    def test_multiple_rebinds(self):
-        mrb = self.create(MultipleRebindsFragment, [])
-        results = run_fragment_once(mrb)
-        for fragment in mrb.fragments:
-            self.assertEqual(results[fragment.result], 1)
 
 class TestMisc(HasEnvironmentCase):
     def test_namespacing(self):
