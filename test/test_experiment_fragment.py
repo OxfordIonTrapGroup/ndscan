@@ -4,7 +4,9 @@ Tests for general fragment tree behaviour.
 
 from ndscan.experiment import *
 from ndscan.experiment.parameters import IntParamStore
-from fixtures import AddOneFragment, ReboundReboundAddOneFragment
+from fixtures import (AddOneFragment,
+                      ReboundReboundAddOneFragment,
+                      MultipleRebindsFragment)
 from mock_environment import HasEnvironmentCase
 
 
