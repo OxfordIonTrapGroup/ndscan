@@ -318,10 +318,10 @@ class Fragment(HasEnvironment):
                              name: str,
                              original_owner: "Fragment",
                              original_name: Optional[str] = None,
-                             additional_owners: Optional[List[Tuple[
+                             additional_parameters: Optional[List[Tuple[
                                  "Fragment", Optional[str]]]] = None,
                              **kwargs) -> ParamHandle:
-        """Create a parameter that overrides the value of one or more subfragment
+        """Create a new parameter that overrides the value of one or more subfragment
         parameters.
 
         The most common use case for this is to specialise the operation of one or more
@@ -336,16 +336,17 @@ class Fragment(HasEnvironment):
         :param name: The new parameter name, to be part of its FQN. Must be a valid
             Python identifier; the new parameter handle will be accessible as
             ``self.<name>``.
-        :param original_owner: fragment owning the parameter to rebind. The new
+        :param original_owner: Fragment owning the parameter to rebind. The new
             parameter will inherent all metadata from this parameter that is not
             overridden by kwargs.
         :param original_name: The name of the original parameter (i.e.
             ``<original_owner>.<original_name>``). If ``None``, defaults to ``name``.
-        :param additional_owners: List of additional owners of the parameter to rebind.
-            Each element in the list should be a tuple consisting of a fragment and
-            optionally a parameter name (defaults to ``original_name``` if missing or
-            `None`). Metadata from these parameters will not be inherited by the new
-            parameter.
+        :param additional_parameters: List of additional parameters to be overridden 
+            by the new parameter. Each element in the list should be a tuple consisting
+            of a fragment and, optionally, a parameter name (defaults to
+            ``original_name``` if missing or `None`) such that the parameter
+            ``<owner>.<name>`` is overridden. Metadata from these parameters will not be
+            inherited by the new parameter.
         :param kwargs: Any attributes to override in the parameter metadata, which
             defaults to that of the original parameter.
         :return: The newly created parameter handle.
@@ -368,12 +369,12 @@ class Fragment(HasEnvironment):
         new_handle = new_param.HandleType(self, name)
         setattr(self, name, new_handle)
 
-        owners = [(original_owner, original_name)]
-        if additional_owners is not None:
-            owners += additional_owners
+        parameters = [(original_owner, original_name)]
+        if additional_parameters is not None:
+            parameters += additional_parameters
 
         self._rebound_subfragment_params[name] = []
-        for owner, *owner_name in owners:
+        for owner, *owner_name in parameters:
             [owner_name] = owner_name if owner_name != [] else [original_name]
             owner_name = owner_name if owner_name is not None else original_name
             assert owner_name in owner._free_params, (
