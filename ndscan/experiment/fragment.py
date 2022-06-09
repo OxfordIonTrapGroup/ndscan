@@ -365,7 +365,10 @@ class Fragment(HasEnvironment):
         new_handle = new_param.HandleType(self, name)
         setattr(self, name, new_handle)
 
-        rebinds = [original_handle] + additional_handles
+        rebinds = [original_handle]
+        if additional_handles is not None:
+            rebinds += additional_handles
+            
         self._rebound_subfragment_params[name] = []
         for handle in rebinds:
             assert handle.name in handle.owner._free_params, (
