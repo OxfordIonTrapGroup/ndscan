@@ -319,7 +319,8 @@ class Fragment(HasEnvironment):
                              original_handle: ParamHandle,
                              additional_handles: Optional[List[ParamHandle]]=None,
                              **kwargs) -> ParamHandle:
-        """Create a parameter that overrides the value of subfragment parameters.
+        """Create a parameter that overrides the value of one or more subfragment
+        parameters.
 
         The most common use case for this is to specialise the operation of one or more
         generic subfragments. For example, there might be a fragment ``Fluoresce`` that
@@ -334,9 +335,11 @@ class Fragment(HasEnvironment):
             Python identifier; the new parameter handle will be accessible as
             ``self.<name>``.
         :param original_handle: handle for the overridden parameter. The new parameter
-            will inherent metadata from this parameter unless overridden by kwargs.
+            will inherent all metadata from this parameter that is not overridden by
+            kwargs.
         :param additional_handles: List of additional parameter handles to rebind.
-            Metadata from these parameters will not be inherited by the new parameter.
+            Allows one parameter to drive multiple subfragment parameters. Metadata from
+            these parameters will not be inherited by the new parameter.
         :param kwargs: Any attributes to override in the parameter metadata, which
             defaults to that of the original parameter.
         :return: The newly created parameter handle.
