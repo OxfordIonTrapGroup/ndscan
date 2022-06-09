@@ -75,6 +75,14 @@ integration pipeline used in the Oxford Ion Trap Quantum Computing group. The
 package has a number of issues (e.g. missing dependencies), and currently is not
 published on a public Conda channel (nor will it likely ever be).
 
+## Poetry
+- Install poetry from https://python-poetry.org/
+- [Poe the poet task runner](https://github.com/nat-n/poethepoet): `pip3 install poethepoet`
+
+Before committing:
+- Format files: `poe fmt`
+- Lint: `poe flake`
+- Run tests: `poe test`
 
 Contact
 -------
