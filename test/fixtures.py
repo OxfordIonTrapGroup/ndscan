@@ -55,6 +55,15 @@ class ReboundAddOneFragment(ExpFragment):
         self.add_one.run_once()
 
 
+class MultipleRebindsFragment(ExpFragment):
+    def build_fragment(self):
+        self.fragments = []
+        for idx in range(10):
+            frag = self.setattr_fragment(f"add_one_{idx}", AddOneFragment)
+            self.fragments.append(frag)
+        self.setattr_param_rebind("value", self.fragments[0], self.fragments[1:])
+
+
 class ReboundReboundAddOneFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("rebound_add_one", ReboundAddOneFragment)
