@@ -316,8 +316,10 @@ class Fragment(HasEnvironment):
 
     def setattr_param_rebind(self,
                              name: str,
-                             original_handle: ParamHandle,
-                             additional_handles: Optional[List[ParamHandle]] = None,
+                             original_owner: "Fragment",
+                             original_name: Optional[str] = None,
+                             additional_owners: Optional[List[Tuple[
+                                 "Fragment", Optional[str]]]] = None,
                              **kwargs) -> ParamHandle:
         """Create a parameter that overrides the value of one or more subfragment
         parameters.
@@ -334,29 +336,30 @@ class Fragment(HasEnvironment):
         :param name: The new parameter name, to be part of its FQN. Must be a valid
             Python identifier; the new parameter handle will be accessible as
             ``self.<name>``.
-        :param original_handle: handle for the overridden parameter. The new parameter
-            will inherent all metadata from this parameter that is not overridden by
-            kwargs.
-        :param additional_handles: List of additional parameter handles to rebind.
-            Allows one parameter to drive multiple subfragment parameters. Metadata from
-            these parameters will not be inherited by the new parameter.
+        :param original_owner: fragment owning the parameter to rebind. The new
+            parameter will inherent all metadata from this parameter that is not
+            overridden by kwargs.
+        :param original_name: The name of the original parameter (i.e.
+            ``<original_owner>.<original_name>``). If ``None``, defaults to ``name``.
+        :param additional_owners: List of additional owners of the parameter to rebind.
+            Each element in the list should be a tuple consisting of a fragment and
+            optionally a parameter name (defaults to ``original_name``` if missing or
+            `None`). Metadata from these parameters will not be inherited by the new
+            parameter.
         :param kwargs: Any attributes to override in the parameter metadata, which
             defaults to that of the original parameter.
         :return: The newly created parameter handle.
         """
+        original_name = original_name if original_name is not None else name
         assert (self._building
                 ), "Can only call setattr_param_rebind() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
-        assert original_handle.name in original_handle.owner._free_params, (
-            "Field '{}' is not a free parameter of original owner; "
-            "already rebound?".format(original_handle.name))
+        assert hasattr(original_owner, original_name), \
+            "Original owner does not have a field of name '{}'".format(original_name)
         assert name not in self._rebound_subfragment_params
 
-        original_owner = original_handle.owner
-        original_name = original_handle.name
         original_param = original_owner._free_params[original_name]
-
         new_param = deepcopy(original_param)
         new_param.fqn = self.fqn + "." + name
         for k, v in kwargs.items():
@@ -365,20 +368,23 @@ class Fragment(HasEnvironment):
         new_handle = new_param.HandleType(self, name)
         setattr(self, name, new_handle)
 
-        rebinds = [original_handle]
-        if additional_handles is not None:
-            rebinds += additional_handles
+        owners = [(original_owner, original_name)]
+        if additional_owners is not None:
+            owners += additional_owners
 
         self._rebound_subfragment_params[name] = []
-        for handle in rebinds:
-            assert handle.name in handle.owner._free_params, (
-                "Field '{}' is not a free parameter of original owner; "
-                "already rebound?".format(handle.name))
-            assert isinstance(handle, new_param.HandleType), (
-                f"Field '{handle.name}' of type {type(handle)} does not match type of "
-                f"original parameter ('{type(new_handle)}'")
-            handles = handle.owner._get_all_handles_for_param(handle.name)
-            del handle.owner._free_params[handle.name]
+        for owner, *owner_name in owners:
+            [owner_name] = owner_name if owner_name != [] else [original_name]
+            owner_name = owner_name if owner_name is not None else original_name
+            assert owner_name in owner._free_params, (
+                "Field '{}' is not a free parameter of owner; "
+                "already rebound?".format(owner_name))
+            param = owner._free_params[owner_name]
+            assert isinstance(param, type(new_param)), (
+                f"Field '{owner_name}' of type {type(param)} does not match type of "
+                f"original parameter ('{type(new_param)}'")
+            handles = owner._get_all_handles_for_param(owner_name)
+            del owner._free_params[owner_name]
             self._rebound_subfragment_params[name] += handles
 
         return new_handle
