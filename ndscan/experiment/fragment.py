@@ -350,8 +350,7 @@ class Fragment(HasEnvironment):
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
         assert original_handle.name in original_handle.owner._free_params, (
             "Field '{}' is not a free parameter of original owner; "
-            "already rebound?".format(original_handle.name)
-        )
+            "already rebound?".format(original_handle.name))
         assert name not in self._rebound_subfragment_params
 
         original_owner = original_handle.owner
