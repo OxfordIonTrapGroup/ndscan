@@ -374,6 +374,9 @@ class Fragment(HasEnvironment):
             assert handle.name in handle.owner._free_params, (
                 "Field '{}' is not a free parameter of original owner; "
                 "already rebound?".format(handle.name))
+            assert isinstance(handle, new_param.HandleType), (
+                f"Field '{handle.name}' of type {type(handle)} does not match type of "
+                f"original parameter ('{type(new_handle)}'")
             handles = handle.owner._get_all_handles_for_param(handle.name)
             del handle.owner._free_params[handle.name]
             self._rebound_subfragment_params[name] += handles
