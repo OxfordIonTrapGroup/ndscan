@@ -31,8 +31,9 @@ class _XYSeries(QtCore.QObject):
 
     def update(self, x_data, data):
         def channel(name):
-            return data.get("channel_" + name, [])
+            return np.array(data.get("channel_" + name, []))
 
+        x_data = np.array(x_data)
         y_data = channel(self.data_name)
         num_to_show = min(len(x_data), len(y_data))
 
@@ -44,16 +45,13 @@ class _XYSeries(QtCore.QObject):
             return
 
         if self.plot_left_to_right:
-            x_data = np.array(x_data)
             order = np.argsort(x_data[:num_to_show])
 
-            y_data = np.array(y_data)
             self.data_item.setData(x_data[order], y_data[order])
             if self.num_current_points == 0:
                 self.view_box.addItem(self.data_item)
 
             if self.error_bar_item:
-                y_err = np.array(y_err)
                 self.error_bar_item.setData(x=x_data[order],
                                             y=y_data[order],
                                             height=y_err[order])
@@ -67,7 +65,7 @@ class _XYSeries(QtCore.QObject):
             if self.error_bar_item:
                 self.error_bar_item.setData(x=x_data[:num_to_show],
                                             y=y_data[:num_to_show],
-                                            height=(2 * np.array(y_err[:num_to_show])))
+                                            height=(2 * y_err[:num_to_show]))
                 if self.num_current_points == 0:
                     self.view_box.addItem(self.error_bar_item)
 

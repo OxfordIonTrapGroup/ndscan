@@ -134,7 +134,7 @@ class Subscan:
 
         def get_axis_index(handle):
             for i, h in enumerate(coordinate_sinks.keys()):
-                if handle == h:
+                if handle._store == h._store:
                     return i
             assert False
 

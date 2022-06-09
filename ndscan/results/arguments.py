@@ -64,6 +64,10 @@ def dump_scan(schema: Dict[str, Any]) -> Iterable[str]:
     :return: Generator yielding the output line-by-line.
     """
 
+    if "scan" not in schema:
+        yield "No scan information present"
+        return
+
     scan = schema["scan"]
 
     axes = scan["axes"]

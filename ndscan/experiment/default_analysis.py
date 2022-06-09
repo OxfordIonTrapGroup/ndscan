@@ -163,9 +163,9 @@ class CustomAnalysis(DefaultAnalysis):
 
     No analysis is run online.
 
-    :param required_axes: List of parameters (given by their :class:`.ParamHandle`\ s)
-        required to be scanend for the analysis to be applicable. (The order is not
-        relevant.)
+    :param required_axes: List/set/… of parameters that are required as inputs for the
+        analysis to run (given by their :class:`.ParamHandle`\ s). The order of elements
+        is inconsequential.
     :param analyze_fn: The function to invoke in the analysis step. It is passed three
         dictionaries:
 
@@ -197,9 +197,10 @@ class CustomAnalysis(DefaultAnalysis):
         for channel in analysis_results:
             name = channel.path
             if name in self._result_channels:
-                axes = ", ".join(h._store.identity for h in self._required_axis_handles)
-                raise ValueError("Duplicate analysis result channel name '" + name +
-                                 "' in analysis for axes '" + axes + "'")
+                axes = ", ".join(h.name + "@" + h.owner._stringize_path()
+                                 for h in self._required_axis_handles)
+                raise ValueError(f"Duplicate analysis result channel name '{name}' " +
+                                 f"in analysis for axes [{axes}]")
             self._result_channels[name] = channel
 
     def required_axes(self) -> Set[ParamHandle]:
