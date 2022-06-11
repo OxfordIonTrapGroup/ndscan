@@ -27,7 +27,7 @@ def make_default_1d_plot(datasets: Dict[str, Any],
     axis_schema, = ds("axes", is_json=True)
     x_schema = axis_schema["param"]
     x_label = x_schema["description"]
-    x_unit = x_schema["spec"]["unit"]
+    x_unit = x_schema["spec"].get("unit", "")
     x_scale = x_schema["spec"]["scale"]
     if x_unit:
         x_label += " / " + x_unit
