@@ -36,6 +36,7 @@ def make_default_1d_plot(datasets: Dict[str, Any],
     data_names, _ = extract_scalar_channels(channel_schemata)
     y_axis_names = list(filter(channel_filter, data_names))
     plt_axes = figure.subplots(nrows=len(y_axis_names), sharex=True)
+    plt_axes = np.atleast_1d(plt_axes)
     plt_axes[-1].set_xlabel(x_label)
 
     x_vals = np.array(ds("points.axis_0")) / x_scale
