@@ -587,10 +587,14 @@ created in <a class="reference internal" href="#ndscan.experiment.fragment.Fragm
 <dd><p>Prepare this instance for execution
 (see <code class="docutils literal notranslate"><span class="pre">artiq.language.environment.Experiment.prepare</span></code>).</p>
 <p>This is invoked only once per (sub)scan, after <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a> but
-before <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.host_setup" title="ndscan.experiment.fragment.Fragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a>. At this point, parameters, datasets and devices
+before <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.host_setup" title="ndscan.experiment.fragment.Fragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a>. At this point, parameters, datasets and devices can
 be accessed, but devices must not yet be.</p>
 <p>For top-level scans, this can (and will) be executed in the <cite>prepare</cite> scheduler
 pipeline stage.</p>
+<p>Unless running in the <cite>prepare</cite> pipeline state is absolutely necessary for
+runtime performance, lazily running the requisite initialisation code in
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code> is usually preferrable, as this naturally composes across the
+ndscan fragment tree.</p>
 </dd></dl>
 
 <dl class="py method">

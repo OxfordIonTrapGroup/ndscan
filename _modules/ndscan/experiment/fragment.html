@@ -753,11 +753,16 @@
 <span class="sd">        (see ``artiq.language.environment.Experiment.prepare``).</span>
 
 <span class="sd">        This is invoked only once per (sub)scan, after :meth:`.build_fragment` but</span>
-<span class="sd">        before :meth:`.host_setup`. At this point, parameters, datasets and devices</span>
+<span class="sd">        before :meth:`.host_setup`. At this point, parameters, datasets and devices can</span>
 <span class="sd">        be accessed, but devices must not yet be.</span>
 
 <span class="sd">        For top-level scans, this can (and will) be executed in the `prepare` scheduler</span>
 <span class="sd">        pipeline stage.</span>
+
+<span class="sd">        Unless running in the `prepare` pipeline state is absolutely necessary for</span>
+<span class="sd">        runtime performance, lazily running the requisite initialisation code in</span>
+<span class="sd">        :meth:`host_setup` is usually preferrable, as this naturally composes across the</span>
+<span class="sd">        ndscan fragment tree.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
