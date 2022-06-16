@@ -18,7 +18,7 @@ from functools import reduce
 import logging
 import random
 import time
-from typing import Any, Callable, Dict, Iterable, List, Tuple, Type
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 from .default_analysis import AnnotationContext
 from .fragment import (ExpFragment, Fragment, RestartKernelTransitoryError,
@@ -121,9 +121,13 @@ class FragmentScanExperiment(EnvExperiment):
                                      "since made to the experiment code; try " +
                                      "Recompute All Arguments).")
 
-        self.tlr = TopLevelRunner(self, self.fragment, spec, no_axes_mode,
-                                  self.max_rtio_underflow_retries,
-                                  self.max_transitory_error_retries)
+        self.tlr = TopLevelRunner(
+            self,
+            fragment=self.fragment,
+            spec=spec,
+            no_axes_mode=no_axes_mode,
+            max_rtio_underflow_retries=self.max_rtio_underflow_retries,
+            max_transitory_error_retries=self.max_transitory_error_retries)
 
     def run(self):
         name = get_class_pretty_name(self.fragment.__class__)
@@ -219,22 +223,24 @@ class TopLevelRunner(HasEnvironment):
               no_axes_mode: NoAxesMode = NoAxesMode.single,
               max_rtio_underflow_retries: int = 3,
               max_transitory_error_retries: int = 10,
-              dataset_prefix: str = "ndscan."):
+              dataset_prefix: Optional[str] = None):
         self.fragment = fragment
         self.spec = spec
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
 
-        if dataset_prefix and dataset_prefix[-1] != ".":
+        self.setattr_device("ccb")
+        self.setattr_device("core")
+        self.setattr_device("scheduler")
+
+        if dataset_prefix is None:
+            dataset_prefix = f"ndscan.rid_{self.scheduler.rid}."
+        elif dataset_prefix and dataset_prefix[-1] != ".":
             # Add trailing dot to dataset prefix if not given – the same bare prefix
             # mushed into all the ndscan datasets isn't what a user with an intact sense
             # of style would intend.
             dataset_prefix += "."
         self.dataset_prefix = dataset_prefix
-
-        self.setattr_device("ccb")
-        self.setattr_device("core")
-        self.setattr_device("scheduler")
 
         # FIXME: We save these as individual booleans as enums crash the ARTIQ compiler.
         self._continue_running = False
@@ -471,14 +477,12 @@ class TopLevelRunner(HasEnvironment):
                 push(name, ds_value)
 
     def create_applet(self, title: str, group: str = "ndscan"):
-        cmd = ("${python} -m ndscan.applet "
-               "--server=${server} "
-               "--port=${port_notify} "
-               "--port-control=${port_control}")
-        cmd += " --rid={}".format(self.scheduler.rid)
-        if self.dataset_prefix != "ndscan.":
-            cmd += " --prefix={}".format(self.dataset_prefix)
-        self.ccb.issue("create_applet", title, cmd, group=group)
+        cmd = [
+            "${python}", "-m ndscan.applet", "--server=${server}",
+            "--port=${port_notify}", "--port-control=${port_control}",
+            f"--prefix={self.dataset_prefix}"
+        ]
+        self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
