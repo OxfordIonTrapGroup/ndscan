@@ -59,7 +59,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(exp.fragment.num_device_cleanup_calls, 1)
 
         def d(key):
-            return self.dataset_db.get("ndscan." + key)
+            return self.dataset_db.get("ndscan.rid_0." + key)
 
         self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
         self.assertEqual(json.loads(d("axes")), [])
@@ -124,11 +124,11 @@ class FragmentScanExpCase(HasEnvironmentCase):
                 }
             }
         }
-        self.assertEqual(json.loads(self.dataset_db.get("ndscan.annotations")),
+        self.assertEqual(json.loads(self.dataset_db.get("ndscan.rid_0.annotations")),
                          [curve_annotation, location_annotation])
 
         self.assertEqual(
-            json.loads(self.dataset_db.get("ndscan.online_analyses")), {
+            json.loads(self.dataset_db.get("ndscan.rid_0.online_analyses")), {
                 "fit_lorentzian_channel_result": {
                     "constants": {
                         "y0": 1.0
@@ -170,7 +170,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         exp.run()
 
         def d(key):
-            return self.dataset_db.get("ndscan." + key)
+            return self.dataset_db.get("ndscan.rid_0." + key)
 
         self.assertEqual(json.loads(d("axes")), [{
             "increment": 1.0,

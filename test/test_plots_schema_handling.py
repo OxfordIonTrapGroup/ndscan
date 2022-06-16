@@ -46,7 +46,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         exp.prepare()
         exp.run()
 
-        channels = json.loads(self.dataset_db.get("ndscan.channels"))
+        channels = json.loads(self.dataset_db.get("ndscan.rid_0.channels"))
 
         data_names, error_bar_names = extract_scalar_channels(channels)
         self.assertEqual(data_names, [
