@@ -31,8 +31,7 @@ SCHEMA_REVISION = 2
 
 #: The current :data:`.SCHEMA_REVISION` is always saved directly under the root of the
 #: respective ndscan tree as `ndscan_schema_revision`, and hence can be used by
-#: analysis tools (e.g. ndscan_show) : to detect all ndscan roots in a results file
-#: after the fact.
+#: analysis tools (e.g. ndscan_show) to locate all ndscan roots in a results file.
 SCHEMA_REVISION_KEY = "ndscan_schema_revision"
 
 
