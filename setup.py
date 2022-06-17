@@ -8,7 +8,10 @@ setup(
     license="LGPLv3+",
     author="David Nadlinger",
     packages=find_packages(),
-    entry_points={"gui_scripts": ["ndscan_show = ndscan.show:main"]},
+    entry_points={
+        "console_scripts": ["ndscan_dataset_janitor = ndscan.dataset_janitor:main"],
+        "gui_scripts": ["ndscan_show = ndscan.show:main"],
+    },
     # KLUDGE: ARTIQ dependency is not explicitly listed for now to avoid
     # problems with the ion trap group's Conda setup.
     # install_requires=["artiq"],
