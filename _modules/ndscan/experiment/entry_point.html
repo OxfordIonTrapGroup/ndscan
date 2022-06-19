@@ -177,7 +177,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span>
 
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">AnnotationContext</span>
 <span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ExpFragment</span><span class="p">,</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span><span class="p">,</span>
@@ -280,9 +280,13 @@
                                      <span class="s2">&quot;since made to the experiment code; try &quot;</span> <span class="o">+</span>
                                      <span class="s2">&quot;Recompute All Arguments).&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span> <span class="o">=</span> <span class="n">TopLevelRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">no_axes_mode</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span> <span class="o">=</span> <span class="n">TopLevelRunner</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fragment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span>
+            <span class="n">spec</span><span class="o">=</span><span class="n">spec</span><span class="p">,</span>
+            <span class="n">no_axes_mode</span><span class="o">=</span><span class="n">no_axes_mode</span><span class="p">,</span>
+            <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+            <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">name</span> <span class="o">=</span> <span class="n">get_class_pretty_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
@@ -378,22 +382,24 @@
               <span class="n">no_axes_mode</span><span class="p">:</span> <span class="n">NoAxesMode</span> <span class="o">=</span> <span class="n">NoAxesMode</span><span class="o">.</span><span class="n">single</span><span class="p">,</span>
               <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
               <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-              <span class="n">dataset_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ndscan.&quot;</span><span class="p">):</span>
+              <span class="n">dataset_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">spec</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span> <span class="o">=</span> <span class="n">max_rtio_underflow_retries</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span> <span class="o">=</span> <span class="n">max_transitory_error_retries</span>
 
-        <span class="k">if</span> <span class="n">dataset_prefix</span> <span class="ow">and</span> <span class="n">dataset_prefix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;ccb&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;scheduler&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dataset_prefix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dataset_prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;ndscan.rid_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="k">elif</span> <span class="n">dataset_prefix</span> <span class="ow">and</span> <span class="n">dataset_prefix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
             <span class="c1"># Add trailing dot to dataset prefix if not given – the same bare prefix</span>
             <span class="c1"># mushed into all the ndscan datasets isn&#39;t what a user with an intact sense</span>
             <span class="c1"># of style would intend.</span>
             <span class="n">dataset_prefix</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">=</span> <span class="n">dataset_prefix</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;ccb&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;scheduler&quot;</span><span class="p">)</span>
 
         <span class="c1"># FIXME: We save these as individual booleans as enums crash the ARTIQ compiler.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span> <span class="o">=</span> <span class="kc">False</span>
@@ -630,14 +636,12 @@
                 <span class="n">push</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ds_value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">create_applet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ndscan&quot;</span><span class="p">):</span>
-        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;$</span><span class="si">{python}</span><span class="s2"> -m ndscan.applet &quot;</span>
-               <span class="s2">&quot;--server=$</span><span class="si">{server}</span><span class="s2"> &quot;</span>
-               <span class="s2">&quot;--port=$</span><span class="si">{port_notify}</span><span class="s2"> &quot;</span>
-               <span class="s2">&quot;--port-control=$</span><span class="si">{port_control}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">cmd</span> <span class="o">+=</span> <span class="s2">&quot; --rid=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">rid</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">!=</span> <span class="s2">&quot;ndscan.&quot;</span><span class="p">:</span>
-            <span class="n">cmd</span> <span class="o">+=</span> <span class="s2">&quot; --prefix=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ccb</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="s2">&quot;create_applet&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;$</span><span class="si">{python}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;-m ndscan.applet&quot;</span><span class="p">,</span> <span class="s2">&quot;--server=$</span><span class="si">{server}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;--port=$</span><span class="si">{port_notify}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;--port-control=$</span><span class="si">{port_control}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;--prefix=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ccb</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="s2">&quot;create_applet&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_shorten_result_channel_names</span><span class="p">(</span><span class="n">full_names</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
