@@ -27,14 +27,14 @@ exist.
 Quickstart guide
 ----------------
 
-To get started with `ndscan`, first prepare a Python 3.5+ environment with
-ARTIQ as usual (Nix, Conda or some form of virtualenv is recommended). While
-the intention is for ndscan to be a pure add-on to ARTIQ, some **required**
-**patches** have not made their way into the official (M-Labs) upstream
-repository yet. For now, use the
-[ion-trap/master](http://gitlab.physics.ox.ac.uk/ion-trap/artiq/) 
-branch; if you are an external user, you can find a summary patch in
-[Issue 1](https://github.com/OxfordIonTrapGroup/ndscan/issues/1#issuecomment-667569040).
+To get started with `ndscan`, first prepare a Python 3.8+ environment with
+ARTIQ as usual (Nix, Conda or some form of virtualenv is recommended). As
+of ARTIQ 7
+([m-labs/artiq@dd928fc](https://github.com/m-labs/artiq/commit/dd928fc014c4f96fe0b5d1bccb5c1eaf60ca8e62)),
+the upstream ARTIQ version can be used without additional changes; for
+ARTIQ 6, see
+[dnadlinger/artiq@release-6-ndscan](https://github.com/dnadlinger/artiq/tree/release-6-ndscan)
+for a few required patches.
 
 Once your environment is set up, install this package. For example, to use
 ndscan directly from the Git checkout:
@@ -44,7 +44,7 @@ ndscan directly from the Git checkout:
 If you haven't already, also install the
 [oitg](http://github.com/OxfordIonTrapGroup/oitg) package.
 
-You are then ready to run the sample experiments. Start the ARITQ master
+You are then ready to run the sample experiments. Start the ARTIQ master
 process as usual
 
     (artiq) $ artiq_master
@@ -57,6 +57,15 @@ Now, navigate to the `examples/rabi_flop.py` file in the experiment explorer,
 and you should be able to play around with the scan interface. (Applets are
 created automatically; you might want to set the CCB mode to "Create and
 enable/disable applets" in the applets dock.)
+
+To avoid all the scan results continuously accumulating in the dataset
+database, run the janitor process:
+
+    (artiq) $ ndscan_dataset_janitor
+
+`ndscan_dataset_janitor` tracks when experiments finish and cleans up the
+generated datasets after a few minutes of delay. It should typically be
+started alongside `artiq_master`.
 
 
 Developer notes
