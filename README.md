@@ -79,10 +79,10 @@ and
 sections.
 
 `conda/` contains a very rudimentary [Conda](https://conda.io/en/latest/)
-package definition for ease of integration with a custom continuous
+package definition for ease of integration with a legacy continuous
 integration pipeline used in the Oxford Ion Trap Quantum Computing group. The
-package has a number of issues (e.g. missing dependencies), and currently is not
-published on a public Conda channel (nor will it likely ever be).
+package has a number of issues (e.g. missing dependencies), and won't ever be
+published on a public channel, as the ARTIQ community is moving away from Conda.
 
 
 Contact
