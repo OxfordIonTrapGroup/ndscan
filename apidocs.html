@@ -215,17 +215,15 @@ constructor.</p>
 the fragment tree, and then calls <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a> to actually perform the
 fragment-specific setup. This method should not typically be overwritten.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Params fragment_path</dt>
-<dd class="field-odd"><p>Full path of the fragment, as a list starting from the
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fragment_path</strong> – Full path of the fragment, as a list starting from the
 root. For instance, <code class="docutils literal notranslate"><span class="pre">[]</span></code> for the top-level fragment, or <code class="docutils literal notranslate"><span class="pre">[&quot;foo&quot;,</span> <span class="pre">&quot;bar&quot;]</span></code>
 for a subfragment created by <code class="docutils literal notranslate"><span class="pre">setattr_fragment(&quot;bar&quot;,</span> <span class="pre">…)</span></code> in a fragment
-created by <code class="docutils literal notranslate"><span class="pre">setattr_fragment(&quot;foo&quot;,</span> <span class="pre">…)</span></code>.</p>
-</dd>
-<dt class="field-even">Params args</dt>
-<dd class="field-even"><p>Arguments to be forwarded to <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p>
-</dd>
-<dt class="field-odd">Params kwargs</dt>
-<dd class="field-odd"><p>Keyword arguments to be forwarded to <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p>
+created by <code class="docutils literal notranslate"><span class="pre">setattr_fragment(&quot;foo&quot;,</span> <span class="pre">…)</span></code>.</p></li>
+<li><p><strong>args</strong> – Arguments to be forwarded to <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments to be forwarded to <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>

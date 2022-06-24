@@ -184,12 +184,12 @@
 <span class="sd">        the fragment tree, and then calls :meth:`build_fragment` to actually perform the</span>
 <span class="sd">        fragment-specific setup. This method should not typically be overwritten.</span>
 
-<span class="sd">        :params fragment_path: Full path of the fragment, as a list starting from the</span>
+<span class="sd">        :param fragment_path: Full path of the fragment, as a list starting from the</span>
 <span class="sd">            root. For instance, ``[]`` for the top-level fragment, or ``[&quot;foo&quot;, &quot;bar&quot;]``</span>
 <span class="sd">            for a subfragment created by ``setattr_fragment(&quot;bar&quot;, …)`` in a fragment</span>
 <span class="sd">            created by ``setattr_fragment(&quot;foo&quot;, …)``.</span>
-<span class="sd">        :params args: Arguments to be forwarded to :meth:`build_fragment`.</span>
-<span class="sd">        :params kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.</span>
+<span class="sd">        :param args: Arguments to be forwarded to :meth:`build_fragment`.</span>
+<span class="sd">        :param kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">=</span> <span class="n">fragment_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span> <span class="o">=</span> <span class="p">[]</span>
