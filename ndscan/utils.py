@@ -99,7 +99,7 @@ class GetDataset(Protocol):
     If the ``key`` dataset does not exist, the callback should return the value given in
     the second parameter, ``default``, or if that is not specified, raise an exception.
     """
-    def __call__(self, key: str, default: Optional[T] = None, /) -> T:
+    def __call__(self, key: str, default: Optional[T] = None) -> T:
         ...
 
 
