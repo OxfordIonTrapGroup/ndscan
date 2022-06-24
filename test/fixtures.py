@@ -90,6 +90,9 @@ class TrivialKernelFragment(ExpFragment):
 
 
 class TransitoryErrorFragment(ExpFragment):
+    """Fails device_setup() and run_once() a configurable number of times with a
+    transitory error before succeeding.
+    """
     def build_fragment(self):
         self.num_device_setup_to_fail = 0
         self.num_device_setup_to_restart_fail = 0
@@ -113,6 +116,34 @@ class TransitoryErrorFragment(ExpFragment):
             self.num_run_once_to_fail -= 1
             raise TransitoryError
         self.result.push(42)
+
+
+class MultiPointTransitoryErrorFragment(TransitoryErrorFragment):
+    """TransitoryErrorFragment that resets counters after run_once() has completed
+    successfully (for testing scan behaviour).
+    """
+    def build_fragment(self,
+                       num_device_setup_to_fail=0,
+                       num_device_setup_to_restart_fail=0,
+                       num_run_once_to_fail=0,
+                       num_run_once_to_restart_fail=0):
+        super().build_fragment()
+        self.orig_num_device_setup_to_fail = num_device_setup_to_fail
+        self.orig_num_device_setup_to_restart_fail = num_device_setup_to_restart_fail
+        self.orig_num_run_once_to_fail = num_run_once_to_fail
+        self.orig_num_run_once_to_restart_fail = num_run_once_to_restart_fail
+        self.reset_counters()
+
+    def reset_counters(self):
+        self.num_device_setup_to_fail = self.orig_num_device_setup_to_fail
+        self.num_device_setup_to_restart_fail = \
+            self.orig_num_device_setup_to_restart_fail
+        self.num_run_once_to_fail = self.orig_num_run_once_to_fail
+        self.num_run_once_to_restart_fail = self.orig_num_run_once_to_restart_fail
+
+    def run_once(self):
+        super().run_once()
+        self.reset_counters()
 
 
 class RequestTerminationFragment(ExpFragment):
