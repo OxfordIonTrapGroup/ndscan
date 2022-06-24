@@ -620,7 +620,7 @@ class OverrideEntry(LayoutWidget):
                 return
         try:
 
-            def get_dataset(key, default):
+            def get_dataset(key, default=None):
                 try:
                     bs = manager_datasets.backing_store
                 except AttributeError:
@@ -631,6 +631,9 @@ class OverrideEntry(LayoutWidget):
                 try:
                     return bs[key][1]
                 except KeyError:
+                    if default is None:
+                        raise KeyError(f"Could not read dataset '{key}', but no " +
+                                       "fallback default value given") from None
                     return default
                 return bs
 
