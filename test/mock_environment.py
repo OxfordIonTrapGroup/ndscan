@@ -6,6 +6,7 @@ import copy
 import unittest
 import unittest.mock
 
+from artiq.language.core import TerminationRequested
 from artiq.language.environment import ProcessArgumentManager
 from artiq.master.worker_db import DatasetManager, DeviceManager
 from sipyco.sync_struct import process_mod
@@ -31,12 +32,23 @@ class MockDatasetDB:
 class MockScheduler:
     def __init__(self):
         self.rid = 0
+        self.num_check_pause_calls = 0
+        self.num_check_pause_calls_until_termination = 0
+
+    def _should_terminate(self) -> bool:
+        if self.num_check_pause_calls_until_termination == 0:
+            # Limit disabled
+            return False
+        return (self.num_check_pause_calls >=
+                self.num_check_pause_calls_until_termination)
 
     def check_pause(self):
-        return False
+        self.num_check_pause_calls += 1
+        return self._should_terminate()
 
     def pause(self):
-        pass
+        if self._should_terminate():
+            raise TerminationRequested
 
 
 class MockDeviceDB:

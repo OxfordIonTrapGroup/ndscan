@@ -7,7 +7,8 @@ from ndscan.experiment import *
 from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from sipyco import pyon
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
-                      TransitoryErrorFragment, RequestTerminationFragment)
+                      TransitoryErrorFragment, MultiPointTransitoryErrorFragment,
+                      RequestTerminationFragment)
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
@@ -66,6 +67,50 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("completed"), True)
         self.assertEqual(d("fragment_fqn"), "fixtures.AddOneFragment")
         self.assertEqual(d("source_id"), "system_0")
+
+    def test_run_time_series_scan(self):
+        # Make fragment that fails device_setup() as many times as allowed to test
+        # whether counters are correctly reset between points in time series scan.
+        exp = self.create(
+            make_fragment_scan_exp(MultiPointTransitoryErrorFragment,
+                                   3,
+                                   max_transitory_error_retries=3))
+        exp.args._params["scan"]["no_axes_mode"] = "time_series"
+
+        # Terminate eventually.
+        self.scheduler.num_check_pause_calls_until_termination = 13
+
+        exp.prepare()
+        exp.run()
+
+        def d(key):
+            return self.dataset_db.get("ndscan.rid_0." + key)
+
+        self.assertEqual(d("points.channel_result"), [42, 42, 42])
+        timestamps = d("points.axis_0")
+        self.assertEqual(len(timestamps), 3)
+        for i in range(len(timestamps)):
+            prev = 0.0 if i == 0 else timestamps[i - 1]
+            cur = timestamps[i]
+            self.assertGreater(cur, prev)
+            # Timestamps are in seconds, so this is a _very_ conservative bound on
+            # running the test loop in-process (which will take much less than a
+            # millisecond).
+            self.assertLess(cur, 1.0)
+
+    def test_time_series_transitory_limit(self):
+        exp = self.create(
+            make_fragment_scan_exp(MultiPointTransitoryErrorFragment,
+                                   3,
+                                   max_transitory_error_retries=2))
+        exp.args._params["scan"]["no_axes_mode"] = "time_series"
+
+        # Terminate eventually even in case there are bugs.
+        self.scheduler.num_check_pause_calls_until_termination = 100
+
+        exp.prepare()
+        with self.assertRaises(TransitoryError):
+            exp.run()
 
     def test_run_1d_scan(self):
         exp = self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")

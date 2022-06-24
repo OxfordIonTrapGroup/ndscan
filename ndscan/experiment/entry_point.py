@@ -376,6 +376,8 @@ class TopLevelRunner(HasEnvironment):
     def _run_continuous(self):
         self._point_phase = False
         # TODO: Unify with _FragmentRunner.
+        self.num_current_transitory_errors = 0
+        self.num_current_underflows = 0
         try:
             while True:
                 try:
@@ -403,8 +405,6 @@ class TopLevelRunner(HasEnvironment):
     def _continuous_loop(self):
         # TODO: Unify with _FragmentRunner.
         try:
-            num_transitory_errors = 0
-            num_underflows = 0
             while not self.scheduler.check_pause():
                 try:
                     self.fragment.device_setup()
@@ -412,23 +412,33 @@ class TopLevelRunner(HasEnvironment):
                     self._finish_continuous_point()
                     if not self._continue_running:
                         return True
+
+                    # One point is now finished, so reset transitory error counters for
+                    # the next one.
+                    self.num_current_transitory_errors = 0
+                    self.num_current_underflows = 0
                 except RTIOUnderflow:
-                    num_underflows += 1
-                    if num_underflows > self.max_rtio_underflow_retries:
+                    self.num_current_underflows += 1
+                    if self.num_current_underflows > self.max_rtio_underflow_retries:
                         raise
-                    print("Ignoring RTIOUnderflow (", num_underflows, "/",
+                    print("Ignoring RTIOUnderflow (", self.num_current_underflows, "/",
                           self.max_rtio_underflow_retries, ")")
                 except RestartKernelTransitoryError:
-                    num_transitory_errors += 1
-                    if num_transitory_errors > self.max_transitory_error_retries:
+                    self.num_current_transitory_errors += 1
+                    if (self.num_current_transitory_errors >
+                            self.max_transitory_error_retries):
                         raise
-                    print("Caught transitory error, restarting kernel")
+                    print("Caught transitory error (",
+                          self.num_current_transitory_errors, "/",
+                          self.max_transitory_error_retries, "), restarting kernel")
                     return False
                 except TransitoryError:
-                    num_transitory_errors += 1
-                    if num_transitory_errors > self.max_transitory_error_retries:
+                    self.num_current_transitory_errors += 1
+                    if (self.num_current_transitory_errors >
+                            self.max_transitory_error_retries):
                         raise
-                    print("Caught transitory error (", num_transitory_errors, "/",
+                    print("Caught transitory error (",
+                          self.num_current_transitory_errors, "/",
                           self.max_transitory_error_retries, "), retrying")
             return False
         finally:
