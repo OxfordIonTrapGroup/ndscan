@@ -727,23 +727,18 @@
                 <span class="k">continue</span>
             <span class="n">s</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_dataset_or_set_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_get_dataset_or_set_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; does not exist, but no &quot;</span> <span class="o">+</span>
+                               <span class="s2">&quot;fallback default value specified&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="bp">None</span>
+            <span class="k">else</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Setting dataset &#39;</span><span class="si">%s</span><span class="s2">&#39; to default value (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span>
                                <span class="n">default</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">persist</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="k">return</span> <span class="n">default</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="c1"># FIXME: This currently occurs when build()ing experiments with dataset</span>
-            <span class="c1"># defaults from within an examine worker, i.e. when scanning the repository</span>
-            <span class="c1"># or recomputing arguments, because datasets can&#39;t be accessed there. We</span>
-            <span class="c1"># should probably silently ignore missing datasets there, and set them</span>
-            <span class="c1"># accordingly when the experiment is actually run.</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Unexpected error evaluating dataset default: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">default</span></div>
+                <span class="k">return</span> <span class="n">default</span></div>
 
 
 <div class="viewcode-block" id="ExpFragment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment">[docs]</a><span class="k">class</span> <span class="nc">ExpFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
