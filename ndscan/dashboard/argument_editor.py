@@ -635,7 +635,6 @@ class OverrideEntry(LayoutWidget):
                         raise KeyError(f"Could not read dataset '{key}', but no " +
                                        "fallback default value given") from None
                     return default
-                return bs
 
             value = eval_param_default(self.schema["default"], get_dataset)
         except Exception as e:
