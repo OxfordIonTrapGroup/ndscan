@@ -25,12 +25,12 @@ class Fragment(HasEnvironment):
         the fragment tree, and then calls :meth:`build_fragment` to actually perform the
         fragment-specific setup. This method should not typically be overwritten.
 
-        :params fragment_path: Full path of the fragment, as a list starting from the
+        :param fragment_path: Full path of the fragment, as a list starting from the
             root. For instance, ``[]`` for the top-level fragment, or ``["foo", "bar"]``
             for a subfragment created by ``setattr_fragment("bar", …)`` in a fragment
             created by ``setattr_fragment("foo", …)``.
-        :params args: Arguments to be forwarded to :meth:`build_fragment`.
-        :params kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.
+        :param args: Arguments to be forwarded to :meth:`build_fragment`.
+        :param kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.
         """
         self._fragment_path = fragment_path
         self._subfragments = []
