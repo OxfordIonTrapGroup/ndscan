@@ -535,6 +535,8 @@
     <span class="k">def</span> <span class="nf">_run_continuous</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="c1"># TODO: Unify with _FragmentRunner.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
@@ -562,8 +564,6 @@
     <span class="k">def</span> <span class="nf">_continuous_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># TODO: Unify with _FragmentRunner.</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">num_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">num_underflows</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
@@ -571,23 +571,33 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">_finish_continuous_point</span><span class="p">()</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
                         <span class="k">return</span> <span class="kc">True</span>
+
+                    <span class="c1"># One point is now finished, so reset transitory error counters for</span>
+                    <span class="c1"># the next one.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">=</span> <span class="mi">0</span>
                 <span class="k">except</span> <span class="n">RTIOUnderflow</span><span class="p">:</span>
-                    <span class="n">num_underflows</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">if</span> <span class="n">num_underflows</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">:</span>
                         <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span> <span class="n">num_underflows</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
                 <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
-                    <span class="n">num_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">if</span> <span class="n">num_transitory_errors</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">&gt;</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">):</span>
                         <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error, restarting kernel&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span> <span class="s2">&quot;), restarting kernel&quot;</span><span class="p">)</span>
                     <span class="k">return</span> <span class="kc">False</span>
                 <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
-                    <span class="n">num_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">if</span> <span class="n">num_transitory_errors</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">&gt;</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">):</span>
                         <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span> <span class="n">num_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span> <span class="s2">&quot;), retrying&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">finally</span><span class="p">:</span>
@@ -597,12 +607,13 @@
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span> <span class="nf">_finish_continuous_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;point_phase&quot;</span><span class="p">,</span>
-                         <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span><span class="p">,</span>
-                         <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp_sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_series_start</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;point_phase&quot;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span><span class="p">,</span>
+                             <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_set_completed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
