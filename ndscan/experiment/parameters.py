@@ -10,8 +10,8 @@
 
 from artiq.language import *
 from artiq.language import units
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
-from ..utils import eval_param_default
+from typing import Any, Dict, Optional, Tuple, Type, Union
+from ..utils import eval_param_default, GetDataset
 
 __all__ = ["FloatParam", "IntParam", "StringParam"]
 
@@ -268,7 +268,7 @@ class FloatParam:
             "spec": spec,
         }
 
-    def eval_default(self, get_dataset: Callable) -> float:
+    def eval_default(self, get_dataset: GetDataset) -> float:
         if type(self.default) is str:
             return eval_param_default(self.default, get_dataset)
         return self.default
@@ -328,7 +328,7 @@ class IntParam:
             "spec": spec
         }
 
-    def eval_default(self, get_dataset: Callable) -> int:
+    def eval_default(self, get_dataset: GetDataset) -> int:
         if type(self.default) is str:
             return eval_param_default(self.default, get_dataset)
         return self.default
@@ -369,7 +369,7 @@ class StringParam:
             }
         }
 
-    def eval_default(self, get_dataset: Callable) -> str:
+    def eval_default(self, get_dataset: GetDataset) -> str:
         return eval_param_default(self.default, get_dataset)
 
     def make_store(self, identity: Tuple[str, str], value: str) -> StringParamStore:
