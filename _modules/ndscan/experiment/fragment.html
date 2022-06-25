@@ -210,9 +210,9 @@
         <span class="c1">#: Maps full path of own result channels to ResultChannel instances.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="c1">#: Subfragments the ResultChannels of which should not be re-exported (e.g.</span>
-        <span class="c1">#: for subscans).</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_absorbed_results_subfragments</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="c1">#: Subfragments detached from the normal fragment execution (setup/cleanup,</span>
+        <span class="c1">#: result channels; e.g. for subscans).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
         <span class="n">klass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
         <span class="n">mod</span> <span class="o">=</span> <span class="n">klass</span><span class="o">.</span><span class="vm">__module__</span>
@@ -238,11 +238,13 @@
         <span class="c1"># device_cleanup() to forward to subfragments.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
             <span class="s2">&quot;self.</span><span class="si">{}</span><span class="s2">.device_setup()&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span>
         <span class="p">])</span> <span class="ow">or</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span>
 
         <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">:</span>
+                <span class="k">continue</span>
             <span class="n">frag</span> <span class="o">=</span> <span class="s2">&quot;self.&quot;</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;try:</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    </span><span class="si">{}</span><span class="s2">.device_cleanup()</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">frag</span><span class="p">)</span>
@@ -278,6 +280,8 @@
 <span class="sd">                super().host_setup()</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">:</span>
+                <span class="k">continue</span>
             <span class="n">s</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Fragment.device_setup"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_setup">[docs]</a>    <span class="nd">@portable</span>
@@ -350,6 +354,8 @@
 <span class="sd">                super().host_setup()</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">:</span>
+                <span class="k">continue</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">s</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -612,6 +618,22 @@
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
             <span class="n">s</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">schemata</span><span class="p">)</span>
 
+<div class="viewcode-block" id="Fragment.detach_fragment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.detach_fragment">[docs]</a>    <span class="k">def</span> <span class="nf">detach_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Detach a subfragment from the execution machinery, causing its setup and</span>
+<span class="sd">        cleanup methods not to be invoked and its result channels not to be collected.</span>
+
+<span class="sd">        Its parameters will still be available in the global tree as usual, but the</span>
+<span class="sd">        the actual execution can be customised this way, e.g. for the implementation of</span>
+<span class="sd">        subscans.</span>
+
+<span class="sd">        :param fragment: The fragment to detach; must be a direct subfragment of this</span>
+<span class="sd">            fragment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">fragment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">,</span> <span class="s2">&quot;Can only scan immediate subfragments&quot;</span>
+        <span class="k">assert</span> <span class="n">fragment</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">,</span> \
+            <span class="s2">&quot;Subfragment already detached (is there already another subscan?)&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="Fragment.init_params"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.init_params">[docs]</a>    <span class="k">def</span> <span class="nf">init_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                     <span class="n">overrides</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialise free parameters of this fragment and all its subfragments.</span>
@@ -723,7 +745,7 @@
     <span class="k">def</span> <span class="nf">_collect_result_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">channels</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_absorbed_results_subfragments</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">s</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
 

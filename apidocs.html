@@ -498,6 +498,22 @@ bound to.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ndscan.experiment.fragment.Fragment.detach_fragment">
+<code class="sig-name descname">detach_fragment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fragment</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment">ndscan.experiment.fragment.Fragment</a></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.detach_fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.detach_fragment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detach a subfragment from the execution machinery, causing its setup and
+cleanup methods not to be invoked and its result channels not to be collected.</p>
+<p>Its parameters will still be available in the global tree as usual, but the
+the actual execution can be customised this way, e.g. for the implementation of
+subscans.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fragment</strong> – The fragment to detach; must be a direct subfragment of this
+fragment.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.init_params">
 <code class="sig-name descname">init_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">overrides</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>ndscan.experiment.parameters.ParamStore<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">{}</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.init_params" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialise free parameters of this fragment and all its subfragments.</p>

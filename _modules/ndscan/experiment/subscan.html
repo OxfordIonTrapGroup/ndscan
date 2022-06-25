@@ -366,9 +366,9 @@
 
     <span class="k">assert</span> <span class="n">owner</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="s2">&quot;Can only call install_subscan() during build_fragment()&quot;</span>
     <span class="k">assert</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">),</span> <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scan_name</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">fragment</span> <span class="ow">in</span> <span class="n">owner</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">,</span> <span class="s2">&quot;Can only scan immediate subfragments&quot;</span>
-    <span class="k">assert</span> <span class="n">fragment</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">owner</span><span class="o">.</span><span class="n">_absorbed_results_subfragments</span><span class="p">,</span> \
-        <span class="s2">&quot;Subfragment result channels already used (is there already another scan?)&quot;</span>
+
+    <span class="c1"># Our own ScanRunner takes care of the fragment lifecycle.</span>
+    <span class="n">owner</span><span class="o">.</span><span class="n">detach_fragment</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
 
     <span class="c1"># Override target parameter stores with newly created stores.</span>
     <span class="c1"># TODO: Potentially make handles have identity and accept them directly.</span>
@@ -395,7 +395,7 @@
     <span class="c1"># we redirect the results to ArraySinks…</span>
     <span class="n">original_channels</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">original_channels</span><span class="p">)</span>
-    <span class="n">owner</span><span class="o">.</span><span class="n">_absorbed_results_subfragments</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
+    <span class="n">owner</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
 
     <span class="n">child_result_sinks</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">original_channels</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
