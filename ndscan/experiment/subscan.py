@@ -236,7 +236,6 @@ def setattr_subscan(owner: Fragment,
     # we redirect the results to ArraySinks…
     original_channels = {}
     fragment._collect_result_channels(original_channels)
-    owner._detached_subfragments.add(fragment)
 
     child_result_sinks = {}
     for channel in original_channels.values():
