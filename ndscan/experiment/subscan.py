@@ -207,9 +207,9 @@ def setattr_subscan(owner: Fragment,
 
     assert owner._building, "Can only call install_subscan() during build_fragment()"
     assert not hasattr(owner, scan_name), "Field '{}' already exists".format(scan_name)
-    assert fragment in owner._subfragments, "Can only scan immediate subfragments"
-    assert fragment not in owner._absorbed_results_subfragments, \
-        "Subfragment result channels already used (is there already another scan?)"
+
+    # Our own ScanRunner takes care of the fragment lifecycle.
+    owner.detach_fragment(fragment)
 
     # Override target parameter stores with newly created stores.
     # TODO: Potentially make handles have identity and accept them directly.
@@ -236,7 +236,7 @@ def setattr_subscan(owner: Fragment,
     # we redirect the results to ArraySinks…
     original_channels = {}
     fragment._collect_result_channels(original_channels)
-    owner._absorbed_results_subfragments.add(fragment)
+    owner._detached_subfragments.add(fragment)
 
     child_result_sinks = {}
     for channel in original_channels.values():

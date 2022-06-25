@@ -51,9 +51,9 @@ class Fragment(HasEnvironment):
         #: Maps full path of own result channels to ResultChannel instances.
         self._result_channels = {}
 
-        #: Subfragments the ResultChannels of which should not be re-exported (e.g.
-        #: for subscans).
-        self._absorbed_results_subfragments = set()
+        #: Subfragments detached from the normal fragment execution (setup/cleanup,
+        #: result channels; e.g. for subscans).
+        self._detached_subfragments = set()
 
         klass = self.__class__
         mod = klass.__module__
@@ -79,11 +79,13 @@ class Fragment(HasEnvironment):
         # device_cleanup() to forward to subfragments.
         self._device_setup_subfragments_impl = kernel_from_string(["self"], "\n".join([
             "self.{}.device_setup()".format(s._fragment_path[-1])
-            for s in self._subfragments
+            for s in self._subfragments if s not in self._detached_subfragments
         ]) or "pass", portable)
 
         code = ""
         for s in self._subfragments[::-1]:
+            if s in self._detached_subfragments:
+                continue
             frag = "self." + s._fragment_path[-1]
             code += "try:\n"
             code += "    {}.device_cleanup()\n".format(frag)
@@ -119,6 +121,8 @@ class Fragment(HasEnvironment):
                 super().host_setup()
         """
         for s in self._subfragments:
+            if s in self._detached_subfragments:
+                continue
             s.host_setup()
 
     @portable
@@ -191,6 +195,8 @@ class Fragment(HasEnvironment):
                 super().host_setup()
         """
         for s in self._subfragments[::-1]:
+            if s in self._detached_subfragments:
+                continue
             try:
                 s.host_cleanup()
             except Exception:
@@ -453,6 +459,22 @@ class Fragment(HasEnvironment):
         for s in self._subfragments:
             s._collect_params(params, schemata)
 
+    def detach_fragment(self, fragment: "Fragment") -> None:
+        """Detach a subfragment from the execution machinery, causing its setup and
+        cleanup methods not to be invoked and its result channels not to be collected.
+
+        Its parameters will still be available in the global tree as usual, but the
+        the actual execution can be customised this way, e.g. for the implementation of
+        subscans.
+
+        :param fragment: The fragment to detach; must be a direct subfragment of this
+            fragment.
+        """
+        assert fragment in self._subfragments, "Can only scan immediate subfragments"
+        assert fragment not in self._detached_subfragments, \
+            "Subfragment already detached (is there already another subscan?)"
+        self._detached_subfragments.add(fragment)
+
     def init_params(self,
                     overrides: Dict[str, List[Tuple[str, ParamStore]]] = {}) -> None:
         """Initialise free parameters of this fragment and all its subfragments.
@@ -564,7 +586,7 @@ class Fragment(HasEnvironment):
     def _collect_result_channels(self, channels: Dict[str, ResultChannel]) -> None:
         channels.update(self._result_channels)
         for s in self._subfragments:
-            if s in self._absorbed_results_subfragments:
+            if s in self._detached_subfragments:
                 continue
             s._collect_result_channels(channels)
 

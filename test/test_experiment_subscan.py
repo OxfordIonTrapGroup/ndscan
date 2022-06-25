@@ -176,6 +176,17 @@ class SubscanCase(ExpFragmentCase):
         # values.
         self.assertEqual(annotations, [x_location, y_location])
 
+    def test_fragment_detach(self):
+        parent = self.create(Scan1DFragment, AddOneFragment)
+        run_fragment_once(parent)
+
+        # Make sure the setup and cleanup methods aren't also called during the parent
+        # fragment setup/cleanup (in addition to the subscan).
+        self.assertEqual(parent.child.num_host_setup_calls, 1)
+        self.assertEqual(parent.child.num_device_setup_calls, 4)
+        self.assertEqual(parent.child.num_device_cleanup_calls, 1)
+        self.assertEqual(parent.child.num_host_cleanup_calls, 1)
+
 
 class RunSubscanTwiceFragment(ExpFragment):
     def build_fragment(self):
