@@ -1,5 +1,6 @@
+import numpy as np
 import unittest
-from ndscan.experiment.scan_generator import ExpandingGenerator
+from ndscan.experiment.scan_generator import CentreSpanGenerator, ExpandingGenerator
 
 
 class ScanGeneratorCase(unittest.TestCase):
@@ -62,3 +63,57 @@ class ScanGeneratorCase(unittest.TestCase):
         self.assertEqual(gen.points_for_level(1), [-1.0, 1.0])
         self.assertTrue(gen.has_level(10))
         self.assertEqual(gen.points_for_level(10), [-10.0, 10.0])
+
+    def test_centre_empty(self):
+        with self.assertRaises(ValueError):
+            CentreSpanGenerator(centre=0.0,
+                                half_span=1.0,
+                                num_points=0,
+                                randomise_order=False)
+
+    def test_centre_one(self):
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=1,
+                                  randomise_order=True)
+        self.assertTrue(gen.has_level(0))
+        self.assertEqual(gen.points_for_level(0, np.random), [0.0])
+        self.assertFalse(gen.has_level(1))
+
+    def test_centre_two(self):
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=2,
+                                  randomise_order=False)
+        self.assertTrue(gen.has_level(0))
+        self.assertEqual(gen.points_for_level(0), [-1.0, 1.0])
+        self.assertFalse(gen.has_level(1))
+
+    def test_centre_three(self):
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=3,
+                                  randomise_order=False)
+        self.assertTrue(gen.has_level(0))
+        self.assertEqual(gen.points_for_level(0), [-1.0, 0.0, 1.0])
+        self.assertFalse(gen.has_level(1))
+
+    def test_centre_lower_lim(self):
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=2,
+                                  randomise_order=False,
+                                  limit_lower=0.0)
+        self.assertTrue(gen.has_level(0))
+        self.assertEqual(gen.points_for_level(0), [0.0, 1.0])
+        self.assertFalse(gen.has_level(1))
+
+    def test_centre_upper_lim(self):
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=2,
+                                  randomise_order=False,
+                                  limit_upper=0.0)
+        self.assertTrue(gen.has_level(0))
+        self.assertEqual(gen.points_for_level(0), [-1.0, 0.0])
+        self.assertFalse(gen.has_level(1))
