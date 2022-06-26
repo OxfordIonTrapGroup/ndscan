@@ -1,5 +1,6 @@
 import asyncio
 from collections import Counter, OrderedDict
+from enum import Enum, unique
 from functools import partial
 import logging
 import os
@@ -612,6 +613,7 @@ class OverrideEntry(LayoutWidget):
         assert next(iter(option_classes.keys())) == "Fixed"
         if len(option_classes) == 1:
             self.scan_type.setEnabled(False)
+        self.current_option_idx = 0
 
         self.options = []
         for name, option_cls in option_classes.items():
@@ -625,8 +627,9 @@ class OverrideEntry(LayoutWidget):
 
             self.widget_stack.addWidget(container)
             self.options.append(option)
-        self.scan_type.currentIndexChanged.connect(self.widget_stack.setCurrentIndex)
+        self.scan_type.currentIndexChanged.connect(self._current_index_changed)
         self.addWidget(self.widget_stack, col=1)
+        self.sync_values = {}
 
     def read_from_params(self, params: dict, manager_datasets) -> None:
         for o in params.get("overrides", {}).get(self.schema["fqn"], []):
@@ -667,10 +670,30 @@ class OverrideEntry(LayoutWidget):
 
     def _set_fixed_value(self, value) -> None:
         self.options[0].set_value(value)
+        self.options[0].write_sync_values(self.sync_values)
+
+    def _current_index_changed(self, new_idx) -> None:
+        self.options[self.current_option_idx].write_sync_values(self.sync_values)
+        self.options[new_idx].read_sync_values(self.sync_values)
+        self.widget_stack.setCurrentIndex(new_idx)
+        self.current_option_idx = new_idx
 
 
 def _parse_list_pyon(values: str) -> List[float]:
     return pyon.decode("[" + values + "]")
+
+
+@unique
+class SyncValue(Enum):
+    """Equivalent values to be synchronised between similar scan types.
+
+    Not all values will have a meaning for all scan types; they should just be left
+    alone so that arguments for like scans are synchronised between each other.
+    """
+    centre = "centre"
+    lower = "lower"
+    upper = "upper"
+    num_points = "num_points"
 
 
 class ScanOption:
@@ -679,6 +702,12 @@ class ScanOption:
 
     def write_to_params(self, params: dict) -> None:
         raise NotImplementedError
+
+    def read_sync_values(self, sync_values: dict) -> None:
+        pass
+
+    def write_sync_values(self, sync_values: dict) -> None:
+        pass
 
 
 class StringFixedScanOption(ScanOption):
@@ -698,12 +727,6 @@ class NumericScanOption(ScanOption):
     def __init__(self, entry: OverrideEntry):
         self.entry = entry
         self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
-
-    def build_ui(self, layout: QtWidgets.QLayout) -> None:
-        raise NotImplementedError
-
-    def write_to_params(self, params: dict) -> None:
-        raise NotImplementedError
 
     def _make_divider(self):
         f = QtWidgets.QFrame()
@@ -758,6 +781,13 @@ class FixedScanOption(NumericScanOption):
             value = 0.0
         self.box.setValue(float(value) / self.scale)
 
+    def read_sync_values(self, sync_values: dict) -> None:
+        if SyncValue.centre in sync_values:
+            self.box.setValue(sync_values[SyncValue.centre])
+
+    def write_sync_values(self, sync_values: dict) -> None:
+        sync_values[SyncValue.centre] = self.box.value()
+
 
 class RefiningScanOption(NumericScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -789,6 +819,16 @@ class RefiningScanOption(NumericScanOption):
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
+
+    def read_sync_values(self, sync_values: dict) -> None:
+        if SyncValue.lower in sync_values:
+            self.box_lower.setValue(sync_values[SyncValue.lower])
+        if SyncValue.upper in sync_values:
+            self.box_upper.setValue(sync_values[SyncValue.upper])
+
+    def write_sync_values(self, sync_values: dict) -> None:
+        sync_values[SyncValue.lower] = self.box_lower.value()
+        sync_values[SyncValue.upper] = self.box_upper.value()
 
 
 class LinearScanOption(NumericScanOption):
@@ -834,6 +874,19 @@ class LinearScanOption(NumericScanOption):
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
+
+    def read_sync_values(self, sync_values: dict) -> None:
+        if SyncValue.lower in sync_values:
+            self.box_start.setValue(sync_values[SyncValue.lower])
+        if SyncValue.upper in sync_values:
+            self.box_stop.setValue(sync_values[SyncValue.upper])
+        if SyncValue.num_points in sync_values:
+            self.box_points.setValue(sync_values[SyncValue.num_points])
+
+    def write_sync_values(self, sync_values: dict) -> None:
+        sync_values[SyncValue.lower] = self.box_start.value()
+        sync_values[SyncValue.upper] = self.box_stop.value()
+        sync_values[SyncValue.num_points] = self.box_points.value()
 
 
 class ListScanOption(NumericScanOption):
