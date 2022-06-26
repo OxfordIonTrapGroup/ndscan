@@ -148,13 +148,46 @@ class LinearGenerator(ScanGenerator):
                              endpoint=True)
         if self.randomise_order:
             rng.shuffle(points)
-        return points
+        return points.tolist()
 
     def describe_limits(self, target: Dict[str, Any]) -> None:
         ""
         target["min"] = min(self.start, self.stop)
         target["max"] = max(self.start, self.stop)
         target["increment"] = abs(self.stop - self.start) / (self.num_points - 1)
+
+
+class CentreSpanGenerator(LinearGenerator):
+    """Generates equally spaced points in ``centre``±``half_span``."""
+    def __init__(self,
+                 centre,
+                 half_span,
+                 num_points: int,
+                 randomise_order: bool,
+                 limit_lower=None,
+                 limit_upper=None):
+        """
+        :param limit_lower: Optional lower limit (inclusive) to the range of generated
+            points. Useful for representing scans on parameters the range of which is
+            limited (e.g. to be non-negative).
+        :param limit_upper: See `limit_lower`.
+        """
+        if num_points < 1:
+            raise ValueError("Need at least one point in centre/span scan")
+        self.num_points = num_points
+        self.randomise_order = randomise_order
+
+        self.start = centre - half_span
+        if limit_lower is not None:
+            self.start = max(self.start, limit_lower)
+        self.stop = centre + half_span
+        if limit_upper is not None:
+            self.stop = min(self.stop, limit_upper)
+        if self.start > self.stop:
+            raise ValueError("Empty centre/span scan (lower limit larger than upper)")
+
+        if num_points == 1:
+            self.start = self.stop = centre
 
 
 class ListGenerator(ScanGenerator):
@@ -188,6 +221,7 @@ GENERATORS = {
     "refining": RefiningGenerator,
     "expanding": ExpandingGenerator,
     "linear": LinearGenerator,
+    "centre_span": CentreSpanGenerator,
     "list": ListGenerator
 }
 
