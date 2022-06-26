@@ -29,6 +29,8 @@ class ScanGenerator:
 
 
 class RefiningGenerator(ScanGenerator):
+    """Generates progressively finer grid by halving distance between points each level.
+    """
     def __init__(self, lower, upper, randomise_order):
         self.lower = float(min(lower, upper))
         self.upper = float(max(lower, upper))
@@ -36,6 +38,8 @@ class RefiningGenerator(ScanGenerator):
 
     def has_level(self, level: int) -> bool:
         ""
+        # For floating-point parameters, a refining scan, in practical terms, never runs
+        # out of points. Will need to be amended for integer parameters.
         return True
 
     def points_for_level(self, level: int, rng=None) -> List[Any]:
@@ -59,6 +63,7 @@ class RefiningGenerator(ScanGenerator):
 
 
 class LinearGenerator(ScanGenerator):
+    """Generates equally spaced points between two endpoints."""
     def __init__(self, start, stop, num_points, randomise_order):
         if num_points < 2:
             raise ValueError("Need at least 2 points in linear scan")
@@ -90,6 +95,7 @@ class LinearGenerator(ScanGenerator):
 
 
 class ListGenerator(ScanGenerator):
+    """Generates points by reading from an explicitly specified list."""
     def __init__(self, values, randomise_order):
         self.values = values
         self.randomise_order = randomise_order
