@@ -577,20 +577,26 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
     def _make_override_entry(self, fqn, path):
         schema = self._schema_for_fqn(fqn)
 
-        entry_class = FloatOverrideEntry
-        if schema["type"] == "string":
-            entry_class = StringOverrideEntry
-        # TODO: Properly handle int, add errors (or default to PYON value).
-
         is_scannable = ((self.scan_options is not None)
                         and schema.get("spec", {}).get("is_scannable", True))
-        return entry_class(schema, path, is_scannable, self._randomise_scan_icon)
+
+        options = OrderedDict([])
+        if schema["type"] == "string":
+            options["Fixed"] = StringFixedScanOption
+        else:
+            # TODO: Properly handle int, add errors (or default to PYON value).
+            options["Fixed"] = FixedScanOption
+            if is_scannable:
+                options["Refining"] = RefiningScanOption
+                options["Linear"] = LinearScanOption
+                options["List"] = ListScanOption
+        return OverrideEntry(options, schema, path, self._randomise_scan_icon)
 
 
 class OverrideEntry(LayoutWidget):
     value_changed = QtCore.pyqtSignal()
 
-    def __init__(self, schema, path, is_scannable: bool, randomise_icon, *args):
+    def __init__(self, option_classes, schema, path, randomise_icon, *args):
         super().__init__(*args)
 
         self.schema = schema
@@ -602,14 +608,23 @@ class OverrideEntry(LayoutWidget):
 
         self.widget_stack = QtWidgets.QStackedWidget()
 
-        scan_type_names = self._scan_type_names() if is_scannable else ["Fixed"]
-        if len(scan_type_names) == 1:
+        # The non-scan option should be on the top.
+        assert next(iter(option_classes.keys())) == "Fixed"
+        if len(option_classes) == 1:
             self.scan_type.setEnabled(False)
-        for name in scan_type_names:
+
+        self.options = []
+        for name, option_cls in option_classes.items():
             self.scan_type.addItem(name)
+
+            option = option_cls(self)
             container = QtWidgets.QWidget()
-            self._build_scan_ui(name, container)
+            layout = QtWidgets.QHBoxLayout()
+            option.build_ui(layout)
+            container.setLayout(layout)
+
             self.widget_stack.addWidget(container)
+            self.options.append(option)
         self.scan_type.currentIndexChanged.connect(self.widget_stack.setCurrentIndex)
         self.addWidget(self.widget_stack, col=1)
 
@@ -645,181 +660,65 @@ class OverrideEntry(LayoutWidget):
         self.disable_scan()
 
     def write_to_params(self, params: dict) -> None:
-        raise NotImplementedError
+        self.options[self.scan_type.currentIndex()].write_to_params(params)
 
     def disable_scan(self) -> None:
-        raise NotImplementedError
-
-    def _scan_type_names(self) -> List[str]:
-        raise NotImplementedError
-
-    def _build_scan_ui(self, name: str, target: QtWidgets.QWidget) -> None:
-        raise NotImplementedError
+        self.scan_type.setCurrentIndex(0)
 
     def _set_fixed_value(self, value) -> None:
-        raise NotImplementedError
+        self.options[0].set_value(value)
 
 
 def _parse_list_pyon(values: str) -> List[float]:
     return pyon.decode("[" + values + "]")
 
 
-class FloatOverrideEntry(OverrideEntry):
-    def __init__(self, schema, *args):
-        self.scan_types = OrderedDict([
-            ("Fixed", (self._build_fixed_ui, self._write_override)),
-            ("Refining", (self._build_refining_ui, self._write_refining_scan)),
-            ("Linear", (self._build_linear_ui, self._write_linear_scan)),
-            ("List", (self._build_list_ui, self._write_list_scan))
-        ])
-        self.current_scan_type = None
-        self.scale = schema.get("spec", {}).get("scale", 1.0)
-
-        super().__init__(schema, *args)
+class ScanOption:
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        raise NotImplementedError
 
     def write_to_params(self, params: dict) -> None:
-        self.scan_types[self.scan_type.currentText()][1](params)
+        raise NotImplementedError
 
-    def disable_scan(self) -> None:
-        # TODO: Move this into parent class as well.
-        self.scan_type.setCurrentIndex(0)
 
-    def _write_override(self, params: dict) -> None:
-        # TODO: Move Fixed/Scanning distinction into parent class, have a subclass
-        # per possible scan type, and have the different float/int/bool/… entries just
-        # provide the list of scan names and mapping to subclasses.
-        o = {"path": self.path, "value": self.box_value.value() * self.scale}
-        params["overrides"].setdefault(self.schema["fqn"], []).append(o)
+class StringFixedScanOption(ScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box = QtWidgets.QLineEdit()
+        layout.addWidget(self.box)
 
-    def _write_refining_scan(self, params: dict) -> None:
-        spec = {
-            "fqn": self.schema["fqn"],
-            "path": self.path,
-            "type": "refining",
-            "range": {
-                "lower": self.box_refining_lower.value() * self.scale,
-                "upper": self.box_refining_upper.value() * self.scale,
-                "randomise_order": self.box_refining_randomise.isChecked()
-            }
-        }
-        params["scan"].setdefault("axes", []).append(spec)
+    def write_to_params(self, params: dict) -> None:
+        o = {"path": self.entry.path, "value": self.box.text()}
+        params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
 
-    def _write_linear_scan(self, params: dict) -> None:
-        spec = {
-            "fqn": self.schema["fqn"],
-            "path": self.path,
-            "type": "linear",
-            "range": {
-                "start": self.box_linear_start.value() * self.scale,
-                "stop": self.box_linear_stop.value() * self.scale,
-                "num_points": self.box_linear_points.value(),
-                "randomise_order": self.box_linear_randomise.isChecked(),
-            }
-        }
-        params["scan"].setdefault("axes", []).append(spec)
+    def set_value(self, value) -> None:
+        self.box.setText(value)
 
-    def _write_list_scan(self, params: dict) -> None:
-        try:
-            values = [
-                v * self.scale for v in _parse_list_pyon(self.box_list_pyon.text())
-            ]
-        except Exception as e:
-            logger.info(e)
-            values = []
-        spec = {
-            "fqn": self.schema["fqn"],
-            "path": self.path,
-            "type": "list",
-            "range": {
-                "values": values,
-                "randomise_order": self.box_list_randomise.isChecked(),
-            }
-        }
-        params["scan"].setdefault("axes", []).append(spec)
 
-    def _scan_type_names(self) -> List[str]:
-        return list(self.scan_types.keys())
+class NumericScanOption(ScanOption):
+    def __init__(self, entry: OverrideEntry):
+        self.entry = entry
+        self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
 
-    def _build_scan_ui(self, name: str, target: QtWidgets.QWidget) -> None:
-        layout = QtWidgets.QHBoxLayout()
-        self.scan_types[name][0](layout)
-        target.setLayout(layout)
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        raise NotImplementedError
 
-    def _build_fixed_ui(self, layout: QtWidgets.QLayout) -> None:
-        self.box_value = self._make_spin_box()
-        layout.addWidget(self.box_value)
+    def write_to_params(self, params: dict) -> None:
+        raise NotImplementedError
 
-    def _build_refining_ui(self, layout: QtWidgets.QLayout) -> None:
-        self.box_refining_lower = self._make_spin_box()
-        layout.addWidget(self.box_refining_lower)
-        layout.setStretchFactor(self.box_refining_lower, 1)
-
-        layout.addWidget(self._make_divider())
-
-        self.box_refining_randomise = self._make_randomise_box()
-        layout.addWidget(self.box_refining_randomise)
-        layout.setStretchFactor(self.box_refining_randomise, 0)
-
-        layout.addWidget(self._make_divider())
-
-        self.box_refining_upper = self._make_spin_box()
-        layout.addWidget(self.box_refining_upper)
-        layout.setStretchFactor(self.box_refining_upper, 1)
-
-    def _build_linear_ui(self, layout: QtWidgets.QLayout) -> None:
-        self.box_linear_start = self._make_spin_box()
-        layout.addWidget(self.box_linear_start)
-        layout.setStretchFactor(self.box_linear_start, 1)
-
-        layout.addWidget(self._make_divider())
-
-        self.box_linear_points = QtWidgets.QSpinBox()
-        self.box_linear_points.setMinimum(2)
-        self.box_linear_points.setValue(21)
-
-        # Somewhat gratuitously restrict the number of scan points for sizing, and to
-        # avoid the user accidentally pasting in millions of points, etc.
-        self.box_linear_points.setMaximum(0xffff)
-
-        self.box_linear_points.setSuffix(" pts")
-        layout.addWidget(self.box_linear_points)
-        layout.setStretchFactor(self.box_linear_points, 0)
-
-        self.box_linear_randomise = self._make_randomise_box()
-        layout.addWidget(self.box_linear_randomise)
-        layout.setStretchFactor(self.box_linear_randomise, 0)
-
-        layout.addWidget(self._make_divider())
-
-        self.box_linear_stop = self._make_spin_box()
-        layout.addWidget(self.box_linear_stop)
-        layout.setStretchFactor(self.box_linear_stop, 1)
-
-    def _build_list_ui(self, layout: QtWidgets.QLayout) -> None:
-        class Validator(QtGui.QValidator):
-            def validate(self, input, pos):
-                try:
-                    [float(f) for f in _parse_list_pyon(input)]
-                    return QtGui.QValidator.Acceptable, input, pos
-                except Exception:
-                    return QtGui.QValidator.Intermediate, input, pos
-
-        self.box_list_pyon = QtWidgets.QLineEdit()
-        self.box_list_pyon.setValidator(Validator(self))
-        layout.addWidget(self.box_list_pyon)
-
-        layout.addWidget(self._make_divider())
-
-        self.box_list_randomise = self._make_randomise_box()
-        layout.addWidget(self.box_list_randomise)
-        layout.setStretchFactor(self.box_list_randomise, 0)
+    def _make_divider(self):
+        f = QtWidgets.QFrame()
+        f.setFrameShape(QtWidgets.QFrame.VLine)
+        f.setFrameShadow(QtWidgets.QFrame.Sunken)
+        f.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                        QtWidgets.QSizePolicy.Expanding)
+        return f
 
     def _make_spin_box(self):
         box = ScientificSpinBox()
         disable_scroll_wheel(box)
-        box.valueChanged.connect(self.value_changed)
+        box.valueChanged.connect(self.entry.value_changed)
 
-        spec = self.schema.get("spec", {})
+        spec = self.entry.schema.get("spec", {})
         step = spec.get("step", 1.0)
 
         box.setDecimals(8)
@@ -833,51 +732,143 @@ class FloatOverrideEntry(OverrideEntry):
         unit = spec.get("unit", "")
         if unit:
             box.setSuffix(" " + unit)
-
         return box
 
     def _make_randomise_box(self):
         box = QtWidgets.QCheckBox()
         box.setToolTip("Randomise scan point order")
-        box.setIcon(self.randomise_icon)
+        box.setIcon(self.entry.randomise_icon)
         box.setChecked(True)
+        box.stateChanged.connect(self.entry.value_changed)
         return box
 
-    def _make_divider(self):
-        f = QtWidgets.QFrame()
-        f.setFrameShape(QtWidgets.QFrame.VLine)
-        f.setFrameShadow(QtWidgets.QFrame.Sunken)
-        f.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                        QtWidgets.QSizePolicy.Expanding)
-        return f
 
-    def _set_fixed_value(self, value):
+class FixedScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box = self._make_spin_box()
+        layout.addWidget(self.box)
+
+    def write_to_params(self, params: dict) -> None:
+        o = {"path": self.entry.path, "value": self.box.value() * self.scale}
+        params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
+
+    def set_value(self, value) -> None:
         if value is None:
             # Error evaluating defaults, no better guess.
             value = 0.0
-        self.box_value.setValue(float(value) / self.scale)
+        self.box.setValue(float(value) / self.scale)
 
 
-class StringOverrideEntry(OverrideEntry):
+class RefiningScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box_lower = self._make_spin_box()
+        layout.addWidget(self.box_lower)
+        layout.setStretchFactor(self.box_lower, 1)
+
+        layout.addWidget(self._make_divider())
+
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+
+        layout.addWidget(self._make_divider())
+
+        self.box_upper = self._make_spin_box()
+        layout.addWidget(self.box_upper)
+        layout.setStretchFactor(self.box_upper, 1)
+
     def write_to_params(self, params: dict) -> None:
-        o = {"path": self.path, "value": self.box_value.text()}
-        params["overrides"].setdefault(self.schema["fqn"], []).append(o)
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "refining",
+            "range": {
+                "lower": self.box_lower.value() * self.scale,
+                "upper": self.box_upper.value() * self.scale,
+                "randomise_order": self.check_randomise.isChecked()
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
 
-    def disable_scan(self) -> None:
-        pass
 
-    def _scan_type_names(self) -> List[str]:
-        return ["Fixed"]
+class LinearScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box_start = self._make_spin_box()
+        layout.addWidget(self.box_start)
+        layout.setStretchFactor(self.box_start, 1)
 
-    def _build_scan_ui(self, name: str, target: QtWidgets.QWidget) -> None:
-        if name != self._scan_type_names()[0]:
-            raise ValueError("Unknown scan type: '{}'".format(name))
+        layout.addWidget(self._make_divider())
 
-        layout = QtWidgets.QHBoxLayout()
-        target.setLayout(layout)
+        self.box_points = QtWidgets.QSpinBox()
+        self.box_points.setMinimum(2)
+        self.box_points.setValue(21)
 
-        self.box_value = QtWidgets.QLineEdit()
-        layout.addWidget(self.box_value)
+        # Somewhat gratuitously restrict the number of scan points for sizing, and to
+        # avoid the user accidentally pasting in millions of points, etc.
+        self.box_points.setMaximum(0xffff)
 
-    def _set_fixed_value(self, value) -> None:
-        self.box_value.setText(value)
+        self.box_points.setSuffix(" pts")
+        layout.addWidget(self.box_points)
+        layout.setStretchFactor(self.box_points, 0)
+
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+
+        layout.addWidget(self._make_divider())
+
+        self.box_stop = self._make_spin_box()
+        layout.addWidget(self.box_stop)
+        layout.setStretchFactor(self.box_stop, 1)
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "linear",
+            "range": {
+                "start": self.box_start.value() * self.scale,
+                "stop": self.box_stop.value() * self.scale,
+                "num_points": self.box_points.value(),
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+
+class ListScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        class Validator(QtGui.QValidator):
+            def validate(self, input, pos):
+                try:
+                    [float(f) for f in _parse_list_pyon(input)]
+                    return QtGui.QValidator.Acceptable, input, pos
+                except Exception:
+                    return QtGui.QValidator.Intermediate, input, pos
+
+        self.box_pyon = QtWidgets.QLineEdit()
+        self.box_pyon.setValidator(Validator(self.entry))
+        layout.addWidget(self.box_pyon)
+
+        layout.addWidget(self._make_divider())
+
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+
+    def write_to_params(self, params: dict) -> None:
+        try:
+            values = [v * self.scale for v in _parse_list_pyon(self.box_pyon.text())]
+        except Exception as e:
+            logger.info(e)
+            values = []
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "list",
+            "range": {
+                "values": values,
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
