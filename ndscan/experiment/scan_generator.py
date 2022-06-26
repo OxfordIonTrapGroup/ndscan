@@ -62,6 +62,69 @@ class RefiningGenerator(ScanGenerator):
         target["max"] = self.upper
 
 
+class ExpandingGenerator(ScanGenerator):
+    """Generates points with given, constant spacing in progressively growing range
+    around a given centre.
+    """
+    def __init__(self,
+                 centre,
+                 spacing,
+                 randomise_order: bool,
+                 limit_lower=None,
+                 limit_upper=None):
+        """
+        :param limit_lower: Optional lower limit (inclusive) to the range of generated
+            points. Useful for representing scans on parameters the range of which is
+            limited (e.g. to be non-negative).
+        :param limit_upper: See `limit_lower`.
+        """
+        self.centre = centre
+        self.spacing = abs(spacing)
+        self.randomise_order = randomise_order
+
+        self.limit_lower = limit_lower if limit_lower is not None else float("-inf")
+        if centre < self.limit_lower:
+            raise ValueError("Given scan centre exceeds lower limit")
+
+        self.limit_upper = limit_upper if limit_upper is not None else float("inf")
+        if centre > self.limit_upper:
+            raise ValueError("Given scan centre exceeds upper limit")
+
+    def has_level(self, level: int) -> bool:
+        ""
+
+        def num_points(limit):
+            return np.floor(abs(self.centre - limit) / self.spacing)
+
+        return level <= max(num_points(self.limit_lower), num_points(self.limit_upper))
+
+    def points_for_level(self, level: int, rng=None) -> List[Any]:
+        ""
+        if level == 0:
+            return [self.centre]
+
+        points = []
+        lower = self.centre - level * self.spacing
+        if lower >= self.limit_lower:
+            points.append(lower)
+
+        upper = self.centre + level * self.spacing
+        if upper <= self.limit_upper:
+            points.append(upper)
+
+        if self.randomise_order:
+            rng.shuffle(points)
+        return points
+
+    def describe_limits(self, target: Dict[str, Any]) -> None:
+        ""
+        if self.limit_lower > float("-inf"):
+            target["min"] = self.limit_lower
+        if self.limit_upper < float("inf"):
+            target["max"] = self.limit_upper
+        target["increment"] = self.spacing
+
+
 class LinearGenerator(ScanGenerator):
     """Generates equally spaced points between two endpoints."""
     def __init__(self, start, stop, num_points, randomise_order):
@@ -123,6 +186,7 @@ class ListGenerator(ScanGenerator):
 
 GENERATORS = {
     "refining": RefiningGenerator,
+    "expanding": ExpandingGenerator,
     "linear": LinearGenerator,
     "list": ListGenerator
 }
