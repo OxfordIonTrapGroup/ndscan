@@ -590,6 +590,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             if is_scannable:
                 options["Refining"] = RefiningScanOption
                 options["Linear"] = LinearScanOption
+                options["Expanding"] = ExpandingScanOption
+                options["Lin. centr."] = CentreSpanScanOption
                 options["List"] = ListScanOption
         return OverrideEntry(options, schema, path, self._randomise_scan_icon)
 
@@ -886,6 +888,107 @@ class LinearScanOption(NumericScanOption):
     def write_sync_values(self, sync_values: dict) -> None:
         sync_values[SyncValue.lower] = self.box_start.value()
         sync_values[SyncValue.upper] = self.box_stop.value()
+        sync_values[SyncValue.num_points] = self.box_points.value()
+
+
+class ExpandingScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box_centre = self._make_spin_box()
+        layout.addWidget(self.box_centre)
+        layout.setStretchFactor(self.box_centre, 1)
+
+        layout.addWidget(self._make_divider())
+
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+
+        layout.addWidget(self._make_divider())
+
+        self.box_spacing = self._make_spin_box()
+        layout.addWidget(self.box_spacing)
+        layout.setStretchFactor(self.box_spacing, 1)
+
+    def write_to_params(self, params: dict) -> None:
+        schema = self.entry.schema
+        spec = {
+            "fqn": schema["fqn"],
+            "path": self.entry.path,
+            "type": "expanding",
+            "range": {
+                "centre": self.box_centre.value() * self.scale,
+                "spacing": self.box_spacing.value() * self.scale,
+                "randomise_order": self.check_randomise.isChecked()
+            }
+        }
+        if (lower := schema["spec"].get("min", None)) is not None:
+            spec["range"]["limit_lower"] = lower
+        if (upper := schema["spec"].get("max", None)) is not None:
+            spec["range"]["limit_upper"] = upper
+        params["scan"].setdefault("axes", []).append(spec)
+
+    def read_sync_values(self, sync_values: dict) -> None:
+        if SyncValue.centre in sync_values:
+            self.box_centre.setValue(sync_values[SyncValue.centre])
+
+    def write_sync_values(self, sync_values: dict) -> None:
+        sync_values[SyncValue.centre] = self.box_centre.value()
+
+
+class CentreSpanScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box_centre = self._make_spin_box()
+        layout.addWidget(self.box_centre)
+        layout.setStretchFactor(self.box_centre, 1)
+
+        self.plusminus = QtWidgets.QLabel("±")
+        layout.addWidget(self.plusminus)
+        layout.setStretchFactor(self.plusminus, 0)
+
+        self.box_half_span = self._make_spin_box()
+        layout.addWidget(self.box_half_span)
+        layout.setStretchFactor(self.box_half_span, 1)
+
+        layout.addWidget(self._make_divider())
+
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+
+        self.box_points = QtWidgets.QSpinBox()
+        self.box_points.setMinimum(2)
+        self.box_points.setValue(21)
+
+        # Somewhat gratuitously restrict the number of scan points for sizing, and to
+        # avoid the user accidentally pasting in millions of points, etc.
+        self.box_points.setMaximum(0xffff)
+
+        self.box_points.setSuffix(" pts")
+        layout.addWidget(self.box_points)
+        layout.setStretchFactor(self.box_points, 0)
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "centre_span",
+            "range": {
+                "centre": self.box_centre.value() * self.scale,
+                "half_span": self.box_half_span.value() * self.scale,
+                "num_points": self.box_points.value(),
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+    def read_sync_values(self, sync_values: dict) -> None:
+        if SyncValue.centre in sync_values:
+            self.box_centre.setValue(sync_values[SyncValue.centre])
+        if SyncValue.num_points in sync_values:
+            self.box_points.setValue(sync_values[SyncValue.num_points])
+
+    def write_sync_values(self, sync_values: dict) -> None:
+        sync_values[SyncValue.centre] = self.box_centre.value()
         sync_values[SyncValue.num_points] = self.box_points.value()
 
 
