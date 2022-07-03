@@ -2,7 +2,7 @@ from artiq.language import *
 from collections import OrderedDict
 from copy import deepcopy
 import logging
-from typing import Any, Dict, List, Iterable, Type, Tuple, Union
+from typing import Any, Dict, List, Iterable, Type, Tuple, Optional
 
 from .default_analysis import DefaultAnalysis
 from .parameters import ParamHandle, ParamStore
@@ -320,12 +320,62 @@ class Fragment(HasEnvironment):
         setattr(self, name, handle)
         return handle
 
+    def setattr_param_like(self,
+                           name: str,
+                           original_owner: "Fragment",
+                           original_name: Optional[str] = None,
+                           **kwargs) -> ParamHandle:
+        """Create a new parameter using an existing parameter as a template.
+
+        The newly created parameter will inherent its type, and all the metadata that
+        is not overridden by the optional keyword arguments, from the template
+        parameter.
+
+        This is often combined with :meth:`bind_param` to rebind parameters from one or
+        more subfragments; see also :meth:`setattr_param_rebind`, which combines the
+        two.
+
+        Can only be called during :meth:`build_fragment`.
+
+        :param name: The new parameter's name, to be part of its FQN. Must be a valid
+            Python identifier; the parameter handle will be accessible as
+            ``self.<name>``.
+        :param original_owner: The fragment owning the parameter to use as a template.
+        :param original_name: The name of the parameter to use as a template (i.e.
+            ``<original_owner>.<original_name>``). If ``None``, defaults to ``name``.
+        :param kwargs: Any attributes to override in the template parameter metadata.
+        :return: The newly created parameter handle.
+        """
+        assert self._building, ("Can only call setattr_param_like() during "
+                                "build_fragment()")
+
+        assert name.isidentifier(), "Parameter name must be valid Python identifier"
+        assert not hasattr(self, name), "Field '{}' already exists".format(name)
+        if original_name is None:
+            original_name = name
+        assert hasattr(original_owner, original_name), \
+            "Original owner does not have a field of name '{}'".format(original_name)
+        assert original_name in original_owner._free_params, (
+            "Field '{}' is not a free parameter of original owner; "
+            "already rebound?".format(original_name))
+
+        template_param = original_owner._free_params[original_name]
+        new_param = deepcopy(template_param)
+        new_param.fqn = self.fqn + "." + name
+        for k, v in kwargs.items():
+            setattr(new_param, k, v)
+        self._free_params[name] = new_param
+        new_handle = new_param.HandleType(self, name)
+        setattr(self, name, new_handle)
+        return new_handle
+
     def setattr_param_rebind(self,
                              name: str,
                              original_owner: "Fragment",
-                             original_name: Union[str, None] = None,
+                             original_name: Optional[str] = None,
                              **kwargs) -> ParamHandle:
-        """Create a parameter that overrides the value of a subfragment parameter.
+        """Convenience function combining :meth:`setattr_param_like` and
+        :meth:`bind_param` to override a subfragment parmeter.
 
         The most common use case for this is to specialise the operation of a generic
         subfragment. For example, there might be a fragment ``Fluoresce`` that drives
@@ -345,36 +395,10 @@ class Fragment(HasEnvironment):
             defaults to that of the original parameter.
         :return: The newly created parameter handle.
         """
-        assert (self._building
-                ), "Can only call setattr_param_rebind() during build_fragment()"
-        assert name.isidentifier(), "Parameter name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '{}' already exists".format(name)
-
         if original_name is None:
             original_name = name
-        assert hasattr(original_owner, original_name), \
-            "Original owner does not have a field of name '{}'".format(original_name)
-        assert original_name in original_owner._free_params, (
-            "Field '{}' is not a free parameter of original owner; "
-            "already rebound?".format(original_name))
-
-        # Set up our own copy of the parameter.
-        original_param = original_owner._free_params[original_name]
-        param = deepcopy(original_param)
-        param.fqn = self.fqn + "." + name
-        for k, v in kwargs.items():
-            setattr(param, k, v)
-        self._free_params[name] = param
-        handle = param.HandleType(self, name)
-        setattr(self, name, handle)
-
-        # Deregister it from the original owner and make sure we set the store
-        # to our own later.
-        original_handles = original_owner._get_all_handles_for_param(original_name)
-        del original_owner._free_params[original_name]
-        assert name not in self._rebound_subfragment_params
-        self._rebound_subfragment_params[name] = original_handles
-
+        handle = self.setattr_param_like(name, original_owner, original_name, **kwargs)
+        original_owner.bind_param(original_name, handle)
         return handle
 
     def setattr_result(self,
@@ -414,6 +438,9 @@ class Fragment(HasEnvironment):
                        initial_value: Any = None) -> Tuple[Any, ParamStore]:
         """Override the parameter with the given name and set it to the provided value.
 
+        See :meth:`bind_param`, which also overrides the parameter, but sets it to
+        follow another parameter instead.
+
         :param param_name: The name of the parameter.
         :param initial_value: The initial value for the parameter. If ``None``, the
             default from the parameter schema is used.
@@ -432,6 +459,38 @@ class Fragment(HasEnvironment):
         for handle in self._get_all_handles_for_param(param_name):
             handle.set_store(store)
         return param, store
+
+    def bind_param(self, param_name: str, source: ParamHandle) -> Any:
+        """Override the fragment parameter with the given name such that its value
+        follows that of another parameter.
+
+        The most common use case for this is to specialise the operation of a generic
+        subfragment. For example, there might be a fragment ``Fluoresce`` that drives
+        a cycling transition in an ion with parameters for intensity and detuning.
+        Higher-level fragments for Doppler cooling, readout, etc. might then use
+        ``Fluoresce``, binding its intensity and detuning parameters to values and
+        defaults appropriate for those particular tasks.
+
+        See :meth:`override_param`, which sets the parameter to a fixed value/store.
+
+        :param param_name: The name of the parameter to be bound (i.e.
+            ``self.<param_name>``). Must be a free parameter of this fragment (not
+            already bound or overridden).
+        :param source: The parameter to bind to. Must be a free parameter of its
+            respective owner.
+        """
+        param = self._free_params.get(param_name, None)
+        assert param is not None, "Not a free parameter: '{}'".format(param_name)
+        del self._free_params[param_name]
+
+        # We don't support "transitive" binding for parameters that are already bound.
+        assert source.name in source.owner._free_params, \
+            "Source parameter is not a free parameter; already bound/overridden?"
+
+        source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
+            self._get_all_handles_for_param(param_name))
+
+        return param
 
     def _collect_params(self, params: Dict[str, List[str]],
                         schemata: Dict[str, dict]) -> None:
