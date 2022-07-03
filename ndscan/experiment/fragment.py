@@ -644,12 +644,28 @@ class ExpFragment(Fragment):
 
 
 class TransitoryError(Exception):
-    """Transitory error encountered while executing a fragment, which is expected to
+    r"""Transitory error encountered while executing a fragment, which is expected to
     clear itself up if it is attempted again without any further changes.
+
+    Such errors are never raised by the ndscan infrastructure itself, but can be thrown
+    from user fragment implementations in response to e.g. some temporary hardware
+    conditions such as a momentarily insufficient level of laser power.
+
+    :mod:`ndscan.experiment.entry_point`\ s will attempt to handle transitory errors,
+    e.g. by retrying execution some amount of times. If fragments are manually executed
+    from user code, it will often be appropriate to do this as well, unless the user
+    code base does not use transitory errors at all.
     """
     pass
 
 
 class RestartKernelTransitoryError(TransitoryError):
-    """Transitory error where the kernel should be restarted before retrying."""
+    """:class:`.TransitoryError` where, as part of recovering from it, the kernel should
+    be restarted before retrying.
+
+    This can be used for cases where remedying the error requires
+    :meth:`.Fragment.host_setup()` to be run again, such as for cases where the
+    experiments needs to yield back to the scheduler (e.g. for an ion loss event to be
+    remedied by a second reloading experiment).
+    """
     pass
