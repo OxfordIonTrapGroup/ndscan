@@ -485,8 +485,8 @@ class Fragment(HasEnvironment):
 
         This method should be called before any of the fragment's user-defined functions
         are used (but after the constructor -> :meth:`build` -> :meth`build_fragment()`
-        has completed). Most likely, the top-level fragment will be called from a
-        :mod:`ndscan.experiment.entry_point` which already take care of this. In cases
+        has completed). Most likely, the top-level fragment will be called from an
+        :mod:`ndscan.experiment.entry_point`, which already take care of this. In cases
         where fragments are used in a different context, for example from a standalone
         ``EnvExperiment``, this method must be called manually.
 
@@ -619,7 +619,7 @@ class ExpFragment(Fragment):
 
         Unless running in the `prepare` pipeline state is absolutely necessary for
         runtime performance, lazily running the requisite initialisation code in
-        :meth:`host_setup` is usually preferrable, as this naturally composes across the
+        :meth:`host_setup` is usually preferable, as this naturally composes across the
         ndscan fragment tree.
         """
         pass
