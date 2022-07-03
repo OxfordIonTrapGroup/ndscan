@@ -521,7 +521,9 @@ class Fragment(HasEnvironment):
 
         For parameters where the default value was previously used, the expression is
         evaluated again – thus for instance fetching new dataset values –, and assigned
-        to the existing parameter store.
+        to the existing parameter store. An informative message is logged if the value
+        changed, such that changes remain traceable after the fact (e.g. when an
+        experiment is resumed after a calibration interruption).
         """
         for param, store in self._default_params:
             value = param.eval_default(self._get_dataset_or_set_default)
