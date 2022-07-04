@@ -92,11 +92,18 @@ async def run(args):
 
     dataset_db: Optional[pc_rpc.AsyncioClient] = None
     dataset_sub: Optional[sync_struct.Subscriber] = None
+    dataset_sub_broken: bool = False
     schedule_sub: Optional[sync_struct.Subscriber] = None
+    schedule_sub_broken: bool = False
 
     def all_connected():
-        """Return whether all master connections appear to be intact."""
-        return dataset_db and dataset_sub and schedule_sub
+        """Return whether all master connections appear to be intact.
+
+        On disconnection of the subscribers, we want to call .close(), which is a
+        coroutine, but we get notified of issues in a non-asyncio callback context, so
+        we have extra flags to indicate issues.
+        """
+        return dataset_db and not dataset_sub_broken and not schedule_sub_broken
 
     async def connect_sub(name: str, update_cb, disconnect_cb, track_contents: bool):
         """Connect to the given named artiq_master publisher.
@@ -153,8 +160,8 @@ async def run(args):
         if dataset_sub is None:
 
             def datasets_disconnected():
-                nonlocal dataset_sub
-                dataset_sub = None
+                nonlocal dataset_sub_broken
+                dataset_sub_broken = True
                 wake_loop.set()
 
             def datasets_updated(_data, mod):
@@ -182,8 +189,8 @@ async def run(args):
         if schedule_sub is None:
 
             def schedule_disconnected():
-                nonlocal schedule_sub
-                schedule_sub = None
+                nonlocal schedule_sub_broken
+                schedule_sub_broken = True
                 wake_loop.set()
 
             def schedule_updated(data, _mod):
@@ -242,11 +249,28 @@ async def run(args):
                     except Exception:
                         logger.exception(
                             f"Failed to delete dataset '{key}', reconnecting.")
+                        dataset_db.close_rpc()
                         dataset_db = None
                         break
             if all_connected():
                 wake_loop.clear()
                 await wake_loop.wait()
+
+        if dataset_sub_broken:
+            try:
+                await dataset_sub.close()
+            except Exception:
+                logger.exception("Dataset subscription failed")
+            dataset_sub = None
+            dataset_sub_broken = False
+
+        if schedule_sub_broken:
+            try:
+                await schedule_sub.close()
+            except Exception:
+                logger.exception("Schedule subscription failed")
+            schedule_sub = None
+            schedule_sub_broken = False
 
 
 def main():
