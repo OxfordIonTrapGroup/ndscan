@@ -5,7 +5,8 @@ Tests for subscan functionality.
 import json
 from ndscan.experiment import *
 from fixtures import (AddOneFragment, ReboundAddOneFragment,
-                      AddOneCustomAnalysisFragment, TwoAnalysisFragment)
+                      AddOneCustomAnalysisFragment, TwoAnalysisFragment,
+                      TwoAnalysisAggregate)
 from mock_environment import ExpFragmentCase
 
 
@@ -233,6 +234,19 @@ class SubscanAnalysisFragment(ExpFragment):
         self.had_result = "result_a" in analysis_results
 
 
+class AggregateSubscanAnalysisFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("child", TwoAnalysisAggregate)
+        setattr_subscan(self, "scan", self.child, [(self.child, "a")])
+        self.had_all_results = False
+
+    def run_once(self):
+        _, _, analysis_results = self.scan.run([(self.child.a,
+                                                 LinearGenerator(0.0, 1.0, 3, True))])
+        self.had_all_results = all(f"{n}_result_a" in analysis_results
+                                   for n in ("first", "second"))
+
+
 class SubscanAnalysisCase(ExpFragmentCase):
     def test_simple_filtering(self):
         parent = self.create(SubscanAnalysisFragment)
@@ -262,3 +276,12 @@ class SubscanAnalysisCase(ExpFragmentCase):
 
     def test_subset_filtering_2(self):
         self._test_subset_filtering(True)
+
+    def test_aggregate(self):
+        # For simplicity, test AggregateExpFragment through an actual subscan instead of
+        # manually verifying the analysis result handling/…
+        parent = self.create(AggregateSubscanAnalysisFragment)
+        results = run_fragment_once(parent)
+        self.assertTrue(parent.had_all_results)
+        self.assertEqual(results[parent.scan_first_result_a], 42.0)
+        self.assertEqual(results[parent.scan_second_result_a], 42.0)
