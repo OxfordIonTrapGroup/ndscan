@@ -246,6 +246,12 @@ async def run(args):
                 for key in to_remove:
                     try:
                         await dataset_db.delete(key)
+                    except KeyError:
+                        # This shouldn't happen, but there could be some race condition
+                        # between the subscriber tracking the datasets and this routine
+                        # if they are manually deleted.
+                        logger.exception(f"Failed to delete dataset '{key}', as it " +
+                                         "does not exist anymore.")
                     except Exception:
                         logger.exception(
                             f"Failed to delete dataset '{key}', reconnecting.")
