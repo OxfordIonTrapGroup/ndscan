@@ -236,7 +236,7 @@ async def run(args):
         # Execute pending deletion requests.
         while all_connected():
             while deletions and all_connected():
-                rid, timestamp = deletions.popitem()
+                rid, timestamp = next(iter(deletions.items()))
                 if (delay := timestamp - time.monotonic()) > 0:
                     await asyncio.sleep(delay)
                 logger.info(f"ndscan RID {rid} timed out, cleaning up datasets.")
@@ -252,6 +252,8 @@ async def run(args):
                         dataset_db.close_rpc()
                         dataset_db = None
                         break
+                # All deletions in first item processed, go to next one.
+                deletions.popitem()
             if all_connected():
                 wake_loop.clear()
                 await wake_loop.wait()
