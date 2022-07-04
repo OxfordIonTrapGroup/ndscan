@@ -4,15 +4,37 @@ Tests for ndscan.experiment top-level runners.
 
 import json
 from ndscan.experiment import *
+from ndscan.experiment.utils import is_kernel
 from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from sipyco import pyon
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
                       TransitoryErrorFragment, MultiPointTransitoryErrorFragment,
-                      RequestTerminationFragment)
+                      RequestTerminationFragment, AddOneAggregate,
+                      TrivialKernelAggregate, TwoAnalysisAggregate)
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
 ScanReboundAddOneExp = make_fragment_scan_exp(ReboundAddOneFragment)
+ScanTwoAnalysisAggregateExp = make_fragment_scan_exp(TwoAnalysisAggregate)
+
+
+class TestAggregateExpFragment(HasEnvironmentCase):
+    def test_aggregate(self):
+        parent = self.create(AddOneAggregate, [])
+
+        self.assertIn(parent.a.value, parent.get_always_shown_params())
+        self.assertIn(parent.b.value, parent.get_always_shown_params())
+
+        self.assertFalse(is_kernel(parent.run_once))
+        result = run_fragment_once(parent)
+        self.assertEqual(parent.a.num_prepare_calls, 1)
+        self.assertEqual(parent.b.num_prepare_calls, 1)
+        self.assertEqual(result[parent.a.result], 1.0)
+        self.assertEqual(result[parent.b.result], 1.0)
+
+    def test_kernel(self):
+        parent = self.create(TrivialKernelAggregate, [])
+        self.assertTrue(is_kernel(parent.run_once))
 
 
 class FragmentScanExpCase(HasEnvironmentCase):
@@ -242,6 +264,25 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("source_id"), "rid_0")
 
         return exp
+
+    def test_aggregate_scan(self):
+        exp = self.create(ScanTwoAnalysisAggregateExp)
+        exp.args._params["scan"]["axes"].append({
+            "type": "linear",
+            "range": {
+                "start": 0,
+                "stop": 1,
+                "num_points": 5,
+                "randomise_order": False
+            },
+            "fqn": "fixtures.TwoAnalysisAggregate.a",
+            "path": "*"
+        })
+        exp.prepare()
+        exp.run()
+        results = json.loads(self.dataset_db.get("ndscan.rid_0.analysis_results"))
+        self.assertTrue("first_result_a" in results)
+        self.assertTrue("second_result_a" in results)
 
 
 class RunOnceCase(HasEnvironmentCase):

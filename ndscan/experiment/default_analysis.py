@@ -23,7 +23,10 @@ from ..utils import FIT_OBJECTS
 from .parameters import ParamHandle
 from .result_channels import ResultChannel
 
-__all__ = ["Annotation", "DefaultAnalysis", "CustomAnalysis", "OnlineFit"]
+__all__ = [
+    "Annotation", "DefaultAnalysis", "CustomAnalysis", "OnlineFit",
+    "ResultPrefixAnalysisWrapper"
+]
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +132,7 @@ class DefaultAnalysis:
         online analyses to stringly typed metadata.
 
         :param context: The :class:`.AnnotationContext` to use to resolve references to
-            fragment tree objects in user-specified data to m.
+            fragment tree objects in user-specified data.
 
         :return: A tuple of string dictionary representations for annotations and
             online analyses (with all the fragment tree references resolved).
@@ -413,3 +416,43 @@ class OnlineFit(DefaultAnalysis):
         ""
         # Nothing to do off-line for online fits.
         return []
+
+
+class ResultPrefixAnalysisWrapper(DefaultAnalysis):
+    """Wraps another default analysis, prepending the given string to the name of each
+    analysis result.
+
+    This can be used to disambiguate potential conflicts between result names when
+    programmatically collecting analyses from multiple sources.
+    """
+    def __init__(self, wrapped: DefaultAnalysis, prefix: str):
+        """
+        :param wrapped: The :class:`.DefaultAnalysis` instance to forward to.
+        :param prefix: The string to prepend to the name of each analysis result.
+        """
+        self._wrapped = wrapped
+        self._prefix = prefix
+
+    def required_axes(self) -> Set[ParamHandle]:
+        return self._wrapped.required_axes()
+
+    def describe_online_analyses(
+        self, context: AnnotationContext
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+        return self._wrapped.describe_online_analyses(context)
+
+    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+        # TODO: Prepend to ResultChannel.path as well? For now, nothing relies on the
+        # path schema entry for analysis results, so it's a wash.
+        return {
+            self._prefix + k: v
+            for k, v in self._wrapped.get_analysis_results().items()
+        }
+
+    def execute(
+        self,
+        axis_data: Dict[AxisIdentity, list],
+        result_data: Dict[ResultChannel, list],
+        context: AnnotationContext,
+    ) -> List[Dict[str, Any]]:
+        return self._wrapped.execute(axis_data, result_data, context)

@@ -4,13 +4,16 @@ from copy import deepcopy
 import logging
 from typing import Any, Dict, List, Iterable, Type, Tuple, Optional
 
-from .default_analysis import DefaultAnalysis
+from .default_analysis import DefaultAnalysis, ResultPrefixAnalysisWrapper
 from .parameters import ParamHandle, ParamStore
 from .result_channels import ResultChannel, FloatChannel
-from .utils import path_matches_spec
+from .utils import is_kernel, path_matches_spec
 from ..utils import strip_prefix
 
-__all__ = ["Fragment", "ExpFragment", "TransitoryError", "RestartKernelTransitoryError"]
+__all__ = [
+    "Fragment", "ExpFragment", "AggregateExpFragment", "TransitoryError",
+    "RestartKernelTransitoryError"
+]
 
 logger = logging.getLogger(__name__)
 
@@ -619,10 +622,10 @@ class Fragment(HasEnvironment):
 
             class MyFragment(Fragment):
                 def build_fragment(self):
-                    setattr_fragment("child", MyChildFragment)
-                    setattr_param("foo", ...)
-                    setattr_param("bar", ...)
-                    setattr_param("baz", ...)
+                    self.setattr_fragment("child", MyChildFragment)
+                    self.setattr_param("foo", ...)
+                    self.setattr_param("bar", ...)
+                    self.setattr_param("baz", ...)
 
                 def get_always_shown_params(self):
                     shown = super().get_always_shown_params()
@@ -671,9 +674,9 @@ class ExpFragment(Fragment):
         """Prepare this instance for execution
         (see ``artiq.language.environment.Experiment.prepare``).
 
-        This is invoked only once per (sub)scan, after :meth:`.build_fragment` but
-        before :meth:`.host_setup`. At this point, parameters, datasets and devices can
-        be accessed, but devices must not yet be.
+        This is invoked only once per (sub)scan, after :meth:`Fragment.build_fragment`
+        but before :meth:`.host_setup`. At this point, parameters, datasets and devices
+        can be accessed, but devices must not yet be.
 
         For top-level scans, this can (and will) be executed in the `prepare` scheduler
         pipeline stage.
@@ -700,6 +703,119 @@ class ExpFragment(Fragment):
         This is a class method in spirit, and might become one in the future.
         """
         return []
+
+
+def _skip_common_prefix(target: list, reference: list) -> list:
+    i = 0
+    while i < len(target) and i < len(reference) and target[i] == reference[i]:
+        i += 1
+    return target[i:]
+
+
+class AggregateExpFragment(ExpFragment):
+    r"""Combines multiple :class:`ExpFragment`\ s by executing them one after each other
+    each time :meth:`run_once` is called.
+
+    To use, derive from the class and, in the subclass ``build_fragment()`` method
+    forward to the parent implementation after constructing all the relevant fragments::
+
+        class FooBarAggregate(AggregateExpFragment):
+            def build_fragment(self):
+                self.setattr_fragment("foo", FooFragment)
+                self.setattr_fragment("bar", BarFragment)
+
+                # Any number of customisations can be made as usual,
+                # e.g. to provide a convenient parameter to scan the
+                # fragments in lockstep:
+                self.setattr_param_rebind("freq", self.foo)
+                self.bar.bind_param("freq", self.freq)
+
+                # Let AggregateExpFragment default implementations
+                # take care of the rest, e.g. have self.run_once()
+                # call self.foo.run_once(), then self.bar.run_once().
+                super().build_fragment([self.foo, self.bar])
+
+        ScanFooBarAggregate = make_fragment_scan_exp(FooBarAggregate)
+    """
+    def build_fragment(self, exp_fragments: List[ExpFragment]) -> None:
+        """
+        :param exp_fragments: The "child" fragments to execute. The fragments will be
+            run in the given order. No special treatment is given to the
+            ``{host,device}_{setup,cleanup}()`` methods, which will just be executed
+            through the recursive default implementations unless overridden by the user.
+        """
+        if not exp_fragments:
+            raise ValueError("At least one child ExpFragment should be given")
+        self._exp_fragments = exp_fragments
+
+        # Since polymorphism is not supported by the ARTIQ compiler, make named
+        # attributes for the exp fragments and make a _run_once_impl() helper function
+        # that calls them one after each other.
+        for i, exp in enumerate(exp_fragments):
+            setattr(self, f"_exp_fragment_{i}", exp)
+        self._run_once_impl = kernel_from_string(["self"], "\n".join(
+            [f"self._exp_fragment_{i}.run_once()" for i in range(len(exp_fragments))]),
+                                                 portable)
+
+        # If the child fragment run_once() methods are @kernel, then make our run_once()
+        # run on the kernel too. Reassigning the member function is a bit janky, but so
+        # would it be to update the decorator, as `artiq_embedded` is an immutable tuple
+        # and the type is not public.
+        is_kernels = [is_kernel(e.run_once) for e in exp_fragments]
+        if all(is_kernels):
+            self.run_once = self._kernel_run_once
+        else:
+            if any(is_kernels):
+                logger.warning("Mixed host/@kernel run_once() methods among passed " +
+                               "ExpFragments; execution will be slow as the " +
+                               "kernel(s) will be recompiled for each scan point.")
+
+    def prepare(self) -> None:
+        ""
+        for exp in self._exp_fragments:
+            exp.prepare()
+
+    def run_once(self) -> None:
+        """Execute the experiment by forwarding to each child fragment.
+
+        Invokes all child fragments in the order they are passed to
+        :meth:`build_fragment`. This method can be overridden if more complex behaviour
+        is desired.
+
+        If all child fragments have a ``@kernel`` ``run_once()``, this is implemented on
+        the core device as well to avoid costly kernel recompilations in a scan.
+        """
+        return self._run_once_impl(self)
+
+    @kernel
+    def _kernel_run_once(self) -> None:
+        return self._run_once_impl(self)
+
+    def get_always_shown_params(self) -> List[ParamHandle]:
+        """Collect always-shown params from each child fragment, plus any parameters
+        directly defined in this fragment as usual.
+        """
+        result = super().get_always_shown_params()
+        for exp in self._exp_fragments:
+            result += exp.get_always_shown_params()
+        return result
+
+    def get_default_analyses(self) -> Iterable[DefaultAnalysis]:
+        """Collect default analyses from each child fragment.
+
+        The analyses are wrapped in a proxy that prepends any result channel names with
+        the fragment path to ensure results from different analyses do not collide.
+        """
+        analyses = []
+        for exp in self._exp_fragments:
+            exp_analyses = exp.get_default_analyses()
+            prefix = "_".join(
+                _skip_common_prefix(exp._fragment_path, self._fragment_path)) + "_"
+            analyses += [
+                ResultPrefixAnalysisWrapper(analysis, prefix)
+                for analysis in exp_analyses
+            ]
+        return analyses
 
 
 class TransitoryError(Exception):
