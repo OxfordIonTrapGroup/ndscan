@@ -277,6 +277,14 @@
                     <span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
             <span class="k">finally</span><span class="p">:</span>
                 <span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+            <span class="c1"># Host-only scans don&#39;t necessarily make a connection to the core device,</span>
+            <span class="c1"># but we close any connection that was made here anyway in case the user</span>
+            <span class="c1"># forgot to do so elsewhere. Otherwise, the connection might fail after the</span>
+            <span class="c1"># pause. artiq.sim.devices.Core and other dummy core devices that could very</span>
+            <span class="c1"># reasonably be used with a host-only scan don&#39;t have a close() method,</span>
+            <span class="c1"># though, so check for its existence first.</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="p">,</span> <span class="s2">&quot;close&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
             <span class="n">fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
 
