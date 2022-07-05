@@ -182,7 +182,10 @@
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;DefaultAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;CustomAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;OnlineFit&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;DefaultAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;CustomAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;OnlineFit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ResultPrefixAnalysisWrapper&quot;</span>
+<span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -288,7 +291,7 @@
 <span class="sd">        online analyses to stringly typed metadata.</span>
 
 <span class="sd">        :param context: The :class:`.AnnotationContext` to use to resolve references to</span>
-<span class="sd">            fragment tree objects in user-specified data to m.</span>
+<span class="sd">            fragment tree objects in user-specified data.</span>
 
 <span class="sd">        :return: A tuple of string dictionary representations for annotations and</span>
 <span class="sd">            online analyses (with all the fragment tree references resolved).</span>
@@ -572,6 +575,46 @@
         <span class="s2">&quot;&quot;</span>
         <span class="c1"># Nothing to do off-line for online fits.</span>
         <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper">[docs]</a><span class="k">class</span> <span class="nc">ResultPrefixAnalysisWrapper</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wraps another default analysis, prepending the given string to the name of each</span>
+<span class="sd">    analysis result.</span>
+
+<span class="sd">    This can be used to disambiguate potential conflicts between result names when</span>
+<span class="sd">    programmatically collecting analyses from multiple sources.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">:</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param wrapped: The :class:`.DefaultAnalysis` instance to forward to.</span>
+<span class="sd">        :param prefix: The string to prepend to the name of each analysis result.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span> <span class="o">=</span> <span class="n">wrapped</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.required_axes"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.required_axes">[docs]</a>    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">required_axes</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.describe_online_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.describe_online_analyses">[docs]</a>    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">describe_online_analyses</span><span class="p">(</span><span class="n">context</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+        <span class="c1"># TODO: Prepend to ResultChannel.path as well? For now, nothing relies on the</span>
+        <span class="c1"># path schema entry for analysis results, so it&#39;s a wash.</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">get_analysis_results</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.execute"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

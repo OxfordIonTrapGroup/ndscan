@@ -161,15 +161,18 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
 
-<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">DefaultAnalysis</span>
+<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">ResultPrefixAnalysisWrapper</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ParamStore</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">FloatChannel</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">path_matches_spec</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">is_kernel</span><span class="p">,</span> <span class="n">path_matches_spec</span>
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">strip_prefix</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">,</span> <span class="s2">&quot;ExpFragment&quot;</span><span class="p">,</span> <span class="s2">&quot;TransitoryError&quot;</span><span class="p">,</span> <span class="s2">&quot;RestartKernelTransitoryError&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span> <span class="s2">&quot;ExpFragment&quot;</span><span class="p">,</span> <span class="s2">&quot;AggregateExpFragment&quot;</span><span class="p">,</span> <span class="s2">&quot;TransitoryError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RestartKernelTransitoryError&quot;</span>
+<span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -479,12 +482,62 @@
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">handle</span></div>
 
+<div class="viewcode-block" id="Fragment.setattr_param_like"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_param_like">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_param_like</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                           <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                           <span class="n">original_owner</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span>
+                           <span class="n">original_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                           <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamHandle</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a new parameter using an existing parameter as a template.</span>
+
+<span class="sd">        The newly created parameter will inherent its type, and all the metadata that</span>
+<span class="sd">        is not overridden by the optional keyword arguments, from the template</span>
+<span class="sd">        parameter.</span>
+
+<span class="sd">        This is often combined with :meth:`bind_param` to rebind parameters from one or</span>
+<span class="sd">        more subfragments; see also :meth:`setattr_param_rebind`, which combines the</span>
+<span class="sd">        two.</span>
+
+<span class="sd">        Can only be called during :meth:`build_fragment`.</span>
+
+<span class="sd">        :param name: The new parameter&#39;s name, to be part of its FQN. Must be a valid</span>
+<span class="sd">            Python identifier; the parameter handle will be accessible as</span>
+<span class="sd">            ``self.&lt;name&gt;``.</span>
+<span class="sd">        :param original_owner: The fragment owning the parameter to use as a template.</span>
+<span class="sd">        :param original_name: The name of the parameter to use as a template (i.e.</span>
+<span class="sd">            ``&lt;original_owner&gt;.&lt;original_name&gt;``). If ``None``, defaults to ``name``.</span>
+<span class="sd">        :param kwargs: Any attributes to override in the template parameter metadata.</span>
+<span class="sd">        :return: The newly created parameter handle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Can only call setattr_param_like() during &quot;</span>
+                                <span class="s2">&quot;build_fragment()&quot;</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="s2">&quot;Parameter name must be valid Python identifier&quot;</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">original_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">original_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">original_owner</span><span class="p">,</span> <span class="n">original_name</span><span class="p">),</span> \
+            <span class="s2">&quot;Original owner does not have a field of name &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_name</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">original_name</span> <span class="ow">in</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; is not a free parameter of original owner; &quot;</span>
+            <span class="s2">&quot;already rebound?&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_name</span><span class="p">))</span>
+
+        <span class="n">template_param</span> <span class="o">=</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">original_name</span><span class="p">]</span>
+        <span class="n">new_param</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">template_param</span><span class="p">)</span>
+        <span class="n">new_param</span><span class="o">.</span><span class="n">fqn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fqn</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">name</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">new_param</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_param</span>
+        <span class="n">new_handle</span> <span class="o">=</span> <span class="n">new_param</span><span class="o">.</span><span class="n">HandleType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">new_handle</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_handle</span></div>
+
 <div class="viewcode-block" id="Fragment.setattr_param_rebind"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_param_rebind">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_param_rebind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                              <span class="n">original_owner</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span>
-                             <span class="n">original_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="n">original_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                              <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamHandle</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a parameter that overrides the value of a subfragment parameter.</span>
+        <span class="sd">&quot;&quot;&quot;Convenience function combining :meth:`setattr_param_like` and</span>
+<span class="sd">        :meth:`bind_param` to override a subfragment parmeter.</span>
 
 <span class="sd">        The most common use case for this is to specialise the operation of a generic</span>
 <span class="sd">        subfragment. For example, there might be a fragment ``Fluoresce`` that drives</span>
@@ -504,36 +557,10 @@
 <span class="sd">            defaults to that of the original parameter.</span>
 <span class="sd">        :return: The newly created parameter handle.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_building</span>
-                <span class="p">),</span> <span class="s2">&quot;Can only call setattr_param_rebind() during build_fragment()&quot;</span>
-        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="s2">&quot;Parameter name must be valid Python identifier&quot;</span>
-        <span class="k">assert</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-
         <span class="k">if</span> <span class="n">original_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">original_name</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">original_owner</span><span class="p">,</span> <span class="n">original_name</span><span class="p">),</span> \
-            <span class="s2">&quot;Original owner does not have a field of name &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_name</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">original_name</span> <span class="ow">in</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">,</span> <span class="p">(</span>
-            <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; is not a free parameter of original owner; &quot;</span>
-            <span class="s2">&quot;already rebound?&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_name</span><span class="p">))</span>
-
-        <span class="c1"># Set up our own copy of the parameter.</span>
-        <span class="n">original_param</span> <span class="o">=</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">original_name</span><span class="p">]</span>
-        <span class="n">param</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">original_param</span><span class="p">)</span>
-        <span class="n">param</span><span class="o">.</span><span class="n">fqn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fqn</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">name</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
-        <span class="n">handle</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">HandleType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
-
-        <span class="c1"># Deregister it from the original owner and make sure we set the store</span>
-        <span class="c1"># to our own later.</span>
-        <span class="n">original_handles</span> <span class="o">=</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_get_all_handles_for_param</span><span class="p">(</span><span class="n">original_name</span><span class="p">)</span>
-        <span class="k">del</span> <span class="n">original_owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">original_name</span><span class="p">]</span>
-        <span class="k">assert</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">original_handles</span>
-
+        <span class="n">handle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param_like</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">original_owner</span><span class="p">,</span> <span class="n">original_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">original_owner</span><span class="o">.</span><span class="n">bind_param</span><span class="p">(</span><span class="n">original_name</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">handle</span></div>
 
 <div class="viewcode-block" id="Fragment.setattr_result"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_result">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -573,6 +600,9 @@
                        <span class="n">initial_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Override the parameter with the given name and set it to the provided value.</span>
 
+<span class="sd">        See :meth:`bind_param`, which also overrides the parameter, but sets it to</span>
+<span class="sd">        follow another parameter instead.</span>
+
 <span class="sd">        :param param_name: The name of the parameter.</span>
 <span class="sd">        :param initial_value: The initial value for the parameter. If ``None``, the</span>
 <span class="sd">            default from the parameter schema is used.</span>
@@ -591,6 +621,38 @@
         <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_handles_for_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">):</span>
             <span class="n">handle</span><span class="o">.</span><span class="n">set_store</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">param</span><span class="p">,</span> <span class="n">store</span></div>
+
+<div class="viewcode-block" id="Fragment.bind_param"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.bind_param">[docs]</a>    <span class="k">def</span> <span class="nf">bind_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">ParamHandle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Override the fragment parameter with the given name such that its value</span>
+<span class="sd">        follows that of another parameter.</span>
+
+<span class="sd">        The most common use case for this is to specialise the operation of a generic</span>
+<span class="sd">        subfragment. For example, there might be a fragment ``Fluoresce`` that drives</span>
+<span class="sd">        a cycling transition in an ion with parameters for intensity and detuning.</span>
+<span class="sd">        Higher-level fragments for Doppler cooling, readout, etc. might then use</span>
+<span class="sd">        ``Fluoresce``, binding its intensity and detuning parameters to values and</span>
+<span class="sd">        defaults appropriate for those particular tasks.</span>
+
+<span class="sd">        See :meth:`override_param`, which sets the parameter to a fixed value/store.</span>
+
+<span class="sd">        :param param_name: The name of the parameter to be bound (i.e.</span>
+<span class="sd">            ``self.&lt;param_name&gt;``). Must be a free parameter of this fragment (not</span>
+<span class="sd">            already bound or overridden).</span>
+<span class="sd">        :param source: The parameter to bind to. Must be a free parameter of its</span>
+<span class="sd">            respective owner.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not a free parameter: &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_name</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span>
+
+        <span class="c1"># We don&#39;t support &quot;transitive&quot; binding for parameters that are already bound.</span>
+        <span class="k">assert</span> <span class="n">source</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">source</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_free_params</span><span class="p">,</span> \
+            <span class="s2">&quot;Source parameter is not a free parameter; already bound/overridden?&quot;</span>
+
+        <span class="n">source</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_handles_for_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">param</span></div>
 
     <span class="k">def</span> <span class="nf">_collect_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
                         <span class="n">schemata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -644,8 +706,8 @@
 
 <span class="sd">        This method should be called before any of the fragment&#39;s user-defined functions</span>
 <span class="sd">        are used (but after the constructor -&gt; :meth:`build` -&gt; :meth`build_fragment()`</span>
-<span class="sd">        has completed). Most likely, the top-level fragment will be called from a</span>
-<span class="sd">        :mod:`ndscan.experiment.entry_point` which already take care of this. In cases</span>
+<span class="sd">        has completed). Most likely, the top-level fragment will be called from an</span>
+<span class="sd">        :mod:`ndscan.experiment.entry_point`, which already take care of this. In cases</span>
 <span class="sd">        where fragments are used in a different context, for example from a standalone</span>
 <span class="sd">        ``EnvExperiment``, this method must be called manually.</span>
 
@@ -680,7 +742,9 @@
 
 <span class="sd">        For parameters where the default value was previously used, the expression is</span>
 <span class="sd">        evaluated again – thus for instance fetching new dataset values –, and assigned</span>
-<span class="sd">        to the existing parameter store.</span>
+<span class="sd">        to the existing parameter store. An informative message is logged if the value</span>
+<span class="sd">        changed, such that changes remain traceable after the fact (e.g. when an</span>
+<span class="sd">        experiment is resumed after a calibration interruption).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">store</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_params</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_or_set_default</span><span class="p">)</span>
@@ -717,10 +781,10 @@
 
 <span class="sd">            class MyFragment(Fragment):</span>
 <span class="sd">                def build_fragment(self):</span>
-<span class="sd">                    setattr_fragment(&quot;child&quot;, MyChildFragment)</span>
-<span class="sd">                    setattr_param(&quot;foo&quot;, ...)</span>
-<span class="sd">                    setattr_param(&quot;bar&quot;, ...)</span>
-<span class="sd">                    setattr_param(&quot;baz&quot;, ...)</span>
+<span class="sd">                    self.setattr_fragment(&quot;child&quot;, MyChildFragment)</span>
+<span class="sd">                    self.setattr_param(&quot;foo&quot;, ...)</span>
+<span class="sd">                    self.setattr_param(&quot;bar&quot;, ...)</span>
+<span class="sd">                    self.setattr_param(&quot;baz&quot;, ...)</span>
 
 <span class="sd">                def get_always_shown_params(self):</span>
 <span class="sd">                    shown = super().get_always_shown_params()</span>
@@ -769,16 +833,16 @@
         <span class="sd">&quot;&quot;&quot;Prepare this instance for execution</span>
 <span class="sd">        (see ``artiq.language.environment.Experiment.prepare``).</span>
 
-<span class="sd">        This is invoked only once per (sub)scan, after :meth:`.build_fragment` but</span>
-<span class="sd">        before :meth:`.host_setup`. At this point, parameters, datasets and devices can</span>
-<span class="sd">        be accessed, but devices must not yet be.</span>
+<span class="sd">        This is invoked only once per (sub)scan, after :meth:`Fragment.build_fragment`</span>
+<span class="sd">        but before :meth:`.host_setup`. At this point, parameters, datasets and devices</span>
+<span class="sd">        can be accessed, but devices must not yet be.</span>
 
 <span class="sd">        For top-level scans, this can (and will) be executed in the `prepare` scheduler</span>
 <span class="sd">        pipeline stage.</span>
 
 <span class="sd">        Unless running in the `prepare` pipeline state is absolutely necessary for</span>
 <span class="sd">        runtime performance, lazily running the requisite initialisation code in</span>
-<span class="sd">        :meth:`host_setup` is usually preferrable, as this naturally composes across the</span>
+<span class="sd">        :meth:`host_setup` is usually preferable, as this naturally composes across the</span>
 <span class="sd">        ndscan fragment tree.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
@@ -800,15 +864,144 @@
         <span class="k">return</span> <span class="p">[]</span></div></div>
 
 
+<span class="k">def</span> <span class="nf">_skip_common_prefix</span><span class="p">(</span><span class="n">target</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">reference</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">reference</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">target</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+
+
+<div class="viewcode-block" id="AggregateExpFragment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment">[docs]</a><span class="k">class</span> <span class="nc">AggregateExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Combines multiple :class:`ExpFragment`\ s by executing them one after each other</span>
+<span class="sd">    each time :meth:`run_once` is called.</span>
+
+<span class="sd">    To use, derive from the class and, in the subclass ``build_fragment()`` method</span>
+<span class="sd">    forward to the parent implementation after constructing all the relevant fragments::</span>
+
+<span class="sd">        class FooBarAggregate(AggregateExpFragment):</span>
+<span class="sd">            def build_fragment(self):</span>
+<span class="sd">                self.setattr_fragment(&quot;foo&quot;, FooFragment)</span>
+<span class="sd">                self.setattr_fragment(&quot;bar&quot;, BarFragment)</span>
+
+<span class="sd">                # Any number of customisations can be made as usual,</span>
+<span class="sd">                # e.g. to provide a convenient parameter to scan the</span>
+<span class="sd">                # fragments in lockstep:</span>
+<span class="sd">                self.setattr_param_rebind(&quot;freq&quot;, self.foo)</span>
+<span class="sd">                self.bar.bind_param(&quot;freq&quot;, self.freq)</span>
+
+<span class="sd">                # Let AggregateExpFragment default implementations</span>
+<span class="sd">                # take care of the rest, e.g. have self.run_once()</span>
+<span class="sd">                # call self.foo.run_once(), then self.bar.run_once().</span>
+<span class="sd">                super().build_fragment([self.foo, self.bar])</span>
+
+<span class="sd">        ScanFooBarAggregate = make_fragment_scan_exp(FooBarAggregate)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="AggregateExpFragment.build_fragment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.build_fragment">[docs]</a>    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exp_fragments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param exp_fragments: The &quot;child&quot; fragments to execute. The fragments will be</span>
+<span class="sd">            run in the given order. No special treatment is given to the</span>
+<span class="sd">            ``{host,device}_{setup,cleanup}()`` methods, which will just be executed</span>
+<span class="sd">            through the recursive default implementations unless overridden by the user.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">exp_fragments</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;At least one child ExpFragment should be given&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exp_fragments</span> <span class="o">=</span> <span class="n">exp_fragments</span>
+
+        <span class="c1"># Since polymorphism is not supported by the ARTIQ compiler, make named</span>
+        <span class="c1"># attributes for the exp fragments and make a _run_once_impl() helper function</span>
+        <span class="c1"># that calls them one after each other.</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">exp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">exp_fragments</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_exp_fragment_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_once_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;self._exp_fragment_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.run_once()&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">exp_fragments</span><span class="p">))]),</span>
+                                                 <span class="n">portable</span><span class="p">)</span>
+
+        <span class="c1"># If the child fragment run_once() methods are @kernel, then make our run_once()</span>
+        <span class="c1"># run on the kernel too. Reassigning the member function is a bit janky, but so</span>
+        <span class="c1"># would it be to update the decorator, as `artiq_embedded` is an immutable tuple</span>
+        <span class="c1"># and the type is not public.</span>
+        <span class="n">is_kernels</span> <span class="o">=</span> <span class="p">[</span><span class="n">is_kernel</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">run_once</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">exp_fragments</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_kernels</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_once</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_run_once</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">is_kernels</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Mixed host/@kernel run_once() methods among passed &quot;</span> <span class="o">+</span>
+                               <span class="s2">&quot;ExpFragments; execution will be slow as the &quot;</span> <span class="o">+</span>
+                               <span class="s2">&quot;kernel(s) will be recompiled for each scan point.&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exp_fragments</span><span class="p">:</span>
+            <span class="n">exp</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
+
+<div class="viewcode-block" id="AggregateExpFragment.run_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.run_once">[docs]</a>    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Execute the experiment by forwarding to each child fragment.</span>
+
+<span class="sd">        Invokes all child fragments in the order they are passed to</span>
+<span class="sd">        :meth:`build_fragment`. This method can be overridden if more complex behaviour</span>
+<span class="sd">        is desired.</span>
+
+<span class="sd">        If all child fragments have a ``@kernel`` ``run_once()``, this is implemented on</span>
+<span class="sd">        the core device as well to avoid costly kernel recompilations in a scan.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_once_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span> <span class="nf">_kernel_run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_once_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AggregateExpFragment.get_always_shown_params"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.get_always_shown_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Collect always-shown params from each child fragment, plus any parameters</span>
+<span class="sd">        directly defined in this fragment as usual.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_always_shown_params</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exp_fragments</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">exp</span><span class="o">.</span><span class="n">get_always_shown_params</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="AggregateExpFragment.get_default_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.get_default_analyses">[docs]</a>    <span class="k">def</span> <span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Collect default analyses from each child fragment.</span>
+
+<span class="sd">        The analyses are wrapped in a proxy that prepends any result channel names with</span>
+<span class="sd">        the fragment path to ensure results from different analyses do not collide.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">analyses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exp_fragments</span><span class="p">:</span>
+            <span class="n">exp_analyses</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">()</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">_skip_common_prefix</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+            <span class="n">analyses</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="n">ResultPrefixAnalysisWrapper</span><span class="p">(</span><span class="n">analysis</span><span class="p">,</span> <span class="n">prefix</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">analysis</span> <span class="ow">in</span> <span class="n">exp_analyses</span>
+            <span class="p">]</span>
+        <span class="k">return</span> <span class="n">analyses</span></div></div>
+
+
 <div class="viewcode-block" id="TransitoryError"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.TransitoryError">[docs]</a><span class="k">class</span> <span class="nc">TransitoryError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Transitory error encountered while executing a fragment, which is expected to</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Transitory error encountered while executing a fragment, which is expected to</span>
 <span class="sd">    clear itself up if it is attempted again without any further changes.</span>
+
+<span class="sd">    Such errors are never raised by the ndscan infrastructure itself, but can be thrown</span>
+<span class="sd">    from user fragment implementations in response to e.g. some temporary hardware</span>
+<span class="sd">    conditions such as a momentarily insufficient level of laser power.</span>
+
+<span class="sd">    :mod:`ndscan.experiment.entry_point`\ s will attempt to handle transitory errors,</span>
+<span class="sd">    e.g. by retrying execution some amount of times. If fragments are manually executed</span>
+<span class="sd">    from user code, it will often be appropriate to do this as well, unless the user</span>
+<span class="sd">    code base does not use transitory errors at all.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span></div>
 
 
 <div class="viewcode-block" id="RestartKernelTransitoryError"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.RestartKernelTransitoryError">[docs]</a><span class="k">class</span> <span class="nc">RestartKernelTransitoryError</span><span class="p">(</span><span class="n">TransitoryError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Transitory error where the kernel should be restarted before retrying.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;:class:`.TransitoryError` where, as part of recovering from it, the kernel should</span>
+<span class="sd">    be restarted before retrying.</span>
+
+<span class="sd">    This can be used for cases where remedying the error requires</span>
+<span class="sd">    :meth:`.Fragment.host_setup()` to be run again, such as for cases where the</span>
+<span class="sd">    experiments needs to yield back to the scheduler (e.g. for an ion loss event to be</span>
+<span class="sd">    remedied by a second reloading experiment).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span></div>
 </pre></div>
 

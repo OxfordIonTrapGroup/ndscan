@@ -426,9 +426,39 @@ constructor.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ndscan.experiment.fragment.Fragment.setattr_param_like">
+<code class="sig-name descname">setattr_param_like</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">original_owner</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment">ndscan.experiment.fragment.Fragment</a></span></em>, <em class="sig-param"><span class="n">original_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.parameters.ParamHandle<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_param_like"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_param_like" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new parameter using an existing parameter as a template.</p>
+<p>The newly created parameter will inherent its type, and all the metadata that
+is not overridden by the optional keyword arguments, from the template
+parameter.</p>
+<p>This is often combined with <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.bind_param" title="ndscan.experiment.fragment.Fragment.bind_param"><code class="xref py py-meth docutils literal notranslate"><span class="pre">bind_param()</span></code></a> to rebind parameters from one or
+more subfragments; see also <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.setattr_param_rebind" title="ndscan.experiment.fragment.Fragment.setattr_param_rebind"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setattr_param_rebind()</span></code></a>, which combines the
+two.</p>
+<p>Can only be called during <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The new parameter’s name, to be part of its FQN. Must be a valid
+Python identifier; the parameter handle will be accessible as
+<code class="docutils literal notranslate"><span class="pre">self.&lt;name&gt;</span></code>.</p></li>
+<li><p><strong>original_owner</strong> – The fragment owning the parameter to use as a template.</p></li>
+<li><p><strong>original_name</strong> – The name of the parameter to use as a template (i.e.
+<code class="docutils literal notranslate"><span class="pre">&lt;original_owner&gt;.&lt;original_name&gt;</span></code>). If <code class="docutils literal notranslate"><span class="pre">None</span></code>, defaults to <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p></li>
+<li><p><strong>kwargs</strong> – Any attributes to override in the template parameter metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The newly created parameter handle.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ndscan.experiment.fragment.Fragment.setattr_param_rebind">
 <code class="sig-name descname">setattr_param_rebind</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">original_owner</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment">ndscan.experiment.fragment.Fragment</a></span></em>, <em class="sig-param"><span class="n">original_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; ndscan.experiment.parameters.ParamHandle<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.setattr_param_rebind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.setattr_param_rebind" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a parameter that overrides the value of a subfragment parameter.</p>
+<dd><p>Convenience function combining <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.setattr_param_like" title="ndscan.experiment.fragment.Fragment.setattr_param_like"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setattr_param_like()</span></code></a> and
+<a class="reference internal" href="#ndscan.experiment.fragment.Fragment.bind_param" title="ndscan.experiment.fragment.Fragment.bind_param"><code class="xref py py-meth docutils literal notranslate"><span class="pre">bind_param()</span></code></a> to override a subfragment parmeter.</p>
 <p>The most common use case for this is to specialise the operation of a generic
 subfragment. For example, there might be a fragment <code class="docutils literal notranslate"><span class="pre">Fluoresce</span></code> that drives
 a cycling transition in an ion with parameters for intensity and detuning.
@@ -481,6 +511,8 @@ constructor.</p></li>
 <dt id="ndscan.experiment.fragment.Fragment.override_param">
 <code class="sig-name descname">override_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">initial_value</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>Any<span class="p">, </span>ndscan.experiment.parameters.ParamStore<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.override_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.override_param" title="Permalink to this definition">¶</a></dt>
 <dd><p>Override the parameter with the given name and set it to the provided value.</p>
+<p>See <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.bind_param" title="ndscan.experiment.fragment.Fragment.bind_param"><code class="xref py py-meth docutils literal notranslate"><span class="pre">bind_param()</span></code></a>, which also overrides the parameter, but sets it to
+follow another parameter instead.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -493,6 +525,31 @@ default from the parameter schema is used.</p></li>
 <dd class="field-even"><p>A tuple <code class="docutils literal notranslate"><span class="pre">(param,</span> <span class="pre">store)</span></code> of the parameter metadata and the newly
 created <code class="xref py py-class docutils literal notranslate"><span class="pre">ParamStore</span></code> instance that the parameter handles are now
 bound to.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ndscan.experiment.fragment.Fragment.bind_param">
+<code class="sig-name descname">bind_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">ndscan.experiment.parameters.ParamHandle</span></em><span class="sig-paren">)</span> &#x2192; Any<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#Fragment.bind_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.Fragment.bind_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override the fragment parameter with the given name such that its value
+follows that of another parameter.</p>
+<p>The most common use case for this is to specialise the operation of a generic
+subfragment. For example, there might be a fragment <code class="docutils literal notranslate"><span class="pre">Fluoresce</span></code> that drives
+a cycling transition in an ion with parameters for intensity and detuning.
+Higher-level fragments for Doppler cooling, readout, etc. might then use
+<code class="docutils literal notranslate"><span class="pre">Fluoresce</span></code>, binding its intensity and detuning parameters to values and
+defaults appropriate for those particular tasks.</p>
+<p>See <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.override_param" title="ndscan.experiment.fragment.Fragment.override_param"><code class="xref py py-meth docutils literal notranslate"><span class="pre">override_param()</span></code></a>, which sets the parameter to a fixed value/store.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_name</strong> – The name of the parameter to be bound (i.e.
+<code class="docutils literal notranslate"><span class="pre">self.&lt;param_name&gt;</span></code>). Must be a free parameter of this fragment (not
+already bound or overridden).</p></li>
+<li><p><strong>source</strong> – The parameter to bind to. Must be a free parameter of its
+respective owner.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -522,8 +579,8 @@ ParamStore is used. Otherwise, the default value is evaluated and a new store
 pointing to it created.</p>
 <p>This method should be called before any of the fragment’s user-defined functions
 are used (but after the constructor -&gt; <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build" title="ndscan.experiment.fragment.Fragment.build"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build()</span></code></a> -&gt; :meth`build_fragment()`
-has completed). Most likely, the top-level fragment will be called from a
-<a class="reference internal" href="#module-ndscan.experiment.entry_point" title="ndscan.experiment.entry_point"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.entry_point</span></code></a> which already take care of this. In cases
+has completed). Most likely, the top-level fragment will be called from an
+<a class="reference internal" href="#module-ndscan.experiment.entry_point" title="ndscan.experiment.entry_point"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.entry_point</span></code></a>, which already take care of this. In cases
 where fragments are used in a different context, for example from a standalone
 <code class="docutils literal notranslate"><span class="pre">EnvExperiment</span></code>, this method must be called manually.</p>
 <dl class="field-list simple">
@@ -542,7 +599,9 @@ the store to use for parameters the path of which matches the spec.</p>
 subfragments.</p>
 <p>For parameters where the default value was previously used, the expression is
 evaluated again – thus for instance fetching new dataset values –, and assigned
-to the existing parameter store.</p>
+to the existing parameter store. An informative message is logged if the value
+changed, such that changes remain traceable after the fact (e.g. when an
+experiment is resumed after a calibration interruption).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -569,10 +628,10 @@ created in <a class="reference internal" href="#ndscan.experiment.fragment.Fragm
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;child&quot;</span><span class="p">,</span> <span class="n">MyChildFragment</span><span class="p">)</span>
-        <span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
-        <span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
-        <span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;baz&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;child&quot;</span><span class="p">,</span> <span class="n">MyChildFragment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;baz&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">shown</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_always_shown_params</span><span class="p">()</span>
@@ -600,14 +659,14 @@ created in <a class="reference internal" href="#ndscan.experiment.fragment.Fragm
 <code class="sig-name descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#ExpFragment.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.ExpFragment.prepare" title="Permalink to this definition">¶</a></dt>
 <dd><p>Prepare this instance for execution
 (see <code class="docutils literal notranslate"><span class="pre">artiq.language.environment.Experiment.prepare</span></code>).</p>
-<p>This is invoked only once per (sub)scan, after <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a> but
-before <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.host_setup" title="ndscan.experiment.fragment.Fragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a>. At this point, parameters, datasets and devices can
-be accessed, but devices must not yet be.</p>
+<p>This is invoked only once per (sub)scan, after <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Fragment.build_fragment()</span></code></a>
+but before <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.host_setup" title="ndscan.experiment.fragment.Fragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a>. At this point, parameters, datasets and devices
+can be accessed, but devices must not yet be.</p>
 <p>For top-level scans, this can (and will) be executed in the <cite>prepare</cite> scheduler
 pipeline stage.</p>
 <p>Unless running in the <cite>prepare</cite> pipeline state is absolutely necessary for
 runtime performance, lazily running the requisite initialisation code in
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code> is usually preferrable, as this naturally composes across the
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code> is usually preferable, as this naturally composes across the
 ndscan fragment tree.</p>
 </dd></dl>
 
@@ -630,17 +689,96 @@ them to apply.</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt id="ndscan.experiment.fragment.AggregateExpFragment">
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">AggregateExpFragment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">managers_or_parent</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#AggregateExpFragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.AggregateExpFragment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines multiple <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a>s by executing them one after each other
+each time <a class="reference internal" href="#ndscan.experiment.fragment.AggregateExpFragment.run_once" title="ndscan.experiment.fragment.AggregateExpFragment.run_once"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run_once()</span></code></a> is called.</p>
+<p>To use, derive from the class and, in the subclass <code class="docutils literal notranslate"><span class="pre">build_fragment()</span></code> method
+forward to the parent implementation after constructing all the relevant fragments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">FooBarAggregate</span><span class="p">(</span><span class="n">AggregateExpFragment</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">FooFragment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">BarFragment</span><span class="p">)</span>
+
+        <span class="c1"># Any number of customisations can be made as usual,</span>
+        <span class="c1"># e.g. to provide a convenient parameter to scan the</span>
+        <span class="c1"># fragments in lockstep:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param_rebind</span><span class="p">(</span><span class="s2">&quot;freq&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">foo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="n">bind_param</span><span class="p">(</span><span class="s2">&quot;freq&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+
+        <span class="c1"># Let AggregateExpFragment default implementations</span>
+        <span class="c1"># take care of the rest, e.g. have self.run_once()</span>
+        <span class="c1"># call self.foo.run_once(), then self.bar.run_once().</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build_fragment</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">foo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bar</span><span class="p">])</span>
+
+<span class="n">ScanFooBarAggregate</span> <span class="o">=</span> <span class="n">make_fragment_scan_exp</span><span class="p">(</span><span class="n">FooBarAggregate</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="ndscan.experiment.fragment.AggregateExpFragment.build_fragment">
+<code class="sig-name descname">build_fragment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exp_fragments</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment">ndscan.experiment.fragment.ExpFragment</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#AggregateExpFragment.build_fragment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.AggregateExpFragment.build_fragment" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>exp_fragments</strong> – The “child” fragments to execute. The fragments will be
+run in the given order. No special treatment is given to the
+<code class="docutils literal notranslate"><span class="pre">{host,device}_{setup,cleanup}()</span></code> methods, which will just be executed
+through the recursive default implementations unless overridden by the user.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ndscan.experiment.fragment.AggregateExpFragment.run_once">
+<code class="sig-name descname">run_once</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/ndscan/experiment/fragment.html#AggregateExpFragment.run_once"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.AggregateExpFragment.run_once" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute the experiment by forwarding to each child fragment.</p>
+<p>Invokes all child fragments in the order they are passed to
+<a class="reference internal" href="#ndscan.experiment.fragment.AggregateExpFragment.build_fragment" title="ndscan.experiment.fragment.AggregateExpFragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>. This method can be overridden if more complex behaviour
+is desired.</p>
+<p>If all child fragments have a <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code> <code class="docutils literal notranslate"><span class="pre">run_once()</span></code>, this is implemented on
+the core device as well to avoid costly kernel recompilations in a scan.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ndscan.experiment.fragment.AggregateExpFragment.get_always_shown_params">
+<code class="sig-name descname">get_always_shown_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#AggregateExpFragment.get_always_shown_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.AggregateExpFragment.get_always_shown_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collect always-shown params from each child fragment, plus any parameters
+directly defined in this fragment as usual.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ndscan.experiment.fragment.AggregateExpFragment.get_default_analyses">
+<code class="sig-name descname">get_default_analyses</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis">ndscan.experiment.default_analysis.DefaultAnalysis</a><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#AggregateExpFragment.get_default_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.AggregateExpFragment.get_default_analyses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collect default analyses from each child fragment.</p>
+<p>The analyses are wrapped in a proxy that prepends any result channel names with
+the fragment path to ensure results from different analyses do not collide.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py exception">
 <dt id="ndscan.experiment.fragment.TransitoryError">
 <em class="property">exception </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">TransitoryError</code><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#TransitoryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.TransitoryError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transitory error encountered while executing a fragment, which is expected to
 clear itself up if it is attempted again without any further changes.</p>
+<p>Such errors are never raised by the ndscan infrastructure itself, but can be thrown
+from user fragment implementations in response to e.g. some temporary hardware
+conditions such as a momentarily insufficient level of laser power.</p>
+<p><a class="reference internal" href="#module-ndscan.experiment.entry_point" title="ndscan.experiment.entry_point"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.entry_point</span></code></a>s will attempt to handle transitory errors,
+e.g. by retrying execution some amount of times. If fragments are manually executed
+from user code, it will often be appropriate to do this as well, unless the user
+code base does not use transitory errors at all.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt id="ndscan.experiment.fragment.RestartKernelTransitoryError">
 <em class="property">exception </em><code class="sig-prename descclassname">ndscan.experiment.fragment.</code><code class="sig-name descname">RestartKernelTransitoryError</code><a class="reference internal" href="_modules/ndscan/experiment/fragment.html#RestartKernelTransitoryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.fragment.RestartKernelTransitoryError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transitory error where the kernel should be restarted before retrying.</p>
+<dd><p><a class="reference internal" href="#ndscan.experiment.fragment.TransitoryError" title="ndscan.experiment.fragment.TransitoryError"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransitoryError</span></code></a> where, as part of recovering from it, the kernel should
+be restarted before retrying.</p>
+<p>This can be used for cases where remedying the error requires
+<a class="reference internal" href="#ndscan.experiment.fragment.Fragment.host_setup" title="ndscan.experiment.fragment.Fragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Fragment.host_setup()</span></code></a> to be run again, such as for cases where the
+experiments needs to yield back to the scheduler (e.g. for an ion loss event to be
+remedied by a second reloading experiment).</p>
 </dd></dl>
 
 </div>
@@ -1027,7 +1165,7 @@ online analyses to stringly typed metadata.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>context</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">AnnotationContext</span></code> to use to resolve references to
-fragment tree objects in user-specified data to m.</p>
+fragment tree objects in user-specified data.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A tuple of string dictionary representations for annotations and
@@ -1113,6 +1251,56 @@ a dictionary mapping fit parameter names to the respective values, forwarded to
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">ndscan.experiment.default_analysis.</code><code class="sig-name descname">ResultPrefixAnalysisWrapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wrapped</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ndscan.experiment.default_analysis.DefaultAnalysis" title="ndscan.experiment.default_analysis.DefaultAnalysis">ndscan.experiment.default_analysis.DefaultAnalysis</a></span></em>, <em class="sig-param"><span class="n">prefix</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#ResultPrefixAnalysisWrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps another default analysis, prepending the given string to the name of each
+analysis result.</p>
+<p>This can be used to disambiguate potential conflicts between result names when
+programmatically collecting analyses from multiple sources.</p>
+<dl class="py method">
+<dt id="ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.required_axes">
+<code class="sig-name descname">required_axes</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Set<span class="p">[</span>ndscan.experiment.parameters.ParamHandle<span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#ResultPrefixAnalysisWrapper.required_axes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.required_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the scan axes necessary for the analysis to apply, in form of the
+parameter handles.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.describe_online_analyses">
+<code class="sig-name descname">describe_online_analyses</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">ndscan.experiment.default_analysis.AnnotationContext</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#ResultPrefixAnalysisWrapper.describe_online_analyses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.describe_online_analyses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exceute analysis and serialise information about resulting annotations and
+online analyses to stringly typed metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>context</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">AnnotationContext</span></code> to use to resolve references to
+fragment tree objects in user-specified data.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple of string dictionary representations for annotations and
+online analyses (with all the fragment tree references resolved).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.execute">
+<code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">, </span>list<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">result_data</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel">ndscan.experiment.result_channels.ResultChannel</a><span class="p">, </span>list<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">ndscan.experiment.default_analysis.AnnotationContext</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/ndscan/experiment/default_analysis.html#ResultPrefixAnalysisWrapper.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exceute analysis and serialise information about resulting annotations to
+stringly typed metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>context</strong> – The AnnotationContext to use to describe the coordinate axes/
+result channels in the resulting metadata.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of string dictionary representations for the resulting
+annotations, if any.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </div>
