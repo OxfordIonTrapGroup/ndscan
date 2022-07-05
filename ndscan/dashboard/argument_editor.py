@@ -699,6 +699,9 @@ class SyncValue(Enum):
 
 
 class ScanOption:
+    def __init__(self, entry: OverrideEntry):
+        self.entry = entry
+
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
         raise NotImplementedError
 
@@ -727,7 +730,7 @@ class StringFixedScanOption(ScanOption):
 
 class NumericScanOption(ScanOption):
     def __init__(self, entry: OverrideEntry):
-        self.entry = entry
+        super().__init__(entry)
         self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
 
     def _make_divider(self):
