@@ -1,6 +1,8 @@
 import json
 import numpy
 from typing import Any, Iterable, Optional
+import dataclasses
+import enum
 
 
 def path_matches_spec(path: Iterable[str], spec: str) -> bool:
@@ -20,7 +22,7 @@ def is_kernel(func) -> bool:
     return meta.core_name is not None and not meta.portable
 
 
-class NumpyToVanillaEncoder(json.JSONEncoder):
+class Encoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.integer):
             return int(obj)
@@ -28,6 +30,10 @@ class NumpyToVanillaEncoder(json.JSONEncoder):
             return float(obj)
         if isinstance(obj, numpy.ndarray):
             return obj.tolist()
+        if dataclasses.is_dataclass(obj):
+            return dataclasses.asdict(obj)
+        if isinstance(obj, enum.Enum):
+            return obj.value
         return json.JSONEncoder.default(self, obj)
 
 
@@ -35,7 +41,7 @@ def dump_json(obj: Any) -> str:
     """Serialise ``obj`` as a JSON string, with NumPy numerical/array types encoded as
     their vanilla Python counterparts.
     """
-    return json.dumps(obj, cls=NumpyToVanillaEncoder)
+    return json.dumps(obj, cls=Encoder)
 
 
 def to_metadata_broadcast_type(obj: Any) -> Optional[Any]:

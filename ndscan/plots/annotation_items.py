@@ -9,7 +9,7 @@ from oitg import uncertainty_to_string
 import pyqtgraph
 from qasync import QtCore
 from typing import Dict, Union, Optional, Tuple
-from ..utils import FIT_OBJECTS
+from .. import fitting
 from .model import AnnotationDataSource
 
 logger = logging.getLogger(__name__)
@@ -26,8 +26,7 @@ class ComputedCurveItem(AnnotationItem):
     """Shows a curve (pyqtgraph.LineItem) that is computed from a given fit function,
     dynamically adapting to the coordinate region displayed.
 
-    :param function_name: The name of the function (see :data:`FIT_OBJECTS`) to
-        evaluate.
+    :param fit_obj: Fit object (see ndscan.fitting.FitBase)
     :param data_sources: A dictionary giving the parameters for the curve.
     :param view_box: The :class:`pyqtgraph.ViewBox` to add the line item to once there
         is data.
@@ -37,14 +36,10 @@ class ComputedCurveItem(AnnotationItem):
     :param x_limits: Limits to restrict the drawn horizontal range to even if the
         viewport extends beyond them.
     """
-    @staticmethod
-    def is_function_supported(function_name: str) -> bool:
-        return function_name in FIT_OBJECTS
-
-    def __init__(self, function_name: str,
+    def __init__(self, fit_obj: fitting.FitBase,
                  data_sources: Dict[str, AnnotationDataSource], view_box, curve_item,
                  x_limits: Tuple[Union[float, None], Union[float, None]]):
-        self._function = FIT_OBJECTS[function_name].fitting_function
+        self._fit_obj = fit_obj
         self._data_sources = data_sources
         self._view_box = view_box
         self._curve_item = curve_item
@@ -96,7 +91,7 @@ class ComputedCurveItem(AnnotationItem):
         # Choose number of points based on width of plot on screen (in pixels).
         fn_xs = numpy.linspace(*x_lims, int(self._view_box.width()))
 
-        fn_ys = self._function(fn_xs, params)
+        fn_ys = self._fit_obj.func(fn_xs, params)
         self._curve_item.setData(fn_xs, fn_ys)
 
 

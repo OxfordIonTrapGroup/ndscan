@@ -1,18 +1,9 @@
 """Odds and ends common to all of ndscan."""
 
 from enum import Enum, unique
-import oitg.fitting
+import importlib
+import inspect
 from typing import Any, Callable, Dict, Iterable, Optional, Protocol, TypeVar
-
-#: Registry of well-known fit procedure names.
-FIT_OBJECTS = {
-    n: getattr(oitg.fitting, n)
-    for n in [
-        "cos", "decaying_sinusoid", "detuned_square_pulse", "exponential_decay",
-        "gaussian", "line", "lorentzian", "rabi_flop", "sinusoid", "v_function"
-    ]
-}
-FIT_OBJECTS["parabola"] = oitg.fitting.shifted_parabola
 
 #: Name of the ``artiq.language.HasEnvironment`` argument that is used to confer the
 #: list of available parameters to the dashboard plugin, and to pass the information
@@ -117,3 +108,21 @@ def merge_no_duplicates(target: dict, source: dict, kind: str = "entries") -> No
             raise ValueError("Duplicate {} of key '{}'".format(kind, k))
         target[k] = v
     return target
+
+
+def import_class(module_name: str, class_name: str):
+    """
+    Imports a named class from a module in the python path or raises an exception.
+    """
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError:
+        raise ValueError(f'Cannot import module "{module_name}"')
+
+    module_classes = [
+        name for name, obj in inspect.getmembers(module) if inspect.isclass(obj)
+    ]
+    if class_name not in module_classes:
+        raise ValueError(f'Class "{class_name}" not in module "{module_name}"')
+
+    return getattr(module, class_name)

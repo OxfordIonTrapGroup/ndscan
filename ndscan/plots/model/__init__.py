@@ -28,6 +28,7 @@ import numpy
 from qasync import QtCore
 from typing import Any, Callable, Dict, List, Optional
 from .online_analysis import OnlineNamedFitAnalysis
+from ... import experiment
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +251,9 @@ class ScanModel(Model):
         for name, schema in analysis_schemata.items():
             kind = schema["kind"]
             if kind == "named_fit":
-                self._online_analyses[name] = OnlineNamedFitAnalysis(schema, self)
+                del schema["kind"]
+                analysis = experiment.NamedFit(**schema)
+                self._online_analyses[name] = OnlineNamedFitAnalysis(analysis, self)
             else:
                 logger.warning("Ignoring unsupported online analysis type: '%s'", kind)
 

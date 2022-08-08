@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from concurrent.futures import ProcessPoolExecutor
 from pyqtgraph import SignalProxy
 from qasync import QtCore
-from typing import Any, Dict
-from ...utils import FIT_OBJECTS
+from ...experiment import NamedFit
+from ... import utils
+
+logger = logging.getLogger(__name__)
 
 
 class OnlineAnalysis(QtCore.QObject):
@@ -23,15 +26,16 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
     """
     _trigger_recompute_fit = QtCore.pyqtSignal()
 
-    def __init__(self, schema: Dict[str, Any], parent_model):
+    def __init__(self, analysis: NamedFit, parent_model):
         super().__init__()
-        self._schema = schema
         self._model = parent_model
+        self._analysis = analysis
 
-        self._fit_type = self._schema["fit_type"]
-        self._fit_obj = FIT_OBJECTS[self._fit_type]
-        self._constants = self._schema.get("constants", {})
-        self._initial_values = self._schema.get("initial_values", {})
+        fit_class = utils.import_class(analysis.fit_module, analysis.fit_class_name)
+        self._fit_obj = fit_class(param_bounds=self._analysis.param_bounds,
+                                  fixed_params=self._analysis.fixed_params,
+                                  initial_values=self._analysis.initial_values,
+                                  scale_factors=self._analysis.scale_factors)
 
         self._last_fit_params = None
         self._last_fit_errors = None
@@ -69,12 +73,12 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         data = self._model.get_point_data()
 
         self._source_data = {}
-        for param_key, source_key in self._schema["data"].items():
+        for param_key, source_key in self._analysis.data.items():
             self._source_data[param_key] = data.get(source_key, [])
 
         # Truncate the source data to a complete set of points.
         num_points = min(len(v) for v in self._source_data.values())
-        if num_points < len(self._fit_obj.parameter_names):
+        if num_points < len(self._fit_obj.get_free_params()):
             # Not enough points yet for the given number of degrees of freedom.
             return
 
@@ -100,25 +104,28 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         y_errs = self._source_data.get("y_err", None)
 
         loop = asyncio.get_event_loop()
-        self._last_fit_params, self._last_fit_errors = await loop.run_in_executor(
-            self._fit_executor, _run_fit, self._fit_type, xs, ys, y_errs,
-            self._constants, self._initial_values)
+
+        self._fit_obj.x = xs
+        self._fit_obj.y = ys
+        self._fit_obj.y_err = y_errs
+
+        fit = await loop.run_in_executor(self._fit_executor, _run_fit, self._fit_obj)
+        self._last_fit_params, self._last_fit_errors = fit
 
         self._recompute_in_progress = False
         self.updated.emit()
 
 
-def _run_fit(fit_type, xs, ys, y_errs, constants, initial_values):
+def _run_fit(fit_obj):
     """Fits the given data with the chosen method.
 
     This function is intended to be executed on a worker process, hence the
     primitive API.
     """
     try:
-        return FIT_OBJECTS[fit_type].fit(x=xs,
-                                         y=ys,
-                                         y_err=y_errs,
-                                         constants=constants,
-                                         initialise=initial_values)
-    except Exception:
-        return None, None
+        return fit_obj.fit()
+    except Exception as e:
+        logger.warning(f"Exception encountered in fit function: {e}")
+        pass
+
+    return None, None

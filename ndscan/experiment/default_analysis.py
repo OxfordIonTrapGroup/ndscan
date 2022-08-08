@@ -16,16 +16,20 @@ Two modalities are supported:
 Both can produce annotations; particular values or plot locations highlighted in the
 user interface.
 """
+import numpy as np
 import logging
 from typing import Any, Callable, Dict, List, Iterable, Optional, Set, Tuple, Union
+import collections
+from enum import Enum
+import dataclasses
 
-from ..utils import FIT_OBJECTS
 from .parameters import ParamHandle
-from .result_channels import ResultChannel
+from .result_channels import ResultChannel, FloatChannel
+from .. import utils
 
 __all__ = [
     "Annotation", "DefaultAnalysis", "CustomAnalysis", "OnlineFit",
-    "ResultPrefixAnalysisWrapper"
+    "ResultPrefixAnalysisWrapper", "ExportedResult", "NamedFit"
 ]
 
 logger = logging.getLogger(__name__)
@@ -37,6 +41,49 @@ class AnnotationValueRef:
     """
     def __init__(self, kind: str, **kwargs):
         self.spec = {"kind": kind, **kwargs}
+
+
+class AnalysisType(Enum):
+    NAMED_FIT = 'named_fit'
+
+
+@dataclasses.dataclass
+class Analysis:
+    kind: AnalysisType = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        if type(self) == NamedFit:
+            self.kind = AnalysisType.NAMED_FIT
+
+
+@dataclasses.dataclass
+class NamedFit(Analysis):
+    """ Named fit function used in online analyses.
+
+    Attributes:
+        fit_class_name: name of the fit class to use
+        fit_module: module that fit_class resides in (must be in the current python path)
+        data: maps fit data axis names (``"x"``, ``"y"``) to parameter handles or result
+            channels that supply the respective data.
+        param_bounds: dictionary of tuples containing the lower and upper bounds for
+            each parameter. If not specified, the defaults from the fit class are used.
+        fixed_params: dictionary specifying constant values for any non-floated
+            parameters. If not specified, the defaults from the fit class are used.
+        initial_values: dictionary specifying initial parameter values to use in
+            the fit. These override the values found by the fit's parameter estimator.
+        scale_factors: dictionary specifying scale factors for parameters. The
+            parameter values are normalised by these values during fitting to help the
+            curve fit (helps when fitting parameters with very large or very small
+            values).
+    """
+
+    fit_class_name: str
+    fit_module: str
+    data: dict
+    param_bounds: Dict[str, Tuple[float, float]]
+    fixed_params: Dict[str, float]
+    initial_values: Dict[str, float]
+    scale_factors: Dict[str, float]
 
 
 class AnnotationContext:
@@ -126,8 +173,8 @@ class DefaultAnalysis:
         raise NotImplementedError
 
     def describe_online_analyses(
-        self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+            self, context: AnnotationContext
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
         """Exceute analysis and serialise information about resulting annotations and
         online analyses to stringly typed metadata.
 
@@ -211,8 +258,8 @@ class CustomAnalysis(DefaultAnalysis):
         return self._required_axis_handles
 
     def describe_online_analyses(
-        self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+            self, context: AnnotationContext
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
         ""
         return [], {}
 
@@ -249,103 +296,130 @@ class CustomAnalysis(DefaultAnalysis):
         return [a.describe(context) for a in annotations]
 
 
-#: Default points of interest for various fit types (e.g. highlighting the π time for a
-#: Rabi flop fit, or the extremum of a parabola.
-DEFAULT_FIT_ANNOTATIONS = {
-    "decaying_sinusoid": {
-        "pi_time": {
-            "x": "t_max_transfer"
-        }
-    },
-    "detuned_square_pulse": {
-        "centre": {
-            "x": "offset"
-        }
-    },
-    "exponential_decay": {
-        "t_1_e": {
-            "x": "t_1_e"
-        }
-    },
-    "gaussian": {
-        "centre": {
-            "x": "x0"
-        }
-    },
-    "lorentzian": {
-        "extremum": {
-            "x": "x0"
-        }
-    },
-    "parabola": {
-        "extremum": {
-            "x": "position"
-        }
-    },
-    "rabi_flop": {
-        "pi_time": {
-            "x": "t_pi"
-        }
-    },
-    "sinusoid": {
-        "pi_time": {
-            "x": "t_pi"
-        }
-    },
-    "v_function": {
-        "centre": {
-            "x": "x0"
-        }
-    },
-}
+@dataclasses.dataclass
+class ExportedResult:
+    """ Analysis result exported from an online fit.
+
+    Attributes:
+        fit_parameter: fit parameter to export
+        result_name: name of the new result channel to create. Defaults to
+            :param fit_parameter: if not specified.
+        export_err: if True, we export the uncertainty in the fitted parameter value
+            as an additional result with the name (:param result_name: + `_err`)
+        result_type: the result channel class for the new result
+        config: dictionary of kwargs to pass into the constructor of the result
+            channel
+    """
+    fit_parameter: str
+    result_name: Optional[str] = None
+    export_err: bool = True
+    result_type: ResultChannel = FloatChannel
+    config: Optional[Dict] = None
+
+    def __post_init__(self):
+        self.result_name = self.result_name or self.fit_parameter
+        self.config = self.config or {}
 
 
 class OnlineFit(DefaultAnalysis):
     """Describes an automatically executed fit for a given combination of scan axes
     and result channels.
 
-    :param fit_type: Fitting procedure name, per :data:`.FIT_OBJECTS`.
+    :param fit_class: name of the python class within :param fit_module: to use for the
+        fit.
     :param data: Maps fit data axis names (``"x"``, ``"y"``) to parameter handles or
         result channels that supply the respective data.
     :param annotations: Any points of interest to highlight in the fit results,
         given in the form of a dictionary mapping (arbitrary) identifiers to
         dictionaries mapping coordinate names to fit result names. If ``None``,
-        :data:`DEFAULT_FIT_ANNOTATIONS` will be queried.
+        the defaults provided by the fit function will be used.
     :param analysis_identifier: Optional explicit name to use for online analysis.
         Defaults to ``fit_<fit_type>``, but can be set explicitly to allow more than one
         fit of a given type at a time.
-    :param constants: Specifies parameters to be held constant during the fit. This is
-        a dictionary mapping fit parameter names to the respective constant values,
-        forwarded to :meth:`oitg.fitting.FitBase.FitBase.fit`.
-    :param initial_values: Specifies initial values for the fit parameters. This is
-        a dictionary mapping fit parameter names to the respective values, forwarded to
-        :meth:`oitg.fitting.FitBase.FitBase.fit`.
+    :param constants: dictionary specifying constant values for any non-floated
+        parameters. If not specified, the defaults from the fit class are used.
+    :param initial_values: dictionary specifying initial parameter values to use in
+        the fit. These override the values found by the fit's parameter estimator.
+    :param bounds: dictionary of tuples containing the lower and upper bounds for
+            each parameter. If not specified, the defaults from the fit class are used.
+    :param exported_results: Specifies fitted parameter values to export as analysis
+        results.
+    :param fit_module: python module containing the fit class. Will default to
+        `ndscan.fitting` in the future.
+    :param scale_factors: dictionary specifying scale factors for parameters. The
+        parameter values are normalised by these values during fitting to help the curve
+        fit (helps when fitting parameters with very large or very small values). At
+        some point in the future we could consider choosing sensible default scale
+        factors, but it's not totally trivial to do that in a way that doesn't blow up
+        for parameters with initial values close to zero.
     """
     def __init__(self,
-                 fit_type: str,
+                 fit_class: str,
                  data: Dict[str, Union[ParamHandle, ResultChannel]],
                  annotations: Optional[Dict[str, Dict[str, Any]]] = None,
                  analysis_identifier: str = None,
                  constants: Optional[Dict[str, Any]] = None,
-                 initial_values: Optional[Dict[str, Any]] = None):
-        self.fit_type = fit_type
-        if fit_type not in FIT_OBJECTS:
-            logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
+                 initial_values: Optional[Dict[str, Any]] = None,
+                 bounds: Optional[Dict[str, Tuple[float, float]]] = None,
+                 exported_results: Optional[List[ExportedResult]] = None,
+                 fit_module: str = 'oitg.fitting',
+                 scale_factors: Optional[Dict[str, float]] = None):
+
+        self.fit_class_name = fit_class
+        self.fit_module = fit_module
         self.data = data
-        if annotations is None:
-            annotations = DEFAULT_FIT_ANNOTATIONS.get(fit_type, {})
         self.annotations = annotations
         self.analysis_identifier = analysis_identifier
-        self.constants = {} if constants is None else constants
-        self.initial_values = {} if initial_values is None else initial_values
+        self.initial_values = initial_values or {}
+        self.exported_results = exported_results or []
+        self.scale_factors = scale_factors or {}
+
+        self._result_channels = []
+        for result in self.exported_results:
+            channel = result.result_type(path=result.result_name, **result.config)
+            self._result_channels.append(channel)
+
+            if result.export_err:
+                err_channel = FloatChannel(
+                    path=result.result_name + '_err',
+                    min=0.0,
+                    display_hints={"error_bar_for": channel.path})
+                self._result_channels.append(err_channel)
+
+        duplicate_channels = [
+            channel.path
+            for channel, count in collections.Counter(self._result_channels).items()
+            if count > 1
+        ]
+        if duplicate_channels:
+            raise ValueError(
+                f"Duplicate result channels: {','.join(duplicate_channels)}")
+        self._result_channels = {
+            channel.path: channel
+            for channel in self._result_channels
+        }
+
+        klass = utils.import_class(self.fit_module, self.fit_class_name)
+        self.fit_klass = klass
+        self.bounds = bounds if bounds is not None else klass.get_default_bounds()
+
+        if annotations is not None:
+            self.annotations = annotations
+        else:
+            self.annotations = self.fit_klass.get_default_annotations()
+
+        if constants is not None:
+            self.constants = constants
+        else:
+            self.constants = self.fit_klass.get_default_fixed_params()
 
     def required_axes(self) -> Set[ParamHandle]:
         ""
         return set(a for a in self.data.values() if isinstance(a, ParamHandle))
 
     def describe_online_analyses(
-        self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+            self, context: AnnotationContext
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
         ""
         # TODO: Generalise to higher-dimensional fits.
         channels = [
@@ -358,23 +432,25 @@ class OnlineFit(DefaultAnalysis):
             # By default, mangle fit type and channels into a pseudo-unique identifier,
             # which should work for the vast majority of cases (i.e. unless the user
             # creates needlessly duplicate analyses).
-            analysis_identifier = "fit_" + self.fit_type + "_" + "_".join(channels)
+            analysis_identifier = ("fit_" + f"{self.fit_module}.{self.fit_class_name}" +
+                                   "_" + "_".join(channels))
 
         def analysis_ref(key):
             return AnnotationValueRef("online_result",
                                       analysis_name=analysis_identifier,
                                       result_key=key)
 
+        fit_params = self.fit_klass.get_params()
+
         annotations = [
             Annotation("computed_curve",
                        parameters={
-                           "function_name": self.fit_type,
-                           "associated_channels": channels
+                           "fit_class_name": self.fit_class_name,
+                           "fit_module": self.fit_module,
+                           "associated_channels": channels,
                        },
-                       data={
-                           k: analysis_ref(k)
-                           for k in FIT_OBJECTS[self.fit_type].parameter_names
-                       })
+                       data={param: analysis_ref(param)
+                             for param in fit_params})
         ]
         for a in self.annotations.values():
             # TODO: Change API to allow more general annotations.
@@ -389,23 +465,25 @@ class OnlineFit(DefaultAnalysis):
                         },
                         parameters={"associated_channels": channels}))
 
-        return [a.describe(context) for a in annotations], {
-            analysis_identifier: {
-                "kind": "named_fit",
-                "fit_type": self.fit_type,
-                "data": {
-                    name: context.describe_coordinate(obj)
-                    for name, obj in self.data.items()
-                },
-                "constants": self.constants,
-                "initial_values": self.initial_values
-            }
+        analysis = {
+            analysis_identifier:
+            NamedFit(fit_class_name=self.fit_class_name,
+                     fit_module=self.fit_module,
+                     data={
+                         name: context.describe_coordinate(obj)
+                         for name, obj in self.data.items()
+                     },
+                     param_bounds=self.bounds,
+                     fixed_params=self.constants,
+                     initial_values=self.initial_values,
+                     scale_factors=self.scale_factors)
         }
+        return [a.describe(context) for a in annotations], analysis
 
     def get_analysis_results(self) -> Dict[str, ResultChannel]:
         ""
         # Could return annotation locations in the future.
-        return {}
+        return self._result_channels
 
     def execute(
         self,
@@ -414,7 +492,27 @@ class OnlineFit(DefaultAnalysis):
         context: AnnotationContext,
     ) -> List[Dict[str, Any]]:
         ""
-        # Nothing to do off-line for online fits.
+        user_axis_data = {}
+        for handle in self.required_axes():
+            user_axis_data[handle] = axis_data[handle._store.identity]
+        # TODO: Generalise to higher-dimensional fits.
+        x = axis_data[self.data['x']._store.identity]
+        y = result_data[self.data['y']]
+
+        fit = self.fit_klass(x=np.asarray(x),
+                             y=np.asarray(y),
+                             y_err=None,
+                             param_bounds=self.bounds,
+                             fixed_params=self.constants,
+                             initial_values=self.initial_values,
+                             scale_factors=self.scale_factors)
+        for result in self.exported_results:
+            p, p_err = getattr(fit, result.fit_parameter)
+            channel = self._result_channels[result.result_name]
+            channel.push(p)
+            if result.export_err:
+                err_channel = self._result_channels[result.result_name + '_err']
+                err_channel.push(p_err)
         return []
 
 
@@ -437,8 +535,8 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
         return self._wrapped.required_axes()
 
     def describe_online_analyses(
-        self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+            self, context: AnnotationContext
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
         return self._wrapped.describe_online_analyses(context)
 
     def get_analysis_results(self) -> Dict[str, ResultChannel]:

@@ -12,6 +12,7 @@ from .plot_widgets import add_source_id_label, SubplotMenuPlotWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, group_channels_into_axes, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
+from ..utils import import_class
 
 logger = logging.getLogger(__name__)
 
@@ -247,18 +248,21 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
                     continue
 
             if a.kind == "computed_curve":
-                function_name = a.parameters.get("function_name", None)
-                if ComputedCurveItem.is_function_supported(function_name):
-                    associated_series_idx = max(
-                        channel_ref_to_series_idx(chan)
-                        for chan in a.parameters.get("associated_channels", [None]))
+                fit_module = a.parameters["fit_module"]
+                fit_class_name = a.parameters["fit_class_name"]
+                fit_class = import_class(fit_module, fit_class_name)
+                fit_obj = fit_class()
 
-                    x_limits = [self.x_param_spec.get(n, None) for n in ("min", "max")]
-                    curve = make_curve_item(associated_series_idx)
-                    vb = self.series[associated_series_idx].view_box
-                    item = ComputedCurveItem(function_name, a.data, vb, curve, x_limits)
-                    self.annotation_items.append(item)
-                    continue
+                associated_series_idx = max(
+                    channel_ref_to_series_idx(chan)
+                    for chan in a.parameters.get("associated_channels", [None]))
+
+                x_limits = [self.x_param_spec.get(n, None) for n in ("min", "max")]
+                curve = make_curve_item(associated_series_idx)
+                vb = self.series[associated_series_idx].view_box
+                item = ComputedCurveItem(fit_obj, a.data, vb, curve, x_limits)
+                self.annotation_items.append(item)
+                continue
 
             logger.info("Ignoring annotation of kind '%s' with coordinates %s", a.kind,
                         list(a.coordinates.keys()))
