@@ -206,8 +206,8 @@ class FragmentScanExpCase(HasEnvironmentCase):
                         "y": "channel_result",
                         "x": "axis_0"
                     },
-                    "param_bounds": {}
-                    "scale_factors": {}
+                    "param_bounds": {},
+                    "scale_factors": {},
                     "fit_class_name": "lorentzian",
                     "fit_module": "ndscan.fitting.oitg",
                     "initial_values": {
