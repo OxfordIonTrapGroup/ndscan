@@ -20,7 +20,6 @@ import numpy as np
 import logging
 from typing import Any, Callable, Dict, List, Iterable, Optional, Set, Tuple, Union
 import collections
-from enum import Enum
 import dataclasses
 
 from .parameters import ParamHandle
@@ -49,7 +48,8 @@ class FitDescription():
 
     Attributes:
         fit_class_name: name of the fit class to use
-        fit_module: module that fit_class resides in (must be in the current python path)
+        fit_module: module that fit_class resides in (must be in the current python
+            path)
         data: maps fit data axis names (``"x"``, ``"y"``) to parameter handles or result
             channels that supply the respective data.
         param_bounds: dictionary of tuples containing the lower and upper bounds for
@@ -160,7 +160,7 @@ class DefaultAnalysis:
         raise NotImplementedError
 
     def describe_online_analyses(
-            self, context: AnnotationContext
+        self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         """Exceute analysis and serialise information about resulting annotations and
         online analyses to stringly typed metadata.
@@ -245,7 +245,7 @@ class CustomAnalysis(DefaultAnalysis):
         return self._required_axis_handles
 
     def describe_online_analyses(
-            self, context: AnnotationContext
+        self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         ""
         return [], {}
@@ -405,7 +405,7 @@ class OnlineFit(DefaultAnalysis):
         return set(a for a in self.data.values() if isinstance(a, ParamHandle))
 
     def describe_online_analyses(
-            self, context: AnnotationContext
+        self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         ""
         # TODO: Generalise to higher-dimensional fits.
@@ -454,17 +454,16 @@ class OnlineFit(DefaultAnalysis):
 
         analysis = {
             analysis_identifier:
-            FitDescription(
-                fit_class_name=self.fit_class_name,
-                fit_module=self.fit_module,
-                data={name: context.describe_coordinate(obj)
-                      for name, obj in self.data.items()
-                     },
-                param_bounds=self.bounds,
-                fixed_params=self.constants,
-                initial_values=self.initial_values,
-                scale_factors=self.scale_factors
-                )
+            FitDescription(fit_class_name=self.fit_class_name,
+                           fit_module=self.fit_module,
+                           data={
+                               name: context.describe_coordinate(obj)
+                               for name, obj in self.data.items()
+                           },
+                           param_bounds=self.bounds,
+                           fixed_params=self.constants,
+                           initial_values=self.initial_values,
+                           scale_factors=self.scale_factors)
         }
         return [a.describe(context) for a in annotations], analysis
 
@@ -523,7 +522,7 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
         return self._wrapped.required_axes()
 
     def describe_online_analyses(
-            self, context: AnnotationContext
+        self, context: AnnotationContext
     ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         return self._wrapped.describe_online_analyses(context)
 

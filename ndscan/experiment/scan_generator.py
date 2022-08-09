@@ -92,7 +92,6 @@ class ExpandingGenerator(ScanGenerator):
 
     def has_level(self, level: int) -> bool:
         ""
-
         def num_points(limit):
             return np.floor(abs(self.centre - limit) / self.spacing)
 
