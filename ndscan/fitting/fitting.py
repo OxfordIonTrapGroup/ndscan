@@ -178,7 +178,7 @@ class FitBase:
         raise NotImplementedError
 
     @staticmethod
-    def get_params(self) -> List[str]:
+    def get_params() -> List[str]:
         """Returns list of fit params"""
         raise NotImplementedError
 
@@ -187,7 +187,7 @@ class FitBase:
         return self._free_params
 
     @staticmethod
-    def get_derived_params(self) -> List[str]:
+    def get_derived_params() -> List[str]:
         """Returns list of derived parameters"""
         return []
 

@@ -332,7 +332,8 @@ class OnlineFit(DefaultAnalysis):
     :param exported_results: Specifies fitted parameter values to export as analysis
         results.
     :param fit_module: python module containing the fit class. Will default to
-        `ndscan.fitting` in the future.
+        `ndscan.fitting` in the future. To use the oitg fitting functions, `fit_module`
+        should be set to the default `ndscan.fitting.oitg`.
     :param scale_factors: dictionary specifying scale factors for parameters. The
         parameter values are normalised by these values during fitting to help the curve
         fit (helps when fitting parameters with very large or very small values). At
@@ -349,7 +350,7 @@ class OnlineFit(DefaultAnalysis):
                  initial_values: Optional[Dict[str, Any]] = None,
                  bounds: Optional[Dict[str, Tuple[float, float]]] = None,
                  exported_results: Optional[List[ExportedResult]] = None,
-                 fit_module: str = 'oitg.fitting',
+                 fit_module: str = 'ndscan.fitting.oitg',
                  scale_factors: Optional[Dict[str, float]] = None):
 
         self.fit_class_name = fit_class
