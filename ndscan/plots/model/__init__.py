@@ -249,13 +249,8 @@ class ScanModel(Model):
         self._online_analyses = {}
 
         for name, schema in analysis_schemata.items():
-            kind = schema["kind"]
-            if kind == "named_fit":
-                del schema["kind"]
-                analysis = experiment.NamedFit(**schema)
-                self._online_analyses[name] = OnlineNamedFitAnalysis(analysis, self)
-            else:
-                logger.warning("Ignoring unsupported online analysis type: '%s'", kind)
+            analysis = experiment.NamedFit(**schema)
+            self._online_analyses[name] = OnlineNamedFitAnalysis(analysis, self)
 
         # Rebind annotation schemata to new analysis data sources.
         self._set_annotation_schemata(self._annotation_schemata)

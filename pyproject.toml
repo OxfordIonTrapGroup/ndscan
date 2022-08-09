@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "ndscan"
+version = "v0.2.0"
+description = "N-dimensional scans for ARTIQ"
+authors = ["David Nadlinger <david.nadlinger@physics.ox.ac.uk>"]
+license = "LGPLv3+"
+
+[tool.poetry.dependencies]
+python = "~3.8"
+#numpy = "^1.22.4"
+#h5py = "^3.7.0"
+#pyqtgraph = "^0.12.4"
+#PyQt5 = "^5.15.6"
+#PyQt5-Qt5 = "^5.15.2"
+#PyQt5-sip = "^12.10.1"
+#qasync = "^0.23.0"
+#artiq = {git = "https://github.com/m-labs/artiq.git"}
+#sipyco = {git = "https://github.com/m-labs/sipyco.git"}
+#oitg = {git = "https://github.com/oxfordiontrapgroup/oitg.git"}
+
+[tool.poetry.dev-dependencies]
+unittest = "^0.0"
+yapf = "^0.32.0"
+flake8 = "^4.0.1"
+toml = "^0.10.2"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
+format-jinja = "{{ base }}.{{ distance }}+g{{ commit }}"
+pattern = "^(?P<base>\\d+(\\.\\d+)*)"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks]
+fmt = "yapf -i -r examples ndscan test"
+fmt-test = "yapf -d -r examples ndscan test"
+flake = "flake8 examples ndscan test"
+test = "python -m unittest discover -v test"

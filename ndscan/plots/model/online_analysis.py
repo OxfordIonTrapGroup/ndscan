@@ -3,7 +3,7 @@ import logging
 from concurrent.futures import ProcessPoolExecutor
 from pyqtgraph import SignalProxy
 from qasync import QtCore
-from ...experiment import NamedFit
+from ...experiment import FitDescription
 from ... import utils
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
     """
     _trigger_recompute_fit = QtCore.pyqtSignal()
 
-    def __init__(self, analysis: NamedFit, parent_model):
+    def __init__(self, analysis: FitDescription, parent_model):
         super().__init__()
         self._model = parent_model
         self._analysis = analysis

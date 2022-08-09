@@ -29,7 +29,7 @@ from .. import utils
 
 __all__ = [
     "Annotation", "DefaultAnalysis", "CustomAnalysis", "OnlineFit",
-    "ResultPrefixAnalysisWrapper", "ExportedResult", "NamedFit"
+    "ResultPrefixAnalysisWrapper", "ExportedResult", "FitDescription"
 ]
 
 logger = logging.getLogger(__name__)
@@ -43,22 +43,9 @@ class AnnotationValueRef:
         self.spec = {"kind": kind, **kwargs}
 
 
-class AnalysisType(Enum):
-    NAMED_FIT = 'named_fit'
-
-
 @dataclasses.dataclass
-class Analysis:
-    kind: AnalysisType = dataclasses.field(init=False)
-
-    def __post_init__(self):
-        if type(self) == NamedFit:
-            self.kind = AnalysisType.NAMED_FIT
-
-
-@dataclasses.dataclass
-class NamedFit(Analysis):
-    """ Named fit function used in online analyses.
+class FitDescription():
+    """ Description of an online analysis fit.
 
     Attributes:
         fit_class_name: name of the fit class to use
@@ -174,7 +161,7 @@ class DefaultAnalysis:
 
     def describe_online_analyses(
             self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         """Exceute analysis and serialise information about resulting annotations and
         online analyses to stringly typed metadata.
 
@@ -259,7 +246,7 @@ class CustomAnalysis(DefaultAnalysis):
 
     def describe_online_analyses(
             self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         ""
         return [], {}
 
@@ -419,7 +406,7 @@ class OnlineFit(DefaultAnalysis):
 
     def describe_online_analyses(
             self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         ""
         # TODO: Generalise to higher-dimensional fits.
         channels = [
@@ -467,16 +454,17 @@ class OnlineFit(DefaultAnalysis):
 
         analysis = {
             analysis_identifier:
-            NamedFit(fit_class_name=self.fit_class_name,
-                     fit_module=self.fit_module,
-                     data={
-                         name: context.describe_coordinate(obj)
-                         for name, obj in self.data.items()
+            FitDescription(
+                fit_class_name=self.fit_class_name,
+                fit_module=self.fit_module,
+                data={name: context.describe_coordinate(obj)
+                      for name, obj in self.data.items()
                      },
-                     param_bounds=self.bounds,
-                     fixed_params=self.constants,
-                     initial_values=self.initial_values,
-                     scale_factors=self.scale_factors)
+                param_bounds=self.bounds,
+                fixed_params=self.constants,
+                initial_values=self.initial_values,
+                scale_factors=self.scale_factors
+                )
         }
         return [a.describe(context) for a in annotations], analysis
 
@@ -536,7 +524,7 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
 
     def describe_online_analyses(
             self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Analysis]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, FitDescription]]:
         return self._wrapped.describe_online_analyses(context)
 
     def get_analysis_results(self) -> Dict[str, ResultChannel]:
