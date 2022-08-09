@@ -114,7 +114,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         for i in range(len(timestamps)):
             prev = 0.0 if i == 0 else timestamps[i - 1]
             cur = timestamps[i]
-            self.assertGreater(cur, prev)
+            self.assertGreaterEqual(cur, prev)
             # Timestamps are in seconds, so this is a _very_ conservative bound on
             # running the test loop in-process (which will take much less than a
             # millisecond).
@@ -141,31 +141,33 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(exp.fragment.num_host_cleanup_calls, 1)
         self.assertEqual(exp.fragment.num_device_cleanup_calls, 1)
 
+        pref = "fit_ndscan.fitting.oitg."
         curve_annotation = {
             "kind": "computed_curve",
             "parameters": {
-                "function_name": "lorentzian",
+                "fit_class_name": "lorentzian",
+                "fit_module": "ndscan.fitting.oitg",
                 "associated_channels": ["channel_result"]
             },
             "coordinates": {},
             "data": {
                 "a": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "a"
                 },
                 "fwhm": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "fwhm"
                 },
                 "x0": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "x0"
                 },
                 "y0": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "y0"
                 }
@@ -178,14 +180,14 @@ class FragmentScanExpCase(HasEnvironmentCase):
             },
             "coordinates": {
                 "axis_0": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "x0"
                 }
             },
             "data": {
                 "axis_0_error": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "x0_error"
                 }
@@ -196,19 +198,21 @@ class FragmentScanExpCase(HasEnvironmentCase):
 
         self.assertEqual(
             json.loads(self.dataset_db.get("ndscan.rid_0.online_analyses")), {
-                "fit_lorentzian_channel_result": {
-                    "constants": {
+                f"{pref}lorentzian_channel_result": {
+                    "fixed_params": {
                         "y0": 1.0
                     },
                     "data": {
                         "y": "channel_result",
                         "x": "axis_0"
                     },
-                    "fit_type": "lorentzian",
+                    "param_bounds": {}
+                    "scale_factors": {}
+                    "fit_class_name": "lorentzian",
+                    "fit_module": "ndscan.fitting.oitg",
                     "initial_values": {
                         "fwhm": 2.0
                     },
-                    "kind": "named_fit"
                 }
             })
 
