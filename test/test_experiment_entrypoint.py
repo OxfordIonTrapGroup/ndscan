@@ -3,6 +3,7 @@ Tests for ndscan.experiment top-level runners.
 """
 
 import json
+import numpy as np
 from ndscan.experiment import *
 from ndscan.experiment.utils import is_kernel
 from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
@@ -195,7 +196,6 @@ class FragmentScanExpCase(HasEnvironmentCase):
         }
         self.assertEqual(json.loads(self.dataset_db.get("ndscan.rid_0.annotations")),
                          [curve_annotation, location_annotation])
-
         self.assertEqual(
             json.loads(self.dataset_db.get("ndscan.rid_0.online_analyses")), {
                 f"{pref}lorentzian_channel_result": {
@@ -206,7 +206,12 @@ class FragmentScanExpCase(HasEnvironmentCase):
                         "y": "channel_result",
                         "x": "axis_0"
                     },
-                    "param_bounds": {},
+                    "param_bounds": {
+                        "a": [-np.inf, np.inf],
+                        "fwhm": [-np.inf, np.inf],
+                        "x0": [-np.inf, np.inf],
+                        "y0": [-np.inf, np.inf],
+                    },
                     "scale_factors": {},
                     "fit_class_name": "lorentzian",
                     "fit_module": "ndscan.fitting.oitg",

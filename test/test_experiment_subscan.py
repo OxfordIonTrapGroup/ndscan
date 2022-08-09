@@ -3,6 +3,7 @@ Tests for subscan functionality.
 """
 
 import json
+import numpy as np
 from ndscan.experiment import *
 from fixtures import (AddOneFragment, ReboundAddOneFragment,
                       AddOneCustomAnalysisFragment, TwoAnalysisFragment,
@@ -51,31 +52,33 @@ class SubscanCase(ExpFragmentCase):
         self.assertEqual(spec["fragment_fqn"], "fixtures.AddOneFragment")
         self.assertEqual(spec["seed"], 1234)
 
+        pref = "fit_ndscan.fitting.oitg."
         curve_annotation = {
             "kind": "computed_curve",
             "parameters": {
-                "function_name": "lorentzian",
+                "fit_class_name": "lorentzian",
+                "fit_module": "ndscan.fitting.oitg",
                 "associated_channels": ["channel_result"]
             },
             "coordinates": {},
             "data": {
                 "a": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "a"
                 },
                 "fwhm": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "fwhm"
                 },
                 "x0": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "x0"
                 },
                 "y0": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "y0"
                 }
@@ -88,14 +91,14 @@ class SubscanCase(ExpFragmentCase):
             },
             "coordinates": {
                 "axis_0": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "x0"
                 }
             },
             "data": {
                 "axis_0_error": {
-                    "analysis_name": "fit_lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_channel_result",
                     "kind": "online_result",
                     "result_key": "x0_error"
                 }
@@ -104,19 +107,26 @@ class SubscanCase(ExpFragmentCase):
         self.assertEqual(spec["annotations"], [curve_annotation, location_annotation])
         self.assertEqual(
             spec["online_analyses"], {
-                "fit_lorentzian_channel_result": {
-                    "constants": {
+                f"{pref}lorentzian_channel_result": {
+                    "fixed_params": {
                         "y0": 1.0
+                    },
+                    "param_bounds": {
+                        "a": [-np.inf, np.inf],
+                        "fwhm": [-np.inf, np.inf],
+                        "x0": [-np.inf, np.inf],
+                        "y0": [-np.inf, np.inf],
                     },
                     "data": {
                         "y": "channel_result",
                         "x": "axis_0"
                     },
-                    "fit_type": "lorentzian",
+                    "scale_factors": {},
+                    "fit_class_name": "lorentzian",
+                    "fit_module": "ndscan.fitting.oitg",
                     "initial_values": {
                         "fwhm": 2.0
                     },
-                    "kind": "named_fit"
                 }
             })
         self.assertEqual(
