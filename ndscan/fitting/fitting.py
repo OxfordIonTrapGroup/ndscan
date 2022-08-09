@@ -4,6 +4,8 @@ import collections
 from typing import Dict, List, Optional, Tuple, Union
 from scipy import optimize
 
+__all__ = ['FitBase']
+
 
 # TODO: type annotations! (What's the best way of annotating np arrays?)
 # TODO: docstring formatting for sphinx

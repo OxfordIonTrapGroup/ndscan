@@ -2,6 +2,8 @@ import numpy as np
 from typing import Dict, List, Tuple
 from ndscan import fitting
 
+__all__ = ['Sinusoid']
+
 
 class Sinusoid(fitting.FitBase):
     """Sinusoid fit according to:

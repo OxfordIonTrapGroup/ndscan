@@ -1,2 +1,6 @@
-from .fitting import FitBase  # noqa F401
-from .sinusoid import Sinusoid  # noqa F401
+from .fitting import *
+from .sinusoid import *
+
+__all__ = []
+__all__.extend(fitting.__all__)
+__all__.extend(sinusoid.__all__)
