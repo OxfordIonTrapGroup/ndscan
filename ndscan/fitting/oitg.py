@@ -48,12 +48,19 @@ class OITGFit(FitBase):
         """
         Returns a dictionary mapping parameter names to a tuple of (upper, lower) bounds
         """
-        return cls._oitg_obj.parameter_bounds
+        bounds = cls._oitg_obj.parameter_bounds
+        return {
+            param: bounds.get(param, (-np.inf, np.inf))
+            for param in cls.get_params()
+        }
 
     def _calculate_derived_params(self):
         """
         Updates fit results with values and uncertainties for derived parameters.
         """
+        if self._oitg_obj.derived_parameter_function is None:
+            return
+
         self._oitg_obj.derived_parameter_function(self._p, self._p_err)
 
     def _estimate_parameters(self) -> Dict[str, float]:
