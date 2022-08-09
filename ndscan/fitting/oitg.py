@@ -33,6 +33,9 @@ class OITGFit(FitBase):
         # the oitg code doesn't provide a list of derived parameter values so we feed it
         # a series of meaningless parameter values chosen to avoid divide by zero errors
         # and then see what it gives us back.
+        if cls._oitg_obj.derived_parameter_function is None:
+            return []
+
         params = cls.get_params()
         numbers = np.arange(1, len(params))
         p_dict = {key: number for key, number in zip(params, numbers)}
