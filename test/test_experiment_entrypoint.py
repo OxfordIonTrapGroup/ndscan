@@ -213,7 +213,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
                         "x0": [-np.inf, np.inf],
                         "y0": [-np.inf, np.inf],
                     },
-                    "scale_factors": {},
+                    "x_scale": 1.0,
                     "fit_class_name": "lorentzian",
                     "fit_module": "ndscan.fitting.oitg",
                     "initial_values": {

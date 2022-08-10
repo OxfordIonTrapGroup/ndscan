@@ -18,7 +18,7 @@ class FitBase:
         param_bounds: Optional[Dict[str, Tuple[float, float]]] = None,
         fixed_params: Optional[Dict[str, float]] = None,
         initial_values: Optional[Dict[str, float]] = None,
-        scale_factors: Optional[Dict[str, float]] = None,
+        x_scale: float = 1,
     ):
         """
         If `x` and `y` are provided we fit the provided dataset. `x`, `y` and `y_err`
@@ -39,12 +39,8 @@ class FitBase:
             :meth get_default_fixed_params: are used.
         :param initial_values: dictionary specifying initial parameter values to use in
             the fit. These override the values found by :meth estimate_parameters:
-        :param scale_factors: dictionary specifying scale factors for parameters. The
-            parameter values are normalised by these values during fitting to help the
-            curve fit (helps when fitting parameters with very large or very small
-            values). At some point in the future we could consider choosing sensible
-            default scale factors, but it's not totally trivial to do that in a way
-            that doesn't blow up for parameters with initial values close to zero.
+        :param x_scale: x-axis scale factor used to normalise parameter values
+            during fitting to improve accuracy. See :meth get_default_scale_factors:).
         """
         self._x = x
         self._y = y
@@ -71,8 +67,8 @@ class FitBase:
         self._validate_param_names(initial_values, self._free_params)
         self._initial_values = initial_values or {}
 
-        self._validate_param_names(scale_factors, self._free_params)
-        self._scale_factors = scale_factors or {}
+        self._x_scale = x_scale
+        self._scale_factors = self.get_default_scale_factors()
 
         self._p = {}
         self._perr = {}
@@ -167,6 +163,10 @@ class FitBase:
     def residuals(self):
         """Returns the fit residuals."""
         return self._y - self._func_free(self._x, self._p)
+
+    def get_default_scale_factors(self) -> Dict[str, float]:
+        """ Returns a dictionary of default parameter scale factors. """
+        return {param: 1 for param in self.get_params()}
 
     def _calculate_derived_params(self):
         """

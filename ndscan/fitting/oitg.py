@@ -11,10 +11,6 @@ class OITGFit(FitBase):
         """
         Fit the dataset and return the fitted parameter values and uncertainties.
         """
-        if self._scale_factors != {}:
-            raise ValueError("OITG fitting functions do not accept user-specified"
-                             "scale factors")
-
         p, p_err = self._oitg_obj.fit(x=self._x,
                                       y=self._y,
                                       y_err=self._y_err,

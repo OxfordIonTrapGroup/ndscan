@@ -122,7 +122,7 @@ class SubscanCase(ExpFragmentCase):
                         "y": "channel_result",
                         "x": "axis_0"
                     },
-                    "scale_factors": {},
+                    "x_scale": 1.0,
                     "fit_class_name": "lorentzian",
                     "fit_module": "ndscan.fitting.oitg",
                     "initial_values": {

@@ -58,10 +58,8 @@ class FitDescription():
             parameters. If not specified, the defaults from the fit class are used.
         initial_values: dictionary specifying initial parameter values to use in
             the fit. These override the values found by the fit's parameter estimator.
-        scale_factors: dictionary specifying scale factors for parameters. The
-            parameter values are normalised by these values during fitting to help the
-            curve fit (helps when fitting parameters with very large or very small
-            values).
+        x_scale: x-axis scale factor used to normalise parameter values during fitting
+            to improve accuracy.
     """
 
     fit_class_name: str
@@ -70,7 +68,7 @@ class FitDescription():
     param_bounds: Dict[str, Tuple[float, float]]
     fixed_params: Dict[str, float]
     initial_values: Dict[str, float]
-    scale_factors: Dict[str, float]
+    x_scale: float
     kind: str = dataclasses.field(init=False, default="fit_description")
 
     @classmethod
@@ -345,12 +343,6 @@ class OnlineFit(DefaultAnalysis):
     :param fit_module: python module containing the fit class. Will default to
         `ndscan.fitting` in the future. To use the oitg fitting functions, `fit_module`
         should be set to the default `ndscan.fitting.oitg`.
-    :param scale_factors: dictionary specifying scale factors for parameters. The
-        parameter values are normalised by these values during fitting to help the curve
-        fit (helps when fitting parameters with very large or very small values). At
-        some point in the future we could consider choosing sensible default scale
-        factors, but it's not totally trivial to do that in a way that doesn't blow up
-        for parameters with initial values close to zero.
     """
     def __init__(self,
                  fit_class: str,
@@ -361,8 +353,7 @@ class OnlineFit(DefaultAnalysis):
                  initial_values: Optional[Dict[str, Any]] = None,
                  bounds: Optional[Dict[str, Tuple[float, float]]] = None,
                  exported_results: Optional[List[ExportedResult]] = None,
-                 fit_module: str = 'ndscan.fitting.oitg',
-                 scale_factors: Optional[Dict[str, float]] = None):
+                 fit_module: str = 'ndscan.fitting.oitg'):
 
         self.fit_class_name = fit_class
         self.fit_module = fit_module
@@ -371,7 +362,9 @@ class OnlineFit(DefaultAnalysis):
         self.analysis_identifier = analysis_identifier
         self.initial_values = initial_values or {}
         self.exported_results = exported_results or []
-        self.scale_factors = scale_factors or {}
+
+        x_param_handle = self.data['x']
+        self.x_scale = x_param_handle.param.scale
 
         self._result_channels = []
         for result in self.exported_results:
@@ -475,7 +468,7 @@ class OnlineFit(DefaultAnalysis):
                            param_bounds=self.bounds,
                            fixed_params=self.constants,
                            initial_values=self.initial_values,
-                           scale_factors=self.scale_factors)
+                           x_scale=self.x_scale)
         }
         return [a.describe(context) for a in annotations], analysis
 
@@ -504,7 +497,7 @@ class OnlineFit(DefaultAnalysis):
                              param_bounds=self.bounds,
                              fixed_params=self.constants,
                              initial_values=self.initial_values,
-                             scale_factors=self.scale_factors)
+                             x_scale=self.x_scale)
         for result in self.exported_results:
             p, p_err = getattr(fit, result.fit_parameter)
             channel = self._result_channels[result.result_name]

@@ -35,7 +35,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         self._fit_obj = fit_class(param_bounds=self._analysis.param_bounds,
                                   fixed_params=self._analysis.fixed_params,
                                   initial_values=self._analysis.initial_values,
-                                  scale_factors=self._analysis.scale_factors)
+                                  x_scale=self._analysis.x_scale)
 
         self._last_fit_params = None
         self._last_fit_errors = None
