@@ -210,6 +210,10 @@ class FitBase:
         """ Returns a dictionary of default annotations for the fit. """
         return {}
 
+    def get_default_scale_factors(self) -> Dict[str, float]:
+        """ Returns a dictionary of default parameter scale factors. """
+        return {param: 1 for param in self.get_params()}
+
     def _estimate_parameters(self) -> Dict[str, float]:
         """
         Returns a dictionary of estimates for the parameter values for the current
