@@ -73,6 +73,16 @@ class FitDescription():
     scale_factors: Dict[str, float]
     kind: str = dataclasses.field(init=False, default="fit_description")
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        kind = data.get('kind')
+        if kind != cls.kind:
+            raise ValueError("Attempt to construct FitDescription from dictionary with"
+                             f"incorrect 'kind': {kind}")
+        data = dict(data)
+        del data['kind']
+        return cls(**data)
+
 
 class AnnotationContext:
     """Resolves entities in user-specified annotation schemata to stringly-typed

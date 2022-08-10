@@ -249,7 +249,7 @@ class ScanModel(Model):
         self._online_analyses = {}
 
         for name, schema in analysis_schemata.items():
-            analysis = experiment.FitDescription(**schema)
+            analysis = experiment.FitDescription.from_dict(schema)
             self._online_analyses[name] = OnlineNamedFitAnalysis(analysis, self)
 
         # Rebind annotation schemata to new analysis data sources.
