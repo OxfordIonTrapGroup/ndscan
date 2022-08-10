@@ -110,7 +110,7 @@ class Sinusoid(fitting.FitBase):
         def cost_fun(x, phi):
             return np.sum(np.power(y - fit_fun(x, phi), 2))
 
-        phis = np.arange(1, 8) / (2 * np.pi)
+        phis = np.linspace(0, 2 * np.pi, 16)
         costs = np.zeros_like(phis)
         for idx, phi in np.ndenumerate(phis):
             costs[idx] = cost_fun(x, phi)
@@ -124,15 +124,50 @@ class Sinusoid(fitting.FitBase):
                                   p0=param_guesses["phi"],
                                   sigma=y_err,
                                   absolute_sigma=True,
-                                  bounds=self.get_default_bounds()["phi"])
+                                  bounds=(0, 2 * np.pi))
         param_guesses["phi"] = float(p)
 
-        # allow the user to float x0 rather than phi
+        # x0 and phi are equivalent parameters, but in some cases it's useful to have
+        # access to both. If exactly one of them is floated (the main anticipated
+        # use-case) we can easily pick a sensible initial value for the other.
+        # If both are floated there is no well-defined solution so we bug out
+        period = 1 / param_guesses["f"]
+        w = 2 * np.pi * param_guesses["f"]
         fixed = self._fixed_params
+
         if "x0" not in fixed and "phi" in fixed:
-            w = 2 * np.pi * param_guesses["f"]
-            param_guesses["x0"] = param_guesses["phi"] / w
-            param_guesses["phi"]
+            d_phi = param_guesses['phi'] - self._fixed_params['phi']
+            param_guesses["x0"] = -d_phi / w
+
+        elif "phi" not in fixed and "x0" in fixed:
+            d_x0 = -self._fixed_params['x0']
+            param_guesses["phi"] = -d_x0 * w
+
+        elif "phi" not in fixed and "x0" not in fixed:
+            raise ValueError('At most one of "phi" and "x0" can be floated at a time!')
+
+        # handle phase wrapping
+        if "phi" not in fixed:
+            phi_bounds = self._param_bounds["phi"]
+            if param_guesses["phi"] < phi_bounds[0]:
+                diff = phi_bounds[0] - param_guesses["phi"]
+                param_guesses["phi"] += ((diff // (2 * np.pi)) + 1) * 2 * np.pi
+            if param_guesses["phi"] > phi_bounds[1]:
+                diff = param_guesses["phi"] - phi_bounds[1]
+                param_guesses["phi"] -= ((diff // (2 * np.pi)) + 1) * 2 * np.pi
+        else:
+            param_guesses['phi'] = self._fixed_params['phi']
+
+        if "x0" not in fixed:
+            x0_bounds = self._param_bounds["x0"]
+            if param_guesses["x0"] < x0_bounds[0]:
+                diff = x0_bounds[0] - param_guesses["x0"]
+                param_guesses["x0"] += ((diff // period) + 1) * period
+            if param_guesses["x0"] > x0_bounds[1]:
+                diff = param_guesses["x0"] - x0_bounds[1]
+                param_guesses["x0"] -= ((diff // period) + 1) * period
+        else:
+            param_guesses['x0'] = self._fixed_params['x0']
 
         return param_guesses
 
