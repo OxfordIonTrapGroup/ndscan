@@ -9,6 +9,10 @@ class Sinusoid(fitting.FitBase):
     """Sinusoid fit according to:
     y = a*sin(2*np.pi*f*(x-x0) + phi) + offset
 
+    By default, x0 is fixed at 0 and phi is floated. If phi is fixed and x0 floated, we
+    pick a default initial value for x0 that puts it in the first oscillation of the
+    sinusoid (equivalent to putting phi in the range [0, 2*pi]).
+
     TODO: t_dead, exp decay (but default to fixed at 0)
     """
     @staticmethod
