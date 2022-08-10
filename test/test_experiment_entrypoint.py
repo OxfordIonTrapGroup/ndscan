@@ -199,6 +199,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(
             json.loads(self.dataset_db.get("ndscan.rid_0.online_analyses")), {
                 f"{pref}lorentzian_channel_result": {
+                    "kind": "fit_description",
                     "fixed_params": {
                         "y0": 1.0
                     },

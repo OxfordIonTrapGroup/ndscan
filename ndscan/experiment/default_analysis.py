@@ -71,6 +71,7 @@ class FitDescription():
     fixed_params: Dict[str, float]
     initial_values: Dict[str, float]
     scale_factors: Dict[str, float]
+    kind: str = dataclasses.field(init=False, default="fit_description")
 
 
 class AnnotationContext:
