@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import signal, optimize
 from typing import Dict, List, Tuple
 from ndscan import fitting
 
@@ -71,44 +72,66 @@ class Sinusoid(fitting.FitBase):
         return ["omega", 't_pi', 't_pi_2', 'phi_cosine', "min", "max", "period"]
 
     def _estimate_parameters(self):
-        # The OITG code uses a LS periodogram. I found that was giving poor phase
-        # estimates in some cases so here I hacked something with interpolation + and
-        # FFT.
-        # TODO: do something better!
-        sorted_idx = np.argsort(self.x)
-        x = self.x[sorted_idx]
-        y = self.y[sorted_idx]
-
-        dx = np.diff(x).min()
-        x_axis = np.arange(x.min(), x.max(), dx)
-        y_interp = np.interp(x_axis, x, y)
-        N = len(x_axis)
-
-        yf = np.fft.fft(y_interp)[0:N // 2] * 2.0 / N
-        freq = np.fft.fftfreq(N, dx)[:N // 2]
-        y0 = yf[0]
-        yf = yf[1:]
-        freq = freq[1:]
-        peak = np.argmax(np.abs(yf))
         param_guesses = {}
-        param_guesses["a"] = np.abs(yf[peak])
-        param_guesses["f"] = freq[peak]
-        param_guesses["offset"] = np.abs(y0) / 2
-        param_guesses["phi"] = np.angle(yf[peak]) + np.pi / 2
 
-        if param_guesses["phi"] < 0:
-            param_guesses["phi"] += 2 * np.pi
-        if param_guesses["phi"] > 2 * np.pi:
-            param_guesses["phi"] -= 2 * np.pi
+        sorted_inds = np.argsort(self._x)
+        x = self._x[sorted_inds]
+        y = self._y[sorted_inds]
+        y_err = None if self._y_err is None else self._y_err[sorted_inds]
 
+        param_guesses["offset"] = np.mean(y)
         param_guesses["t_dead"] = 0
         param_guesses["x0"] = 0
+
+        # Step 1: use a Lomb–Scargle Periodogram to estimate the frequency and amplitude
+        # of the signal
+        min_step = np.diff(x).min()
+        length = x.ptp()
+
+        # Nyquist limit does not apply to irregularly spaced data
+        # We'll use it as a starting point anyway...
+        f_max = 0.5 / min_step
+        # relaxed Fourier limit
+        f_min = 0.25 / length
+
+        omega_list = 2 * np.pi * np.linspace(f_min, f_max, int(f_max / f_min))
+        pgram = signal.lombscargle(x, y, omega_list, precenter=True)
+        peak = np.argmax(np.abs(pgram))
+
+        param_guesses["a"] = np.sqrt(pgram[peak] * 4 / len(y))
+        param_guesses["f"] = omega_list[peak] / (2 * np.pi)
+
+        # Step 2: crude initial guess of the phase
+        def fit_fun(x, phi):
+            params = dict(param_guesses)
+            params["phi"] = phi
+            return self.func(x, params)
+
+        def cost_fun(x, phi):
+            return np.sum(np.power(y - fit_fun(x, phi), 2))
+
+        phis = np.arange(1, 8) / (2 * np.pi)
+        costs = np.zeros_like(phis)
+        for idx, phi in np.ndenumerate(phis):
+            costs[idx] = cost_fun(x, phi)
+        param_guesses["phi"] = phis[np.argmin(costs)]
+
+        # Step 3: single-parameter fit to find the phase (more robust than floating
+        # multiple parameters at once while the phase is off)
+        p, _ = optimize.curve_fit(f=fit_fun,
+                                  xdata=x,
+                                  ydata=y,
+                                  p0=param_guesses["phi"],
+                                  sigma=y_err,
+                                  absolute_sigma=True,
+                                  bounds=self.get_default_bounds()["phi"])
+        param_guesses["phi"] = float(p)
 
         # allow the user to float x0 rather than phi
         fixed = self._fixed_params
         if "x0" not in fixed and "phi" in fixed:
             w = 2 * np.pi * param_guesses["f"]
-            param_guesses["x0"] = (2 * np.pi - param_guesses["phi"]) / w
+            param_guesses["x0"] = param_guesses["phi"] / w
             param_guesses["phi"]
 
         return param_guesses

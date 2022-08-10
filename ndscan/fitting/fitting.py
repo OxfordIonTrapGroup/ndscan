@@ -119,7 +119,7 @@ class FitBase:
             ydata=y,
             p0=p0,
             sigma=y_err,
-            absolute_sigma=True,
+            absolute_sigma=y_err is not None,
             bounds=(lower_bounds, upper_bounds),
         )
 
