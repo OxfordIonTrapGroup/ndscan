@@ -393,6 +393,7 @@ class TopLevelRunner(HasEnvironment):
                 finally:
                     self.fragment.host_cleanup()
                 self.scheduler.pause()
+                self.fragment.recompute_param_defaults()
         finally:
             self._set_completed()
 
