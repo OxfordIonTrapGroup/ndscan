@@ -7,19 +7,23 @@ __all__ = ['Sinusoid']
 
 class Sinusoid(fitting.FitBase):
     """Sinusoid fit according to:
-    y = a*sin(2*np.pi*f*x + phi) + offset
+    y = a*sin(2*np.pi*f*(x-x0) + phi) + offset
 
     TODO: t_dead, exp decay (but default to fixed at 0)
     """
     @staticmethod
     def func(x, params):
-        return (params["a"] * np.sin(2 * np.pi * params["f"] * x + params["phi"]) +
-                params["offset"])
+        w = 2 * np.pi * params["f"]
+        a = params["a"]
+        phi = params["phi"]
+        x0 = params["x0"]
+        offset = params["offset"]
+        return a * np.sin(w * (x - x0) + phi) + offset
 
     @staticmethod
     def get_params() -> List[str]:
         """Returns list of fit params"""
-        return ["a", "f", "phi", "offset", "t_dead"]
+        return ["a", "f", "phi", "offset", "t_dead", "x0"]
 
     @staticmethod
     def get_default_bounds() -> Dict[str, Tuple[float, float]]:
@@ -31,7 +35,8 @@ class Sinusoid(fitting.FitBase):
             "f": (0, np.inf),
             "phi": (0, 2 * np.pi),
             "offset": (0, 1),
-            "t_dead": (0, np.inf)
+            "t_dead": (0, np.inf),
+            "x0": (-np.inf, np.inf)
         }
 
     @staticmethod
@@ -39,7 +44,7 @@ class Sinusoid(fitting.FitBase):
         """Returns a dictionary mapping names of parameters which are not floated by
         default to their values.
         """
-        return {'t_dead': 0}
+        return {'t_dead': 0, 'x0': 0}
 
     @staticmethod
     def get_derived_params() -> List[str]:
@@ -82,6 +87,15 @@ class Sinusoid(fitting.FitBase):
             param_guesses["phi"] -= 2 * np.pi
 
         param_guesses["t_dead"] = 0
+        param_guesses["x0"] = 0
+
+        # allow the user to float x0 rather than phi
+        fixed = self._fixed_params
+        if "x0" not in fixed and "phi" in fixed:
+            w = 2 * np.pi * param_guesses["f"]
+            param_guesses["x0"] = (2 * np.pi - param_guesses["phi"]) / w
+            param_guesses["phi"]
+
         return param_guesses
 
     def _calculate_derived_params(self):

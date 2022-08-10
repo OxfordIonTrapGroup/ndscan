@@ -14,7 +14,19 @@ class OITGFit(FitBase):
         if self._scale_factors != {}:
             raise ValueError("OITG fitting functions do not accept user-specified"
                              "scale factors")
-        return super().fit()
+
+        p, p_err = self._oitg_obj.fit(x=self._x,
+                                      y=self._y,
+                                      y_err=self._y_err,
+                                      constants=self._fixed_params,
+                                      initialise=self._initial_values,
+                                      calculate_residuals=False,
+                                      evaluate_function=False,
+                                      evaluate_x_limit=[None, None],
+                                      evaluate_n=1000)
+        self._p = p
+        self._p_err = p_err
+        return p, p_err
 
     @classmethod
     def func(cls, x, params):

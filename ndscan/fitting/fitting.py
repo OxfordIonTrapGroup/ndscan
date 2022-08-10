@@ -126,7 +126,7 @@ class FitBase:
         )
 
         p *= scale_factors
-        p_cov *= scale_factors
+        p_cov *= scale_factors**2
 
         self._p_cov = p_cov
         p_err = np.sqrt(np.diag(p_cov))
