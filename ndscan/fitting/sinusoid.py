@@ -49,9 +49,11 @@ class Sinusoid(fitting.FitBase):
     def get_default_scale_factors(self) -> Dict[str, float]:
         """ Returns a dictionary of default parameter scale factors. """
         scales = super().get_default_scale_factors()
+        scales['a'] = self._y_scale
         scales['f'] = 1 / self._x_scale
-        scales['x0'] = self._x_scale
+        scales['offset'] = self._y_scale
         scales['t_dead'] = self._x_scale
+        scales['x0'] = self._x_scale
         return scales
 
     @staticmethod

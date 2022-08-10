@@ -19,6 +19,7 @@ class FitBase:
         fixed_params: Optional[Dict[str, float]] = None,
         initial_values: Optional[Dict[str, float]] = None,
         x_scale: float = 1,
+        y_scale: float = 1,
     ):
         """
         If `x` and `y` are provided we fit the provided dataset. `x`, `y` and `y_err`
@@ -40,6 +41,8 @@ class FitBase:
         :param initial_values: dictionary specifying initial parameter values to use in
             the fit. These override the values found by :meth estimate_parameters:
         :param x_scale: x-axis scale factor used to normalise parameter values
+            during fitting to improve accuracy. See :meth get_default_scale_factors:).
+        :param y_scale: y-axis scale factor used to normalise parameter values
             during fitting to improve accuracy. See :meth get_default_scale_factors:).
         """
         self._x = x
@@ -68,7 +71,9 @@ class FitBase:
         self._initial_values = initial_values or {}
 
         self._x_scale = x_scale
+        self._y_scale = y_scale
         self._scale_factors = self.get_default_scale_factors()
+        assert set(self._scale_factors) == set(self.get_params())
 
         self._p = {}
         self._perr = {}
