@@ -552,6 +552,7 @@
                 <span class="k">finally</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
 
