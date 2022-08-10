@@ -18,8 +18,6 @@ class FitBase:
         param_bounds: Optional[Dict[str, Tuple[float, float]]] = None,
         fixed_params: Optional[Dict[str, float]] = None,
         initial_values: Optional[Dict[str, float]] = None,
-        x_scale: float = 1,
-        y_scale: float = 1,
     ):
         """
         If `x` and `y` are provided we fit the provided dataset. `x`, `y` and `y_err`
@@ -40,10 +38,6 @@ class FitBase:
             :meth get_default_fixed_params: are used.
         :param initial_values: dictionary specifying initial parameter values to use in
             the fit. These override the values found by :meth estimate_parameters:
-        :param x_scale: x-axis scale factor used to normalise parameter values
-            during fitting to improve accuracy. See :meth get_default_scale_factors:).
-        :param y_scale: y-axis scale factor used to normalise parameter values
-            during fitting to improve accuracy. See :meth get_default_scale_factors:).
         """
         self._x = x
         self._y = y
@@ -70,11 +64,9 @@ class FitBase:
         self._validate_param_names(initial_values, self._free_params)
         self._initial_values = initial_values or {}
 
-        self._x_scale = x_scale
-        self._y_scale = y_scale
-        self._scale_factors = self.get_default_scale_factors()
-        assert set(self._scale_factors) == set(self.get_params())
-
+        self._x_scale = None
+        self._y_scale = None
+        self._scale_factors = None
         self._p = {}
         self._perr = {}
 
@@ -96,6 +88,11 @@ class FitBase:
         x = self._x[valid_pts]
         y = self._y[valid_pts]
         y_err = None if self._y_err is None else self._y_err[valid_pts]
+
+        self._x_scale = np.max(np.abs(self._x))
+        self._y_scale = np.max(np.abs(self._y))
+        self._scale_factors = self.get_default_scale_factors()
+        assert set(self._scale_factors) == set(self.get_params())
 
         initial_values = self._estimate_parameters()
         initial_values.update(self._initial_values)
@@ -168,10 +165,6 @@ class FitBase:
     def residuals(self):
         """Returns the fit residuals."""
         return self._y - self._func_free(self._x, self._p)
-
-    def get_default_scale_factors(self) -> Dict[str, float]:
-        """ Returns a dictionary of default parameter scale factors. """
-        return {param: 1 for param in self.get_params()}
 
     def _calculate_derived_params(self):
         """
@@ -252,6 +245,9 @@ class FitBase:
         self._x = np.asarray(x)
         self._p = {}
         self._perr = {}
+        self._x_scale = None
+        self._y_scale = None
+        self._scale_factors = None
 
     @property
     def y(self):
@@ -263,6 +259,9 @@ class FitBase:
         self._y = np.asarray(y)
         self._p = {}
         self._perr = {}
+        self._x_scale = None
+        self._y_scale = None
+        self._scale_factors = None
 
     @property
     def y_err(self):
@@ -274,3 +273,6 @@ class FitBase:
         self._y_err = np.asarray(y_err) if y_err is not None else None
         self._p = {}
         self._perr = {}
+        self._x_scale = None
+        self._y_scale = None
+        self._scale_factors = None

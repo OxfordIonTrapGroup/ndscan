@@ -317,10 +317,9 @@ class Fragment(HasEnvironment):
         assert not hasattr(self, name), "Field '{}' already exists".format(name)
 
         fqn = self.fqn + "." + name
-        param = param_class(fqn, description, *args, **kwargs)
-        self._free_params[name] = param
+        self._free_params[name] = param_class(fqn, description, *args, **kwargs)
 
-        handle = param_class.HandleType(self, name, param)
+        handle = param_class.HandleType(self, name)
         setattr(self, name, handle)
         return handle
 
@@ -369,7 +368,7 @@ class Fragment(HasEnvironment):
         for k, v in kwargs.items():
             setattr(new_param, k, v)
         self._free_params[name] = new_param
-        new_handle = new_param.HandleType(self, name, new_param)
+        new_handle = new_param.HandleType(self, name)
         setattr(self, name, new_handle)
         return new_handle
 

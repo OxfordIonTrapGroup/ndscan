@@ -58,10 +58,6 @@ class FitDescription():
             parameters. If not specified, the defaults from the fit class are used.
         initial_values: dictionary specifying initial parameter values to use in
             the fit. These override the values found by the fit's parameter estimator.
-        x_scale: x-axis scale factor used to normalise parameter values during fitting
-            to improve accuracy.
-        y_scale: y-axis scale factor used to normalise parameter values during fitting
-            to improve accuracy.
     """
 
     fit_class_name: str
@@ -70,8 +66,6 @@ class FitDescription():
     param_bounds: Dict[str, Tuple[float, float]]
     fixed_params: Dict[str, float]
     initial_values: Dict[str, float]
-    x_scale: float
-    y_scale: float
     kind: str = dataclasses.field(init=False, default="fit_description")
 
     @classmethod
@@ -366,13 +360,6 @@ class OnlineFit(DefaultAnalysis):
         self.initial_values = initial_values or {}
         self.exported_results = exported_results or []
 
-        # TODO: how to deal with higher dimensional fits?
-        # TODO: are we happy assuming that x is always a parameter and y a result?
-        x_param_handle = self.data['x']
-        y_channel = self.data['y']
-        self.x_scale = x_param_handle.param.scale
-        self.y_scale = y_channel.scale
-
         self._result_channels = []
         for result in self.exported_results:
             channel = result.result_type(path=result.result_name, **result.config)
@@ -466,17 +453,17 @@ class OnlineFit(DefaultAnalysis):
 
         analysis = {
             analysis_identifier:
-            FitDescription(fit_class_name=self.fit_class_name,
-                           fit_module=self.fit_module,
-                           data={
-                               name: context.describe_coordinate(obj)
-                               for name, obj in self.data.items()
-                           },
-                           param_bounds=self.bounds,
-                           fixed_params=self.constants,
-                           initial_values=self.initial_values,
-                           x_scale=self.x_scale,
-                           y_scale=self.y_scale)
+            FitDescription(
+                fit_class_name=self.fit_class_name,
+                fit_module=self.fit_module,
+                data={
+                    name: context.describe_coordinate(obj)
+                    for name, obj in self.data.items()
+                },
+                param_bounds=self.bounds,
+                fixed_params=self.constants,
+                initial_values=self.initial_values,
+            )
         }
         return [a.describe(context) for a in annotations], analysis
 
@@ -499,14 +486,14 @@ class OnlineFit(DefaultAnalysis):
         x = axis_data[self.data['x']._store.identity]
         y = result_data[self.data['y']]
 
-        fit = self.fit_klass(x=np.asarray(x),
-                             y=np.asarray(y),
-                             y_err=None,
-                             param_bounds=self.bounds,
-                             fixed_params=self.constants,
-                             initial_values=self.initial_values,
-                             x_scale=self.x_scale,
-                             y_scale=self.y_scale)
+        fit = self.fit_klass(
+            x=np.asarray(x),
+            y=np.asarray(y),
+            y_err=None,
+            param_bounds=self.bounds,
+            fixed_params=self.constants,
+            initial_values=self.initial_values,
+        )
         for result in self.exported_results:
             p, p_err = getattr(fit, result.fit_parameter)
             channel = self._result_channels[result.result_name]
