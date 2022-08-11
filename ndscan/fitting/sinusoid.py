@@ -99,12 +99,23 @@ class Sinusoid(fitting.FitBase):
         return ["f", "phi_cosine", "min", "max", "period"]
 
     def _estimate_parameters(self):
+        param_guesses = self._sinusoid_estimator(
+            x=self._x,
+            y=self._y,
+            y_err=self._y_err,
+            fixed_params=self._fixed_params,
+            param_bounds=self._param_bounds,
+        )
+        return {param: param_guesses[param] for param in self.get_params()}
+
+    @staticmethod
+    def _sinusoid_estimator(x, y, y_err, fixed_params, param_bounds):
         param_guesses = {}
 
-        sorted_inds = np.argsort(self._x)
-        x = self._x[sorted_inds]
-        y = self._y[sorted_inds]
-        y_err = None if self._y_err is None else self._y_err[sorted_inds]
+        sorted_inds = np.argsort(x)
+        x = x[sorted_inds]
+        y = y[sorted_inds]
+        y_err = None if y_err is None else y_err[sorted_inds]
 
         param_guesses["offset"] = np.mean(y)
         param_guesses["x_dead"] = 0
@@ -128,12 +139,13 @@ class Sinusoid(fitting.FitBase):
 
         param_guesses["a"] = np.sqrt(pgram[peak] * 4 / len(y))
         param_guesses["omega"] = omega_list[peak]
+        param_guesses["x_peak"] = x[peak]  # used for frequency fits
 
         # Step 2: crude initial guess of the phase
         def fit_fun(x, phi0):
             params = dict(param_guesses)
             params["phi0"] = phi0
-            return self.func(x, params)
+            return Sinusoid.func(x, params)
 
         def cost_fun(x, phi0):
             return np.sum(np.power(y - fit_fun(x, phi0), 2))
@@ -161,14 +173,14 @@ class Sinusoid(fitting.FitBase):
         # If both are floated there is no well-defined solution so we bug out
         period = 2 * np.pi / param_guesses["omega"]
         w = param_guesses["omega"]
-        fixed = self._fixed_params
+        fixed = fixed_params
 
         if "x0" not in fixed and "phi0" in fixed:
-            d_phi = param_guesses['phi0'] - self._fixed_params['phi0']
+            d_phi = param_guesses['phi0'] - fixed_params['phi0']
             param_guesses["x0"] = -d_phi / w
 
         elif "phi0" not in fixed and "x0" in fixed:
-            d_x0 = -self._fixed_params['x0']
+            d_x0 = -fixed_params['x0']
             param_guesses["phi0"] = -d_x0 * w
 
         elif "phi0" not in fixed and "x0" not in fixed:
@@ -176,7 +188,7 @@ class Sinusoid(fitting.FitBase):
 
         # handle phase wrapping
         if "phi0" not in fixed:
-            phi_bounds = self._param_bounds["phi0"]
+            phi_bounds = param_bounds["phi0"]
             if param_guesses["phi0"] < phi_bounds[0]:
                 diff = phi_bounds[0] - param_guesses["phi0"]
                 param_guesses["phi0"] += ((diff // (2 * np.pi)) + 1) * 2 * np.pi
@@ -184,10 +196,10 @@ class Sinusoid(fitting.FitBase):
                 diff = param_guesses["phi0"] - phi_bounds[1]
                 param_guesses["phi0"] -= ((diff // (2 * np.pi)) + 1) * 2 * np.pi
         else:
-            param_guesses['phi0'] = self._fixed_params['phi0']
+            param_guesses['phi0'] = fixed_params['phi0']
 
         if "x0" not in fixed:
-            x0_bounds = self._param_bounds["x0"]
+            x0_bounds = param_bounds["x0"]
             if param_guesses["x0"] < x0_bounds[0]:
                 diff = x0_bounds[0] - param_guesses["x0"]
                 param_guesses["x0"] += ((diff // period) + 1) * period
@@ -195,7 +207,7 @@ class Sinusoid(fitting.FitBase):
                 diff = param_guesses["x0"] - x0_bounds[1]
                 param_guesses["x0"] -= ((diff // period) + 1) * period
         else:
-            param_guesses['x0'] = self._fixed_params['x0']
+            param_guesses['x0'] = fixed_params['x0']
 
         return param_guesses
 
