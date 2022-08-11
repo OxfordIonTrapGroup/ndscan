@@ -14,6 +14,22 @@ class Sinusoid(fitting.FitBase):
     pick a default initial value for x0 that puts it in the first oscillation of the
     sinusoid (equivalent to putting phi in the range [0, 2*pi]).
 
+    Fit parameters:
+      - a: amplitude of the sinusoid
+      - f: frequency
+      - phi: phase offset
+      - offset: y-axis offset
+      - t_dead: dead_time
+      - x0: x-axis offset
+
+    Derived parameters:
+      - omega: frequency in angular units
+      - t_pi: pi-time (including dead time)
+      - t_pi_2: pi/2-time (including dead time)
+      - phi_cosine: cosine phase (phi + pi/2)
+      - min/max: min / max values of the sinusoid (including the offset)
+      - period: period of oscillation
+
     TODO: t_dead, exp decay (but default to fixed at 0)
     """
     @staticmethod
