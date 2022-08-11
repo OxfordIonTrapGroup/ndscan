@@ -97,6 +97,11 @@ class FitBase:
         initial_values = self._estimate_parameters()
         initial_values.update(self._initial_values)
 
+        for param in self.get_free_params():
+            param_bounds = self._param_bounds[param]
+            initial_values[param] = np.clip(initial_values[param], param_bounds[0],
+                                            param_bounds[1])
+
         lower_bounds = [self._param_bounds[param][0] for param in self._free_params]
         upper_bounds = [self._param_bounds[param][1] for param in self._free_params]
 
