@@ -63,22 +63,22 @@ class SubscanCase(ExpFragmentCase):
             "coordinates": {},
             "data": {
                 "a": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_child/result",
                     "kind": "online_result",
                     "result_key": "a"
                 },
                 "fwhm": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_child/result",
                     "kind": "online_result",
                     "result_key": "fwhm"
                 },
                 "x0": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_child/result",
                     "kind": "online_result",
                     "result_key": "x0"
                 },
                 "y0": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_child/result",
                     "kind": "online_result",
                     "result_key": "y0"
                 }
@@ -91,14 +91,14 @@ class SubscanCase(ExpFragmentCase):
             },
             "coordinates": {
                 "axis_0": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_child/result",
                     "kind": "online_result",
                     "result_key": "x0"
                 }
             },
             "data": {
                 "axis_0_error": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_child/result",
                     "kind": "online_result",
                     "result_key": "x0_error"
                 }
@@ -107,7 +107,7 @@ class SubscanCase(ExpFragmentCase):
         self.assertEqual(spec["annotations"], [curve_annotation, location_annotation])
         self.assertEqual(
             spec["online_analyses"], {
-                f"{pref}lorentzian_channel_result": {
+                f"{pref}lorentzian_child/result": {
                     "kind": "fit_description",
                     "fixed_params": {
                         "y0": 1.0
@@ -118,6 +118,7 @@ class SubscanCase(ExpFragmentCase):
                         "x0": [-np.inf, np.inf],
                         "y0": [-np.inf, np.inf],
                     },
+                    'export_chi2': True,
                     "data": {
                         "y": "channel_result",
                         "x": "axis_0"

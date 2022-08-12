@@ -153,22 +153,22 @@ class FragmentScanExpCase(HasEnvironmentCase):
             "coordinates": {},
             "data": {
                 "a": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_result",
                     "kind": "online_result",
                     "result_key": "a"
                 },
                 "fwhm": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_result",
                     "kind": "online_result",
                     "result_key": "fwhm"
                 },
                 "x0": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_result",
                     "kind": "online_result",
                     "result_key": "x0"
                 },
                 "y0": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_result",
                     "kind": "online_result",
                     "result_key": "y0"
                 }
@@ -181,14 +181,14 @@ class FragmentScanExpCase(HasEnvironmentCase):
             },
             "coordinates": {
                 "axis_0": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_result",
                     "kind": "online_result",
                     "result_key": "x0"
                 }
             },
             "data": {
                 "axis_0_error": {
-                    "analysis_name": f"{pref}lorentzian_channel_result",
+                    "analysis_name": f"{pref}lorentzian_result",
                     "kind": "online_result",
                     "result_key": "x0_error"
                 }
@@ -198,11 +198,12 @@ class FragmentScanExpCase(HasEnvironmentCase):
                          [curve_annotation, location_annotation])
         self.assertEqual(
             json.loads(self.dataset_db.get("ndscan.rid_0.online_analyses")), {
-                f"{pref}lorentzian_channel_result": {
+                f"{pref}lorentzian_result": {
                     "kind": "fit_description",
                     "fixed_params": {
                         "y0": 1.0
                     },
+                    'export_chi2': True,
                     "data": {
                         "y": "channel_result",
                         "x": "axis_0"

@@ -360,7 +360,8 @@ class OnlineFit(DefaultAnalysis):
                  export_chi2: bool = True):
 
         if analysis_identifier is None:
-            analysis_identifier = f"fit_{fit_module}.{fit_class}"
+            channels = [v.path for v in data.values() if isinstance(v, ResultChannel)]
+            analysis_identifier = f"fit_{fit_module}.{fit_class}_" + "_".join(channels)
 
         # TODO: store a FitDescription object instead of all of these attributes...
         self.fit_class_name = fit_class
@@ -496,7 +497,7 @@ class OnlineFit(DefaultAnalysis):
         # TODO: Generalise to higher-dimensional fits.
         x = axis_data[self.data['x']._store.identity]
         y = result_data[self.data['y']]
-        y_err = result_data[self.data.get('y_err')]
+        y_err = result_data.get(self.data.get('y_err'))
 
         fit = self.fit_klass(
             x=x,
