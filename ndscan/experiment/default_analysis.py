@@ -16,14 +16,13 @@ Two modalities are supported:
 Both can produce annotations; particular values or plot locations highlighted in the
 user interface.
 """
-import numpy as np
 import logging
 from typing import Any, Callable, Dict, List, Iterable, Optional, Set, Tuple, Union
 import collections
 import dataclasses
 
 from .parameters import ParamHandle
-from .result_channels import ResultChannel, FloatChannel
+from .result_channels import ResultChannel, FloatChannel, OpaqueChannel
 from .. import utils
 
 __all__ = [
@@ -58,6 +57,9 @@ class FitDescription():
             parameters. If not specified, the defaults from the fit class are used.
         initial_values: dictionary specifying initial parameter values to use in
             the fit. These override the values found by the fit's parameter estimator.
+        export_chi2: If True and y-axis error is provided we export the fit Chi-Squared
+            and p-value as result channels named ``{analysis_identifier}_chi2`` and
+            ``{analysis_identifier}_p``.
     """
 
     fit_class_name: str
@@ -66,6 +68,7 @@ class FitDescription():
     param_bounds: Dict[str, Tuple[float, float]]
     fixed_params: Dict[str, float]
     initial_values: Dict[str, float]
+    export_chi2: bool = True
     kind: str = dataclasses.field(init=False, default="fit_description")
 
     @classmethod
@@ -327,8 +330,8 @@ class OnlineFit(DefaultAnalysis):
         dictionaries mapping coordinate names to fit result names. If ``None``,
         the defaults provided by the fit function will be used.
     :param analysis_identifier: Optional explicit name to use for online analysis.
-        Defaults to ``fit_<fit_type>``, but can be set explicitly to allow more than one
-        fit of a given type at a time.
+        Defaults to ``fit_{fit_module}.{fit_class}``, but can be set explicitly to allow
+        more than one fit of a given type at a time.
     :param constants: dictionary specifying constant values for any non-floated
         parameters. If not specified, the defaults from the fit class are used.
     :param initial_values: dictionary specifying initial parameter values to use in
@@ -340,6 +343,9 @@ class OnlineFit(DefaultAnalysis):
     :param fit_module: python module containing the fit class. Will default to
         `ndscan.fitting` in the future. To use the oitg fitting functions, `fit_module`
         should be set to the default `ndscan.fitting.oitg`.
+    :param export_chi2: If True and y-axis error is provided we export the fit
+        Chi-Squared and p-value as result channels named
+        ``{analysis_identifier}_chi2`` and ``{analysis_identifier}_p``.
     """
     def __init__(self,
                  fit_class: str,
@@ -350,8 +356,13 @@ class OnlineFit(DefaultAnalysis):
                  initial_values: Optional[Dict[str, Any]] = None,
                  bounds: Optional[Dict[str, Tuple[float, float]]] = None,
                  exported_results: Optional[List[ExportedResult]] = None,
-                 fit_module: str = 'ndscan.fitting.oitg'):
+                 fit_module: str = 'ndscan.fitting.oitg',
+                 export_chi2: bool = True):
 
+        if analysis_identifier is None:
+            analysis_identifier = f"fit_{fit_module}.{fit_class}"
+
+        # TODO: store a FitDescription object instead of all of these attributes...
         self.fit_class_name = fit_class
         self.fit_module = fit_module
         self.data = data
@@ -359,6 +370,7 @@ class OnlineFit(DefaultAnalysis):
         self.analysis_identifier = analysis_identifier
         self.initial_values = initial_values or {}
         self.exported_results = exported_results or []
+        self.export_chi2 = export_chi2
 
         self._result_channels = []
         for result in self.exported_results:
@@ -371,6 +383,14 @@ class OnlineFit(DefaultAnalysis):
                     min=0.0,
                     display_hints={"error_bar_for": channel.path})
                 self._result_channels.append(err_channel)
+
+        if self.export_chi2 is not None and 'y_err' in data.keys():
+            self._result_channels.append(
+                OpaqueChannel(path=f"{analysis_identifier}_chi2",
+                              description="Fit Chi-Squared value"))
+            self._result_channels.append(
+                OpaqueChannel(path=f"{analysis_identifier}_p",
+                              description="Fit p-value"))
 
         duplicate_channels = [
             channel.path
@@ -413,17 +433,9 @@ class OnlineFit(DefaultAnalysis):
             if isinstance(v, ResultChannel)
         ]
 
-        analysis_identifier = self.analysis_identifier
-        if analysis_identifier is None:
-            # By default, mangle fit type and channels into a pseudo-unique identifier,
-            # which should work for the vast majority of cases (i.e. unless the user
-            # creates needlessly duplicate analyses).
-            analysis_identifier = ("fit_" + f"{self.fit_module}.{self.fit_class_name}" +
-                                   "_" + "_".join(channels))
-
         def analysis_ref(key):
             return AnnotationValueRef("online_result",
-                                      analysis_name=analysis_identifier,
+                                      analysis_name=self.analysis_identifier,
                                       result_key=key)
 
         fit_params = self.fit_klass.get_params()
@@ -452,18 +464,17 @@ class OnlineFit(DefaultAnalysis):
                         parameters={"associated_channels": channels}))
 
         analysis = {
-            analysis_identifier:
-            FitDescription(
-                fit_class_name=self.fit_class_name,
-                fit_module=self.fit_module,
-                data={
-                    name: context.describe_coordinate(obj)
-                    for name, obj in self.data.items()
-                },
-                param_bounds=self.bounds,
-                fixed_params=self.constants,
-                initial_values=self.initial_values,
-            )
+            self.analysis_identifier:
+            FitDescription(fit_class_name=self.fit_class_name,
+                           fit_module=self.fit_module,
+                           data={
+                               name: context.describe_coordinate(obj)
+                               for name, obj in self.data.items()
+                           },
+                           param_bounds=self.bounds,
+                           fixed_params=self.constants,
+                           initial_values=self.initial_values,
+                           export_chi2=self.export_chi2)
         }
         return [a.describe(context) for a in annotations], analysis
 
@@ -485,15 +496,21 @@ class OnlineFit(DefaultAnalysis):
         # TODO: Generalise to higher-dimensional fits.
         x = axis_data[self.data['x']._store.identity]
         y = result_data[self.data['y']]
+        y_err = result_data[self.data.get('y_err')]
 
         fit = self.fit_klass(
-            x=np.asarray(x),
-            y=np.asarray(y),
-            y_err=None,
+            x=x,
+            y=y,
+            y_err=y_err,
             param_bounds=self.bounds,
             fixed_params=self.constants,
             initial_values=self.initial_values,
         )
+        if self.export_chi2 and y_err is not None:
+            chi2, fit_p = fit.chi2
+            self._result_channels[f"{self.analysis_identifier}_chi2"].push(chi2)
+            self._result_channels[f"{self.analysis_identifier}_p"].push(fit_p)
+
         for result in self.exported_results:
             p, p_err = getattr(fit, result.fit_parameter)
             channel = self._result_channels[result.result_name]

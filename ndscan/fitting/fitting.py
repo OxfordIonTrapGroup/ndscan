@@ -2,7 +2,7 @@ import numpy as np
 import functools
 import collections
 from typing import Dict, List, Optional, Tuple, Union
-from scipy import optimize
+from scipy import optimize, stats
 
 __all__ = ['FitBase']
 
@@ -39,9 +39,9 @@ class FitBase:
         :param initial_values: dictionary specifying initial parameter values to use in
             the fit. These override the values found by :meth estimate_parameters:
         """
-        self._x = x
-        self._y = y
-        self._y_err = y_err
+        self._x = None if x is None else np.asarray(x)
+        self._y = None if x is None else np.asarray(y)
+        self._y_err = None if y_err is None else np.asarray(y_err)
 
         self._validate_param_names(fixed_params)
         if fixed_params is not None:
@@ -170,6 +170,31 @@ class FitBase:
     def residuals(self):
         """Returns the fit residuals."""
         return self._y - self._func_free(self._x, self._p)
+
+    @property
+    def chi2(self) -> Tuple[float, float]:
+        """ Chi-Squared test.
+
+        Assumes the values of `y` are independent and normally distributed.
+        Returns the tuple (Chi-Squared, p-value)
+
+        The the p-value is the probability that the observed deviations from the fit
+        could be observed by chance assuming the data is normally distributed (values
+        close to unity indicate high-quality fits).
+        """
+        if self._y_err is None:
+            raise ValueError("Cannot calculate chi square without knowing y_err")
+
+        n = len(self._x) - len(self._free_params)
+        if n < 1:
+            raise ValueError("Cannot calculate chi squared with "
+                             f"{len(self._free_params)} fit parameters and only "
+                             f"{len(self._x)} data points.")
+
+        y_fit = self.evaluate(self._x)[1]
+        chi_2 = np.sum(np.power((self._y - y_fit) / self._y_err, 2))
+        p = stats.chi2.sf(chi_2, n)
+        return chi_2, p
 
     def _calculate_derived_params(self):
         """
