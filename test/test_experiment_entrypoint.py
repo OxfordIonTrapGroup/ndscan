@@ -10,7 +10,8 @@ from sipyco import pyon
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
                       TransitoryErrorFragment, MultiPointTransitoryErrorFragment,
                       RequestTerminationFragment, AddOneAggregate,
-                      TrivialKernelAggregate, TwoAnalysisAggregate, ReadParamDefault)
+                      TrivialKernelAggregate, TwoAnalysisAggregate, ReadParamDefault,
+                      MultiReboundAddOneFragment)
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
@@ -322,6 +323,30 @@ class RunOnceCase(HasEnvironmentCase):
     def test_run_once_host(self):
         fragment = self.create(AddOneFragment, [])
         self.assertEqual(run_fragment_once(fragment), {fragment.result: 1.0})
+
+    def test_run_once_repeated(self):
+        fragment = self.create(AddOneFragment, [])
+
+        self.assertEqual(run_fragment_once(fragment), {fragment.result: 1.0})
+        self.assertEqual(len(fragment._default_params), 1)
+
+        self.assertEqual(run_fragment_once(fragment), {fragment.result: 1.0})
+        self.assertEqual(len(fragment._default_params), 1)
+
+    def test_run_once_repeated_rebound(self):
+        fragment = self.create(MultiReboundAddOneFragment, [])
+
+        self.assertEqual(run_fragment_once(fragment), {
+            fragment.first.result: 1.0,
+            fragment.second.result: 1.0
+        })
+        self.assertEqual(len(fragment._default_params), 1)
+
+        self.assertEqual(run_fragment_once(fragment), {
+            fragment.first.result: 1.0,
+            fragment.second.result: 1.0
+        })
+        self.assertEqual(len(fragment._default_params), 1)
 
     def test_run_once_kernel(self):
         fragment = self.create(TrivialKernelFragment, [])

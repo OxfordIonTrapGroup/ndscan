@@ -573,6 +573,11 @@ class Fragment(HasEnvironment):
                 if path_matches_spec(self._fragment_path, override_pathspec):
                     store = override_store
             if not store:
+                for default_param, default_store in self._default_params:
+                    if param == default_param:
+                        store = default_store
+                        break
+            if not store:
                 identity = (param.fqn, self._stringize_path())
                 try:
                     value = param.eval_default(self._get_dataset_or_set_default)
