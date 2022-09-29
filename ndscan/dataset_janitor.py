@@ -259,7 +259,7 @@ async def run(args):
                         dataset_db = None
                         break
                 # All deletions in first item processed, go to next one.
-                deletions.popitem()
+                del deletions[rid]
             if all_connected():
                 wake_loop.clear()
                 await wake_loop.wait()
