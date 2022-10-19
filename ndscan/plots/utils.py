@@ -168,7 +168,7 @@ def extract_linked_datasets(param_schema: Dict[str, Any]) -> List[str]:
     datasets = []
     try:
         # Intercept dataset() to build up list of accessed keys.
-        def log_datasets(dataset, default):
+        def log_datasets(dataset, default=None):
             datasets.append(dataset)
             return default
 

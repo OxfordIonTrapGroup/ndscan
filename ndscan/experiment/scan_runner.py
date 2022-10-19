@@ -118,6 +118,14 @@ class ScanRunner(HasEnvironment):
                     fragment.device_cleanup()
             finally:
                 fragment.host_cleanup()
+            # Host-only scans don't necessarily make a connection to the core device,
+            # but we close any connection that was made here anyway in case the user
+            # forgot to do so elsewhere. Otherwise, the connection might fail after the
+            # pause. artiq.sim.devices.Core and other dummy core devices that could very
+            # reasonably be used with a host-only scan don't have a close() method,
+            # though, so check for its existence first.
+            if hasattr(self.core, "close"):
+                self.core.close()
             self.scheduler.pause()
             fragment.recompute_param_defaults()
 

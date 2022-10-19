@@ -2,9 +2,9 @@
 
 from enum import Enum, unique
 import oitg.fitting
-from typing import Any, Callable, Dict, Iterable
+from typing import Any, Callable, Dict, Iterable, Optional, Protocol, TypeVar
 
-#: Registry of well-known fit procecure names.
+#: Registry of well-known fit procedure names.
 FIT_OBJECTS = {
     n: getattr(oitg.fitting, n)
     for n in [
@@ -31,8 +31,7 @@ SCHEMA_REVISION = 2
 
 #: The current :data:`.SCHEMA_REVISION` is always saved directly under the root of the
 #: respective ndscan tree as `ndscan_schema_revision`, and hence can be used by
-#: analysis tools (e.g. ndscan_show) : to detect all ndscan roots in a results file
-#: after the fact.
+#: analysis tools (e.g. ndscan_show) to locate all ndscan roots in a results file.
 SCHEMA_REVISION_KEY = "ndscan_schema_revision"
 
 
@@ -90,7 +89,21 @@ def shorten_to_unambiguous_suffixes(
     return shortened_fqns
 
 
-def eval_param_default(value: str, get_dataset: Callable) -> Any:
+T = TypeVar("T")
+
+
+class GetDataset(Protocol):
+    """Callback which is used to implement the user-facing ``dataset(…)`` default value
+    syntax.
+
+    If the ``key`` dataset does not exist, the callback should return the value given in
+    the second parameter, ``default``, or if that is not specified, raise an exception.
+    """
+    def __call__(self, key: str, default: Optional[T] = None) -> T:
+        ...
+
+
+def eval_param_default(value: str, get_dataset: GetDataset) -> Any:
     from artiq.language import units
     env = {name: getattr(units, name) for name in units.__all__}
     env.update({"dataset": get_dataset})

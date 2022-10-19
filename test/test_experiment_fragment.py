@@ -4,7 +4,8 @@ Tests for general fragment tree behaviour.
 
 from ndscan.experiment import *
 from ndscan.experiment.parameters import IntParamStore
-from fixtures import AddOneFragment, ReboundReboundAddOneFragment
+from fixtures import (AddOneFragment, MultiReboundAddOneFragment,
+                      ReboundReboundAddOneFragment)
 from mock_environment import HasEnvironmentCase
 
 
@@ -14,12 +15,22 @@ class DatasetDefaultFragment(Fragment):
         self.setattr_param("bar", IntParam, "Bar", default="dataset('bar', 2)")
 
 
+class DatasetNoFallbackDefaultFragment(Fragment):
+    def build_fragment(self):
+        self.setattr_param("baz", IntParam, "Baz", default="dataset('baz')")
+
+
 class TestParamDefaults(HasEnvironmentCase):
     def test_nonexistent_datasets(self):
         ddf = self.create(DatasetDefaultFragment, [])
         ddf.init_params()
         self.assertEqual(ddf.foo.get(), 1)
         self.assertEqual(ddf.bar.get(), 2)
+
+    def test_nonexistent_datasets_no_default(self):
+        dnfdf = self.create(DatasetNoFallbackDefaultFragment, [])
+        with self.assertRaises(ValueError):
+            dnfdf.init_params()
 
     def test_datasets(self):
         ddf = self.create(DatasetDefaultFragment, [])
@@ -50,6 +61,13 @@ class TestRebinding(HasEnvironmentCase):
         rrf.override_param("value", 2)
         result = run_fragment_once(rrf)[rrf.rebound_add_one.add_one.result]
         self.assertEqual(result, 3)
+
+    def test_multi_rebind(self):
+        mrf = self.create(MultiReboundAddOneFragment, [])
+        mrf.override_param("value", 2)
+        result = run_fragment_once(mrf)
+        self.assertEqual(result[mrf.first.result], 3)
+        self.assertEqual(result[mrf.second.result], 3)
 
 
 class TestMisc(HasEnvironmentCase):

@@ -4,14 +4,37 @@ Tests for ndscan.experiment top-level runners.
 
 import json
 from ndscan.experiment import *
+from ndscan.experiment.utils import is_kernel
 from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from sipyco import pyon
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
-                      TransitoryErrorFragment, RequestTerminationFragment)
+                      TransitoryErrorFragment, MultiPointTransitoryErrorFragment,
+                      RequestTerminationFragment, AddOneAggregate,
+                      TrivialKernelAggregate, TwoAnalysisAggregate)
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
 ScanReboundAddOneExp = make_fragment_scan_exp(ReboundAddOneFragment)
+ScanTwoAnalysisAggregateExp = make_fragment_scan_exp(TwoAnalysisAggregate)
+
+
+class TestAggregateExpFragment(HasEnvironmentCase):
+    def test_aggregate(self):
+        parent = self.create(AddOneAggregate, [])
+
+        self.assertIn(parent.a.value, parent.get_always_shown_params())
+        self.assertIn(parent.b.value, parent.get_always_shown_params())
+
+        self.assertFalse(is_kernel(parent.run_once))
+        result = run_fragment_once(parent)
+        self.assertEqual(parent.a.num_prepare_calls, 1)
+        self.assertEqual(parent.b.num_prepare_calls, 1)
+        self.assertEqual(result[parent.a.result], 1.0)
+        self.assertEqual(result[parent.b.result], 1.0)
+
+    def test_kernel(self):
+        parent = self.create(TrivialKernelAggregate, [])
+        self.assertTrue(is_kernel(parent.run_once))
 
 
 class FragmentScanExpCase(HasEnvironmentCase):
@@ -59,13 +82,57 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(exp.fragment.num_device_cleanup_calls, 1)
 
         def d(key):
-            return self.dataset_db.get("ndscan." + key)
+            return self.dataset_db.get("ndscan.rid_0." + key)
 
         self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
         self.assertEqual(json.loads(d("axes")), [])
         self.assertEqual(d("completed"), True)
         self.assertEqual(d("fragment_fqn"), "fixtures.AddOneFragment")
         self.assertEqual(d("source_id"), "system_0")
+
+    def test_run_time_series_scan(self):
+        # Make fragment that fails device_setup() as many times as allowed to test
+        # whether counters are correctly reset between points in time series scan.
+        exp = self.create(
+            make_fragment_scan_exp(MultiPointTransitoryErrorFragment,
+                                   3,
+                                   max_transitory_error_retries=3))
+        exp.args._params["scan"]["no_axes_mode"] = "time_series"
+
+        # Terminate eventually.
+        self.scheduler.num_check_pause_calls_until_termination = 13
+
+        exp.prepare()
+        exp.run()
+
+        def d(key):
+            return self.dataset_db.get("ndscan.rid_0." + key)
+
+        self.assertEqual(d("points.channel_result"), [42, 42, 42])
+        timestamps = d("points.axis_0")
+        self.assertEqual(len(timestamps), 3)
+        for i in range(len(timestamps)):
+            prev = 0.0 if i == 0 else timestamps[i - 1]
+            cur = timestamps[i]
+            self.assertGreater(cur, prev)
+            # Timestamps are in seconds, so this is a _very_ conservative bound on
+            # running the test loop in-process (which will take much less than a
+            # millisecond).
+            self.assertLess(cur, 1.0)
+
+    def test_time_series_transitory_limit(self):
+        exp = self.create(
+            make_fragment_scan_exp(MultiPointTransitoryErrorFragment,
+                                   3,
+                                   max_transitory_error_retries=2))
+        exp.args._params["scan"]["no_axes_mode"] = "time_series"
+
+        # Terminate eventually even in case there are bugs.
+        self.scheduler.num_check_pause_calls_until_termination = 100
+
+        exp.prepare()
+        with self.assertRaises(TransitoryError):
+            exp.run()
 
     def test_run_1d_scan(self):
         exp = self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
@@ -124,11 +191,11 @@ class FragmentScanExpCase(HasEnvironmentCase):
                 }
             }
         }
-        self.assertEqual(json.loads(self.dataset_db.get("ndscan.annotations")),
+        self.assertEqual(json.loads(self.dataset_db.get("ndscan.rid_0.annotations")),
                          [curve_annotation, location_annotation])
 
         self.assertEqual(
-            json.loads(self.dataset_db.get("ndscan.online_analyses")), {
+            json.loads(self.dataset_db.get("ndscan.rid_0.online_analyses")), {
                 "fit_lorentzian_channel_result": {
                     "constants": {
                         "y0": 1.0
@@ -170,7 +237,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         exp.run()
 
         def d(key):
-            return self.dataset_db.get("ndscan." + key)
+            return self.dataset_db.get("ndscan.rid_0." + key)
 
         self.assertEqual(json.loads(d("axes")), [{
             "increment": 1.0,
@@ -197,6 +264,25 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.assertEqual(d("source_id"), "rid_0")
 
         return exp
+
+    def test_aggregate_scan(self):
+        exp = self.create(ScanTwoAnalysisAggregateExp)
+        exp.args._params["scan"]["axes"].append({
+            "type": "linear",
+            "range": {
+                "start": 0,
+                "stop": 1,
+                "num_points": 5,
+                "randomise_order": False
+            },
+            "fqn": "fixtures.TwoAnalysisAggregate.a",
+            "path": "*"
+        })
+        exp.prepare()
+        exp.run()
+        results = json.loads(self.dataset_db.get("ndscan.rid_0.analysis_results"))
+        self.assertTrue("first_result_a" in results)
+        self.assertTrue("second_result_a" in results)
 
 
 class RunOnceCase(HasEnvironmentCase):

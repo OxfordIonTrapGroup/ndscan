@@ -65,9 +65,9 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
         assert value is not None
         if self.last_value is None:
             self.set_dataset(self.key, [value], broadcast=self.broadcast)
-            self.last_value = value
-            return
-        self.append_to_dataset(self.key, value)
+        else:
+            self.append_to_dataset(self.key, value)
+        self.last_value = value
 
     def get_last(self) -> Any:
         """Return the last pushed value (or None)."""

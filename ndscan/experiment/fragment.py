@@ -2,15 +2,18 @@ from artiq.language import *
 from collections import OrderedDict
 from copy import deepcopy
 import logging
-from typing import Any, Dict, List, Iterable, Type, Tuple, Union
+from typing import Any, Dict, List, Iterable, Type, Tuple, Optional
 
-from .default_analysis import DefaultAnalysis
+from .default_analysis import DefaultAnalysis, ResultPrefixAnalysisWrapper
 from .parameters import ParamHandle, ParamStore
 from .result_channels import ResultChannel, FloatChannel
-from .utils import path_matches_spec
+from .utils import is_kernel, path_matches_spec
 from ..utils import strip_prefix
 
-__all__ = ["Fragment", "ExpFragment", "TransitoryError", "RestartKernelTransitoryError"]
+__all__ = [
+    "Fragment", "ExpFragment", "AggregateExpFragment", "TransitoryError",
+    "RestartKernelTransitoryError"
+]
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +28,12 @@ class Fragment(HasEnvironment):
         the fragment tree, and then calls :meth:`build_fragment` to actually perform the
         fragment-specific setup. This method should not typically be overwritten.
 
-        :params fragment_path: Full path of the fragment, as a list starting from the
+        :param fragment_path: Full path of the fragment, as a list starting from the
             root. For instance, ``[]`` for the top-level fragment, or ``["foo", "bar"]``
             for a subfragment created by ``setattr_fragment("bar", …)`` in a fragment
             created by ``setattr_fragment("foo", …)``.
-        :params args: Arguments to be forwarded to :meth:`build_fragment`.
-        :params kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.
+        :param args: Arguments to be forwarded to :meth:`build_fragment`.
+        :param kwargs: Keyword arguments to be forwarded to :meth:`build_fragment`.
         """
         self._fragment_path = fragment_path
         self._subfragments = []
@@ -51,9 +54,9 @@ class Fragment(HasEnvironment):
         #: Maps full path of own result channels to ResultChannel instances.
         self._result_channels = {}
 
-        #: Subfragments the ResultChannels of which should not be re-exported (e.g.
-        #: for subscans).
-        self._absorbed_results_subfragments = set()
+        #: Subfragments detached from the normal fragment execution (setup/cleanup,
+        #: result channels; e.g. for subscans).
+        self._detached_subfragments = set()
 
         klass = self.__class__
         mod = klass.__module__
@@ -79,11 +82,13 @@ class Fragment(HasEnvironment):
         # device_cleanup() to forward to subfragments.
         self._device_setup_subfragments_impl = kernel_from_string(["self"], "\n".join([
             "self.{}.device_setup()".format(s._fragment_path[-1])
-            for s in self._subfragments
+            for s in self._subfragments if s not in self._detached_subfragments
         ]) or "pass", portable)
 
         code = ""
         for s in self._subfragments[::-1]:
+            if s in self._detached_subfragments:
+                continue
             frag = "self." + s._fragment_path[-1]
             code += "try:\n"
             code += "    {}.device_cleanup()\n".format(frag)
@@ -119,6 +124,8 @@ class Fragment(HasEnvironment):
                 super().host_setup()
         """
         for s in self._subfragments:
+            if s in self._detached_subfragments:
+                continue
             s.host_setup()
 
     @portable
@@ -191,6 +198,8 @@ class Fragment(HasEnvironment):
                 super().host_setup()
         """
         for s in self._subfragments[::-1]:
+            if s in self._detached_subfragments:
+                continue
             try:
                 s.host_cleanup()
             except Exception:
@@ -314,12 +323,62 @@ class Fragment(HasEnvironment):
         setattr(self, name, handle)
         return handle
 
+    def setattr_param_like(self,
+                           name: str,
+                           original_owner: "Fragment",
+                           original_name: Optional[str] = None,
+                           **kwargs) -> ParamHandle:
+        """Create a new parameter using an existing parameter as a template.
+
+        The newly created parameter will inherent its type, and all the metadata that
+        is not overridden by the optional keyword arguments, from the template
+        parameter.
+
+        This is often combined with :meth:`bind_param` to rebind parameters from one or
+        more subfragments; see also :meth:`setattr_param_rebind`, which combines the
+        two.
+
+        Can only be called during :meth:`build_fragment`.
+
+        :param name: The new parameter's name, to be part of its FQN. Must be a valid
+            Python identifier; the parameter handle will be accessible as
+            ``self.<name>``.
+        :param original_owner: The fragment owning the parameter to use as a template.
+        :param original_name: The name of the parameter to use as a template (i.e.
+            ``<original_owner>.<original_name>``). If ``None``, defaults to ``name``.
+        :param kwargs: Any attributes to override in the template parameter metadata.
+        :return: The newly created parameter handle.
+        """
+        assert self._building, ("Can only call setattr_param_like() during "
+                                "build_fragment()")
+
+        assert name.isidentifier(), "Parameter name must be valid Python identifier"
+        assert not hasattr(self, name), "Field '{}' already exists".format(name)
+        if original_name is None:
+            original_name = name
+        assert hasattr(original_owner, original_name), \
+            "Original owner does not have a field of name '{}'".format(original_name)
+        assert original_name in original_owner._free_params, (
+            "Field '{}' is not a free parameter of original owner; "
+            "already rebound?".format(original_name))
+
+        template_param = original_owner._free_params[original_name]
+        new_param = deepcopy(template_param)
+        new_param.fqn = self.fqn + "." + name
+        for k, v in kwargs.items():
+            setattr(new_param, k, v)
+        self._free_params[name] = new_param
+        new_handle = new_param.HandleType(self, name)
+        setattr(self, name, new_handle)
+        return new_handle
+
     def setattr_param_rebind(self,
                              name: str,
                              original_owner: "Fragment",
-                             original_name: Union[str, None] = None,
+                             original_name: Optional[str] = None,
                              **kwargs) -> ParamHandle:
-        """Create a parameter that overrides the value of a subfragment parameter.
+        """Convenience function combining :meth:`setattr_param_like` and
+        :meth:`bind_param` to override a subfragment parmeter.
 
         The most common use case for this is to specialise the operation of a generic
         subfragment. For example, there might be a fragment ``Fluoresce`` that drives
@@ -339,36 +398,10 @@ class Fragment(HasEnvironment):
             defaults to that of the original parameter.
         :return: The newly created parameter handle.
         """
-        assert (self._building
-                ), "Can only call setattr_param_rebind() during build_fragment()"
-        assert name.isidentifier(), "Parameter name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '{}' already exists".format(name)
-
         if original_name is None:
             original_name = name
-        assert hasattr(original_owner, original_name), \
-            "Original owner does not have a field of name '{}'".format(original_name)
-        assert original_name in original_owner._free_params, (
-            "Field '{}' is not a free parameter of original owner; "
-            "already rebound?".format(original_name))
-
-        # Set up our own copy of the parameter.
-        original_param = original_owner._free_params[original_name]
-        param = deepcopy(original_param)
-        param.fqn = self.fqn + "." + name
-        for k, v in kwargs.items():
-            setattr(param, k, v)
-        self._free_params[name] = param
-        handle = param.HandleType(self, name)
-        setattr(self, name, handle)
-
-        # Deregister it from the original owner and make sure we set the store
-        # to our own later.
-        original_handles = original_owner._get_all_handles_for_param(original_name)
-        del original_owner._free_params[original_name]
-        assert name not in self._rebound_subfragment_params
-        self._rebound_subfragment_params[name] = original_handles
-
+        handle = self.setattr_param_like(name, original_owner, original_name, **kwargs)
+        original_owner.bind_param(original_name, handle)
         return handle
 
     def setattr_result(self,
@@ -408,6 +441,9 @@ class Fragment(HasEnvironment):
                        initial_value: Any = None) -> Tuple[Any, ParamStore]:
         """Override the parameter with the given name and set it to the provided value.
 
+        See :meth:`bind_param`, which also overrides the parameter, but sets it to
+        follow another parameter instead.
+
         :param param_name: The name of the parameter.
         :param initial_value: The initial value for the parameter. If ``None``, the
             default from the parameter schema is used.
@@ -426,6 +462,38 @@ class Fragment(HasEnvironment):
         for handle in self._get_all_handles_for_param(param_name):
             handle.set_store(store)
         return param, store
+
+    def bind_param(self, param_name: str, source: ParamHandle) -> Any:
+        """Override the fragment parameter with the given name such that its value
+        follows that of another parameter.
+
+        The most common use case for this is to specialise the operation of a generic
+        subfragment. For example, there might be a fragment ``Fluoresce`` that drives
+        a cycling transition in an ion with parameters for intensity and detuning.
+        Higher-level fragments for Doppler cooling, readout, etc. might then use
+        ``Fluoresce``, binding its intensity and detuning parameters to values and
+        defaults appropriate for those particular tasks.
+
+        See :meth:`override_param`, which sets the parameter to a fixed value/store.
+
+        :param param_name: The name of the parameter to be bound (i.e.
+            ``self.<param_name>``). Must be a free parameter of this fragment (not
+            already bound or overridden).
+        :param source: The parameter to bind to. Must be a free parameter of its
+            respective owner.
+        """
+        param = self._free_params.get(param_name, None)
+        assert param is not None, "Not a free parameter: '{}'".format(param_name)
+        del self._free_params[param_name]
+
+        # We don't support "transitive" binding for parameters that are already bound.
+        assert source.name in source.owner._free_params, \
+            "Source parameter is not a free parameter; already bound/overridden?"
+
+        source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
+            self._get_all_handles_for_param(param_name))
+
+        return param
 
     def _collect_params(self, params: Dict[str, List[str]],
                         schemata: Dict[str, dict]) -> None:
@@ -453,6 +521,22 @@ class Fragment(HasEnvironment):
         for s in self._subfragments:
             s._collect_params(params, schemata)
 
+    def detach_fragment(self, fragment: "Fragment") -> None:
+        """Detach a subfragment from the execution machinery, causing its setup and
+        cleanup methods not to be invoked and its result channels not to be collected.
+
+        Its parameters will still be available in the global tree as usual, but the
+        the actual execution can be customised this way, e.g. for the implementation of
+        subscans.
+
+        :param fragment: The fragment to detach; must be a direct subfragment of this
+            fragment.
+        """
+        assert fragment in self._subfragments, "Can only scan immediate subfragments"
+        assert fragment not in self._detached_subfragments, \
+            "Subfragment already detached (is there already another subscan?)"
+        self._detached_subfragments.add(fragment)
+
     def init_params(self,
                     overrides: Dict[str, List[Tuple[str, ParamStore]]] = {}) -> None:
         """Initialise free parameters of this fragment and all its subfragments.
@@ -463,8 +547,8 @@ class Fragment(HasEnvironment):
 
         This method should be called before any of the fragment's user-defined functions
         are used (but after the constructor -> :meth:`build` -> :meth`build_fragment()`
-        has completed). Most likely, the top-level fragment will be called from a
-        :mod:`ndscan.experiment.entry_point` which already take care of this. In cases
+        has completed). Most likely, the top-level fragment will be called from an
+        :mod:`ndscan.experiment.entry_point`, which already take care of this. In cases
         where fragments are used in a different context, for example from a standalone
         ``EnvExperiment``, this method must be called manually.
 
@@ -499,7 +583,9 @@ class Fragment(HasEnvironment):
 
         For parameters where the default value was previously used, the expression is
         evaluated again – thus for instance fetching new dataset values –, and assigned
-        to the existing parameter store.
+        to the existing parameter store. An informative message is logged if the value
+        changed, such that changes remain traceable after the fact (e.g. when an
+        experiment is resumed after a calibration interruption).
         """
         for param, store in self._default_params:
             value = param.eval_default(self._get_dataset_or_set_default)
@@ -536,10 +622,10 @@ class Fragment(HasEnvironment):
 
             class MyFragment(Fragment):
                 def build_fragment(self):
-                    setattr_fragment("child", MyChildFragment)
-                    setattr_param("foo", ...)
-                    setattr_param("bar", ...)
-                    setattr_param("baz", ...)
+                    self.setattr_fragment("child", MyChildFragment)
+                    self.setattr_param("foo", ...)
+                    self.setattr_param("bar", ...)
+                    self.setattr_param("baz", ...)
 
                 def get_always_shown_params(self):
                     shown = super().get_always_shown_params()
@@ -564,27 +650,22 @@ class Fragment(HasEnvironment):
     def _collect_result_channels(self, channels: Dict[str, ResultChannel]) -> None:
         channels.update(self._result_channels)
         for s in self._subfragments:
-            if s in self._absorbed_results_subfragments:
+            if s in self._detached_subfragments:
                 continue
             s._collect_result_channels(channels)
 
-    def _get_dataset_or_set_default(self, key, default) -> Any:
+    def _get_dataset_or_set_default(self, key, default=None) -> Any:
         try:
-            try:
-                return self.get_dataset(key)
-            except KeyError:
+            return self.get_dataset(key)
+        except KeyError:
+            if default is None:
+                raise KeyError(f"Dataset '{key}' does not exist, but no " +
+                               "fallback default value specified") from None
+            else:
                 logger.warning("Setting dataset '%s' to default value (%s)", key,
                                default)
                 self.set_dataset(key, default, broadcast=True, persist=True)
                 return default
-        except Exception as e:
-            # FIXME: This currently occurs when build()ing experiments with dataset
-            # defaults from within an examine worker, i.e. when scanning the repository
-            # or recomputing arguments, because datasets can't be accessed there. We
-            # should probably silently ignore missing datasets there, and set them
-            # accordingly when the experiment is actually run.
-            logger.warning("Unexpected error evaluating dataset default: %s", e)
-            return default
 
 
 class ExpFragment(Fragment):
@@ -593,12 +674,17 @@ class ExpFragment(Fragment):
         """Prepare this instance for execution
         (see ``artiq.language.environment.Experiment.prepare``).
 
-        This is invoked only once per (sub)scan, after :meth:`.build_fragment` but
-        before :meth:`.host_setup`. At this point, parameters, datasets and devices
-        be accessed, but devices must not yet be.
+        This is invoked only once per (sub)scan, after :meth:`Fragment.build_fragment`
+        but before :meth:`.host_setup`. At this point, parameters, datasets and devices
+        can be accessed, but devices must not yet be.
 
         For top-level scans, this can (and will) be executed in the `prepare` scheduler
         pipeline stage.
+
+        Unless running in the `prepare` pipeline state is absolutely necessary for
+        runtime performance, lazily running the requisite initialisation code in
+        :meth:`host_setup` is usually preferable, as this naturally composes across the
+        ndscan fragment tree.
         """
         pass
 
@@ -619,13 +705,142 @@ class ExpFragment(Fragment):
         return []
 
 
+def _skip_common_prefix(target: list, reference: list) -> list:
+    i = 0
+    while i < len(target) and i < len(reference) and target[i] == reference[i]:
+        i += 1
+    return target[i:]
+
+
+class AggregateExpFragment(ExpFragment):
+    r"""Combines multiple :class:`ExpFragment`\ s by executing them one after each other
+    each time :meth:`run_once` is called.
+
+    To use, derive from the class and, in the subclass ``build_fragment()`` method
+    forward to the parent implementation after constructing all the relevant fragments::
+
+        class FooBarAggregate(AggregateExpFragment):
+            def build_fragment(self):
+                self.setattr_fragment("foo", FooFragment)
+                self.setattr_fragment("bar", BarFragment)
+
+                # Any number of customisations can be made as usual,
+                # e.g. to provide a convenient parameter to scan the
+                # fragments in lockstep:
+                self.setattr_param_rebind("freq", self.foo)
+                self.bar.bind_param("freq", self.freq)
+
+                # Let AggregateExpFragment default implementations
+                # take care of the rest, e.g. have self.run_once()
+                # call self.foo.run_once(), then self.bar.run_once().
+                super().build_fragment([self.foo, self.bar])
+
+        ScanFooBarAggregate = make_fragment_scan_exp(FooBarAggregate)
+    """
+    def build_fragment(self, exp_fragments: List[ExpFragment]) -> None:
+        """
+        :param exp_fragments: The "child" fragments to execute. The fragments will be
+            run in the given order. No special treatment is given to the
+            ``{host,device}_{setup,cleanup}()`` methods, which will just be executed
+            through the recursive default implementations unless overridden by the user.
+        """
+        if not exp_fragments:
+            raise ValueError("At least one child ExpFragment should be given")
+        self._exp_fragments = exp_fragments
+
+        # Since polymorphism is not supported by the ARTIQ compiler, make named
+        # attributes for the exp fragments and make a _run_once_impl() helper function
+        # that calls them one after each other.
+        for i, exp in enumerate(exp_fragments):
+            setattr(self, f"_exp_fragment_{i}", exp)
+        self._run_once_impl = kernel_from_string(["self"], "\n".join(
+            [f"self._exp_fragment_{i}.run_once()" for i in range(len(exp_fragments))]),
+                                                 portable)
+
+        # If the child fragment run_once() methods are @kernel, then make our run_once()
+        # run on the kernel too. Reassigning the member function is a bit janky, but so
+        # would it be to update the decorator, as `artiq_embedded` is an immutable tuple
+        # and the type is not public.
+        is_kernels = [is_kernel(e.run_once) for e in exp_fragments]
+        if all(is_kernels):
+            self.run_once = self._kernel_run_once
+        else:
+            if any(is_kernels):
+                logger.warning("Mixed host/@kernel run_once() methods among passed " +
+                               "ExpFragments; execution will be slow as the " +
+                               "kernel(s) will be recompiled for each scan point.")
+
+    def prepare(self) -> None:
+        ""
+        for exp in self._exp_fragments:
+            exp.prepare()
+
+    def run_once(self) -> None:
+        """Execute the experiment by forwarding to each child fragment.
+
+        Invokes all child fragments in the order they are passed to
+        :meth:`build_fragment`. This method can be overridden if more complex behaviour
+        is desired.
+
+        If all child fragments have a ``@kernel`` ``run_once()``, this is implemented on
+        the core device as well to avoid costly kernel recompilations in a scan.
+        """
+        return self._run_once_impl(self)
+
+    @kernel
+    def _kernel_run_once(self) -> None:
+        return self._run_once_impl(self)
+
+    def get_always_shown_params(self) -> List[ParamHandle]:
+        """Collect always-shown params from each child fragment, plus any parameters
+        directly defined in this fragment as usual.
+        """
+        result = super().get_always_shown_params()
+        for exp in self._exp_fragments:
+            result += exp.get_always_shown_params()
+        return result
+
+    def get_default_analyses(self) -> Iterable[DefaultAnalysis]:
+        """Collect default analyses from each child fragment.
+
+        The analyses are wrapped in a proxy that prepends any result channel names with
+        the fragment path to ensure results from different analyses do not collide.
+        """
+        analyses = []
+        for exp in self._exp_fragments:
+            exp_analyses = exp.get_default_analyses()
+            prefix = "_".join(
+                _skip_common_prefix(exp._fragment_path, self._fragment_path)) + "_"
+            analyses += [
+                ResultPrefixAnalysisWrapper(analysis, prefix)
+                for analysis in exp_analyses
+            ]
+        return analyses
+
+
 class TransitoryError(Exception):
-    """Transitory error encountered while executing a fragment, which is expected to
+    r"""Transitory error encountered while executing a fragment, which is expected to
     clear itself up if it is attempted again without any further changes.
+
+    Such errors are never raised by the ndscan infrastructure itself, but can be thrown
+    from user fragment implementations in response to e.g. some temporary hardware
+    conditions such as a momentarily insufficient level of laser power.
+
+    :mod:`ndscan.experiment.entry_point`\ s will attempt to handle transitory errors,
+    e.g. by retrying execution some amount of times. If fragments are manually executed
+    from user code, it will often be appropriate to do this as well, unless the user
+    code base does not use transitory errors at all.
     """
     pass
 
 
 class RestartKernelTransitoryError(TransitoryError):
-    """Transitory error where the kernel should be restarted before retrying."""
+    """:class:`.TransitoryError` where, as part of recovering from it, the kernel should
+    be restarted before retrying.
+
+    This can be used for cases where remedying the error requires
+    :meth:`.Fragment.host_setup()` to be run again, such as for cases where the
+    experiments needs to yield back to the scheduler (e.g. for an ion loss event to be
+    remedied by a second reloading experiment).
+    """
     pass
