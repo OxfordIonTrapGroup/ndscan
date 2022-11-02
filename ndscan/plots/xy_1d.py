@@ -8,7 +8,7 @@ from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import add_source_id_label, SubplotMenuPlotWidget
+from .plot_widgets import add_source_id_label, SubplotMenuPlotWidget, VerticalStackPlotWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, group_channels_into_axes, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
@@ -80,13 +80,14 @@ class _XYSeries(QtCore.QObject):
         self.num_current_points = 0
 
 
-class XY1DPlotWidget(SubplotMenuPlotWidget):
+class XY1DPlotWidget(VerticalStackPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: ScanModel, get_alternate_plot_names):
-        super().__init__(model.context, get_alternate_plot_names)
+        super().__init__()
 
+        self.get_alternate_plot_names = get_alternate_plot_names
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(self._update_points)
@@ -104,22 +105,12 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         self.annotation_items = []
         self.series = []
 
-        x_schema = self.model.axes[0]
-        self.x_param_spec = x_schema["param"]["spec"]
-        self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
-            self.getAxis("bottom"),
-            [(x_schema["param"]["description"], format_param_identity(x_schema), None,
-              self.x_param_spec)])
+        self.x_schema = self.model.axes[0]
+        self.x_param_spec = self.x_schema["param"]["spec"]
+
         self.y_unit_suffix = None
         self.y_data_to_display_scale = None
-        self.crosshair = None
         self._highlighted_spot = None
-        self.showGrid(x=True, y=True)
-
-        view_box = self.getPlotItem().getViewBox()
-        self.source_label = add_source_id_label(view_box, self.model.context)
-
-        view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
 
     def _initialise_series(self, channels):
         # Remove all currently shown items and any extra axes added.
@@ -127,7 +118,7 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             s.remove_items()
         self.series.clear()
         self._clear_annotations()
-        self.reset_y_axes()
+        self.clear()
 
         try:
             data_names, error_bar_names = extract_scalar_channels(channels)
@@ -137,8 +128,10 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
 
         series_idx = 0
         axes = group_channels_into_axes(channels, data_names)
+        print(axes)
         for names in axes:
-            axis, view_box = self.new_y_axis()
+            print(names)
+            axis, view_box = self.new_subplot()
 
             info = []
             for name in names:
@@ -169,13 +162,16 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
                 self.y_unit_suffix = suffix
                 self.y_data_to_display_scale = scale
 
-        if self.crosshair is None:
-            # FIXME: Reinitialise crosshair as necessary on schema changes.
-            self.crosshair = LabeledCrosshairCursor(self, self.getPlotItem(),
-                                                    self.x_unit_suffix,
-                                                    self.x_data_to_display_scale,
-                                                    self.y_unit_suffix,
-                                                    self.y_data_to_display_scale)
+            add_source_id_label(view_box, self.model.context)
+
+        self.link_x_axes()
+        self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
+            self.plots[-1].getAxis("bottom"),
+            [(self.x_schema["param"]["description"], format_param_identity(
+                self.x_schema), None, self.x_param_spec)])
+
+        self.add_crosshair(self.x_unit_suffix, self.x_data_to_display_scale,
+                           self.y_unit_suffix, self.y_data_to_display_scale)
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
 
         # Make sure we put back annotations (if they haven't changed but the points
