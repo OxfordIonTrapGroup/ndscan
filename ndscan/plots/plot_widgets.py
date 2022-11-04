@@ -219,17 +219,16 @@ class VerticalStackPlotWidget(pyqtgraph.GraphicsLayoutWidget):
         super().__init__()
         self.plots = []
         self.current_item = None
+        self.current_plot = None
         self.crosshair = []
 
-    def new_subplot(self):
+    def new_plot(self):
         plot = self.addPlot()
+        plot.showGrid(x=True, y=True)
+        self.nextRow()
+
         self.current_plot = plot
         self.plots.append(plot)
-        plot.showGrid(x=True, y=True)
-        if len(self.plots) > 1:
-            self.link_x_axes()
-
-        self.nextRow()
 
         return plot.getAxis("left"), plot.getViewBox()
 

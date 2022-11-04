@@ -100,7 +100,7 @@ class XY1DPlotWidget(VerticalStackPlotWidget):
 
         self.model.points_rewritten.connect(rewritten)
 
-        self.selected_point_model = SelectPointFromScanModel(self.model)
+        # self.selected_point_model = SelectPointFromScanModel(self.model)
 
         self.annotation_items = []
         self.series = []
@@ -128,10 +128,8 @@ class XY1DPlotWidget(VerticalStackPlotWidget):
 
         series_idx = 0
         axes = group_channels_into_axes(channels, data_names)
-        print(axes)
         for names in axes:
-            print(names)
-            axis, view_box = self.new_subplot()
+            axis, view_box = self.new_plot()
 
             info = []
             for name in names:
@@ -164,7 +162,9 @@ class XY1DPlotWidget(VerticalStackPlotWidget):
 
             add_source_id_label(view_box, self.model.context)
 
-        self.link_x_axes()
+        if len(self.plots) > 1:
+            self.link_x_axes()
+
         self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
             self.plots[-1].getAxis("bottom"),
             [(self.x_schema["param"]["description"], format_param_identity(
@@ -172,7 +172,7 @@ class XY1DPlotWidget(VerticalStackPlotWidget):
 
         self.add_crosshair(self.x_unit_suffix, self.x_data_to_display_scale,
                            self.y_unit_suffix, self.y_data_to_display_scale)
-        self.subscan_roots = create_subscan_roots(self.selected_point_model)
+        # self.subscan_roots = create_subscan_roots(self.selected_point_model)
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -294,11 +294,11 @@ class XY1DPlotWidget(VerticalStackPlotWidget):
         # overlap; the user can always zoom in if that is undesired.
         spot = spot_items[0]
         self._highlight_spot(spot)
-        self.selected_point_model.set_source_index(spot.index())
+        # self.selected_point_model.set_source_index(spot.index())
 
     def _background_clicked(self):
         self._highlight_spot(None)
-        self.selected_point_model.set_source_index(None)
+        # self.selected_point_model.set_source_index(None)
 
     def _handle_scene_click(self, event):
         if not event.isAccepted():
