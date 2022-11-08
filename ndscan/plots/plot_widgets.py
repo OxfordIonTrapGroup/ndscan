@@ -73,6 +73,28 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
             vb.linkedViewChanged(self.getViewBox(), vb.XAxis)
 
 
+class VerticalStackPlotWidget(pyqtgraph.GraphicsLayoutWidget):
+    def __init__(self):
+        super().__init__()
+        self.plots = []
+        self.current_plot = None
+
+    def new_plot(self):
+        plot = self.addPlot()
+        plot.showGrid(x=True, y=True)
+        self.nextRow()
+
+        self.current_plot = plot
+        self.plots.append(plot)
+
+        return plot
+
+    def link_x_axes(self):
+        for plot in self.plots[:-1]:
+            plot.setXLink(self.plots[-1])
+            plot.hideAxis("bottom")
+
+
 class ContextMenuBuilder:
     """Builds a list of QActions and separators to display in a QMenu context menu.
 
@@ -107,11 +129,8 @@ class ContextMenuBuilder:
         self._entries.append(action)
 
 
-class ContextMenuPlotWidget(MultiYAxisPlotWidget):
+class ContextMenuPlotWidget(VerticalStackPlotWidget):
     """PlotWidget with support for dynamically populated context menus."""
-    def __init__(self):
-        super().__init__()
-        self._monkey_patch_context_menu()
 
     def _monkey_patch_context_menu(self):
         # The pyqtgraph getContextMenus() mechanism by default isn't very useful –
@@ -123,23 +142,25 @@ class ContextMenuPlotWidget(MultiYAxisPlotWidget):
         # raiseContextMenu() implementation to create a new QMenu (ViewBoxMenu) instance
         # every time. This is slightly wasteful, but context menus should be created
         # seldomly enough for the slight increase in latency not to matter.
-        self.plotItem.getContextMenus = self._get_context_menus
+        def _override_get_context_menus(plot_idx, plot_item):
+            def _get_context_menus(event):
+                builder = ContextMenuBuilder(plot_item.getViewBox().menu)
+                self.build_context_menu(plot_idx, builder)
+                return builder.finish()
+            plot_item.getContextMenus = _get_context_menus
 
-        vb = self.plotItem.getViewBox()
-        orig_raise_context_menu = vb.raiseContextMenu
+        def _override_raise_context_menu(vb):
+            orig_raise_context_menu = vb.raiseContextMenu
+            def _raise_context_menu(ev):
+                vb.menu = pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu.ViewBoxMenu(vb)
+                return orig_raise_context_menu(ev)
+            vb.raiseContextMenu = _raise_context_menu
 
-        def raiseContextMenu(ev):
-            vb.menu = pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu.ViewBoxMenu(vb)
-            return orig_raise_context_menu(ev)
+        for i, plot in enumerate(self.plots):
+            _override_get_context_menus(i, plot)
+            _override_raise_context_menu(plot.getViewBox())
 
-        vb.raiseContextMenu = raiseContextMenu
-
-    def _get_context_menus(self, event):
-        builder = ContextMenuBuilder(self.plotItem.getViewBox().menu)
-        self.build_context_menu(builder)
-        return builder.finish()
-
-    def build_context_menu(self, builder: ContextMenuBuilder) -> None:
+    def build_context_menu(self, plot_idx, builder: ContextMenuBuilder) -> None:
         pass
 
 
@@ -212,38 +233,6 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
         widget.resize(600, 400)
         widget.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         widget.show()
-
-
-class VerticalStackPlotWidget(pyqtgraph.GraphicsLayoutWidget):
-    def __init__(self):
-        super().__init__()
-        self.plots = []
-        self.current_item = None
-        self.current_plot = None
-        self.crosshair = []
-
-    def new_plot(self):
-        plot = self.addPlot()
-        plot.showGrid(x=True, y=True)
-        self.nextRow()
-
-        self.current_plot = plot
-        self.plots.append(plot)
-
-        return plot.getAxis("left"), plot.getViewBox()
-
-    def add_crosshair(self, x_unit_suffix, x_data_to_display_scale, y_unit_suffix,
-                      y_data_to_display_scale):
-        for plot in self.plots:
-            self.crosshair.append(
-                LabeledCrosshairCursor(self, plot, x_unit_suffix,
-                                       x_data_to_display_scale, y_unit_suffix,
-                                       y_data_to_display_scale))
-
-    def link_x_axes(self):
-        for plot in self.plots[:-1]:
-            plot.setXLink(self.plots[-1])
-            plot.hideAxis("bottom")
 
 
 def add_source_id_label(view_box: pyqtgraph.ViewBox,
