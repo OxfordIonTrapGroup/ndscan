@@ -36,6 +36,8 @@ class LabeledCrosshairCursor(QtCore.QObject):
         self.timer.setSingleShot(True)
         self.x_text = None
         self.y_text = None
+        self.last_x = None
+        self.last_y = None
 
     def _on_viewbox_hover(self, event):
         if event.isExit():
