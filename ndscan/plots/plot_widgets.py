@@ -10,7 +10,6 @@ import pyqtgraph
 from typing import List
 from qasync import QtCore, QtWidgets
 
-from ndscan.plots.cursor import LabeledCrosshairCursor
 from .model import Context
 
 
@@ -197,7 +196,6 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
         self._context = context
 
         #: Maps subscan names to model Root instances.
-        
         self.subscan_roots = {}
 
         #: Maps subplot names to active plot widgets.

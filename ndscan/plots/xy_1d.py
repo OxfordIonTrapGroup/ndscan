@@ -13,6 +13,7 @@ from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, group_channels_into_axes, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -100,8 +101,6 @@ class XY1DPlotWidget(ContextMenuPlotWidget):
 
         self.model.points_rewritten.connect(rewritten)
 
-        # self.selected_point_model = SelectPointFromScanModel(self.model)
-
         self.annotation_items = []
         self.series = []
 
@@ -175,7 +174,6 @@ class XY1DPlotWidget(ContextMenuPlotWidget):
                 LabeledCrosshairCursor(self, plot, self.x_unit_suffix,
                                        self.x_data_to_display_scale, self.y_unit_suffixes[i],
                                        self.y_data_to_display_scales[i]))
-        # self.subscan_roots = create_subscan_roots(self.selected_point_model)
 
         self._monkey_patch_context_menu()
 
@@ -299,11 +297,9 @@ class XY1DPlotWidget(ContextMenuPlotWidget):
         # overlap; the user can always zoom in if that is undesired.
         spot = spot_items[0]
         self._highlight_spot(spot)
-        # self.selected_point_model.set_source_index(spot.index())
 
     def _background_clicked(self):
         self._highlight_spot(None)
-        # self.selected_point_model.set_source_index(None)
 
     def _handle_scene_click(self, event):
         if not event.isAccepted():

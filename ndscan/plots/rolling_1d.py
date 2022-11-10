@@ -1,11 +1,16 @@
+import logging
+
 import numpy as np
 import pyqtgraph
 from qasync import QtWidgets, QtCore
 
 from .model import SinglePointModel
-from .plot_widgets import add_source_id_label, AlternateMenuPlotWidget
+from .plot_widgets import add_source_id_label, ContextMenuPlotWidget
 from .utils import (extract_scalar_channels, group_channels_into_axes, setup_axis_item,
                     SERIES_COLORS)
+
+
+logger = logging.getLogger(__name__)
 
 
 class _Series:
@@ -63,12 +68,12 @@ class _Series:
             self.values = self.values[-n:, :]
 
 
-class Rolling1DPlotWidget(AlternateMenuPlotWidget):
+class Rolling1DPlotWidget(ContextMenuPlotWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: SinglePointModel, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
+        super().__init__()
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
@@ -77,16 +82,11 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
         self.series = []
         self._history_length = 1024
 
-        self.showGrid(x=True, y=True)
-
-        self.source_label = add_source_id_label(self.getPlotItem().getViewBox(),
-                                                self.model.context)
-
     def _initialise_series(self):
         for s in self.series:
             s.remove_items()
         self.series.clear()
-        self.reset_y_axes()
+        self.clear()
 
         channels = self.model.get_channel_schemata()
         try:
@@ -98,7 +98,8 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
         series_idx = 0
         axes = group_channels_into_axes(channels, data_names)
         for names in axes:
-            axis, view_box = self.new_y_axis()
+            plot = self.new_plot()
+            vb = plot.getViewBox()
 
             info = []
             for name in names:
@@ -111,7 +112,7 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
                     error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
                 self.series.append(
-                    _Series(view_box, name, data_item, error_bar_name, error_bar_item,
+                    _Series(vb, name, data_item, error_bar_name, error_bar_item,
                             self._history_length))
 
                 channel = channels[name]
@@ -122,7 +123,8 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
 
                 series_idx += 1
 
-            setup_axis_item(axis, info)
+            setup_axis_item(plot.getAxis("left"), info)
+            add_source_id_label(vb, self.model.context)
 
         self.ready.emit()
 
@@ -135,7 +137,7 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
         for s in self.series:
             s.set_history_length(n)
 
-    def build_context_menu(self, builder):
+    def build_context_menu(self, plot_idx, builder):
         if self.model.context.is_online_master():
             # If no new data points are coming in, setting the history size wouldn't do
             # anything.
