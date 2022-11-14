@@ -9,7 +9,6 @@
 import pyqtgraph
 from typing import List
 from qasync import QtCore, QtWidgets
-
 from .model import Context
 
 
