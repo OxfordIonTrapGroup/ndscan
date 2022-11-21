@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import pyqtgraph
 from qasync import QtWidgets, QtCore
@@ -8,9 +6,6 @@ from .model import SinglePointModel
 from .plot_widgets import add_source_id_label, ContextMenuPlotWidget
 from .utils import (extract_scalar_channels, group_channels_into_axes, setup_axis_item,
                     SERIES_COLORS)
-
-
-logger = logging.getLogger(__name__)
 
 
 class _Series:
