@@ -14,6 +14,7 @@ from .utils import (extract_linked_datasets, extract_scalar_channels,
                     FIT_COLORS, SERIES_COLORS)
 
 
+
 logger = logging.getLogger(__name__)
 
 
