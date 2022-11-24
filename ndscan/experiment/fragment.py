@@ -363,10 +363,10 @@ class Fragment(HasEnvironment):
             "already rebound?".format(original_name))
 
         template_param = original_owner._free_params[original_name]
-        new_param = deepcopy(template_param)
-        new_param.fqn = self.fqn + "." + name
-        for k, v in kwargs.items():
-            setattr(new_param, k, v)
+        init_params = deepcopy(template_param.init_params)
+        init_params.update(kwargs)
+        init_params["fqn"] = self.fqn + "." + name
+        new_param = template_param.__class__(**init_params)
         self._free_params[name] = new_param
         new_handle = new_param.HandleType(self, name)
         setattr(self, name, new_handle)

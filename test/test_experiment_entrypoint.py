@@ -136,7 +136,25 @@ class FragmentScanExpCase(HasEnvironmentCase):
             exp.run()
 
     def test_run_1d_scan(self):
-        exp = self._test_run_1d(ScanAddOneExp, "fixtures.AddOneFragment")
+        fragment_fqn = "fixtures.AddOneFragment"
+        expected_axes = [{
+            "increment": 1.0,
+            "max": 2,
+            "min": 0,
+            "param": {
+                "default": "0.0",
+                "description": "Value to return",
+                "fqn": fragment_fqn + ".value",
+                "spec": {
+                    "is_scannable": True,
+                    "scale": 1.0,
+                    "step": 0.1,
+                },
+                "type": "float"
+            },
+            "path": "*"
+        }]
+        exp = self._test_run_1d(ScanAddOneExp, fragment_fqn, expected_axes)
         self.assertEqual(exp.fragment.num_host_setup_calls, 1)
         self.assertEqual(exp.fragment.num_device_setup_calls, 3)
         self.assertEqual(exp.fragment.num_host_cleanup_calls, 1)
@@ -214,13 +232,33 @@ class FragmentScanExpCase(HasEnvironmentCase):
             })
 
     def test_run_rebound_1d_scan(self):
-        exp = self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment")
+        fragment_fqn = "fixtures.ReboundAddOneFragment"
+        expected_axes = [{
+            "increment": 1.0,
+            "max": 2,
+            "min": 0,
+            "param": {
+                "default": "0.0",
+                "description": "Value to return",
+                "fqn": fragment_fqn + ".value",
+                "spec": {
+                    "is_scannable": True,
+                    "scale": 0.001,
+                    "step": 0.0001,
+                    "unit": "ms",
+                },
+                "type": "float"
+            },
+            "path": "*"
+        }]
+        exp = self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment",
+                                expected_axes)
         self.assertEqual(exp.fragment.add_one.num_host_setup_calls, 1)
         self.assertEqual(exp.fragment.add_one.num_device_setup_calls, 3)
         self.assertEqual(exp.fragment.add_one.num_host_cleanup_calls, 1)
         self.assertEqual(exp.fragment.add_one.num_device_cleanup_calls, 1)
 
-    def _test_run_1d(self, klass, fragment_fqn):
+    def _test_run_1d(self, klass, fragment_fqn, expected_axes):
         exp = self.create(klass)
         fqn = fragment_fqn + ".value"
         exp.args._params["scan"]["axes"].append({
@@ -240,23 +278,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         def d(key):
             return self.dataset_db.get("ndscan.rid_0." + key)
 
-        self.assertEqual(json.loads(d("axes")), [{
-            "increment": 1.0,
-            "max": 2,
-            "min": 0,
-            "param": {
-                "default": "0.0",
-                "description": "Value to return",
-                "fqn": fqn,
-                "spec": {
-                    "is_scannable": True,
-                    "scale": 1.0,
-                    "step": 0.1
-                },
-                "type": "float"
-            },
-            "path": "*"
-        }])
+        self.assertEqual(json.loads(d("axes")), expected_axes)
         self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
         self.assertEqual(d("completed"), True)
         self.assertEqual(d("points.axis_0"), [0, 1, 2])

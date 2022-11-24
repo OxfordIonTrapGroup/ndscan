@@ -261,7 +261,15 @@ def resolve_numeric_scale(scale: Optional[float], unit: str) -> float:
                        "the scale manually".format(unit))
 
 
-class FloatParam:
+class ParamBase:
+    def __init__(self, **kwargs):
+        # Store kwargs for param rebinding
+        self.init_params = kwargs
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+class FloatParam(ParamBase):
     HandleType = FloatParamHandle
     StoreType = FloatParamStore
     CompilerType = TFloat
@@ -278,17 +286,18 @@ class FloatParam:
                  step: Optional[float] = None,
                  is_scannable: bool = True):
 
-        self.fqn = fqn
-        self.description = description
-        self.default = default
-        self.min = min
-        self.max = max
-
-        self.unit = unit
+        ParamBase.__init__(self,
+                           fqn=fqn,
+                           description=description,
+                           default=default,
+                           min=min,
+                           max=max,
+                           unit=unit,
+                           scale=scale,
+                           step=step,
+                           is_scannable=is_scannable)
         self.scale = resolve_numeric_scale(scale, unit)
-
         self.step = step if step is not None else self.scale / 10.0
-        self.is_scannable = is_scannable
 
     def describe(self) -> Dict[str, Any]:
         spec = {
@@ -326,7 +335,7 @@ class FloatParam:
         return FloatParamStore(identity, value)
 
 
-class IntParam:
+class IntParam(ParamBase):
     HandleType = IntParamHandle
     StoreType = IntParamStore
     CompilerType = TInt32
@@ -341,13 +350,16 @@ class IntParam:
                  unit: str = "",
                  scale: Optional[int] = None,
                  is_scannable: bool = True):
-        self.fqn = fqn
-        self.description = description
-        self.default = default
-        self.min = min
-        self.max = max
 
-        self.unit = unit
+        ParamBase.__init__(self,
+                           fqn=fqn,
+                           description=description,
+                           default=default,
+                           min=min,
+                           max=max,
+                           unit=unit,
+                           scale=scale,
+                           is_scannable=is_scannable)
         self.scale = resolve_numeric_scale(scale, unit)
         if self.scale != 1:
             raise NotImplementedError(
@@ -386,7 +398,7 @@ class IntParam:
         return IntParamStore(identity, value)
 
 
-class StringParam:
+class StringParam(ParamBase):
     HandleType = StringParamHandle
     StoreType = StringParamStore
     CompilerType = TStr
@@ -396,10 +408,12 @@ class StringParam:
                  description: str,
                  default: str,
                  is_scannable: bool = True):
-        self.fqn = fqn
-        self.description = description
-        self.default = default
-        self.is_scannable = is_scannable
+
+        ParamBase.__init__(self,
+                           fqn=fqn,
+                           description=description,
+                           default=default,
+                           is_scannable=is_scannable)
 
     def describe(self) -> Dict[str, Any]:
         return {

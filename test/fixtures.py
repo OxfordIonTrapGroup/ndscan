@@ -53,7 +53,7 @@ class AddOneFragment(ExpFragment):
 class ReboundAddOneFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("add_one", AddOneFragment)
-        self.setattr_param_rebind("value", self.add_one)
+        self.setattr_param_rebind("value", self.add_one, unit="ms")
 
     def run_once(self):
         self.add_one.run_once()
