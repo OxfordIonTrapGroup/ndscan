@@ -180,33 +180,13 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         self.data_names = []
 
         self.x_schema, self.y_schema = self.model.axes
+
+        self.plot_item = self.new_plot()
         self.plot = None
-
-        def setup_axis(schema, location):
-            param = schema["param"]
-            return setup_axis_item(
-                self.getAxis(location),
-                [(param["description"], format_param_identity(schema), None,
-                  param["spec"])])
-
-        self.x_unit_suffix, self.x_data_to_display_scale = \
-            setup_axis(self.x_schema, "bottom")
-        self.y_unit_suffix, self.y_data_to_display_scale = \
-            setup_axis(self.y_schema, "left")
-
-        self.crosshair = LabeledCrosshairCursor(self, self.getPlotItem(),
-                                                self.x_unit_suffix,
-                                                self.x_data_to_display_scale,
-                                                self.y_unit_suffix,
-                                                self.y_data_to_display_scale)
-        self.showGrid(x=True, y=True)
-
-        self.source_label = add_source_id_label(self.getPlotItem().getViewBox(),
-                                                self.model.context)
 
     def _initialise_series(self, channels):
         if self.plot is not None:
-            self.removeItem(self.plot.image_item)
+            self.plot_item.removeItem(self.plot.image_item)
             self.plot = None
 
         try:
@@ -217,6 +197,31 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         if not self.data_names:
             self.error.emit("No scalar result channels to display")
 
+        def setup_axis(schema, location):
+            param = schema["param"]
+            return setup_axis_item(
+                self.plot_item.getAxis(location),
+                [(param["description"], format_param_identity(schema), None,
+                  param["spec"])])
+
+        self.x_unit_suffix, self.x_data_to_display_scale = \
+            setup_axis(self.x_schema, "bottom")
+        self.y_unit_suffix, self.y_data_to_display_scale = \
+            setup_axis(self.y_schema, "left")
+
+        self.crosshair = LabeledCrosshairCursor(self,
+                                                self.plot_item,
+                                                self.x_unit_suffix,
+                                                self.x_data_to_display_scale,
+                                                self.y_unit_suffix,
+                                                self.y_data_to_display_scale)
+        self.plot_item.showGrid(x=True, y=True)
+
+        self.source_label = add_source_id_label(self.plot_item.getViewBox(),
+                                                self.model.context)
+
+        self._monkey_patch_context_menu()
+
         hints_for_channels = {
             name: channels[name].get("display_hints", {})
             for name in self.data_names
@@ -226,7 +231,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
             return (schema.get(n, None) for n in ("min", "max", "increment"))
 
         image_item = pyqtgraph.ImageItem()
-        self.addItem(image_item)
+        self.plot_item.addItem(image_item)
         self.plot = _ImagePlot(image_item, self.data_names[0], *bounds(self.x_schema),
                                *bounds(self.y_schema), hints_for_channels)
         self.ready.emit()
@@ -235,7 +240,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         if self.plot:
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
-    def build_context_menu(self, builder):
+    def build_context_menu(self, plot_idx, builder):
         if self.model.context.is_online_master():
             x_datasets = extract_linked_datasets(self.x_schema["param"])
             y_datasets = extract_linked_datasets(self.y_schema["param"])
