@@ -29,6 +29,14 @@ class MockDatasetDB:
         del self.data[key]
 
 
+class MockExamineDatasetMgr:
+    def __init__(self, db):
+        self.db = db
+
+    def get(self, key, archive=False):
+        return self.db.get(key)
+
+
 class MockScheduler:
     def __init__(self):
         self.rid = 0
@@ -65,7 +73,6 @@ class MockDeviceDB:
 class HasEnvironmentCase(unittest.TestCase):
     def setUp(self):
         self.dataset_db = MockDatasetDB()
-        self.dataset_mgr = DatasetManager(self.dataset_db)
         self.device_db = MockDeviceDB()
         self.ccb = unittest.mock.Mock()
         self.core = unittest.mock.Mock()
@@ -77,10 +84,11 @@ class HasEnvironmentCase(unittest.TestCase):
                                             "scheduler": self.scheduler
                                         })
 
-    def create(self, klass, *args, env_args=None, **kwargs):
-        return klass(
-            (self.device_mgr, self.dataset_mgr, ProcessArgumentManager(
-                env_args or {}), None), *args, **kwargs)
+    def create(self, klass, *args, env_args=None, like_examine=False, **kwargs):
+        dataset_mgr_cls = MockExamineDatasetMgr if like_examine else DatasetManager
+        arg_mgr = ProcessArgumentManager(env_args or {})
+        return klass((self.device_mgr, dataset_mgr_cls(self.dataset_db), arg_mgr, None),
+                     *args, **kwargs)
 
 
 class ExpFragmentCase(HasEnvironmentCase):

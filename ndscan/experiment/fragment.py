@@ -661,11 +661,14 @@ class Fragment(HasEnvironment):
             if default is None:
                 raise KeyError(f"Dataset '{key}' does not exist, but no " +
                                "fallback default value specified") from None
-            else:
-                logger.warning("Setting dataset '%s' to default value (%s)", key,
-                               default)
+            try:
                 self.set_dataset(key, default, broadcast=True, persist=True)
-                return default
+                logger.warning("Set dataset '%s' to default value (%s)", key, default)
+            except AttributeError:
+                logger.debug(
+                    "Failed to set dataset '%s' to default value (%s); " +
+                    "probably running in examine phase", key, default)
+            return default
 
 
 class ExpFragment(Fragment):

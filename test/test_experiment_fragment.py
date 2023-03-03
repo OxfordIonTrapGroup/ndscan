@@ -27,6 +27,13 @@ class TestParamDefaults(HasEnvironmentCase):
         self.assertEqual(ddf.foo.get(), 1)
         self.assertEqual(ddf.bar.get(), 2)
 
+    def test_nonexistent_datasets_in_examine(self):
+        # Should not fail due to not being able to set the default.
+        ddf = self.create(DatasetDefaultFragment, [], like_examine=True)
+        ddf.init_params()
+        self.assertEqual(ddf.foo.get(), 1)
+        self.assertEqual(ddf.bar.get(), 2)
+
     def test_nonexistent_datasets_no_default(self):
         dnfdf = self.create(DatasetNoFallbackDefaultFragment, [])
         with self.assertRaises(ValueError):
