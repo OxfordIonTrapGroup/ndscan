@@ -327,11 +327,11 @@ class FloatParam(ParamBase):
 
     def make_store(self, identity: Tuple[str, str], value: float) -> FloatParamStore:
         if self.min is not None and value < self.min:
-            raise InvalidDefaultError("Value {} below minimum of {}".format(
-                value, self.min))
+            raise InvalidDefaultError(
+                f"Value {value} for parameter {self.fqn} below minimum of {self.min}")
         if self.max is not None and value > self.max:
-            raise InvalidDefaultError("Value {} above maximum of {}".format(
-                value, self.max))
+            raise InvalidDefaultError(
+                f"Value {value} for parameter {self.fqn} above maximum of {self.max}")
         return FloatParamStore(identity, value)
 
 
@@ -390,11 +390,12 @@ class IntParam(ParamBase):
 
     def make_store(self, identity: Tuple[str, str], value: int) -> IntParamStore:
         if self.min is not None and value < self.min:
-            raise InvalidDefaultError("Value {} below minimum of {}".format(
-                value, self.min))
+            raise InvalidDefaultError(
+                f"Value {value} for parameter {self.fqn} below minimum of {self.min}")
         if self.max is not None and value > self.max:
-            raise InvalidDefaultError("Value {} above maximum of {}".format(
-                value, self.max))
+            raise InvalidDefaultError(
+                f"Value {value} for parameter {self.fqn} above maximum of {self.max}")
+
         return IntParamStore(identity, value)
 
 
