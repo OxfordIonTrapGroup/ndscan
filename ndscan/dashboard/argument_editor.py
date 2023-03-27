@@ -481,7 +481,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
     async def _recompute_vanilla_argument(self, name):
         try:
-            arginfo, _ = await self.manager.examine_arginfo(self.expurl)
+            arginfo, _ = await self.manager.compute_expdesc(self.expurl)
         except Exception:
             logger.error("Could not recompute argument '%s' of '%s'",
                          name,
