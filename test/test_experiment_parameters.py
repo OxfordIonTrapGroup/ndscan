@@ -1,5 +1,5 @@
 import unittest
-from ndscan.experiment.parameters import FloatParam, IntParam
+from ndscan.experiment.parameters import FloatParam, IntParam, BoolParam
 
 
 class FloatParamCase(unittest.TestCase):
@@ -38,4 +38,19 @@ class IntParamCase(unittest.TestCase):
                     "is_scannable": True,
                 },
                 "type": "int"
+            })
+
+
+class BoolParamCase(unittest.TestCase):
+    def test_describe(self):
+        param = BoolParam("foo", "bar", True)
+        self.assertEqual(
+            param.describe(), {
+                "fqn": "foo",
+                "description": "bar",
+                "type": "bool",
+                "default": "True",
+                "spec": {
+                    "is_scannable": True
+                }
             })
