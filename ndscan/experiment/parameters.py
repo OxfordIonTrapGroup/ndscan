@@ -13,12 +13,17 @@ from artiq.language import units
 from typing import Any, Dict, Optional, Tuple, Type, Union
 from ..utils import eval_param_default, GetDataset
 
-__all__ = ["FloatParam", "IntParam", "StringParam"]
+__all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam"]
 
 
 def type_string_to_param(name: str):
     """Resolve a param schema type string to the corresponding Param implementation."""
-    return {"float": FloatParam, "int": IntParam, "string": StringParam}[name]
+    return {
+        "float": FloatParam,
+        "int": IntParam,
+        "string": StringParam,
+        "bool": BoolParam
+    }[name]
 
 
 class InvalidDefaultError(ValueError):
@@ -138,6 +143,33 @@ class StringParamStore(ParamStore):
         return str(value)
 
 
+class BoolParamStore(ParamStore):
+    @portable
+    def _notify_handles(self):
+        for h in self._handles:
+            h._changed_after_use = True
+
+    @portable
+    def _do_nothing(self):
+        pass
+
+    @portable
+    def get_value(self) -> TBool:
+        return self._value
+
+    @portable
+    def set_value(self, value):
+        new_value = self.coerce(value)
+        if new_value == self._value:
+            return
+        self._value = new_value
+        self._notify()
+
+    @portable
+    def coerce(self, value):
+        return bool(value)
+
+
 class ParamHandle:
     """
     Each instance of this class corresponds to exactly one attribute of a fragment that
@@ -202,6 +234,17 @@ class StringParamHandle(ParamHandle):
 
     @portable
     def use(self) -> TStr:
+        self._changed_after_use = False
+        return self._store.get_value()
+
+
+class BoolParamHandle(ParamHandle):
+    @portable
+    def get(self) -> TBool:
+        return self._store.get_value()
+
+    @portable
+    def use(self) -> TBool:
         self._changed_after_use = False
         return self._store.get_value()
 
@@ -374,3 +417,36 @@ class StringParam:
 
     def make_store(self, identity: Tuple[str, str], value: str) -> StringParamStore:
         return StringParamStore(identity, value)
+
+
+class BoolParam:
+    HandleType = BoolParamHandle
+    StoreType = BoolParamStore
+    CompilerType = TBool
+
+    def __init__(self,
+                 fqn: str,
+                 description: str,
+                 default: bool,
+                 is_scannable: bool = True):
+        self.fqn = fqn
+        self.description = description
+        self.default = default
+        self.is_scannable = is_scannable
+
+    def describe(self) -> Dict[str, Any]:
+        return {
+            "fqn": self.fqn,
+            "description": self.description,
+            "type": "bool",
+            "default": str(self.default),
+            "spec": {
+                "is_scannable": self.is_scannable
+            }
+        }
+
+    def eval_default(self, get_dataset: GetDataset) -> bool:
+        return eval_param_default(self.default, get_dataset)
+
+    def make_store(self, identity: Tuple[str, str], value: bool) -> BoolParamStore:
+        return BoolParamStore(identity, value)
