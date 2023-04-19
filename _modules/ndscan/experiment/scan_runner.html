@@ -259,6 +259,10 @@
     <span class="k">def</span> <span class="nf">_run_scan_on_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">],</span>
                           <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span> <span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># After every pause(), pull in dataset changes (immediately as well to catch</span>
+            <span class="c1"># changes between the time the experiment is prepared and when it is run, to</span>
+            <span class="c1"># keep the semantics uniform).</span>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
                 <span class="k">try</span><span class="p">:</span>
@@ -286,12 +290,11 @@
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="p">,</span> <span class="s2">&quot;close&quot;</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
-            <span class="n">fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_run_scan_on_core_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
                                  <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
                                  <span class="n">axis_sinks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># Stash away _ragment in member variable to pacify ARTIQ compiler; there is no</span>
+        <span class="c1"># Stash away fragment in member variable to pacify ARTIQ compiler; there is no</span>
         <span class="c1"># reason this shouldn&#39;t just be passed along and materialised as a global.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span> <span class="o">=</span> <span class="n">fragment</span>
 
@@ -336,6 +339,10 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_update_host_param_stores</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># After every pause(), pull in dataset changes (immediately as well to catch</span>
+            <span class="c1"># changes between the time the experiment is prepared and when it is run, to</span>
+            <span class="c1"># keep the semantics uniform).</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_run_loop</span><span class="p">(</span><span class="n">run_chunk</span><span class="p">)</span>
@@ -346,7 +353,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_kscan_fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_build_kscan_run_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_axes</span><span class="p">):</span>
         <span class="n">param_decl</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;p</span><span class="si">{0}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_axes</span><span class="p">))</span>
