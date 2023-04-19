@@ -380,6 +380,10 @@ class TopLevelRunner(HasEnvironment):
         self.num_current_underflows = 0
         try:
             while True:
+                # After every pause(), pull in dataset changes (immediately as well to
+                # catch changes between the time the experiment is prepared and when it
+                # is run, to keep the semantics uniform).
+                self.fragment.recompute_param_defaults()
                 try:
                     self.fragment.host_setup()
                     if is_kernel(self.fragment.run_once):
@@ -393,7 +397,6 @@ class TopLevelRunner(HasEnvironment):
                 finally:
                     self.fragment.host_cleanup()
                 self.scheduler.pause()
-                self.fragment.recompute_param_defaults()
         finally:
             self._set_completed()
 

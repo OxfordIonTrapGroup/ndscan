@@ -10,12 +10,13 @@ from sipyco import pyon
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
                       TransitoryErrorFragment, MultiPointTransitoryErrorFragment,
                       RequestTerminationFragment, AddOneAggregate,
-                      TrivialKernelAggregate, TwoAnalysisAggregate)
+                      TrivialKernelAggregate, TwoAnalysisAggregate, ReadParamDefault)
 from mock_environment import HasEnvironmentCase
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
 ScanReboundAddOneExp = make_fragment_scan_exp(ReboundAddOneFragment)
 ScanTwoAnalysisAggregateExp = make_fragment_scan_exp(TwoAnalysisAggregate)
+ScanReadParamDefaultExp = make_fragment_scan_exp(ReadParamDefault)
 
 
 class TestAggregateExpFragment(HasEnvironmentCase):
@@ -283,6 +284,18 @@ class FragmentScanExpCase(HasEnvironmentCase):
         results = json.loads(self.dataset_db.get("ndscan.rid_0.analysis_results"))
         self.assertTrue("first_result_a" in results)
         self.assertTrue("second_result_a" in results)
+
+    def test_recompute_param_defaults(self):
+        """Ensure dataset changes before run stage are reflected in defaults"""
+        self.dataset_db.data["foo"] = (True, 1)
+        exp = self.create(ScanReadParamDefaultExp)
+        exp.prepare()
+
+        self.dataset_db.data["foo"] = (True, 2)
+        exp.run()
+
+        print(self.dataset_db.data.keys())
+        self.assertEqual(self.dataset_db.data["ndscan.rid_0.point.value"][1], 2)
 
 
 class RunOnceCase(HasEnvironmentCase):

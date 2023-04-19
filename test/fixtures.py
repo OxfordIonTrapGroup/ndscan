@@ -219,3 +219,12 @@ class TwoAnalysisAggregate(AggregateExpFragment):
         self.setattr_param_rebind("a", self.first)
         self.second.bind_param("a", self.a)
         return super().build_fragment([self.first, self.second])
+
+
+class ReadParamDefault(ExpFragment):
+    def build_fragment(self):
+        self.setattr_param("foo", IntParam, "Foo", default="dataset('foo', 0)")
+        self.setattr_result("value", IntChannel)
+
+    def run_once(self) -> None:
+        self.value.push(self.foo.get())
