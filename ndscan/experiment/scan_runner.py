@@ -135,7 +135,7 @@ class ScanRunner(HasEnvironment):
     def _run_scan_on_core_device(self, fragment: ExpFragment, points: list,
                                  axes: List[ScanAxis],
                                  axis_sinks: List[ResultSink]) -> None:
-        # Stash away _ragment in member variable to pacify ARTIQ compiler; there is no
+        # Stash away fragment in member variable to pacify ARTIQ compiler; there is no
         # reason this shouldn't just be passed along and materialised as a global.
         self._kscan_fragment = fragment
 
