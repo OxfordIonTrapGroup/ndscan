@@ -316,7 +316,6 @@ class FragmentScanExpCase(HasEnvironmentCase):
         self.dataset_db.data["foo"] = (True, 2)
         exp.run()
 
-        print(self.dataset_db.data.keys())
         self.assertEqual(self.dataset_db.data["ndscan.rid_0.point.value"][1], 2)
 
 
