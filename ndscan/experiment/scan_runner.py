@@ -13,7 +13,11 @@ from artiq.language import *
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
+<<<<<<< HEAD
 from typing import Any
+=======
+from typing import Any, Dict, List, Iterable, Iterator, Tuple, Type
+>>>>>>> b1db694 (experiment: Factor out ScanRunner implementations [nfc])
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore, type_string_to_param
@@ -104,7 +108,7 @@ class ScanRunner(HasEnvironment):
             # After every pause(), pull in dataset changes (immediately as well to catch
             # changes between the time the experiment is prepared and when it is run, to
             # keep the semantics uniform).
-            fragment.recompute_param_defaults()
+            self._fragment.recompute_param_defaults()
             try:
                 # FIXME: Need to handle transitory errors here.
                 fragment.host_setup()
