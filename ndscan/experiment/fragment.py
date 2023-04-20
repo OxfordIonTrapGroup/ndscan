@@ -539,7 +539,10 @@ class Fragment(HasEnvironment):
         :param fragment: The fragment to detach; must be a direct subfragment of this
             fragment.
         """
-        assert fragment in self._subfragments, "Can only scan immediate subfragments"
+        assert self._building, ("Can only call detach subfragments while parent still" +
+                                "in build_fragment()")
+        assert fragment in self._subfragments, \
+            "Can only detach subfragments directly from their parent fragment"
         assert fragment not in self._detached_subfragments, \
             "Subfragment already detached (is there already another subscan?)"
         self._detached_subfragments.add(fragment)

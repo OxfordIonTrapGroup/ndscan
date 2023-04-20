@@ -13,8 +13,8 @@ from .parameters import ParamHandle
 from .result_channels import (ArraySink, LastValueSink, OpaqueChannel, ResultChannel,
                               SubscanChannel)
 from .scan_generator import ScanGenerator, ScanOptions
-from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_analyses,
-                          describe_scan, filter_default_analyses)
+from .scan_runner import (ScanAxis, ScanSpec, describe_analyses,
+                          describe_scan, filter_default_analyses, select_runner_class)
 from ..utils import merge_no_duplicates, shorten_to_unambiguous_suffixes
 
 __all__ = ["setattr_subscan", "Subscan"]
@@ -282,8 +282,9 @@ def setattr_subscan(owner: Fragment,
             owner._register_result_channel(full_name, new_channel.path, new_channel)
             parent_analysis_result_channels[name] = new_channel
 
+    runner = select_runner_class(fragment)(owner)
     subscan = Subscan(
-        ScanRunner(owner).run, fragment, axes, spec_channel, coordinate_channels,
+        runner.run, fragment, axes, spec_channel, coordinate_channels,
         child_result_sinks, aggregate_result_channels, short_child_channel_names,
         analyses, parent_analysis_result_channels)
     setattr(owner, scan_name, subscan)

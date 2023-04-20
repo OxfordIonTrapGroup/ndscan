@@ -27,8 +27,8 @@ from .parameters import ParamStore, type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
-from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
-                          describe_analyses, filter_default_analyses)
+from .scan_runner import (ScanAxis, ScanSpec, describe_scan, describe_analyses,
+                          filter_default_analyses, select_runner_class)
 from .utils import dump_json, is_kernel, to_metadata_broadcast_type
 from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY, SCHEMA_REVISION,
                      SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes, strip_suffix)
@@ -325,7 +325,7 @@ class TopLevelRunner(HasEnvironment):
             self._time_series_start = time.monotonic()
             self._run_continuous()
         else:
-            runner = ScanRunner(
+            runner = select_runner_class(self.fragment)(
                 self,
                 max_rtio_underflow_retries=self.max_rtio_underflow_retries,
                 max_transitory_error_retries=self.max_transitory_error_retries)
