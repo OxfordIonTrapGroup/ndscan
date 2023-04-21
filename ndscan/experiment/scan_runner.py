@@ -19,7 +19,8 @@ from .scan_generator import generate_points, ScanGenerator, ScanOptions
 from .utils import is_kernel
 
 __all__ = [
-    "ScanAxis", "ScanSpec", "ScanRunner", "filter_default_analyses", "describe_scan",
+    "ScanAxis", "ScanSpec", "ScanRunner", "select_runner_class",
+    "match_default_analysis", "filter_default_analyses", "describe_scan",
     "describe_analyses"
 ]
 
@@ -55,11 +56,6 @@ class ScanSpec:
 class ScanRunner(HasEnvironment):
     """Runs the actual loop that executes an :class:`.ExpFragment` for a specified list
     of scan axes (on either the host or core device, as appropriate).
-
-    Integrates with the ARTIQ scheduler to pause/terminate execution as requested.
-
-    Conceptually, this is only a single function (``run()``), but is wrapped in a class
-    to follow the idiomatic ARTIQ kernel/``HasEnvironment`` integration style.
     """
     def build(self,
               max_rtio_underflow_retries: int = 3,
@@ -82,16 +78,16 @@ class ScanRunner(HasEnvironment):
             axis_sinks: List[ResultSink]) -> None:
         """Run a scan of the given fragment, with axes as specified.
 
+        Integrates with the ARTIQ scheduler to pause/terminate execution as requested.
+
         :param fragment: The fragment to iterate.
         :param options: The options for the scan generator.
         :param axis_sinks: A list of :class:`.ResultSink` instances to push the
             coordinates for each scan point to, matching ``scan.axes``.
         """
-
-        points = generate_points(spec.generators, spec.options)
-
         # TODO: Support parameters which require host_setup() when changed.
-        self.setup(fragment, points, spec.axes, axis_sinks)
+        self.setup(fragment, spec.axes, axis_sinks)
+        self.set_points(generate_points(spec.generators, spec.options))
         while True:
             # After every pause(), pull in dataset changes (immediately as well to catch
             # changes between the time the experiment is prepared and when it is run, to
@@ -109,8 +105,11 @@ class ScanRunner(HasEnvironment):
                     self.core.close()
             self.scheduler.pause()
 
-    def setup(self, fragment: ExpFragment, points: Iterator[Tuple],
-              axes: List[ScanAxis], axis_sinks: List[ResultSink]) -> None:
+    def setup(self, fragment: ExpFragment, axes: List[ScanAxis],
+              axis_sinks: List[ResultSink]) -> None:
+        raise NotImplementedError
+
+    def set_points(self, points: Iterator[Tuple]) -> None:
         raise NotImplementedError
 
     def acquire(self) -> bool:
@@ -122,12 +121,14 @@ class ScanRunner(HasEnvironment):
 
 
 class HostScanRunner(ScanRunner):
-    def setup(self, fragment: ExpFragment, points: Iterator[Tuple],
-              axes: List[ScanAxis], axis_sinks: List[ResultSink]) -> None:
+    def setup(self, fragment: ExpFragment, axes: List[ScanAxis],
+              axis_sinks: List[ResultSink]) -> None:
         self._fragment = fragment
-        self._points = points
         self._axes = axes
         self._axis_sinks = axis_sinks
+
+    def set_points(self, points: Iterator[Tuple]) -> None:
+        self._points = points
 
     def acquire(self) -> bool:
         try:
@@ -152,21 +153,14 @@ class KernelScanRunner(ScanRunner):
     # metaprogramming. While the interface for this class is effortlessly generic, the
     # implementation might well be a long-forgotten ritual for invoking Cthulhu.
 
-    def setup(self, fragment: ExpFragment, points: Iterator[Tuple],
-              axes: List[ScanAxis], axis_sinks: List[ResultSink]) -> None:
-        # Stash away fragment in member variable to pacify ARTIQ compiler; there is no
-        # reason this shouldn't just be passed along and materialised as a global.
+    def setup(self, fragment: ExpFragment, axes: List[ScanAxis],
+              axis_sinks: List[ResultSink]) -> None:
         self._fragment = fragment
 
         # Set up members to be accessed from the kernel through the
         # _get_param_values_chunk RPC call later.
-        self._points = points
         self._axes = axes
         self._axis_sinks = axis_sinks
-
-        # Stash away points in current kernel chunk until they have been marked
-        # complete so we can resume from interruptions.
-        self._current_chunk = []
 
         # Interval between scheduler.check_pause() calls on the core device (or rather,
         # the minimum interval; calls are only made after a point has been completed).
@@ -196,6 +190,11 @@ class KernelScanRunner(ScanRunner):
             setattr(self, "_param_setter_{}".format(i), axis.param_store.set_value)
         self._run_chunk = self._build_run_chunk(len(axes))
 
+    def set_points(self, points: Iterator[Tuple]) -> None:
+        self._points = points
+        # Stash away points in current kernel chunk until they have been marked
+        # complete so we can resume from interruptions.
+        self._current_chunk = []
         self._update_host_param_stores()
 
     _RUN_CHUNK_PROCEED = 0
@@ -223,7 +222,7 @@ class KernelScanRunner(ScanRunner):
             while True:
                 # Fetch chunk in separate function to make sure stack memory is released
                 # every time.
-                result = self._run_chunk()
+                result = self._run_chunk(self)
                 if result == self._RUN_CHUNK_INTERRUPTED:
                     return False
                 if result == self._RUN_CHUNK_SCAN_COMPLETE:
@@ -231,9 +230,11 @@ class KernelScanRunner(ScanRunner):
                 assert result == self._RUN_CHUNK_PROCEED
         finally:
             self._fragment.device_cleanup()
+        assert False, "Execution never reaches here, return is just to pacify compiler."
+        return True
 
     @kernel
-    def _run_point(self) -> TInt32:
+    def _run_point(self) -> TBool:
         """Execute the fragment for a single point (with the currently set parameters).
 
         :return: Whether the kernel should be exited/experiment should be paused before
@@ -338,7 +339,7 @@ class KernelScanRunner(ScanRunner):
             axis.param_store.set_value(value)
 
     @host_only
-    def is_out_of_points(self):
+    def _is_out_of_points(self):
         if self._current_chunk:
             return False
         # Current chunk is empty, but we might be at a chunk boundary.

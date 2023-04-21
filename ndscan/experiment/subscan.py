@@ -6,18 +6,20 @@ another child fragment as part of its execution.
 from collections import OrderedDict
 from copy import copy
 from functools import reduce
-from typing import Callable, Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
+from artiq.language import kernel, portable, rpc
 from .default_analysis import AnnotationContext, DefaultAnalysis
-from .fragment import ExpFragment, Fragment
+from .fragment import ExpFragment, Fragment, RestartKernelTransitoryError
 from .parameters import ParamHandle
 from .result_channels import (ArraySink, LastValueSink, OpaqueChannel, ResultChannel,
                               SubscanChannel)
-from .scan_generator import ScanGenerator, ScanOptions
-from .scan_runner import (ScanAxis, ScanSpec, describe_analyses,
+from .scan_generator import ScanGenerator, ScanOptions, generate_points
+from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_analyses,
                           describe_scan, filter_default_analyses, select_runner_class)
+from .utils import is_kernel
 from ..utils import merge_no_duplicates, shorten_to_unambiguous_suffixes
 
-__all__ = ["setattr_subscan", "Subscan"]
+__all__ = ["setattr_subscan", "Subscan", "SubscanExpFragment"]
 
 
 class Subscan:
@@ -26,7 +28,7 @@ class Subscan:
     """
     def __init__(
         self,
-        run_fn: Callable[[ExpFragment, ScanSpec, List[ArraySink]], None],
+        runner: ScanRunner,
         fragment: ExpFragment,
         possible_axes: Dict[ParamHandle, ScanAxis],
         schema_channel: SubscanChannel,
@@ -37,7 +39,7 @@ class Subscan:
         analyses: List[DefaultAnalysis],
         parent_analysis_result_channels: Dict[str, ResultChannel],
     ):
-        self._run_fn = run_fn
+        self._runner = runner
         self._fragment = fragment
         self._possible_axes = possible_axes
         self._schema_channel = schema_channel
@@ -71,43 +73,86 @@ class Subscan:
             lists of their values.
         """
 
+        # TODO: This is probably superfluous (or if not, the on-kernel-friendly
+        # implementation might also need something similar).
         for sink in self._child_result_sinks.values():
             sink.clear()
+        self.set_scan_spec(axis_generators, options)
+        self._fragment.prepare()
+        self._runner.run(self._fragment, self._spec,
+                         list(self._coordinate_sinks.values()))
+        return self._push_results(execute_default_analyses)
 
-        axes = []
-        generators = []
-        coordinate_sinks = OrderedDict()
+    def set_scan_spec(self,
+                      axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
+                      options: ScanOptions = ScanOptions()):
+        axes: List[ScanAxis] = []
+        generators: List[ScanGenerator] = []
+        self._coordinate_sinks = OrderedDict[ParamHandle, ArraySink]()
 
         for param_handle, generator in axis_generators:
             axis = self._possible_axes.get(param_handle, None)
             assert axis is not None, "Axis not registered in setattr_subscan()"
             axes.append(axis)
             generators.append(generator)
-            coordinate_sinks[param_handle] = ArraySink()
+            self._coordinate_sinks[param_handle] = ArraySink()
 
-        spec = ScanSpec(axes, generators, options)
-        self._fragment.prepare()
-        self._run_fn(self._fragment, spec, list(coordinate_sinks.values()))
+        self._spec = ScanSpec(axes, generators, options)
+        self._runner.setup(self._fragment, axes, list(self._coordinate_sinks.values()))
+        self._regenerate_points()
 
-        scan_schema = describe_scan(spec, self._fragment,
-                                    self._short_child_channel_names)
+    def _regenerate_points(self):
+        self._runner.set_points(
+            generate_points(self._spec.generators, self._spec.options))
 
+    @portable
+    def acquire(self, execute_default_analyses=False):
+        if not self._runner.acquire():
+            raise RestartKernelTransitoryError("Subscan interrupted by pause request")
+        self._finalize(execute_default_analyses)
+
+    @rpc(flags={"async"})
+    def _finalize(self, execute_default_analyses):
+        # Return is ignored for on-kernel-friendly scans.
+        self._push_results(execute_default_analyses)
+        # Prepare for next subscan.
+        self._regenerate_points()
+
+    def _push_results(self, execute_default_analyses):
         analysis_schema, analysis_results = self._handle_default_analyses(
-            axes, coordinate_sinks, execute_default_analyses)
+            self._spec.axes, self._coordinate_sinks, execute_default_analyses)
+        self._push_schema(analysis_schema)
+        coordinates = self._push_coordinates()
+        values = self._push_values()
+        return coordinates, values, analysis_results
+
+    def _push_schema(self, analysis_schema):
+        scan_schema = describe_scan(self._spec, self._fragment,
+                                    self._short_child_channel_names)
         scan_schema.update(analysis_schema)
         self._schema_channel.push(scan_schema)
 
-        for channel, sink in zip(self._coordinate_channels, coordinate_sinks.values()):
-            channel.push(sink.get_all())
+    def _push_coordinates(self):
+        coordinates = OrderedDict()
+        for channel, (param, sink) in zip(self._coordinate_channels,
+                                          self._coordinate_sinks.items()):
+            v = sink.get_all()
+            coordinates[param] = v
+            channel.push(v)
+            # Prepare for next iteration.
+            sink.clear()
 
+        return coordinates
+
+    def _push_values(self):
         values = {}
         for chan, sink in self._child_result_sinks.items():
             v = sink.get_all()
             values[chan] = v
             self._aggregate_result_channels[chan].push(v)
-
-        coordinates = OrderedDict((p, s.get_all()) for p, s in coordinate_sinks.items())
-        return coordinates, values, analysis_results
+            # Prepare for next iteration.
+            sink.clear()
+        return values
 
     def _handle_default_analyses(
         self,
@@ -205,12 +250,24 @@ def setattr_subscan(owner: Fragment,
     :return: A :class:`Subscan` instance to use to actually execute the scan.
     """
 
-    assert owner._building, "Can only call install_subscan() during build_fragment()"
+    assert owner._building, "Can only create a subscan during build_fragment()"
     assert not hasattr(owner, scan_name), "Field '{}' already exists".format(scan_name)
 
     # Our own ScanRunner takes care of the fragment lifecycle.
     owner.detach_fragment(fragment)
 
+    subscan = setup_subscan(owner, f"{scan_name}_", fragment, axis_params,
+                            save_results_by_default, expose_analysis_results)
+    setattr(owner, scan_name, subscan)
+    return subscan
+
+
+def setup_subscan(result_target: Fragment,
+                  name_prefix: str,
+                  scanned_fragment: ExpFragment,
+                  axis_params: List[Tuple[Fragment, str]],
+                  save_results_by_default: bool = True,
+                  expose_analysis_results: bool = True) -> Subscan:
     # Override target parameter stores with newly created stores.
     # TODO: Potentially make handles have identity and accept them directly.
     axes = {}
@@ -228,14 +285,14 @@ def setattr_subscan(owner: Fragment,
         #    the most common use case anyway).
         #  - Serialise the scan point coordinates into the scan spec.
         coordinate_channels.append(
-            owner.setattr_result(scan_name + "_axis_{}".format(i),
-                                 OpaqueChannel,
-                                 save_by_default=save_results_by_default))
+            result_target.setattr_result(name_prefix + "axis_{}".format(i),
+                                         OpaqueChannel,
+                                         save_by_default=save_results_by_default))
 
     # Instead of letting our parent directly manage the subfragment result channels,
     # we redirect the results to ArraySinks…
     original_channels = {}
-    fragment._collect_result_channels(original_channels)
+    scanned_fragment._collect_result_channels(original_channels)
 
     child_result_sinks = {}
     for channel in original_channels.values():
@@ -256,14 +313,14 @@ def setattr_subscan(owner: Fragment,
         # TODO: Implement ArrayChannel to represent a variable number of dimensions
         # around a scalar channel so we can keep the schema information here instead of
         # throwing our hands up in the air helplessly (i.e. using OpaqueChannel).
-        aggregate_result_channels[channel] = owner.setattr_result(
-            scan_name + "_channel_" + short_identifier,
+        aggregate_result_channels[channel] = result_target.setattr_result(
+            name_prefix + "channel_" + short_identifier,
             OpaqueChannel,
             save_by_default=save_results_by_default and channel.save_by_default)
 
-    spec_channel = owner.setattr_result(scan_name + "_spec", SubscanChannel)
+    spec_channel = result_target.setattr_result(name_prefix + "spec", SubscanChannel)
 
-    analyses = filter_default_analyses(fragment, axes.values())
+    analyses = filter_default_analyses(scanned_fragment, axes.values())
     parent_analysis_result_channels = {}
     if expose_analysis_results:
         analysis_results = reduce(
@@ -276,16 +333,86 @@ def setattr_subscan(owner: Fragment,
             # TODO: Include "analysis_result" in the full name? Seemed a bit verbose
             # just to avoid collisions in the unlikely case of an analysis result named
             # "spec", "axis_0" or similar.
-            full_name = scan_name + "_" + name
+            full_name = name_prefix + name
             new_channel = copy(channel)
-            new_channel.path = "/".join(owner._fragment_path + [full_name])
-            owner._register_result_channel(full_name, new_channel.path, new_channel)
+            new_channel.path = "/".join(result_target._fragment_path + [full_name])
+            result_target._register_result_channel(full_name, new_channel.path,
+                                                   new_channel)
             parent_analysis_result_channels[name] = new_channel
 
-    runner = select_runner_class(fragment)(owner)
-    subscan = Subscan(
-        runner.run, fragment, axes, spec_channel, coordinate_channels,
-        child_result_sinks, aggregate_result_channels, short_child_channel_names,
-        analyses, parent_analysis_result_channels)
-    setattr(owner, scan_name, subscan)
-    return subscan
+    # KLUDGE: If we end up running on the kernel, the ARTIQ compiler needs to treat the
+    # "inner" (subscan) and "outer" (TopLevelRunner/…) ScanRunner instances differently
+    # in terms of types.
+    class RunnerInstance(select_runner_class(scanned_fragment)):
+        # KLUDGE: In particular, when we manually set the return type annotations for
+        # the parameter value fetching RPC, this should only affect this instance, so
+        # override the function. (Would just cloning the function/wrapping it in
+        # ScanRunner work?)
+        def _get_param_values_chunk(self):
+            return super()._get_param_values_chunk()
+
+    runner = RunnerInstance(result_target)
+
+    class SubscanInstance(Subscan):
+        # ARTIQ compiler needs a different type for each RunnerInstance.
+        pass
+
+    return SubscanInstance(runner, scanned_fragment, axes, spec_channel,
+                           coordinate_channels, child_result_sinks,
+                           aggregate_result_channels, short_child_channel_names,
+                           analyses, parent_analysis_result_channels)
+
+
+class SubscanExpFragment(ExpFragment):
+    def build_fragment(self,
+                       scanned_fragment_parent: Fragment,
+                       scanned_fragment: Union[ExpFragment, str],
+                       axis_params: List[Tuple[Fragment, str]],
+                       save_results_by_default: bool = True,
+                       expose_analysis_results: bool = True) -> None:
+        if isinstance(scanned_fragment, str):
+            scanned_fragment = getattr(scanned_fragment_parent, scanned_fragment)
+        scanned_fragment_parent.detach_fragment(scanned_fragment)
+        self._scanned_fragment = scanned_fragment
+        # FIXME: Fix subscan model name inference code, remove "_".
+        self._subscan = setup_subscan(self, "_", scanned_fragment, axis_params,
+                                      save_results_by_default, expose_analysis_results)
+        if is_kernel(scanned_fragment.run_once):
+            self.run_once = self._kernel_run_once
+
+    def configure(
+        self,
+        axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
+        options: ScanOptions = ScanOptions()
+    ) -> None:
+        """Configure point generators for each scan axis, and scan options.
+
+        This only needs to be called once (but can be called multiple times to change
+        settings between `run_once()` invocations, e.g. from a parent fragment
+        `{host, device}_setup()`).
+
+        :param axis_generators: The list of scan axes (dimensions). Each element is a
+            tuple of parameter to scan (handle must have been passed to
+            :func:`setattr_subscan` to set up), and the :class:`ScanGenerator` to use
+            to generate the points.
+        :param options: :class:`ScanOptions` to control scan execution.
+        """
+        self._subscan.set_scan_spec(axis_generators, options)
+
+    # We don't forward prepare(), as there will be a top-level ExpFragment to own the
+    # scanned fragment anyway, which can then take care of this directly.
+
+    def host_setup(self):
+        super().host_setup()
+        self._scanned_fragment.host_setup()
+
+    def host_cleanup(self):
+        self._scanned_fragment.host_cleanup()
+        super().host_cleanup()
+
+    def run_once(self):
+        self._subscan.acquire()
+
+    @kernel
+    def _kernel_run_once(self):
+        self._subscan.acquire()
