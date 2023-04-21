@@ -13,11 +13,7 @@ from artiq.language import *
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
-<<<<<<< HEAD
 from typing import Any
-=======
-from typing import Any, Dict, List, Iterable, Iterator, Tuple, Type
->>>>>>> b1db694 (experiment: Factor out ScanRunner implementations [nfc])
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore, type_string_to_param
