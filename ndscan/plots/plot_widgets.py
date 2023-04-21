@@ -129,7 +129,6 @@ class ContextMenuBuilder:
 
 class ContextMenuPlotWidget(VerticalStackPlotWidget):
     """PlotWidget with support for dynamically populated context menus."""
-
     def _monkey_patch_context_menu(self):
         # The pyqtgraph getContextMenus() mechanism by default isn't very useful –
         # returned entries are appended to the menu every time the function is called.
@@ -145,13 +144,16 @@ class ContextMenuPlotWidget(VerticalStackPlotWidget):
                 builder = ContextMenuBuilder(plot_item.getViewBox().menu)
                 self.build_context_menu(plot_idx, builder)
                 return builder.finish()
+
             plot_item.getContextMenus = _get_context_menus
 
         def _override_raise_context_menu(vb):
             orig_raise_context_menu = vb.raiseContextMenu
+
             def _raise_context_menu(ev):
                 vb.menu = pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu.ViewBoxMenu(vb)
                 return orig_raise_context_menu(ev)
+
             vb.raiseContextMenu = _raise_context_menu
 
         for i, plot in enumerate(self.plots):

@@ -209,8 +209,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         self.y_unit_suffix, self.y_data_to_display_scale = \
             setup_axis(self.y_schema, "left")
 
-        self.crosshair = LabeledCrosshairCursor(self,
-                                                self.plot_item,
+        self.crosshair = LabeledCrosshairCursor(self, self.plot_item,
                                                 self.x_unit_suffix,
                                                 self.x_data_to_display_scale,
                                                 self.y_unit_suffix,

@@ -11,8 +11,6 @@ from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, group_channels_into_axes, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
 
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -171,7 +169,8 @@ class XY1DPlotWidget(ContextMenuPlotWidget):
         for i, plot in enumerate(self.plots):
             self.crosshairs.append(
                 LabeledCrosshairCursor(self, plot, self.x_unit_suffix,
-                                       self.x_data_to_display_scale, self.y_unit_suffixes[i],
+                                       self.x_data_to_display_scale,
+                                       self.y_unit_suffixes[i],
                                        self.y_data_to_display_scales[i]))
 
         self._monkey_patch_context_menu()
@@ -267,7 +266,8 @@ class XY1DPlotWidget(ContextMenuPlotWidget):
         if self.model.context.is_online_master():
             for d in extract_linked_datasets(x_schema["param"]):
                 action = builder.append_action("Set '{}' from crosshair".format(d))
-                action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(plot_idx, d))
+                action.triggered.connect(
+                    lambda: self._set_dataset_from_crosshair_x(plot_idx, d))
 
         builder.ensure_separator()
         super().build_context_menu(plot_idx, builder)
