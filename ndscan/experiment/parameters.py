@@ -427,7 +427,7 @@ class BoolParam:
     def __init__(self,
                  fqn: str,
                  description: str,
-                 default: bool,
+                 default: Union[str, bool],
                  is_scannable: bool = True):
         self.fqn = fqn
         self.description = description
@@ -446,7 +446,9 @@ class BoolParam:
         }
 
     def eval_default(self, get_dataset: GetDataset) -> bool:
-        return eval_param_default(self.default, get_dataset)
+        if type(self.default) is str:
+            return eval_param_default(self.default, get_dataset)
+        return self.default
 
     def make_store(self, identity: Tuple[str, str], value: bool) -> BoolParamStore:
         return BoolParamStore(identity, value)
