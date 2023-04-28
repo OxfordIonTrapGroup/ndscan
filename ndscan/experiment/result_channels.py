@@ -202,6 +202,11 @@ class ResultChannel:
     def __repr__(self) -> str:
         return f"<{type(self).__name__}@{hex(id(self))}: {self.path}>"
 
+    def get_dataset_path(self):
+        if self.sink:
+            return self.sink.key
+        return None
+
     def describe(self) -> dict[str, Any]:
         """
         """

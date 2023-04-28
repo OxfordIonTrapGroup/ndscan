@@ -250,6 +250,29 @@ class CustomAnalysis(DefaultAnalysis):
         return [a.describe(context) for a in annotations]
 
 
+class LiveAnalysis(CustomAnalysis):
+    def execute(self,
+                axis_data: dict[AxisIdentity, list],
+                result_data: dict[ResultChannel, list],
+                ) -> list[dict[str, Any]]:
+        user_axis_data = {}
+        for handle in self._required_axis_handles:
+            user_axis_data[handle] = axis_data[handle._store.identity]
+
+        try:
+            self._analyze_fn(user_axis_data,
+                             result_data,
+                             self._result_channels)
+        except TypeError as orignal_exception:
+            # Tolerate old analysis functions that do not take analysis result channels.
+            try:
+                self._analyze_fn(user_axis_data, result_data)
+            except TypeError:
+                # KLUDGE: If that also fails (e.g. there is a TypeError in the actual
+                # implementation), let the original exception bubble up.
+                raise orignal_exception
+
+
 #: Default points of interest for various fit types (e.g. highlighting the π time for a
 #: Rabi flop fit, or the extremum of a parabola.
 DEFAULT_FIT_ANNOTATIONS = {

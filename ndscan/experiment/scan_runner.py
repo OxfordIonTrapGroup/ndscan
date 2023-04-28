@@ -224,6 +224,7 @@ class HostScanRunner(ScanRunner):
                         axis.param_store.set_value(value)
                     self._fragment.device_setup()
                     self._fragment.run_once()
+                    self._fragment.live_analyses()
 
                     result_batcher.ensure_complete_and_push()
                     for (sink, value) in zip(self._axis_sinks, axis_values):
@@ -355,6 +356,7 @@ class KernelScanRunner(ScanRunner):
             try:
                 self._fragment.device_setup()
                 self._fragment.run_once()
+                self._fragment.live_analyses()
                 break
             except RTIOUnderflow:
                 if num_underflows >= self.max_rtio_underflow_retries:
