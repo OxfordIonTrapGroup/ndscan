@@ -241,6 +241,7 @@ class TopLevelRunner(HasEnvironment):
             # of style would intend.
             dataset_prefix += "."
         self.dataset_prefix = dataset_prefix
+        self.fragment.dataset_prefix = self.dataset_prefix
 
         # FIXME: We save these as individual booleans as enums crash the ARTIQ compiler.
         self._continue_running = False
@@ -334,6 +335,9 @@ class TopLevelRunner(HasEnvironment):
                                      self.dataset_prefix + "points.axis_{}".format(i))
                 for i in range(len(self.spec.axes))
             ]
+            self.fragment.register_live_analyses(self.spec.axes,
+                                             self._coordinate_sinks,
+                                             self._scan_result_sinks)
             runner.run(self.fragment, self.spec, self._coordinate_sinks)
             self._set_completed()
 
