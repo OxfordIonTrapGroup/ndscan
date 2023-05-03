@@ -29,7 +29,7 @@ from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDataset
 from .scan_generator import GENERATORS, ScanOptions
 from .scan_runner import (ScanAxis, ScanRunner, ScanSpec, describe_scan,
                           describe_analyses, filter_default_analyses)
-from .utils import dump_json, is_kernel, to_metadata_broadcast_type
+from .utils import dump_json, is_kernel, to_metadata_broadcast_type, make_coordinate_dict, make_value_dict
 from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY, SCHEMA_REVISION,
                      SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes, strip_suffix)
 
@@ -335,20 +335,16 @@ class TopLevelRunner(HasEnvironment):
                                      self.dataset_prefix + "points.axis_{}".format(i))
                 for i in range(len(self.spec.axes))
             ]
-            self.fragment.register_live_analyses(self.spec.axes,
-                                             self._coordinate_sinks,
-                                             self._scan_result_sinks)
-            runner.run(self.fragment, self.spec, self._coordinate_sinks)
+            runner.run(self.fragment, self.spec, self._coordinate_sinks, self._scan_result_sinks)
             self._set_completed()
 
         return self._make_coordinate_dict(), self._make_value_dict()
 
     def _make_coordinate_dict(self):
-        return OrderedDict(((a.param_schema["fqn"], a.path), s.get_all())
-                           for a, s in zip(self.spec.axes, self._coordinate_sinks))
+        return make_coordinate_dict(self.spec.axes, self._coordinate_sinks)
 
     def _make_value_dict(self):
-        return {c: s.get_all() for c, s in self._scan_result_sinks.items()}
+        return make_value_dict(self._scan_result_sinks)
 
     def analyze(self):
         if self._coordinate_sinks is None:

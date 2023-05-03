@@ -1,6 +1,6 @@
 import json
 import numpy
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, OrderedDict
 
 
 def path_matches_spec(path: Iterable[str], spec: str) -> bool:
@@ -55,3 +55,14 @@ def to_metadata_broadcast_type(obj: Any) -> Optional[Any]:
     if isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
         return obj
     return None
+
+
+def make_coordinate_dict(axes, coordinate_sinks):
+    return OrderedDict(
+        ((a.param_schema["fqn"], a.path), s.get_all())
+        for a, s in zip(axes, coordinate_sinks)
+    )
+
+
+def make_value_dict(scan_result_sinks: dict):
+    return {c: s.get_all() for c, s in scan_result_sinks.items()}
