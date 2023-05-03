@@ -19,12 +19,8 @@ from .scan_generator import generate_points, ScanGenerator, ScanOptions
 from .utils import is_kernel, make_coordinate_dict, make_value_dict
 
 __all__ = [
-    "ScanAxis",
-    "ScanSpec",
-    "ScanRunner",
-    "filter_default_analyses",
-    "describe_scan",
-    "describe_analyses",
+    "ScanAxis", "ScanSpec", "ScanRunner", "filter_default_analyses", "describe_scan",
+    "describe_analyses"
 ]
 
 
@@ -35,10 +31,8 @@ class ScanAxis:
     scan at runtime; i.e. the :class:`.ParamStore` to modify in order to set the
     parameter.
     """
-
-    def __init__(
-        self, param_schema: Dict[str, Any], path: str, param_store: ParamStore
-    ):
+    def __init__(self, param_schema: Dict[str, Any], path: str,
+                 param_store: ParamStore):
         self.param_schema = param_schema
         self.path = path
         self.param_store = param_store
@@ -51,13 +45,8 @@ class ScanSpec:
     :param generators: Generators that give the points for each of the specified axes.
     :param options: Applicable :class:`.ScanOptions`.
     """
-
-    def __init__(
-        self,
-        axes: List[ScanAxis],
-        generators: List[ScanGenerator],
-        options: ScanOptions,
-    ):
+    def __init__(self, axes: List[ScanAxis], generators: List[ScanGenerator],
+                 options: ScanOptions):
         self.axes = axes
         self.generators = generators
         self.options = options
@@ -77,11 +66,9 @@ class ScanRunner(HasEnvironment):
     # metaprogramming. While the interface for this class is effortlessly generic, the
     # implementation might well be a long-forgotten ritual for invoking Cthulhu.
 
-    def build(
-        self,
-        max_rtio_underflow_retries: int = 3,
-        max_transitory_error_retries: int = 10,
-    ):
+    def build(self,
+              max_rtio_underflow_retries: int = 3,
+              max_transitory_error_retries: int = 10):
         """
         :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan
             point (by simply trying again) before giving up.
@@ -93,9 +80,8 @@ class ScanRunner(HasEnvironment):
         self.setattr_device("core")
         self.setattr_device("scheduler")
 
-    def run(
-        self, fragment: ExpFragment, spec: ScanSpec, axis_sinks: List[ResultSink], scan_result_sinks: dict,
-    ) -> None:
+    def run(self, fragment: ExpFragment, spec: ScanSpec,
+            axis_sinks: List[ResultSink], scan_result_sinks: dict) -> None:
         """Run a scan of the given fragment, with axes as specified.
 
         :param fragment: The fragment to iterate.
@@ -106,24 +92,15 @@ class ScanRunner(HasEnvironment):
 
         points = generate_points(spec.generators, spec.options)
 
+        self.live_analysis_runner = LiveAnalysisRunner(fragment, spec.axes, axis_sinks, scan_result_sinks)
+
         # TODO: Support parameters which require host_setup() when changed.
-        run_impl = (
-            self._run_scan_on_core_device
-            if is_kernel(fragment.run_once)
-            else self._run_scan_on_host
-        )
-        self.live_analysis_runner = LiveAnalysisRunner(
-            fragment, spec.axes, axis_sinks, scan_result_sinks
-        )
+        run_impl = self._run_scan_on_core_device if is_kernel(
+            fragment.run_once) else self._run_scan_on_host
         run_impl(fragment, points, spec.axes, axis_sinks)
 
-    def _run_scan_on_host(
-        self,
-        fragment: ExpFragment,
-        points: Iterator[Tuple],
-        axes: List[ScanAxis],
-        axis_sinks: List[ResultSink],
-    ) -> None:
+    def _run_scan_on_host(self, fragment: ExpFragment, points: Iterator[Tuple],
+                          axes: List[ScanAxis], axis_sinks: List[ResultSink]) -> None:
         while True:
             # After every pause(), pull in dataset changes (immediately as well to catch
             # changes between the time the experiment is prepared and when it is run, to
@@ -158,13 +135,9 @@ class ScanRunner(HasEnvironment):
                 self.core.close()
             self.scheduler.pause()
 
-    def _run_scan_on_core_device(
-        self,
-        fragment: ExpFragment,
-        points: list,
-        axes: List[ScanAxis],
-        axis_sinks: List[ResultSink],
-    ) -> None:
+    def _run_scan_on_core_device(self, fragment: ExpFragment, points: list,
+                                 axes: List[ScanAxis],
+                                 axis_sinks: List[ResultSink]) -> None:
         # Stash away fragment in member variable to pacify ARTIQ compiler; there is no
         # reason this shouldn't just be passed along and materialised as a global.
         self._kscan_fragment = fragment
@@ -189,12 +162,11 @@ class ScanRunner(HasEnvironment):
         # the concrete type for this scan so the compiler can infer the types in
         # run_chunk() correctly.
         self._kscan_param_values_chunk.__func__.__annotations__ = {
-            "return": TTuple(
-                [
-                    TList(type_string_to_param(a.param_schema["type"]).CompilerType)
-                    for a in axes
-                ]
-            )
+            "return":
+            TTuple([
+                TList(type_string_to_param(a.param_schema["type"]).CompilerType)
+                for a in axes
+            ])
         }
 
         # Build kernel function that calls _kscan_param_values_chunk() and iterates over
@@ -205,9 +177,8 @@ class ScanRunner(HasEnvironment):
         # express indexing or deconstructing a tuple of values of inhomogeneous types
         # without actually writing it out as an assignment from a tuple value.
         for i, axis in enumerate(axes):
-            setattr(
-                self, "_kscan_param_setter_{}".format(i), axis.param_store.set_value
-            )
+            setattr(self, "_kscan_param_setter_{}".format(i),
+                    axis.param_store.set_value)
         run_chunk = self._build_kscan_run_chunk(len(axes))
 
         self._kscan_update_host_param_stores()
@@ -266,8 +237,8 @@ class ScanRunner(HasEnvironment):
             if self._kscan_should_pause():
                 return True
             try:
-                self._fragment.device_setup()
-                self._fragment.run_once()
+                self._kscan_fragment.device_setup()
+                self._kscan_fragment.run_once()
                 self.live_analysis_runner.live_analyses()
                 break
             except RTIOUnderflow:
@@ -278,13 +249,8 @@ class ScanRunner(HasEnvironment):
                 if num_underflows >= self.max_rtio_underflow_retries:
                     raise
                 num_underflows += 1
-                print(
-                    "Ignoring RTIOUnderflow (",
-                    num_underflows,
-                    "/",
-                    self.max_rtio_underflow_retries,
-                    ")",
-                )
+                print("Ignoring RTIOUnderflow (", num_underflows, "/",
+                      self.max_rtio_underflow_retries, ")")
                 self._kscan_retry_point()
             except RestartKernelTransitoryError:
                 print("Caught transitory error, restarting kernel")
@@ -294,13 +260,8 @@ class ScanRunner(HasEnvironment):
                 if num_transitory_errors >= self.max_transitory_error_retries:
                     raise
                 num_transitory_errors += 1
-                print(
-                    "Caught transitory error (",
-                    num_transitory_errors,
-                    "/",
-                    self.max_transitory_error_retries,
-                    "), retrying",
-                )
+                print("Caught transitory error (", num_transitory_errors, "/",
+                      self.max_transitory_error_retries, "), retrying")
                 self._kscan_retry_point()
         self._kscan_point_completed()
         return False
@@ -308,10 +269,8 @@ class ScanRunner(HasEnvironment):
     @kernel
     def _kscan_should_pause(self) -> TBool:
         current_time_mu = self.core.get_rtio_counter_mu()
-        if (
-            current_time_mu - self._kscan_last_pause_check_mu
-            > self._kscan_pause_check_interval_mu
-        ):
+        if (current_time_mu - self._kscan_last_pause_check_mu >
+                self._kscan_pause_check_interval_mu):
             self._kscan_last_pause_check_mu = current_time_mu
             if self.scheduler.check_pause():
                 return True
@@ -327,8 +286,7 @@ class ScanRunner(HasEnvironment):
         CHUNK_SIZE = 10
 
         self._kscan_current_chunk.extend(
-            islice(self._kscan_points, CHUNK_SIZE - len(self._kscan_current_chunk))
-        )
+            islice(self._kscan_points, CHUNK_SIZE - len(self._kscan_current_chunk)))
 
         values = tuple([] for _ in self._kscan_axes)
         for p in self._kscan_current_chunk:
@@ -399,9 +357,8 @@ def match_default_analysis(analysis: DefaultAnalysis, axes: Iterable[ScanAxis]) 
     return set(a._store for a in analysis.required_axes()) == stores
 
 
-def filter_default_analyses(
-    fragment: ExpFragment, axes: Iterable[ScanAxis]
-) -> List[DefaultAnalysis]:
+def filter_default_analyses(fragment: ExpFragment,
+                            axes: Iterable[ScanAxis]) -> List[DefaultAnalysis]:
     """Return the default analyses of the given fragment that can be executed for the
     given scan spec.
 
@@ -414,8 +371,7 @@ def filter_default_analyses(
             raise ValueError(
                 f"Unexpected get_default_analyses() return value for {fragment}: "
                 "Expected list of ndscan.experiment.DefaultAnalysis instances, got "
-                f"element of type '{analysis}'"
-            )
+                f"element of type '{analysis}'")
         if match_default_analysis(analysis, ax):
             result.append(analysis)
     return result
@@ -445,9 +401,8 @@ class LiveAnalysisRunner:
             a.execute(coordinates, values)
 
 
-def describe_scan(
-    spec: ScanSpec, fragment: ExpFragment, short_result_names: Dict[ResultChannel, str]
-) -> Dict[str, Any]:
+def describe_scan(spec: ScanSpec, fragment: ExpFragment,
+                  short_result_names: Dict[ResultChannel, str]) -> Dict[str, Any]:
     """Return metadata for the given spec in stringly typed dictionary form.
 
     :param spec: :class:`.ScanSpec` describing the scan.
@@ -457,13 +412,10 @@ def describe_scan(
     desc = {}
 
     desc["fragment_fqn"] = fragment.fqn
-    axis_specs = [
-        {
-            "param": ax.param_schema,
-            "path": ax.path,
-        }
-        for ax in spec.axes
-    ]
+    axis_specs = [{
+        "param": ax.param_schema,
+        "path": ax.path,
+    } for ax in spec.axes]
     for ax, gen in zip(axis_specs, spec.generators):
         gen.describe_limits(ax)
 
@@ -474,16 +426,14 @@ def describe_scan(
     # them; they should possibly just be ignored there.
     desc["channels"] = {
         name: channel.describe()
-        for (channel, name) in short_result_names.items()
-        if channel.save_by_default
+        for (channel, name) in short_result_names.items() if channel.save_by_default
     }
 
     return desc
 
 
-def describe_analyses(
-    analyses: Iterable[DefaultAnalysis], context: AnnotationContext
-) -> Dict[str, Any]:
+def describe_analyses(analyses: Iterable[DefaultAnalysis],
+                      context: AnnotationContext) -> Dict[str, Any]:
     """Return metadata for the given analyses in stringly typed dictionary form.
 
     :param analyses: The :class:`.DefaultAnalysis` objects to describe (already filtered
@@ -504,7 +454,6 @@ def describe_analyses(
         for name, spec in online_analyses.items():
             if name in desc["online_analyses"]:
                 raise ValueError(
-                    "An online analysis with name '{}' already exists".format(name)
-                )
+                    "An online analysis with name '{}' already exists".format(name))
             desc["online_analyses"][name] = spec
     return desc
