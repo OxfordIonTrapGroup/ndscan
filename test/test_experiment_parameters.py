@@ -21,6 +21,16 @@ class FloatParamCase(unittest.TestCase):
                 "type": "float"
             })
 
+    def test_evaluate_default(self):
+        def mock_get_dataset(key: str, default=None):
+            return {"baz": 42.}[key]
+
+        param = FloatParam("foo", "bar", 0.)
+        self.assertEqual(param.eval_default(mock_get_dataset), 0.)
+
+        param = FloatParam("foo", "bar", "dataset('baz', 0.)")
+        self.assertEqual(param.eval_default(mock_get_dataset), 42.)
+
 
 class IntParamCase(unittest.TestCase):
     def test_describe(self):
@@ -40,6 +50,16 @@ class IntParamCase(unittest.TestCase):
                 "type": "int"
             })
 
+    def test_evaluate_default(self):
+        def mock_get_dataset(key: str, default=None):
+            return {"baz": 42}[key]
+
+        param = IntParam("foo", "bar", 0)
+        self.assertEqual(param.eval_default(mock_get_dataset), 0)
+
+        param = IntParam("foo", "bar", "dataset('baz', 0)")
+        self.assertEqual(param.eval_default(mock_get_dataset), 42)
+
 
 class BoolParamCase(unittest.TestCase):
     def test_describe(self):
@@ -54,3 +74,13 @@ class BoolParamCase(unittest.TestCase):
                     "is_scannable": True
                 }
             })
+
+    def test_evaluate_default(self):
+        def mock_get_dataset(key: str, default=None):
+            return {"baz": True}[key]
+
+        param = BoolParam("foo", "bar", True)
+        self.assertEqual(param.eval_default(mock_get_dataset), True)
+
+        param = BoolParam("foo", "bar", "dataset('baz', False)")
+        self.assertEqual(param.eval_default(mock_get_dataset), True)
