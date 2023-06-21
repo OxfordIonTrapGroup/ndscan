@@ -53,7 +53,8 @@ def _coords_to_indices(coords, range_spec):
 
 
 class _ImagePlot:
-    def __init__(self, image_item: pyqtgraph.ImageItem, colorbar: pyqtgraph.ColorBarItem, active_channel_name: str,
+    def __init__(self, image_item: pyqtgraph.ImageItem,
+                 colorbar: pyqtgraph.ColorBarItem, active_channel_name: str,
                  x_min: Union[float, None], x_max: Union[float, None],
                  x_increment: Union[float,
                                     None], y_min: Union[float,
@@ -235,7 +236,8 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
             values=(0, 1),
             interactive=False
         )
-        self.plot = _ImagePlot(image_item, colorbar, self.data_names[0], *bounds(self.x_schema),
+        self.plot = _ImagePlot(image_item, colorbar, self.data_names[0],
+                               *bounds(self.x_schema),
                                *bounds(self.y_schema), hints_for_channels)
         self.ready.emit()
 
