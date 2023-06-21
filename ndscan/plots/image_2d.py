@@ -157,9 +157,8 @@ class _ImagePlot:
         if self._get_display_hints().get("coordinate_type", "") == "cyclic":
             cmap = colormaps.kovesi_c8
         self.colorbar.setColorMap(cmap)
-        self.image_item.setColorMap(cmap)
         self.colorbar.setLevels(self.current_z_limits)
-        self.image_item.setLevels(self.current_z_limits)
+
         self.image_item.setImage(self.image_data, autoLevels=False)
         if num_skip == 0:
             # Image size has changed, set plot item size accordingly.
