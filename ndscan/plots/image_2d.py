@@ -53,7 +53,7 @@ def _coords_to_indices(coords, range_spec):
 
 
 class _ImagePlot:
-    def __init__(self, image_item: pyqtgraph.ImageItem, active_channel_name: str,
+    def __init__(self, image_item: pyqtgraph.ImageItem, colorbar: pyqtgraph.ColorBarItem, active_channel_name: str,
                  x_min: Union[float, None], x_max: Union[float, None],
                  x_increment: Union[float,
                                     None], y_min: Union[float,
@@ -61,6 +61,7 @@ class _ImagePlot:
                                                                             None],
                  y_increment: Union[float, None], hints_for_channels: Dict[str, dict]):
         self.image_item = image_item
+        self.colorbar = colorbar
         self.active_channel_name = active_channel_name
         self.hints_for_channels = hints_for_channels
 
@@ -136,9 +137,7 @@ class _ImagePlot:
 
             # TODO: Splat old data for progressively less blurry look on refining scans?
             self.image_data = np.full(
-                (_num_points_in_range(x_range), _num_points_in_range(y_range), 4),
-                0,
-                dtype="ubyte")
+                (_num_points_in_range(x_range), _num_points_in_range(y_range)), 0.0)
 
             self.image_rect = QtCore.QRectF(
                 QtCore.QPointF(x_range[0] - x_range[2] / 2,
@@ -151,14 +150,17 @@ class _ImagePlot:
         x_inds = _coords_to_indices(x_data[num_skip:num_to_show], self.x_range)
         y_inds = _coords_to_indices(y_data[num_skip:num_to_show], self.y_range)
 
-        z_min, z_max = self.current_z_limits
-        z_scaled = (z_data[num_skip:num_to_show] - z_min) / (z_max - z_min)
-
         cmap = colormaps.plasma
         if self._get_display_hints().get("coordinate_type", "") == "cyclic":
             cmap = colormaps.kovesi_c8
-        self.image_data[x_inds, y_inds, :] = cmap.map(z_scaled)
 
+        for x, y, z in zip(x_inds, y_inds, z_data):
+            self.image_data[x, y] = z
+
+        self.colorbar.setColorMap(cmap)
+        self.image_item.setColorMap(cmap)
+        self.colorbar.setLevels(self.current_z_limits)
+        self.image_item.setLevels(self.current_z_limits)
         self.image_item.setImage(self.image_data, autoLevels=False)
         if num_skip == 0:
             # Image size has changed, set plot item size accordingly.
@@ -227,7 +229,13 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
 
         image_item = pyqtgraph.ImageItem()
         self.addItem(image_item)
-        self.plot = _ImagePlot(image_item, self.data_names[0], *bounds(self.x_schema),
+        colorbar = self.getPlotItem().addColorBar(
+            image_item,
+            colorMap=colormaps.plasma,
+            values=(0, 1),
+            interactive=False
+        )
+        self.plot = _ImagePlot(image_item, colorbar, self.data_names[0], *bounds(self.x_schema),
                                *bounds(self.y_schema), hints_for_channels)
         self.ready.emit()
 
