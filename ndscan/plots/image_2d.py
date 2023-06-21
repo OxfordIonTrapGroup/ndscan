@@ -150,14 +150,12 @@ class _ImagePlot:
 
         x_inds = _coords_to_indices(x_data[num_skip:num_to_show], self.x_range)
         y_inds = _coords_to_indices(y_data[num_skip:num_to_show], self.y_range)
+        for x, y, z in zip(x_inds, y_inds, z_data):
+            self.image_data[x, y] = z
 
         cmap = colormaps.plasma
         if self._get_display_hints().get("coordinate_type", "") == "cyclic":
             cmap = colormaps.kovesi_c8
-
-        for x, y, z in zip(x_inds, y_inds, z_data):
-            self.image_data[x, y] = z
-
         self.colorbar.setColorMap(cmap)
         self.image_item.setColorMap(cmap)
         self.colorbar.setLevels(self.current_z_limits)
