@@ -227,10 +227,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
 
         image_item = pyqtgraph.ImageItem()
         self.addItem(image_item)
-        colorbar = self.getPlotItem().addColorBar(image_item,
-                                                  colorMap=colormaps.plasma,
-                                                  values=(0, 1),
-                                                  interactive=False)
+        colorbar = self.getPlotItem().addColorBar(image_item, interactive=False)
         self.plot = _ImagePlot(image_item, colorbar, self.data_names[0],
                                *bounds(self.x_schema), *bounds(self.y_schema),
                                hints_for_channels)
