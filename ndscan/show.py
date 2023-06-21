@@ -14,7 +14,7 @@ from .plots.container_widgets import MultiRootWidget, PlotContainerWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
 from .results.arguments import extract_param_schema, summarise
-from .results.tools import find_ndscan_roots
+from .results.tools import find_ndscan_roots, get_source_id
 from .utils import shorten_to_unambiguous_suffixes, strip_suffix
 
 
@@ -43,13 +43,14 @@ def fetch_explicit_prefix(args):
     return prefix
 
 
-def main():
-    args = get_argparser().parse_args()
+def load_h5(args):
+    """Find and load HDF5 file specified by `args`
 
-    app = QtWidgets.QApplication(sys.argv)
-    loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)
-
+    :param args: Arguments - see :func:`get_argparser`.
+    :returns: The path of the HDF5 file, the H5 datasets object,
+        a list of ndscan root prefixes, and the schema metadata
+        of the scan.
+    """
     magic_spec = results.parse_magic(args.path)
     if magic_spec is not None:
         paths = results.find_results(day="auto", **magic_spec)
@@ -103,25 +104,25 @@ def main():
         print("No ndscan parameter arguments found:", e)
         schema = None
 
+    return path, datasets, prefixes, schema
+
+
+def main():
+    args = get_argparser().parse_args()
+
+    app = QtWidgets.QApplication(sys.argv)
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
+
+    _, datasets, prefixes, schema = load_h5(args)
+
     if schema is not None:
         print(summarise(schema))
 
     try:
         context = Context()
         context.set_title(os.path.basename(args.path))
-
-        # Take source_id from first prefix. This is pretty arbitrary, but for
-        # experiment-generated files, they will all be the same anyway.
-        if (prefixes[0] + "source_id") in datasets:
-            source = datasets[prefixes[0] + "source_id"][()]
-            if isinstance(source, bytes):
-                # h5py 3+ – can use datasets[…].asstr() as soon as we don't support
-                # version 2 any longer.
-                source = source.decode("utf-8")
-            context.set_source_id(source)
-        else:
-            # Old ndscan versions had a rid dataset instead of source_id.
-            context.set_source_id("rid_{}".format(datasets[prefixes[0] + "rid"][()]))
+        context.set_source_id(get_source_id(datasets, prefixes))
 
         roots = [HDF5Root(datasets, p, context) for p in prefixes]
     except Exception as e:

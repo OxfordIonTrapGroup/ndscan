@@ -10,7 +10,8 @@ setup(
     packages=find_packages(),
     install_requires=["pyqtgraph>=0.12.4"],
     entry_points={
-        "console_scripts": ["ndscan_dataset_janitor = ndscan.dataset_janitor:main"],
+        "console_scripts": ["ndscan_dataset_janitor = ndscan.dataset_janitor:main",
+                            "ndscan_to_txt = ndscan.to_txt:main"],
         "gui_scripts": ["ndscan_show = ndscan.show:main"],
     },
     # KLUDGE: ARTIQ dependency is not explicitly listed for now to avoid
