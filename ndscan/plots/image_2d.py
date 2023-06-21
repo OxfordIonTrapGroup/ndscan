@@ -137,7 +137,7 @@ class _ImagePlot:
 
             # TODO: Splat old data for progressively less blurry look on refining scans?
             self.image_data = np.full(
-                (_num_points_in_range(x_range), _num_points_in_range(y_range)), 0.0)
+                (_num_points_in_range(x_range), _num_points_in_range(y_range)), np.NaN)
 
             self.image_rect = QtCore.QRectF(
                 QtCore.QPointF(x_range[0] - x_range[2] / 2,
