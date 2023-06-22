@@ -150,7 +150,7 @@ class _ImagePlot:
 
         x_inds = _coords_to_indices(x_data[num_skip:num_to_show], self.x_range)
         y_inds = _coords_to_indices(y_data[num_skip:num_to_show], self.y_range)
-        for x, y, z in zip(x_inds, y_inds, z_data):
+        for x, y, z in zip(x_inds, y_inds, z_data[num_skip:num_to_show]):
             self.image_data[x, y] = z
 
         cmap = colormaps.plasma
