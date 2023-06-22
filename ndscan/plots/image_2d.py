@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import pyqtgraph
 from qasync import QtWidgets, QtCore
-from typing import Dict, Union
+from typing import Dict, Optional
 
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
@@ -55,12 +55,10 @@ def _coords_to_indices(coords, range_spec):
 class _ImagePlot:
     def __init__(self, image_item: pyqtgraph.ImageItem,
                  colorbar: pyqtgraph.ColorBarItem, active_channel_name: str,
-                 x_min: Union[float, None], x_max: Union[float, None],
-                 x_increment: Union[float,
-                                    None], y_min: Union[float,
-                                                        None], y_max: Union[float,
-                                                                            None],
-                 y_increment: Union[float, None], hints_for_channels: Dict[str, dict]):
+                 x_min: Optional[float], x_max: Optional[float],
+                 x_increment: Optional[float], y_min: Optional[float],
+                 y_max: Optional[float], y_increment: Optional[float],
+                 hints_for_channels: Dict[str, dict]):
         self.image_item = image_item
         self.colorbar = colorbar
         self.active_channel_name = active_channel_name
