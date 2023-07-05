@@ -175,6 +175,22 @@
         <span class="k">if</span> <span class="s2">&quot;ndscan.axes&quot;</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ndscan.&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">results</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_source_id</span><span class="p">(</span><span class="n">datasets</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">prefixes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+    <span class="c1"># Take source_id from first prefix. This is pretty arbitrary, but for</span>
+    <span class="c1"># experiment-generated files, they will all be the same anyway.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">prefixes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;source_id&quot;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">prefixes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;source_id&quot;</span><span class="p">][()]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="c1"># h5py 3+ – can use datasets[…].asstr() as soon as we don&#39;t support</span>
+            <span class="c1"># version 2 any longer.</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Old ndscan versions had a rid dataset instead of source_id.</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="s2">&quot;rid_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="n">prefixes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;rid&quot;</span><span class="p">][()])</span>
+
+    <span class="k">return</span> <span class="n">source</span>
 </pre></div>
 
            </div>
