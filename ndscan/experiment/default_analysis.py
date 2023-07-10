@@ -88,6 +88,39 @@ class Annotation:
                  coordinates: Optional[dict] = None,
                  parameters: Optional[dict] = None,
                  data: Optional[dict] = None):
+        """Specifies the annotation to be plotted. This documentation is likely very
+	        incomplete due to use of multiple strings in specification.
+	        Args:
+	            kind (str): One of 'location', 'curve', or 'computed_curve'.
+	                See ndscan.plots.xy_1d.XY1DPlotWidget._update_annotations for usage.
+	            coordinates (Optional[dict], optional):
+	                * For kind == 'location', should be a single entry, key is a
+	                ParamHandle value is a single number for the location.
+	                * For kind == 'curve', should be a dict with 2 entries. Keys are the x
+	                axis (ParamHandle) and y axis (ResultChannel), values are lists of
+	                points.
+	                * For kind == 'computed_curve', not used.
+	                Defaults to None.
+	            parameters (Optional[dict], optional):
+	                * For kind == 'location', the 'associated_channels' key may be used
+	                with the value of a list of ResultChannel. It is automatically
+	                populated in ndscan.experiment.default_analysis.OnlineFit, which
+	                can serve as an example.
+	                * For kind == 'curve', not used.
+	                * For a 'computed_curve' kind, the value keyed by 'function_name'
+	                must be one of the values in ndscan.utils.FIT_OBJECTS, which is
+	                the same as the values in oitg.fitting.
+	                Defaults to None.
+	            data (Optional[dict], optional):
+	                * For kind == 'location', can be a dict with 'axis_0_error' keyed to
+	                the value to specify the error in the location annotation.
+	                * For kind == 'curve', not used.
+	                * For kind == 'computed_curve', a dict specifying all the parameters
+	                used in the fitting function in oitg.fitting corresponding to the
+	                parameters['function_name'] field. See the desired fitting function for
+	                details.
+	                Defaults to None.
+	    """
         self.kind = kind
         self.coordinates = {} if coordinates is None else coordinates
         self.parameters = {} if parameters is None else parameters
