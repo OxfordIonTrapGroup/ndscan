@@ -91,7 +91,10 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="apidocs.html">ndscan.experiment API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="apidocs.html#module-ndscan.results">ndscan.results API</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Coding conventions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Coding conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#naming">Naming</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="design-retrospective.html">Design retrospective</a></li>
 </ul>
 
@@ -173,6 +176,17 @@ obsessing or arguing about formatting details. (Also, you won’t get past the
 automated CI checks if you don’t follow those styles.)</p></li>
 <li><p>Unit tests are run using <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">unittest</span> <span class="pre">-v</span> <span class="pre">discover</span> <span class="pre">test</span></code>; they are
 similarly required to pass in CI before a commit is merged.</p></li>
+<li><p>Documentation is built using Sphinx, and <a class="reference external" href="https://oxfordiontrapgroup.github.io/ndscan/">automatically deployed to GitHub Pages</a>. Use the Sphinx docstring format
+throughout (e.g. <code class="docutils literal notranslate"><span class="pre">:param</span> <span class="pre">foo:</span> <span class="pre">Description</span> <span class="pre">for</span> <span class="pre">the</span> <span class="pre">&quot;foo&quot;</span> <span class="pre">parameter.</span></code>), with regular
+Python annotations to document typing information. To locally check the finished HTML
+output, run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> in the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory and open
+<code class="docutils literal notranslate"><span class="pre">docs/_build/html/index.html</span></code> in a browser.</p></li>
+</ul>
+</div></blockquote>
+<div class="section" id="naming">
+<h2>Naming<a class="headerlink" href="#naming" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
 <li><p>Underscores mean “package-private”, as in not to be fiddled with by users, but
 possibly accessed by other parts of ndscan. (This should likely change, towards
 actually meaning private and public, as the library slowly moves from an
@@ -181,6 +195,7 @@ intentionally restrictive MVP towards a more flexible toolkit.)</p></li>
 dictionary representations of various bits of the scan schema.</p></li>
 </ul>
 </div></blockquote>
+</div>
 </div>
 
 
