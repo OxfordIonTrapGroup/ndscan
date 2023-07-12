@@ -96,7 +96,7 @@ html_context = {
     'conf_py_path': '/docs/',
 }
 
-html_css_files = ['_static/theme_overrides.css']  # override wide tables in RTD theme
+html_css_files = ['theme_overrides.css']  # override wide tables in RTD theme
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
