@@ -45,6 +45,9 @@ class ArraySink(ResultSink):
         """Return a list of all previously pushed values."""
         return self.data
 
+    def get_last(self) -> Any:
+        return self.data[-1] if self.data else None
+
     def clear(self) -> None:
         """Clear the list of previously pushed values."""
         self.data = []
