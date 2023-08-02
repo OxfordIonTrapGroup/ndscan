@@ -46,6 +46,7 @@ class ArraySink(ResultSink):
         return self.data
 
     def get_last(self) -> Any:
+        """Return the last-pushed value, or ``None`` if none yet."""
         return self.data[-1] if self.data else None
 
     def clear(self) -> None:
