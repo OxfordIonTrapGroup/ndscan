@@ -291,7 +291,7 @@ class TopLevelRunner(HasEnvironment):
             self.fragment, self.spec.axes)
 
         self._analysis_results = reduce(
-            lambda l, r: merge_no_duplicates(l, r, kind="analysis result"),
+            lambda x, y: merge_no_duplicates(x, y, kind="analysis result"),
             (a.get_analysis_results() for a in self._analyses), {})
         for name, channel in self._analysis_results.items():
             channel.set_sink(

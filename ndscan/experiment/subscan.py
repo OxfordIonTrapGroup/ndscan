@@ -267,7 +267,7 @@ def setattr_subscan(owner: Fragment,
     parent_analysis_result_channels = {}
     if expose_analysis_results:
         analysis_results = reduce(
-            lambda l, r: merge_no_duplicates(l, r, kind="analysis result"),
+            lambda x, y: merge_no_duplicates(x, y, kind="analysis result"),
             (a.get_analysis_results() for a in analyses), {})
         for name, channel in analysis_results.items():
             # Just clone results channels and directly register them as channels of the
