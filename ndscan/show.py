@@ -142,7 +142,7 @@ def main():
     widget.setWindowTitle(f"{context.get_title()} – ndscan.show")
     widget.show()
     widget.resize(800, 600)
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':

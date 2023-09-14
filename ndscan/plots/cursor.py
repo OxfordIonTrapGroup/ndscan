@@ -29,7 +29,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
         self.y_data_to_display_scale = y_data_to_display_scale
 
         self.plot_item.getViewBox().hoverEvent = self._on_viewbox_hover
-        cursor_target_widget.setCursor(QtCore.Qt.CrossCursor)
+        cursor_target_widget.setCursor(QtCore.Qt.CursorShape.CrossCursor)
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self._update_text)
@@ -63,7 +63,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
             # Don't take text item into account for auto-scaling; otherwise
             # there will be positive feedback if the cursor is towards the
             # bottom right of the screen.
-            text.setFlag(text.ItemHasNoContents)
+            text.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemHasNoContents)
             self.plot_item.addItem(text)
             return text
 

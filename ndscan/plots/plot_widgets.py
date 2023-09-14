@@ -8,7 +8,7 @@
 
 import pyqtgraph
 from typing import List
-from qasync import QtCore, QtWidgets
+from qasync import QtCore, QtGui, QtWidgets
 from .model import Context
 
 
@@ -81,7 +81,7 @@ class ContextMenuBuilder:
         self._entries = []
         self._target_menu = target_menu
 
-    def finish(self) -> List[QtWidgets.QAction]:
+    def finish(self) -> List[QtGui.QAction]:
         return self._entries
 
     def ensure_separator(self):
@@ -90,8 +90,8 @@ class ContextMenuBuilder:
             separator.setSeparator(True)
             self._last_was_no_separator = False
 
-    def append_action(self, title) -> QtWidgets.QAction:
-        action = QtWidgets.QAction(title, self._target_menu)
+    def append_action(self, title) -> QtGui.QAction:
+        action = QtGui.QAction(title, self._target_menu)
         self._append(action)
         return action
 
