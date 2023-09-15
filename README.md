@@ -9,7 +9,7 @@ users to easily override parameters from anywhere in the system on the fly, and
 to acquire data by iterating over (“scanning”) any number of them at a time.
 
 See the [documentation](https://oxfordiontrapgroup.github.io/ndscan) for more
-information. 
+information.
 
 **`ndscan` is beta-grade software. While the system has been carefully
 architected and the library is in active use within the
@@ -37,9 +37,10 @@ ARTIQ 6, see
 for a few required patches.
 
 Once your environment is set up, install this package. For example, to use
-ndscan directly from the Git checkout:
+`ndscan` directly from the Git checkout without directly using the
+[Poetry](https://python-poetry.org/) dependency manager (see below):
 
-    (artiq) $ python setup.py develop
+    (artiq) $ pip install -e .
 
 If you haven't already, also install the
 [oitg](http://github.com/OxfordIonTrapGroup/oitg) package.
@@ -58,7 +59,7 @@ and you should be able to play around with the scan interface. (Applets are
 created automatically; you might want to set the CCB mode to "Create and
 enable/disable applets" in the applets dock.)
 
-To avoid all the scan results continuously accumulating in the dataset
+To avoid old scan results continuously accumulating in the dataset
 database, run the janitor process:
 
     (artiq) $ ndscan_dataset_janitor
@@ -78,11 +79,23 @@ and
 [design retrospective](https://oxfordiontrapgroup.github.io/ndscan/design-retrospective.html)
 sections.
 
-`conda/` contains a very rudimentary [Conda](https://conda.io/en/latest/)
-package definition for ease of integration with a legacy continuous
-integration pipeline used in the Oxford Ion Trap Quantum Computing group. The
-package has a number of issues (e.g. missing dependencies), and won't ever be
-published on a public channel, as the ARTIQ community is moving away from Conda.
+`ndscan` comes with a standard development environment, managed through
+[Poetry](https://python-poetry.org/), and using the
+[poe](https://poethepoet.natn.io/) task runner. To get started, first install
+Poetry as described on its website, if you have not already. Then, all the
+commands are readily available:
+
+    # Activate an isolated virtualenv for ndscan
+    $ poetry shell
+
+    # First time only: install all dependencies (including developer tooling)
+    (ndscan-py3.10) $ poetry install --with dev
+
+    # Before committing, ensure that the code follows the standard format and
+    # lint checks (flake8) and unit tests are passing
+    (ndscan-py3.10) $ poe fmt
+    (ndscan-py3.10) $ poe lint
+    (ndscan-py3.10) $ poe test
 
 
 Contact

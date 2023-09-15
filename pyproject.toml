@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "ndscan"
+version = "v0.4.0"
+description = "Composable experiment fragments and multi-dimensional scans for ARTIQ"
+authors = ["David Nadlinger <code@klickverbot.at>"]
+license = "LGPLv3+"
+
+[tool.poetry.dependencies]
+python = "^3.10,<3.11"
+numpy = "^1.25.2"
+h5py = "^3.9.0"
+pyqtgraph = "^0.13.3"
+pyqt6 = "^6.5.2"
+qasync = "^0.24.0"
+artiq = {git = "https://github.com/m-labs/artiq.git", rev = "8dc6902c2"}
+sipyco = {git = "https://github.com/m-labs/sipyco.git"}
+oitg = {git = "https://github.com/oxfordiontrapgroup/oitg.git"}
+
+[tool.poetry.group.dev.dependencies]
+poethepoet = "^0.22.1"
+toml = "^0.10.2"
+# Pin exact versions of linters to avoid inconsistencies between CI environments.
+# YAPF 0.33–0.40 split before comparison operators, rather than after, not matching the
+# default behaviour for arithmetic operators, so stay on 0.32 for now – though at some
+# point we might just update and not care.
+yapf = "0.32.0"
+flake8 = "6.1.0"
+
+[tool.poetry.scripts]
+ndscan_dataset_janitor = "ndscan.dataset_janitor:main"
+ndscan_to_txt = "ndscan.to_txt:main"
+ndscan_show = "ndscan.show:main"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks]
+fmt = "yapf -i -r examples ndscan test"
+fmt-test = "yapf -d -r examples ndscan test"
+lint = "flake8 examples ndscan test"
+test = "python -m unittest discover -v test"
