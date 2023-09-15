@@ -5,11 +5,9 @@ Typically, applets aren't created manually, but used via ``ndscan.experiment`` (
 
 from artiq.applets.simple import SimpleApplet
 import argparse
-import asyncio
 import logging
 import pyqtgraph
 from sipyco import common_args
-from sipyco.pc_rpc import AsyncioClient
 from typing import Any, Dict, Iterable
 
 from .plots.container_widgets import RootWidget
@@ -20,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class _MainWidget(RootWidget):
-    def __init__(self, args):
+    def __init__(self, args, ctl):
         self.args = args
 
         common_args.init_logger_from_args(args)
 
         # TODO: Consider exposing Context in Root.
-        context = Context(self.set_dataset)
+        context = Context(ctl.set_dataset)
         super().__init__(SubscriberRoot(args.prefix, context), context)
 
         # Try ensuring a sensible window size on startup (i.e. large enough to show a
@@ -36,24 +34,9 @@ class _MainWidget(RootWidget):
         self.resize(600, 600)
         self.setWindowTitle("ndscan plot")
 
-    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str, Any]]):
-        self.root.data_changed(data, mods)
-
-    def set_dataset(self, key, value):
-        asyncio.ensure_future(self._set_dataset_impl(key, value))
-
-    async def _set_dataset_impl(self, key, value):
-        logger.info("Setting '%s' to %s", key, value)
-        try:
-            remote = AsyncioClient()
-            await remote.connect_rpc(self.args.server, self.args.port_control,
-                                     "master_dataset_db")
-            try:
-                await remote.set(key, value, persist=True)
-            finally:
-                remote.close_rpc()
-        except Exception:
-            logger.error("Failed to set dataset '%s'", key, exc_info=True)
+    def data_changed(self, values: Dict[str, Any], metadata: Dict[str, Any],
+                     persist: Dict[str, bool], mods: Iterable[Dict[str, Any]]):
+        self.root.data_changed(values, mods)
 
 
 class NdscanApplet(SimpleApplet):
@@ -65,12 +48,6 @@ class NdscanApplet(SimpleApplet):
         super().__init__(_MainWidget,
                          default_update_delay=20e-3,
                          cmd_description="Generic ARTIQ applet for ndscan experiments")
-
-        self.argparser.add_argument(
-            "--port-control",
-            default=3251,
-            type=int,
-            help="TCP port for master control commands (to update datasets)")
 
         # --prefix doesn't have a default value anymore and --rid doesn't exist; this
         # is just to be able to print an explicit backwards-incompatibility error.

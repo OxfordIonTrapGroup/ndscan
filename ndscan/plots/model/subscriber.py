@@ -26,10 +26,10 @@ class SubscriberRoot(Root):
         self._source_id_set = False
         self._axes_initialised = False
 
-    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
-                                                                     Any]]) -> None:
+    def data_changed(self, values: Dict[str, Any], mods: Iterable[Dict[str,
+                                                                       Any]]) -> None:
         def d(name):
-            return data.get(self._prefix + name, (False, None))[1]
+            return values.get(self._prefix + name)
 
         # Wait until schema revision is set before proceeding.
         schema_revision = d(SCHEMA_REVISION_KEY)
@@ -65,7 +65,7 @@ class SubscriberRoot(Root):
             self._axes_initialised = True
             self.model_changed.emit(self._model)
 
-        self._model.data_changed(data, mods)
+        self._model.data_changed(values, mods)
 
     def get_model(self) -> Optional[Model]:
         return self._model
@@ -90,17 +90,18 @@ class SubscriberSinglePointModel(SinglePointModel):
             raise ValueError("No complete point yet")
         return self._current_point
 
-    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
-                                                                     Any]]) -> None:
+    def data_changed(self, values: Dict[str, Any], mods: Iterable[Dict[str,
+                                                                       Any]]) -> None:
         # For single-point scans, points are completed as soon as point_phase flips, at
         # which point we need to emit them. There are slight subtleties in the below, in
-        # that the initial sync can happen at any point through the first/current point.
+        # that the initial sync can happen at any point through the first point (before/
+        # after it has been completed) or even during the next point already.
         mods = list(mods)
         if mods and mods[0]["action"] == ModAction.init.value:
             # Squirrel away any number of already existing points. We need to do this
-            # separately (rather than just using `data`), as there might be more mods
-            # from a next point already in the pipeline (and applied to data).
-            for key, (_, value) in mods[0]["struct"].items():
+            # separately (rather than just using `values`), as there might be more mods
+            # from a next point already in the pipeline (and applied to values).
+            for key, (_, value, _) in mods[0]["struct"].items():
                 name = strip_prefix(key, self._prefix + "point.")
                 if name == key:
                     continue
@@ -108,7 +109,7 @@ class SubscriberSinglePointModel(SinglePointModel):
             mods.pop(0)
 
         if not self._series_initialised:
-            channels_json = data.get(self._prefix + "channels", (False, None))[1]
+            channels_json = values.get(self._prefix + "channels")
             if not channels_json:
                 return
             self._channel_schemata = json.loads(channels_json)
@@ -132,8 +133,7 @@ class SubscriberSinglePointModel(SinglePointModel):
                 continue
             self._next_point[name] = m["value"][1]
 
-        if (self._current_point is None and data.get(self._prefix + "completed",
-                                                     (False, False))[1]):
+        if self._current_point is None and values.get(self._prefix + "completed"):
             # If the scan is already completed on the initial sync, we still need to
             # emit at least one point.
             #
@@ -158,10 +158,10 @@ class SubscriberScanModel(ScanModel):
         self._analysis_result_sources = {}
         self._point_data = {}
 
-    def data_changed(self, data: Dict[str, Any], mods: Iterable[Dict[str,
-                                                                     Any]]) -> None:
+    def data_changed(self, values: Dict[str, Any], mods: Iterable[Dict[str,
+                                                                       Any]]) -> None:
         if not self._series_initialised:
-            channels_json = data.get(self._prefix + "channels", (False, None))[1]
+            channels_json = values.get(self._prefix + "channels")
             if not channels_json:
                 return
             self._channel_schemata = json.loads(channels_json)
@@ -169,32 +169,29 @@ class SubscriberScanModel(ScanModel):
             self.channel_schemata_changed.emit(self._channel_schemata)
 
         if not self._online_analyses_initialised:
-            analyses_json = data.get(self._prefix + "online_analyses", (False, None))[1]
+            analyses_json = values.get(self._prefix + "online_analyses")
             if not analyses_json:
                 return
             self._set_online_analyses(json.loads(analyses_json))
             self._online_analyses_initialised = True
 
-        annotation_json = data.get(self._prefix + "annotations", (False, None))[1]
+        annotation_json = values.get(self._prefix + "annottaions")
         if annotation_json != self._annotation_json:
             self._set_annotation_schemata(json.loads(annotation_json))
             self._annotation_json = annotation_json
 
-        analysis_results_json = data.get(self._prefix + "analysis_results",
-                                         (False, None))[1]
+        analysis_results_json = values.get(self._prefix + "analysis_results")
         if analysis_results_json != self._analysis_results_json:
             for name in json.loads(analysis_results_json).keys():
                 # Make sure source exists.
                 self.get_analysis_result_source(name)
             self._analysis_results_json = analysis_results_json
         for name, source in self._analysis_result_sources.items():
-            source.set(
-                data.get(self._prefix + "analysis_result." + name, (False, None))[1])
+            source.set(values.get(self._prefix + "analysis_result." + name))
 
         for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
-            self._point_data[name] = data.get(self._prefix + "points." + name,
-                                              (False, []))[1]
+            self._point_data[name] = values.get(self._prefix + "points." + name, [])
         self.points_appended.emit(self._point_data)
 
     def get_annotations(self) -> List[Annotation]:

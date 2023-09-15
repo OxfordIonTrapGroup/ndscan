@@ -765,7 +765,11 @@ class NumericScanOption(ScanOption):
         step = spec.get("step", 1.0)
 
         box.setDecimals(8)
-        box.setPrecision()
+        # setPrecision() was renamed in ARTIQ 8.
+        if hasattr(box, "setPrecision"):
+            box.setPrecision()
+        else:
+            box.setSigFigs()
         box.setSingleStep(step / self.scale)
         box.setRelativeStep()
 

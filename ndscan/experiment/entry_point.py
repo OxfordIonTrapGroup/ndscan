@@ -494,7 +494,7 @@ class TopLevelRunner(HasEnvironment):
     def create_applet(self, title: str, group: str = "ndscan"):
         cmd = [
             "${python}", "-m ndscan.applet", "--server=${server}",
-            "--port=${port_notify}", "--port-control=${port_control}",
+            "--port-notify=${port_notify}", "--port-control=${port_control}",
             f"--prefix={self.dataset_prefix}"
         ]
         self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
