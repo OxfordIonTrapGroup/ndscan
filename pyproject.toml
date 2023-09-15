@@ -12,7 +12,7 @@ h5py = "^3.9.0"
 pyqtgraph = "^0.13.3"
 pyqt6 = "^6.5.2"
 qasync = "^0.24.0"
-artiq = {git = "https://github.com/m-labs/artiq.git", rev = "8dc6902c2"}
+artiq = {git = "https://github.com/dnadlinger/artiq.git", branch = "qt6"}
 sipyco = {git = "https://github.com/m-labs/sipyco.git"}
 oitg = {git = "https://github.com/oxfordiontrapgroup/oitg.git"}
 
