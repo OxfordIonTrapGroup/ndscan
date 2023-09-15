@@ -78,12 +78,6 @@ and
 [design retrospective](https://oxfordiontrapgroup.github.io/ndscan/design-retrospective.html)
 sections.
 
-`conda/` contains a very rudimentary [Conda](https://conda.io/en/latest/)
-package definition for ease of integration with a legacy continuous
-integration pipeline used in the Oxford Ion Trap Quantum Computing group. The
-package has a number of issues (e.g. missing dependencies), and won't ever be
-published on a public channel, as the ARTIQ community is moving away from Conda.
-
 ## Poetry
 - Install poetry from https://python-poetry.org/
 - [Poe the poet task runner](https://github.com/nat-n/poethepoet): `pip3 install poethepoet`
