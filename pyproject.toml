@@ -25,6 +25,8 @@ toml = "^0.10.2"
 # point we might just update and not care.
 yapf = "0.32.0"
 flake8 = "6.1.0"
+sphinx = "^7.2.6"
+sphinx-rtd-theme = "^1.3.0"
 
 [tool.poetry.scripts]
 ndscan_dataset_janitor = "ndscan.dataset_janitor:main"
