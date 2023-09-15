@@ -4,7 +4,7 @@ from itertools import chain, repeat
 import logging
 import numpy as np
 import pyqtgraph
-from qasync import QtWidgets, QtCore
+from qasync import QtCore, QtGui
 from typing import Dict, Optional
 
 from . import colormaps
@@ -254,7 +254,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
                 action.triggered.connect(set_both)
         builder.ensure_separator()
 
-        self.channel_menu_group = QtWidgets.QActionGroup(self)
+        self.channel_menu_group = QtGui.QActionGroup(self)
         for name in self.data_names:
             action = builder.append_action(name)
             action.setCheckable(True)

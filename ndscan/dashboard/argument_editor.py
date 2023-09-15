@@ -5,7 +5,7 @@ from functools import partial
 import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
 from artiq.gui.fuzzy_select import FuzzySelectWidget
@@ -128,13 +128,13 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             set_resize_mode = self.header().setSectionResizeMode
         else:
             set_resize_mode = self.header().setResizeMode
-        set_resize_mode(0, QtWidgets.QHeaderView.ResizeToContents)
-        set_resize_mode(1, QtWidgets.QHeaderView.Stretch)
-        set_resize_mode(2, QtWidgets.QHeaderView.ResizeToContents)
+        set_resize_mode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        set_resize_mode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        set_resize_mode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.header().setVisible(False)
-        self.setSelectionMode(self.NoSelection)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
-        self.setVerticalScrollMode(self.ScrollPerPixel)
+        self.setSelectionMode(self.SelectionMode.NoSelection)
+        self.setHorizontalScrollMode(self.ScrollMode.ScrollPerPixel)
+        self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
         self.setStyleSheet("QTreeWidget {background: " +
                            self.palette().midlight().color().name() + " ;}")
@@ -164,9 +164,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._randomise_scan_icon = QtGui.QIcon(
             icon_path("media-playlist-shuffle-32.svg"))
         self._default_value_icon = self.style().standardIcon(
-            QtWidgets.QStyle.SP_BrowserReload)
+            QtWidgets.QStyle.StandardPixmap.SP_BrowserReload)
         self._disable_scans_icon = self.style().standardIcon(
-            QtWidgets.QStyle.SP_DialogResetButton)
+            QtWidgets.QStyle.StandardPixmap.SP_DialogResetButton)
 
         self._arguments = self.manager.get_submission_arguments(self.expurl)
         ndscan_params, vanilla_args = _try_extract_ndscan_params(self._arguments)
@@ -222,13 +222,13 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
         load_hdf5 = QtWidgets.QPushButton("Load HDF5")
         load_hdf5.setIcon(QtWidgets.QApplication.style().standardIcon(
-            QtWidgets.QStyle.SP_DialogOpenButton))
+            QtWidgets.QStyle.StandardPixmap.SP_DialogOpenButton))
         load_hdf5.clicked.connect(dock._load_hdf5_clicked)
 
         disable_scans = QtWidgets.QPushButton("Disable all scans")
         disable_scans.setIcon(self._disable_scans_icon)
         disable_scans.clicked.connect(self.disable_all_scans)
-        disable_scans.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_R)
+        disable_scans.setShortcut("Ctrl+R")
 
         buttons = LayoutWidget()
         buttons.addWidget(recompute_arguments, col=1)
@@ -315,7 +315,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         reset_default = QtWidgets.QToolButton()
         reset_default.setToolTip("Reset parameter to default value")
         reset_default.setIcon(QtWidgets.QApplication.style().standardIcon(
-            QtWidgets.QStyle.SP_BrowserReload))
+            QtWidgets.QStyle.StandardPixmap.SP_BrowserReload))
         reset_default.clicked.connect(partial(self._reset_entry_to_default, fqn, path))
         buttons.addWidget(reset_default, col=0)
 
@@ -383,10 +383,10 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
     def _make_line_separator(self):
         f = QtWidgets.QFrame(self)
         f.setMinimumHeight(15)
-        f.setFrameShape(QtWidgets.QFrame.HLine)
-        f.setFrameShadow(QtWidgets.QFrame.Sunken)
-        f.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
-                        QtWidgets.QSizePolicy.Preferred)
+        f.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        f.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        f.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,
+                        QtWidgets.QSizePolicy.Policy.Preferred)
 
         wi = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(wi)
@@ -400,7 +400,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._override_items[(fqn, path)] = items
         self._set_save_timer()
 
-        # Make sure layout is updated to accomodate new row; without this, the
+        # Make sure layout is updated to accommodate new row; without this, the
         # new item and the add prompt button overlap on Qt 5.6.2/Win64 until
         # the dock is resized for the first time.
         geom = self.geometry()
@@ -416,7 +416,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._add_override_button = QtWidgets.QToolButton()
         self._add_override_button.setIcon(self._add_override_icon)
         self._add_override_button.clicked.connect(self._set_override_line_active)
-        self._add_override_button.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_T)
+        self._add_override_button.setShortcut("Ctrl+T")
         left.addWidget(self._add_override_button, 0, 0)
 
         self._add_override_prompt_label = QtWidgets.QLabel("Add parameter:")
@@ -750,10 +750,10 @@ class NumericScanOption(ScanOption):
 
     def _make_divider(self):
         f = QtWidgets.QFrame()
-        f.setFrameShape(QtWidgets.QFrame.VLine)
-        f.setFrameShadow(QtWidgets.QFrame.Sunken)
-        f.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                        QtWidgets.QSizePolicy.Expanding)
+        f.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+        f.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        f.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,
+                        QtWidgets.QSizePolicy.Policy.Expanding)
         return f
 
     def _make_spin_box(self):
