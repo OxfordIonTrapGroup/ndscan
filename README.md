@@ -27,14 +27,13 @@ exist.
 Quickstart guide
 ----------------
 
-To get started with `ndscan`, first prepare a Python 3.8+ environment with
-ARTIQ as usual (Nix, Conda or some form of virtualenv is recommended). As
-of ARTIQ 7
-([m-labs/artiq@dd928fc](https://github.com/m-labs/artiq/commit/dd928fc014c4f96fe0b5d1bccb5c1eaf60ca8e62)),
-the upstream ARTIQ version can be used without additional changes; for
-ARTIQ 6, see
-[dnadlinger/artiq@release-6-ndscan](https://github.com/dnadlinger/artiq/tree/release-6-ndscan)
-for a few required patches.
+To get started with `ndscan`, first prepare a Python 3.10+ environment with
+ARTIQ as usual (Nix, Poetry or some form of virtualenv is recommended).
+**This development version (`master` branch) depends on a recent ARTIQ 8
+version (yet unreleased) due to backwards-incompatible changes in the latter.
+If you still need to use an older ARTIQ version, please see the
+[release-0.3](https://github.com/OxfordIonTrapGroup/ndscan/tree/release-0.3)
+branch instead.**
 
 Once your environment is set up, install this package. For example, to use
 `ndscan` directly from the Git checkout without directly using the
