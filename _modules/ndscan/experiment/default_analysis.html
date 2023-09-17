@@ -1,91 +1,47 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>ndscan.experiment.default_analysis &mdash; ndscan  documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
-
-  
-  
-
-  
-  
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
     <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/default_analysis.html"/>
-  
-
-  
-
-  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
-    
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../../../index.html" class="icon icon-home"> ndscan
           
-
-          
+          <a href="../../../index.html" class="icon icon-home">
+            ndscan
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html">ndscan.experiment API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html#module-ndscan.results">ndscan.results API</a></li>
@@ -93,69 +49,30 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../design-retrospective.html">Design retrospective</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">ndscan</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-          <li><a href="../../index.html">Module code</a> &raquo;</li>
-        
-      <li>ndscan.experiment.default_analysis</li>
-    
-    
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ndscan.experiment.default_analysis</li>
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for ndscan.experiment.default_analysis</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Interfaces and declarations for analyses.</span>
@@ -191,7 +108,7 @@
 
 
 <span class="k">class</span> <span class="nc">AnnotationValueRef</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Marker type to distinguish an already-serialised annotation value source</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Marker type to distinguish an already-serialised annotation value source</span>
 <span class="sd">    specification from an user-supplied value of dictionary type.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -199,7 +116,7 @@
 
 
 <span class="k">class</span> <span class="nc">AnnotationContext</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Resolves entities in user-specified annotation schemata to stringly-typed</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves entities in user-specified annotation schemata to stringly-typed</span>
 <span class="sd">    dictionary form.</span>
 
 <span class="sd">    The user-facing interface to annotations allows references to parameters, result</span>
@@ -238,8 +155,10 @@
         <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="Annotation"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.Annotation">[docs]</a><span class="k">class</span> <span class="nc">Annotation</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Annotation to be displayed alongside scan result data, recording derived</span>
+<div class="viewcode-block" id="Annotation">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.Annotation">[docs]</a>
+<span class="k">class</span> <span class="nc">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Annotation to be displayed alongside scan result data, recording derived</span>
 <span class="sd">    quantities (e.g. a fit minimizer).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -268,6 +187,7 @@
         <span class="k">return</span> <span class="n">spec</span></div>
 
 
+
 <span class="c1">#: A tuple ``(fqn, path_spec)`` describing an axis being scanned over. This is the</span>
 <span class="c1">#: correct concept of identity to use (rather than e.g. directly parameter handles), as</span>
 <span class="c1">#: an analysis typically doesn&#39;t care whether a parameter was for instance scanned via</span>
@@ -275,19 +195,26 @@
 <span class="n">AxisIdentity</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="DefaultAnalysis"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis">[docs]</a><span class="k">class</span> <span class="nc">DefaultAnalysis</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Analysis functionality associated with an `ExpFragment` to be executed when that</span>
+<div class="viewcode-block" id="DefaultAnalysis">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis">[docs]</a>
+<span class="k">class</span> <span class="nc">DefaultAnalysis</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis functionality associated with an `ExpFragment` to be executed when that</span>
 <span class="sd">    fragment is scanned in a particular way.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="DefaultAnalysis.required_axes"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.required_axes">[docs]</a>    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return the scan axes necessary for the analysis to apply, in form of the</span>
+<div class="viewcode-block" id="DefaultAnalysis.required_axes">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.required_axes">[docs]</a>
+    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the scan axes necessary for the analysis to apply, in form of the</span>
 <span class="sd">        parameter handles.&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
-<div class="viewcode-block" id="DefaultAnalysis.describe_online_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.describe_online_analyses">[docs]</a>    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
+
+<div class="viewcode-block" id="DefaultAnalysis.describe_online_analyses">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.describe_online_analyses">[docs]</a>
+    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
-        <span class="sd">&quot;&quot;&quot;Exceute analysis and serialise information about resulting annotations and</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Exceute analysis and serialise information about resulting annotations and</span>
 <span class="sd">        online analyses to stringly typed metadata.</span>
 
 <span class="sd">        :param context: The :class:`.AnnotationContext` to use to resolve references to</span>
@@ -298,16 +225,19 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
+
     <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
-<div class="viewcode-block" id="DefaultAnalysis.execute"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+<div class="viewcode-block" id="DefaultAnalysis.execute">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.execute">[docs]</a>
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Exceute analysis and serialise information about resulting annotations to</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Exceute analysis and serialise information about resulting annotations to</span>
 <span class="sd">        stringly typed metadata.</span>
 
 <span class="sd">        :param context: The AnnotationContext to use to describe the coordinate axes/</span>
@@ -316,11 +246,15 @@
 <span class="sd">        :return: A list of string dictionary representations for the resulting</span>
 <span class="sd">            annotations, if any.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+</div>
 
 
-<div class="viewcode-block" id="CustomAnalysis"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.CustomAnalysis">[docs]</a><span class="k">class</span> <span class="nc">CustomAnalysis</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;:class:`DefaultAnalysis` that executes a user-defined analysis function in the</span>
+
+<div class="viewcode-block" id="CustomAnalysis">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.CustomAnalysis">[docs]</a>
+<span class="k">class</span> <span class="nc">CustomAnalysis</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:class:`DefaultAnalysis` that executes a user-defined analysis function in the</span>
 <span class="sd">    :meth:`execute` step.</span>
 
 <span class="sd">    No analysis is run online.</span>
@@ -408,6 +342,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">context</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">annotations</span><span class="p">]</span></div>
 
 
+
 <span class="c1">#: Default points of interest for various fit types (e.g. highlighting the π time for a</span>
 <span class="c1">#: Rabi flop fit, or the extremum of a parabola.</span>
 <span class="n">DEFAULT_FIT_ANNOTATIONS</span> <span class="o">=</span> <span class="p">{</span>
@@ -459,8 +394,10 @@
 <span class="p">}</span>
 
 
-<div class="viewcode-block" id="OnlineFit"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.OnlineFit">[docs]</a><span class="k">class</span> <span class="nc">OnlineFit</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Describes an automatically executed fit for a given combination of scan axes</span>
+<div class="viewcode-block" id="OnlineFit">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.OnlineFit">[docs]</a>
+<span class="k">class</span> <span class="nc">OnlineFit</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Describes an automatically executed fit for a given combination of scan axes</span>
 <span class="sd">    and result channels.</span>
 
 <span class="sd">    :param fit_type: Fitting procedure name, per :data:`.FIT_OBJECTS`.</span>
@@ -577,28 +514,37 @@
         <span class="k">return</span> <span class="p">[]</span></div>
 
 
-<div class="viewcode-block" id="ResultPrefixAnalysisWrapper"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper">[docs]</a><span class="k">class</span> <span class="nc">ResultPrefixAnalysisWrapper</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Wraps another default analysis, prepending the given string to the name of each</span>
+
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper">[docs]</a>
+<span class="k">class</span> <span class="nc">ResultPrefixAnalysisWrapper</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wraps another default analysis, prepending the given string to the name of each</span>
 <span class="sd">    analysis result.</span>
 
 <span class="sd">    This can be used to disambiguate potential conflicts between result names when</span>
 <span class="sd">    programmatically collecting analyses from multiple sources.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">:</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param wrapped: The :class:`.DefaultAnalysis` instance to forward to.</span>
 <span class="sd">        :param prefix: The string to prepend to the name of each analysis result.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span> <span class="o">=</span> <span class="n">wrapped</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
 
-<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.required_axes"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.required_axes">[docs]</a>    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.required_axes">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.required_axes">[docs]</a>
+    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">required_axes</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.describe_online_analyses"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.describe_online_analyses">[docs]</a>    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
+
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.describe_online_analyses">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.describe_online_analyses">[docs]</a>
+    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">describe_online_analyses</span><span class="p">(</span><span class="n">context</span><span class="p">)</span></div>
+
 
     <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
         <span class="c1"># TODO: Prepend to ResultChannel.path as well? For now, nothing relies on the</span>
@@ -608,56 +554,44 @@
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">get_analysis_results</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span>
 
-<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.execute"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+<div class="viewcode-block" id="ResultPrefixAnalysisWrapper.execute">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.execute">[docs]</a>
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">axis_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">result_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span></div>
+</div>
+
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, David Nadlinger.
-
-    </p>
+    <p>&#169; Copyright 2020, David Nadlinger.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

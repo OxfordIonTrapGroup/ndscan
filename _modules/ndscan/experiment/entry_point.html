@@ -1,91 +1,47 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>ndscan.experiment.entry_point &mdash; ndscan  documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
-
-  
-  
-
-  
-  
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
     <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/entry_point.html"/>
-  
-
-  
-
-  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
-    
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../../../index.html" class="icon icon-home"> ndscan
           
-
-          
+          <a href="../../../index.html" class="icon icon-home">
+            ndscan
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html">ndscan.experiment API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html#module-ndscan.results">ndscan.results API</a></li>
@@ -93,69 +49,30 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../design-retrospective.html">Design retrospective</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">ndscan</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-          <li><a href="../../index.html">Module code</a> &raquo;</li>
-        
-      <li>ndscan.experiment.entry_point</li>
-    
-    
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ndscan.experiment.entry_point</li>
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for ndscan.experiment.entry_point</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Top-level functions for launching :class:`.ExpFragment`\ s and their scans from the rest</span>
@@ -207,14 +124,17 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ScanSpecError"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.ScanSpecError">[docs]</a><span class="k">class</span> <span class="nc">ScanSpecError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when the scan specification passed in :data:`PARAMS_ARG_KEY` is not valid</span>
+<div class="viewcode-block" id="ScanSpecError">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.ScanSpecError">[docs]</a>
+<span class="k">class</span> <span class="nc">ScanSpecError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the scan specification passed in :data:`PARAMS_ARG_KEY` is not valid</span>
 <span class="sd">    for the given fragment.&quot;&quot;&quot;</span>
     <span class="k">pass</span></div>
 
 
+
 <span class="k">def</span> <span class="nf">get_class_pretty_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return the &quot;pretty name&quot; for the passed class, as used by ARTIQ to display in the</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the &quot;pretty name&quot; for the passed class, as used by ARTIQ to display in the</span>
 <span class="sd">    experiment explorer.</span>
 
 <span class="sd">    (ARTIQ unfortunately doesn&#39;t expose this, so reimplement the lookup here.)</span>
@@ -225,8 +145,10 @@
     <span class="k">return</span> <span class="n">strip_suffix</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="FragmentScanExperiment"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment">[docs]</a><span class="k">class</span> <span class="nc">FragmentScanExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Implements possibly (trivial) scans of an :class:`.ExpFragment`, with overrides</span>
+<div class="viewcode-block" id="FragmentScanExperiment">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment">[docs]</a>
+<span class="k">class</span> <span class="nc">FragmentScanExperiment</span><span class="p">(</span><span class="n">EnvExperiment</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implements possibly (trivial) scans of an :class:`.ExpFragment`, with overrides</span>
 <span class="sd">    and scan axes as specified by the :data:`PARAMS_ARG_KEY` dataset, and result</span>
 <span class="sd">    channels being broadcasted to datasets.</span>
 
@@ -235,11 +157,13 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">argument_ui</span> <span class="o">=</span> <span class="s2">&quot;ndscan&quot;</span>
 
-<div class="viewcode-block" id="FragmentScanExperiment.build"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="FragmentScanExperiment.build">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.build">[docs]</a>
+    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
               <span class="n">fragment_init</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">ExpFragment</span><span class="p">],</span>
               <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
               <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param fragment_init: Callable to create the top-level :meth:`ExpFragment`</span>
 <span class="sd">            instance.</span>
 <span class="sd">        :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan</span>
@@ -253,8 +177,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">ArgumentInterface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">],</span> <span class="n">scannable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="FragmentScanExperiment.prepare"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Collect parameters to set from both scan axes and simple overrides, and</span>
+
+<div class="viewcode-block" id="FragmentScanExperiment.prepare">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.prepare">[docs]</a>
+    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Collect parameters to set from both scan axes and simple overrides, and</span>
 <span class="sd">        initialise result channels.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">param_stores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">make_override_stores</span><span class="p">()</span>
@@ -288,14 +215,22 @@
             <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
             <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="FragmentScanExperiment.run"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="FragmentScanExperiment.run">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.run">[docs]</a>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">name</span> <span class="o">=</span> <span class="n">get_class_pretty_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">create_applet</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">TerminationRequested</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="FragmentScanExperiment.analyze"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">analyze</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="FragmentScanExperiment.analyze">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.FragmentScanExperiment.analyze">[docs]</a>
+    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tlr</span><span class="o">.</span><span class="n">analyze</span><span class="p">()</span></div>
+</div>
+
 
 
 <span class="k">class</span> <span class="nc">ArgumentInterface</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
@@ -450,7 +385,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span>
-            <span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="n">merge_no_duplicates</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;analysis result&quot;</span><span class="p">),</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">merge_no_duplicates</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;analysis result&quot;</span><span class="p">),</span>
             <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">get_analysis_results</span><span class="p">()</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyses</span><span class="p">),</span> <span class="p">{})</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">channel</span><span class="o">.</span><span class="n">set_sink</span><span class="p">(</span>
@@ -470,7 +405,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Run the (possibly trivial) scan.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the (possibly trivial) scan.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_metadata</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
@@ -653,7 +588,7 @@
     <span class="k">def</span> <span class="nf">create_applet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ndscan&quot;</span><span class="p">):</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;$</span><span class="si">{python}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;-m ndscan.applet&quot;</span><span class="p">,</span> <span class="s2">&quot;--server=$</span><span class="si">{server}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;--port=$</span><span class="si">{port_notify}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;--port-control=$</span><span class="si">{port_control}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;--port-notify=$</span><span class="si">{port_notify}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;--port-control=$</span><span class="si">{port_control}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="sa">f</span><span class="s2">&quot;--prefix=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ccb</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="s2">&quot;create_applet&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
@@ -664,12 +599,14 @@
                                            <span class="k">lambda</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span>
 
 
-<div class="viewcode-block" id="make_fragment_scan_exp"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.make_fragment_scan_exp">[docs]</a><span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span>
+<div class="viewcode-block" id="make_fragment_scan_exp">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.make_fragment_scan_exp">[docs]</a>
+<span class="k">def</span> <span class="nf">make_fragment_scan_exp</span><span class="p">(</span>
         <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
         <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FragmentScanExperiment</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Create a :class:`FragmentScanExperiment` subclass that scans the given</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a :class:`FragmentScanExperiment` subclass that scans the given</span>
 <span class="sd">    :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…</span>
 
 <span class="sd">    This is the default way of creating scan experiments::</span>
@@ -698,8 +635,9 @@
     <span class="k">return</span> <span class="n">FragmentScanShim</span></div>
 
 
+
 <span class="k">class</span> <span class="nc">_FragmentRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Object wrapping fragment execution to be able to execute everything in one kernel</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Object wrapping fragment execution to be able to execute everything in one kernel</span>
 <span class="sd">    invocation (no difference for non-kernel fragments).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -711,7 +649,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Execute device_setup()/run_once(), retrying if nececssary.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute device_setup()/run_once(), retrying if nececssary.</span>
 
 <span class="sd">        :return: ``True`` if execution completed, ``False`` if it should be attempted</span>
 <span class="sd">            again (RestartKernelTransitoryError).</span>
@@ -725,7 +663,7 @@
 
     <span class="nd">@kernel</span>
     <span class="k">def</span> <span class="nf">_run_on_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Force the portable _run() to run on the kernel.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Force the portable _run() to run on the kernel.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">()</span>
 
     <span class="nd">@portable</span>
@@ -763,12 +701,14 @@
         <span class="k">return</span> <span class="kc">True</span>
 
 
-<div class="viewcode-block" id="run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">run_fragment_once</span><span class="p">(</span>
+<div class="viewcode-block" id="run_fragment_once">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.run_fragment_once">[docs]</a>
+<span class="k">def</span> <span class="nf">run_fragment_once</span><span class="p">(</span>
     <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
     <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
     <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Initialise the passed fragment and run it once, capturing and returning the</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialise the passed fragment and run it once, capturing and returning the</span>
 <span class="sd">    values from any result channels.</span>
 
 <span class="sd">    :param max_transitory_error_retries: Number of times to catch transitory error</span>
@@ -800,13 +740,16 @@
     <span class="k">return</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="n">sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
 
 
-<div class="viewcode-block" id="create_and_run_fragment_once"><a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.create_and_run_fragment_once">[docs]</a><span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span>
+
+<div class="viewcode-block" id="create_and_run_fragment_once">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.entry_point.create_and_run_fragment_once">[docs]</a>
+<span class="k">def</span> <span class="nf">create_and_run_fragment_once</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">HasEnvironment</span><span class="p">,</span>
                                  <span class="n">fragment_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">],</span>
                                  <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                                  <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
                                  <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
                                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
 <span class="sd">    returning the values pushed to any result channels.</span>
 
 <span class="sd">    Example::</span>
@@ -838,49 +781,34 @@
     <span class="n">shortened_names</span> <span class="o">=</span> <span class="n">_shorten_result_channel_names</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">path</span>
                                                     <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">shortened_names</span><span class="p">[</span><span class="n">channel</span><span class="o">.</span><span class="n">path</span><span class="p">]:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
+
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, David Nadlinger.
-
-    </p>
+    <p>&#169; Copyright 2020, David Nadlinger.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
