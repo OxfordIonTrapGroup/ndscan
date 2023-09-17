@@ -6,7 +6,7 @@ authors = ["David Nadlinger <code@klickverbot.at>"]
 license = "LGPLv3+"
 
 [tool.poetry.dependencies]
-python = "^3.10,<3.11"
+python = "^3.10"
 numpy = "^1.25.2"
 h5py = "^3.9.0"
 pyqtgraph = "^0.13.3"
