@@ -707,6 +707,8 @@ class ExpFragment(Fragment):
         """
         return []
 
+    def get_live_analyses(self) -> List[DefaultAnalysis]:
+        return []
 
 def _skip_common_prefix(target: list, reference: list) -> list:
     i = 0

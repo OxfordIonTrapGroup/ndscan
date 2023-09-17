@@ -16,7 +16,7 @@ from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore, type_string_to_param
 from .result_channels import ResultChannel, ResultSink
 from .scan_generator import generate_points, ScanGenerator, ScanOptions
-from .utils import is_kernel
+from .utils import is_kernel, make_coordinate_dict, make_value_dict
 
 __all__ = [
     "ScanAxis", "ScanSpec", "ScanRunner", "filter_default_analyses", "describe_scan",
@@ -81,7 +81,7 @@ class ScanRunner(HasEnvironment):
         self.setattr_device("scheduler")
 
     def run(self, fragment: ExpFragment, spec: ScanSpec,
-            axis_sinks: List[ResultSink]) -> None:
+            axis_sinks: List[ResultSink], scan_result_sinks: dict) -> None:
         """Run a scan of the given fragment, with axes as specified.
 
         :param fragment: The fragment to iterate.
@@ -91,6 +91,8 @@ class ScanRunner(HasEnvironment):
         """
 
         points = generate_points(spec.generators, spec.options)
+
+        self.live_analysis_runner = LiveAnalysisRunner(fragment, spec.axes, axis_sinks, scan_result_sinks)
 
         # TODO: Support parameters which require host_setup() when changed.
         run_impl = self._run_scan_on_core_device if is_kernel(
@@ -116,6 +118,7 @@ class ScanRunner(HasEnvironment):
                             sink.push(value)
                         fragment.device_setup()
                         fragment.run_once()
+                        self.live_analysis_runner.live_analyses()
                         if self.scheduler.check_pause():
                             break
                 finally:
@@ -236,6 +239,7 @@ class ScanRunner(HasEnvironment):
             try:
                 self._kscan_fragment.device_setup()
                 self._kscan_fragment.run_once()
+                self.live_analysis_runner.live_analyses()
                 break
             except RTIOUnderflow:
                 # For the first two underflows per point, just print a warning and carry
@@ -371,6 +375,30 @@ def filter_default_analyses(fragment: ExpFragment,
         if match_default_analysis(analysis, ax):
             result.append(analysis)
     return result
+
+
+class LiveAnalysisRunner:
+    def __init__(
+        self,
+        fragment,
+        axes: List[ScanAxis] = [],
+        coordinate_sinks: List[ResultSink] = [],
+        scan_result_sinks: dict = {},
+    ):
+        """Filter analyses for specific scan and store"""
+        self._analyses = filter_default_analyses(fragment.get_live_analyses(), axes)
+        self._axes = axes
+        self._coordinate_sinks = coordinate_sinks
+        self._scan_result_sinks = scan_result_sinks
+
+    @rpc(flags={"async"})
+    def live_analyses(self):
+        """Minimal implementation of entry_point/TopLevelRunner.analyze
+        Purely for data processing, does not handle annotations (yet!)"""
+        coordinates = make_coordinate_dict(self._axes, self._coordinate_sinks)
+        values = make_value_dict(self._scan_result_sinks)
+        for a in self._analyses:
+            a.execute(coordinates, values)
 
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,
