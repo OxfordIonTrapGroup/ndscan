@@ -158,7 +158,7 @@ class VLineItem(AnnotationItem):
                                                  angle=90,
                                                  pen={
                                                      "color": base_color,
-                                                     "style": QtCore.Qt.DotLine
+                                                     "style": QtCore.Qt.PenStyle.DotLine
                                                  })
         self._center_line = pyqtgraph.InfiniteLine(movable=False,
                                                    angle=90,
@@ -170,13 +170,15 @@ class VLineItem(AnnotationItem):
                                                    },
                                                    pen={
                                                        "color": base_color,
-                                                       "style": QtCore.Qt.SolidLine
+                                                       "style":
+                                                       QtCore.Qt.PenStyle.SolidLine
                                                    })
         self._right_line = pyqtgraph.InfiniteLine(movable=False,
                                                   angle=90,
                                                   pen={
                                                       "color": base_color,
-                                                      "style": QtCore.Qt.DotLine
+                                                      "style":
+                                                      QtCore.Qt.PenStyle.DotLine
                                                   })
 
         self._position_source.changed.connect(self._redraw)

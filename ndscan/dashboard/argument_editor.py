@@ -1020,9 +1020,9 @@ class ListScanOption(NumericScanOption):
             def validate(self, input, pos):
                 try:
                     [float(f) for f in _parse_list_pyon(input)]
-                    return QtGui.QValidator.Acceptable, input, pos
+                    return QtGui.QValidator.State.Acceptable, input, pos
                 except Exception:
-                    return QtGui.QValidator.Intermediate, input, pos
+                    return QtGui.QValidator.State.Intermediate, input, pos
 
         self.box_pyon = QtWidgets.QLineEdit()
         self.box_pyon.setValidator(Validator(self.entry))

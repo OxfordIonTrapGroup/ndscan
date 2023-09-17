@@ -207,7 +207,7 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
         self.subplot_widgets[name] = widget
         # TODO: Save window geometry.
         widget.resize(600, 400)
-        widget.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
+        widget.setWindowFlag(QtCore.Qt.WindowType.WindowStaysOnTopHint)
         widget.show()
 
 
