@@ -1,5 +1,8 @@
 """Standalone tool to show ndscan plots from ARTIQ HDF5 results files."""
 
+# Force pyqtgraph/qasync to prefer Qt 6.
+import PyQt6  # noqa: F401
+
 import asyncio
 import argparse
 from collections import OrderedDict
