@@ -177,14 +177,18 @@ class SubscriberScanModel(ScanModel):
 
         annotation_json = values.get(self._prefix + "annotations")
         if annotation_json != self._annotation_json:
-            self._set_annotation_schemata(json.loads(annotation_json))
+            schemata = []
+            if annotation_json is not None:
+                schemata = json.loads(annotation_json)
+            self._set_annotation_schemata(schemata)
             self._annotation_json = annotation_json
 
         analysis_results_json = values.get(self._prefix + "analysis_results")
         if analysis_results_json != self._analysis_results_json:
-            for name in json.loads(analysis_results_json).keys():
-                # Make sure source exists.
-                self.get_analysis_result_source(name)
+            if analysis_results_json is not None:
+                for name in json.loads(analysis_results_json).keys():
+                    # Make sure source exists.
+                    self.get_analysis_result_source(name)
             self._analysis_results_json = analysis_results_json
         for name, source in self._analysis_result_sources.items():
             source.set(values.get(self._prefix + "analysis_result." + name))
