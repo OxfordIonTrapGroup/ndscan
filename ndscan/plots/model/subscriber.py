@@ -175,7 +175,7 @@ class SubscriberScanModel(ScanModel):
             self._set_online_analyses(json.loads(analyses_json))
             self._online_analyses_initialised = True
 
-        annotation_json = values.get(self._prefix + "annottaions")
+        annotation_json = values.get(self._prefix + "annotations")
         if annotation_json != self._annotation_json:
             self._set_annotation_schemata(json.loads(annotation_json))
             self._annotation_json = annotation_json
