@@ -133,6 +133,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         set_resize_mode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.header().setVisible(False)
         self.setSelectionMode(self.SelectionMode.NoSelection)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
         self.setHorizontalScrollMode(self.ScrollMode.ScrollPerPixel)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
