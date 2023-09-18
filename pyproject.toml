@@ -7,8 +7,8 @@ license = "LGPLv3+"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-numpy = "^1.25.2"
-h5py = "^3.9.0"
+numpy = "^1.24.2"
+h5py = "^3.8.0"
 pyqtgraph = "^0.13.3"
 pyqt6 = "^6.5.2"
 qasync = "^0.24.0"
