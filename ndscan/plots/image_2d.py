@@ -58,11 +58,10 @@ class _ImagePlot:
                  x_min: Optional[float], x_max: Optional[float],
                  x_increment: Optional[float], y_min: Optional[float],
                  y_max: Optional[float], y_increment: Optional[float],
-                 hints_for_channels: Dict[str, dict]):
+                 channels: Dict[str, dict]):
         self.image_item = image_item
         self.colorbar = colorbar
-        self.active_channel_name = active_channel_name
-        self.hints_for_channels = hints_for_channels
+        self.channels = channels
 
         self.x_min = x_min
         self.x_max = x_max
@@ -72,14 +71,25 @@ class _ImagePlot:
         self.y_max = y_max
         self.y_increment = y_increment
 
+        self.points = None
         self.num_shown = 0
         self.current_z_limits = None
         self.x_range = None
         self.y_range = None
         self.image_data = None
 
+        self.activate_channel(active_channel_name)
+
     def activate_channel(self, channel_name: str):
         self.active_channel_name = channel_name
+
+        channel = self.channels[channel_name]
+        label = channel["description"]
+        if not label:
+            label = channel["path"].split("/")[-1]
+        setup_axis_item(self.colorbar.getAxis("right"),
+                        [(label, channel["path"], None, channel)])
+
         self._invalidate_current()
         self._update()
 
@@ -97,6 +107,9 @@ class _ImagePlot:
         return self.hints_for_channels[self.active_channel_name]
 
     def _update(self):
+        if not self.points:
+            return
+
         x_data = self.points["axis_0"]
         y_data = self.points["axis_1"]
         z_data = self.points["channel_" + self.active_channel_name]
