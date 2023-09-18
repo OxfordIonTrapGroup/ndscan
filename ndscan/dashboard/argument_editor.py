@@ -312,6 +312,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.setItemWidget(main_item, 1, entry)
 
         buttons = LayoutWidget()
+        buttons.layout.setContentsMargins(3, 0, 3, 0)
 
         reset_default = QtWidgets.QToolButton()
         reset_default.setToolTip("Reset parameter to default value")
@@ -605,6 +606,8 @@ class OverrideEntry(LayoutWidget):
 
     def __init__(self, option_classes, schema, path, randomise_icon, *args):
         super().__init__(*args)
+
+        self.layout.setContentsMargins(3, 0, 3, 0)
 
         self.schema = schema
         self.path = path
