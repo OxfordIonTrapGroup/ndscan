@@ -103,8 +103,13 @@ class _ImagePlot:
         self.num_shown = 0
         self.current_z_limits = None
 
-    def _get_display_hints(self):
-        return self.hints_for_channels[self.active_channel_name]
+    def _active_fixed_z_limits(self) -> tuple[float, float] | None:
+        channel = self.channels[self.active_channel_name]
+        if channel.get("min") is None:
+            return None
+        if channel.get("max") is None:
+            return None
+        return channel["min"], channel["max"]
 
     def _update(self):
         if not self.points:
@@ -125,18 +130,17 @@ class _ImagePlot:
         self.num_shown = num_to_show
 
         # Update z autorange if active.
-        if True:  # TODO: Provide manual override.
+        z_limits = self._active_fixed_z_limits()
+        if z_limits is None:  # TODO: Provide manual override.
             data_min = np.min(z_data[num_skip:num_to_show])
             data_max = np.max(z_data[num_skip:num_to_show])
             if self.current_z_limits is None:
-                self.current_z_limits = (data_min, data_max)
-                num_skip = 0
+                z_limits = (data_min, data_max)
             else:
                 z_limits = (min(self.current_z_limits[0],
                                 data_min), max(self.current_z_limits[1], data_max))
-                if z_limits != self.current_z_limits:
-                    self.current_z_limits = z_limits
-                    num_skip = 0
+        self.current_z_limits = z_limits
+        self.colorbar.setLevels(z_limits)
 
         # Determine range of x/y values to show and prepare image buffer accordingly if
         # it changed.
@@ -165,10 +169,11 @@ class _ImagePlot:
             self.image_data[x, y] = z
 
         cmap = colormaps.plasma
-        if self._get_display_hints().get("coordinate_type", "") == "cyclic":
+        channel = self.channels[self.active_channel_name]
+        display_hints = channel.get("display_hints", {})
+        if display_hints.get("coordinate_type", "") == "cyclic":
             cmap = colormaps.kovesi_c8
         self.colorbar.setColorMap(cmap)
-        self.colorbar.setLevels(self.current_z_limits)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
         if num_skip == 0:
@@ -228,11 +233,6 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         if not self.data_names:
             self.error.emit("No scalar result channels to display")
 
-        hints_for_channels = {
-            name: channels[name].get("display_hints", {})
-            for name in self.data_names
-        }
-
         def bounds(schema):
             return (schema.get(n, None) for n in ("min", "max", "increment"))
 
@@ -242,8 +242,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
                                                   width=15.0,
                                                   interactive=False)
         self.plot = _ImagePlot(image_item, colorbar, self.data_names[0],
-                               *bounds(self.x_schema), *bounds(self.y_schema),
-                               hints_for_channels)
+                               *bounds(self.x_schema), *bounds(self.y_schema), channels)
         self.ready.emit()
 
     def _update_points(self, points, invalidate):
