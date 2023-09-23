@@ -241,7 +241,7 @@ class CustomAnalysis(DefaultAnalysis):
             except TypeError:
                 # KLUDGE: If that also fails (e.g. there is a TypeError in the actual
                 # implementation), let the original exception bubble up.
-                raise orignal_exception
+                raise orignal_exception from None
 
         if annotations is None:
             # Tolerate the user forgetting the return statement.
