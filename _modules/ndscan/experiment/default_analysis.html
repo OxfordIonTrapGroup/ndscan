@@ -334,7 +334,7 @@
             <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
                 <span class="c1"># KLUDGE: If that also fails (e.g. there is a TypeError in the actual</span>
                 <span class="c1"># implementation), let the original exception bubble up.</span>
-                <span class="k">raise</span> <span class="n">orignal_exception</span>
+                <span class="k">raise</span> <span class="n">orignal_exception</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">annotations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Tolerate the user forgetting the return statement.</span>
