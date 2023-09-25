@@ -50,7 +50,19 @@ class SelectPointFromScanModel(SinglePointModel):
         # The point data can include NumPy arrays, which breaks object comparison (as
         # comparing two arrays gives back a bool array of element-wise results). We thus
         # need to use array_equal() to work around this.
-        if numpy.array_equal(point, self._point):
+        if _all_array_equal(point, self._point):
             return
         self._point = point
         self.point_changed.emit(point)
+
+
+def _all_array_equal(left, right):
+    if left is None or right is None:
+        return left is None and right is None
+    keys = set(left.keys())
+    if keys != set(right.keys()):
+        return False
+    for k in keys:
+        if not numpy.array_equal(left[k], right[k]):
+            return False
+    return True
