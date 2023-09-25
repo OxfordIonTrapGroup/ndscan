@@ -483,12 +483,19 @@ class Fragment(HasEnvironment):
             respective owner.
         """
         param = self._free_params.get(param_name, None)
-        assert param is not None, "Not a free parameter: '{}'".format(param_name)
-        del self._free_params[param_name]
+        assert param is not None, f"Not a free parameter: '{param_name}'"
 
         # We don't support "transitive" binding for parameters that are already bound.
         assert source.name in source.owner._free_params, \
             "Source parameter is not a free parameter; already bound/overridden?"
+
+        own_type = type(self._free_params[param_name])
+        source_type = type(source.owner._free_params[source.name])
+        assert own_type == source_type, (
+            f"Cannot bind {own_type.__name__} '{param_name}' " +
+            f"to source of type {source_type.__name__}")
+
+        del self._free_params[param_name]
 
         source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
             self._get_all_handles_for_param(param_name))

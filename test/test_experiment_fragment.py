@@ -76,6 +76,16 @@ class TestRebinding(HasEnvironmentCase):
         self.assertEqual(result[mrf.first.result], 3)
         self.assertEqual(result[mrf.second.result], 3)
 
+    def test_invalid_bind(self):
+        class InvalidBindFragment(ExpFragment):
+            def build_fragment(self):
+                self.setattr_fragment("add_one", AddOneFragment)
+                self.setattr_param("value_int", IntParam, "Integer", default=0)
+                self.add_one.bind_param("value", self.value_int)
+
+        with self.assertRaises(AssertionError):
+            self.create(InvalidBindFragment, [])
+
 
 class TestMisc(HasEnvironmentCase):
     def test_namespacing(self):
