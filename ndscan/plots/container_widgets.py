@@ -1,12 +1,12 @@
 import logging
 from collections import OrderedDict
-from qasync import QtWidgets
 
 from .model import Context, Model, Root, SinglePointModel, ScanModel
 from .model.subscan import create_subscan_roots
 from .image_2d import Image2DPlotWidget
 from .rolling_1d import Rolling1DPlotWidget
 from .xy_1d import XY1DPlotWidget
+from .._qt import QtWidgets
 
 logger = logging.getLogger(__name__)
 

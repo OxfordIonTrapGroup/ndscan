@@ -1,7 +1,7 @@
 import numpy as np
 import pyqtgraph
-from qasync import QtWidgets, QtCore
 
+from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
 from .plot_widgets import add_source_id_label, AlternateMenuPlotWidget
 from .utils import (extract_scalar_channels, group_channels_into_axes, setup_axis_item,

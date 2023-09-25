@@ -3,9 +3,6 @@
 Typically, applets aren't created manually, but used via ``ndscan.experiment`` (CCB).
 """
 
-# Force pyqtgraph/qasync to prefer Qt 6.
-import PyQt6  # noqa: F401
-
 from artiq.applets.simple import SimpleApplet
 import argparse
 import logging

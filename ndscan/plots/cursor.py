@@ -1,6 +1,6 @@
 import numpy as np
-from qasync import QtCore, QtWidgets
 import pyqtgraph
+from .._qt import QtCore, QtWidgets
 
 
 class LabeledCrosshairCursor(QtCore.QObject):

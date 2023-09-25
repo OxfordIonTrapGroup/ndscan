@@ -5,7 +5,6 @@ from functools import partial
 import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
-from PyQt6 import QtCore, QtGui, QtWidgets
 from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
 from artiq.gui.fuzzy_select import FuzzySelectWidget
@@ -13,6 +12,7 @@ from artiq.gui.scientific_spinbox import ScientificSpinBox
 from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
 from sipyco import pyon
 
+from .._qt import QtCore, QtGui, QtWidgets
 from ..utils import (NoAxesMode, PARAMS_ARG_KEY, eval_param_default,
                      shorten_to_unambiguous_suffixes)
 

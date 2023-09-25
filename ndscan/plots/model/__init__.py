@@ -25,8 +25,8 @@ situations.)
 
 import logging
 import numpy
-from qasync import QtCore
 from typing import Any, Callable, Dict, List, Optional
+from ..._qt import QtCore
 from .online_analysis import OnlineNamedFitAnalysis
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-from qasync import QtCore
+from ..._qt import QtCore
 
 
 def call_later(func):

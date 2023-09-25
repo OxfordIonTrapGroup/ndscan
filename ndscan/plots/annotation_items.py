@@ -7,8 +7,8 @@ import logging
 import numpy
 from oitg import uncertainty_to_string
 import pyqtgraph
-from qasync import QtCore
 from typing import Dict, Union, Optional, Tuple
+from .._qt import QtCore
 from ..utils import FIT_OBJECTS
 from .model import AnnotationDataSource
 

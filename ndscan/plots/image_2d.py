@@ -4,9 +4,9 @@ from itertools import chain, repeat
 import logging
 import numpy as np
 import pyqtgraph
-from qasync import QtCore, QtGui
 from typing import Dict, Optional
 
+from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
