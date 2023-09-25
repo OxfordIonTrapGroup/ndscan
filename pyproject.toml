@@ -10,21 +10,35 @@ python = "^3.10"
 numpy = "^1.24.2"
 h5py = "^3.8.0"
 pyqtgraph = "^0.13.3"
-pyqt6 = "^6.5.2"
 qasync = "^0.24.0"
-artiq = {git = "https://github.com/dnadlinger/artiq.git", branch = "qt6"}
-sipyco = {git = "https://github.com/m-labs/sipyco.git"}
-oitg = {git = "https://github.com/oxfordiontrapgroup/oitg.git"}
+sipyco = { git = "https://github.com/m-labs/sipyco.git" }
+oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
+
+# On macOS, there are two issues:
+#  - Qt 5 is not packaged (at least not for ARM64), and
+#  - window embedding is broken, causing upstream ARTIQ to crash when launching applets.
+# Thus, we depend on PyQt6 and a specific branch for macOS, but a more general (but
+# still pre-release) version of ARTIQ otherwise.
+artiq = [
+    { platform = "darwin", git = "https://github.com/dnadlinger/artiq.git", branch = "mac-applets" },
+    { platform = "win32", version = "8.*" },
+    { platform = "linux", version = "8.*" },
+]
+pyqt5 = { version = "^5.15.9", markers = "sys_platform != 'darwin'" }
+pyqt6 = { version = "^6.5.2", markers = "sys_platform == 'darwin'" }
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = "^0.22.1"
 toml = "^0.10.2"
+
 # Pin exact versions of linters to avoid inconsistencies between CI environments.
 # YAPF 0.33–0.40 split before comparison operators, rather than after, not matching the
 # default behaviour for arithmetic operators, so stay on 0.32 for now – though at some
 # point we might just update and not care.
 yapf = "0.32.0"
 flake8 = "6.1.0"
+
+# To generate documentation.
 sphinx = "^7.2.6"
 sphinx-rtd-theme = "^1.3.0"
 matplotlib = "^3.8.0"
