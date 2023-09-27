@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 import pyqtgraph
+from collections import defaultdict
+from typing import NamedTuple
 
 from .._qt import QtCore
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
@@ -16,6 +18,38 @@ from .utils import (extract_linked_datasets, extract_scalar_channels,
 logger = logging.getLogger(__name__)
 
 
+class SourcePoint(NamedTuple):
+    """For point averaging, keeps track of individual points in the source data (as
+    opposed to the points derived from averaging)."""
+    y: float
+    y_err: float | None
+    source_idx: int
+
+
+def combined_uncertainty(points: list[SourcePoint], num_samples_per_point=1):
+    """Combine several points and return the error of the average.
+
+    To combine data points, each created as an average of multiple samples, the
+    uncertainty of the individual points and the variance of the ensemble of points
+    must be taken into account. A derivation can be found in https://www.yumpu.com/en/
+    document/read/37147068/combining-multiple-averaged-data-points-and-their-errors. To
+    calculate the standard deviation of the underlying data from individual bins in
+    this way, the number of samples per point would be required. However, in this
+    context here, this quantity is unavailable.
+
+    Firstly, we assume that all points contain the same number of samples. Secondly, we
+    use one sample per point as the default, which produces the "worst case" scenario,
+    where we overestimate the true standard deviation if actually,
+    ``num_samples_per_point > 1``.
+    """
+    n = len(points)
+    y = [p.y for p in points]
+    total_var = np.var(y) / max(1, num_samples_per_point * n - 1)  # max() avoids 0/0
+    if points[0].y_err is not None:
+        total_var += sum(p.y_err**2 for p in points) / n**2
+    return np.sqrt(total_var)
+
+
 class _XYSeries(QtCore.QObject):
     def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item):
         super().__init__(view_box)
@@ -27,40 +61,97 @@ class _XYSeries(QtCore.QObject):
         self.error_bar_name = error_bar_name
         self.num_current_points = 0
 
-    def update(self, x_data, data):
+        #: Whether to average points with the same x coordinate.
+        self.averaging_enabled = False
+
+        #: Keeps track of source points for each x coordinate for faster updates while
+        #: averaging is enabled.
+        self.source_points_by_x = defaultdict[float, list[SourcePoint]](list)
+
+    def update(self, x_data, data, averaging_enabled):
         def channel(name):
             return np.array(data.get("channel_" + name, []))
 
         x_data = np.array(x_data)
         y_data = channel(self.data_name)
-        num_to_show = min(len(x_data), len(y_data))
 
-        if self.error_bar_item:
+        # Determine how many data points are actually complete.
+        num_to_show = min(len(x_data), len(y_data))
+        y_err = None
+        if self.error_bar_name:
             y_err = channel(self.error_bar_name)
             num_to_show = min(num_to_show, len(y_err))
 
-        if num_to_show == self.num_current_points:
+        # If nothing has changed, skip the update.
+        if (num_to_show == self.num_current_points
+                and averaging_enabled == self.averaging_enabled):
             return
 
-        self.data_item.setData(x_data[:num_to_show], y_data[:num_to_show])
+        # Combine points with same coordinates if enabled.
+        if averaging_enabled:
+            x_data, y_data, y_err, source_idxs = self._average_add_points(
+                num_to_show, x_data, y_data, y_err)
+        else:
+            x_data = x_data[:num_to_show]
+            y_data = y_data[:num_to_show]
+            if y_err is not None:
+                y_err = y_err[:num_to_show]
+            source_idxs = np.arange(num_to_show)
+
+        # source_idxs can be queried later via spot.data().
+        self.data_item.setData(x_data, y_data, data=source_idxs)
+
+        if y_err is not None:
+            self.error_bar_item.setData(x=x_data, y=y_data, height=2 * y_err)
+
         if self.num_current_points == 0:
             self.view_box.addItem(self.data_item)
-
-        if self.error_bar_item:
-            self.error_bar_item.setData(x=x_data[:num_to_show],
-                                        y=y_data[:num_to_show],
-                                        height=(2 * y_err[:num_to_show]))
-            if self.num_current_points == 0:
+            if y_err is not None:
+                self.view_box.addItem(self.error_bar_item)
+        elif averaging_enabled != self.averaging_enabled:
+            if y_err is None:
+                self.view_box.removeItem(self.error_bar_item)
+            elif not self.error_bar_name:
                 self.view_box.addItem(self.error_bar_item)
 
+        self.averaging_enabled = averaging_enabled
         self.num_current_points = num_to_show
+
+    def _average_add_points(self, num_to_show, x_data, y_data, y_err):
+        # Append new data to collection.
+        start_idx = sum(len(v) for v in self.source_points_by_x.values())
+        for i in range(start_idx, num_to_show):
+            self.source_points_by_x[x_data[i]].append(
+                SourcePoint(y=y_data[i],
+                            y_err=None if y_err is None else y_err[i],
+                            source_idx=i))
+
+        # Average over values with same coordinate.
+        x_data = np.array(list(self.source_points_by_x.keys()))
+        # Using the unweighted mean to estimate the mean of the underlying data
+        # assuming that 1) the samples which constitute the points are drawn from the
+        # same distribution, and 2) the number of samples per point are equal for all
+        # points -- see ``combined_uncertainty()``.
+        y_data = np.array(
+            [np.mean([p.y for p in self.source_points_by_x[x]]) for x in x_data])
+        y_err = np.array(
+            [combined_uncertainty(self.source_points_by_x[x]) for x in x_data])
+
+        # We can only ascribe a single source index to the data if there wasn't any
+        # actual averaging.
+        source_idxs = [
+            self.source_points_by_x[x][0].source_idx
+            if len(self.source_points_by_x[x]) == 1 else None for x in x_data
+        ]
+
+        return x_data, y_data, y_err, source_idxs
 
     def remove_items(self):
         if self.num_current_points == 0:
             return
         self.view_box.removeItem(self.data_item)
-        if self.error_bar_item:
-            self.view_box.removeItem(self.error_bar_item)
+        self.view_box.removeItem(self.error_bar_item)
+        self.source_points_by_x.clear()
         self.num_current_points = 0
 
 
@@ -87,6 +178,9 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
 
         self.annotation_items = []
         self.series = []
+        self.unique_x_data = set()
+        self.found_duplicate_x_data = False
+        self.averaging_enabled = False
 
         x_schema = self.model.axes[0]
         self.x_param_spec = x_schema["param"]["spec"]
@@ -110,6 +204,8 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         for s in self.series:
             s.remove_items()
         self.series.clear()
+        self.unique_x_data.clear()
+        self.found_duplicate_x_data = False
         self._clear_annotations()
         self.reset_y_axes()
 
@@ -130,10 +226,10 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
                 data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
                 data_item.sigClicked.connect(self._point_clicked)
 
-                error_bar_item = None
                 error_bar_name = error_bar_names.get(name, None)
-                if error_bar_name:
-                    error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
+
+                # Always create ErrorBarItem in case averaging is enabled later.
+                error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
                 self.series.append(
                     _XYSeries(view_box, name, data_item, error_bar_name,
@@ -175,8 +271,17 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         if len(x_data) == 0:
             return
 
+        # If all points were unique so far, check if we have duplicates now.
+        if not self.found_duplicate_x_data:
+            for x in x_data[len(self.unique_x_data):]:
+                if x in self.unique_x_data:
+                    self.found_duplicate_x_data = True
+                    break
+                else:
+                    self.unique_x_data.add(x)
+
         for s in self.series:
-            s.update(x_data, points)
+            s.update(x_data, points, self.averaging_enabled)
 
     def _clear_annotations(self):
         for item in self.annotation_items:
@@ -254,9 +359,21 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             for d in extract_linked_datasets(x_schema["param"]):
                 action = builder.append_action("Set '{}' from crosshair".format(d))
                 action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
+            builder.ensure_separator()
 
-        builder.ensure_separator()
+        if self.found_duplicate_x_data:
+            action = builder.append_action("Average points with same x")
+            action.setCheckable(True)
+            action.setChecked(self.averaging_enabled)
+            action.triggered.connect(
+                lambda: self.enable_averaging(not self.averaging_enabled))
+            builder.ensure_separator()
+
         super().build_context_menu(builder)
+
+    def enable_averaging(self, enabled: bool):
+        self.averaging_enabled = enabled
+        self._update_points(self.model.get_point_data())
 
     def _set_dataset_from_crosshair_x(self, dataset_key):
         if not self.crosshair:
@@ -281,8 +398,15 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         # Arbitrarily choose the first element in the list if multiple spots
         # overlap; the user can always zoom in if that is undesired.
         spot = spot_items[0]
-        self._highlight_spot(spot)
-        self.selected_point_model.set_source_index(spot.index())
+        source_index = spot.data()
+        if source_index is None:
+            # This came from a point for which there was averaging.
+            # TODO: Show an informative message to the user in some kind of low-overhead
+            # way (e.g. a text plot item; a QMessageBox would be distracting/annoying).
+            pass
+        else:
+            self._highlight_spot(spot)
+            self.selected_point_model.set_source_index(spot.data())
 
     def _background_clicked(self):
         self._highlight_spot(None)
