@@ -221,7 +221,8 @@ class KernelScanRunner(ScanRunner):
             self._last_pause_check_mu = self.core.get_rtio_counter_mu()
             while True:
                 # Fetch chunk in separate function to make sure stack memory is released
-                # every time.
+                # every time. (The ARTIQ compiler effectively uses alloca() to provision
+                # memory for RPC return values.)
                 result = self._run_chunk(self)
                 if result == self._RUN_CHUNK_INTERRUPTED:
                     return False
