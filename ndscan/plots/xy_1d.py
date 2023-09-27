@@ -136,8 +136,8 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
                     error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
                 self.series.append(
-                    _XYSeries(view_box, name, data_item, error_bar_name, error_bar_item,
-                              False))
+                    _XYSeries(view_box, name, data_item, error_bar_name,
+                              error_bar_item))
 
                 channel = channels[name]
                 label = channel["description"]
