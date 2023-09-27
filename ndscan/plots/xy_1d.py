@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class _XYSeries(QtCore.QObject):
-    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item,
-                 plot_left_to_right):
+    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item):
         super().__init__(view_box)
 
         self.view_box = view_box
@@ -26,7 +25,6 @@ class _XYSeries(QtCore.QObject):
         self.data_name = data_name
         self.error_bar_item = error_bar_item
         self.error_bar_name = error_bar_name
-        self.plot_left_to_right = plot_left_to_right
         self.num_current_points = 0
 
     def update(self, x_data, data):
@@ -44,30 +42,16 @@ class _XYSeries(QtCore.QObject):
         if num_to_show == self.num_current_points:
             return
 
-        if self.plot_left_to_right:
-            order = np.argsort(x_data[:num_to_show])
+        self.data_item.setData(x_data[:num_to_show], y_data[:num_to_show])
+        if self.num_current_points == 0:
+            self.view_box.addItem(self.data_item)
 
-            self.data_item.setData(x_data[order], y_data[order])
+        if self.error_bar_item:
+            self.error_bar_item.setData(x=x_data[:num_to_show],
+                                        y=y_data[:num_to_show],
+                                        height=(2 * y_err[:num_to_show]))
             if self.num_current_points == 0:
-                self.view_box.addItem(self.data_item)
-
-            if self.error_bar_item:
-                self.error_bar_item.setData(x=x_data[order],
-                                            y=y_data[order],
-                                            height=y_err[order])
-                if self.num_current_points == 0:
-                    self.view_box.addItem(self.error_bar_item)
-        else:
-            self.data_item.setData(x_data[:num_to_show], y_data[:num_to_show])
-            if self.num_current_points == 0:
-                self.view_box.addItem(self.data_item)
-
-            if self.error_bar_item:
-                self.error_bar_item.setData(x=x_data[:num_to_show],
-                                            y=y_data[:num_to_show],
-                                            height=(2 * y_err[:num_to_show]))
-                if self.num_current_points == 0:
-                    self.view_box.addItem(self.error_bar_item)
+                self.view_box.addItem(self.error_bar_item)
 
         self.num_current_points = num_to_show
 
