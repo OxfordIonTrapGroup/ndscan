@@ -10,6 +10,7 @@ import logging
 import numpy as np
 from artiq.coredevice.exceptions import RTIOUnderflow
 from artiq.language import *
+from dataclasses import dataclass
 from itertools import islice
 from typing import Any, Dict, List, Iterable, Iterator, Tuple, Type
 from .default_analysis import AnnotationContext, DefaultAnalysis
@@ -28,6 +29,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class ScanAxis:
     """Describes a single axis that is being scanned.
 
@@ -35,25 +37,23 @@ class ScanAxis:
     scan at runtime; i.e. the :class:`.ParamStore` to modify in order to set the
     parameter.
     """
-    def __init__(self, param_schema: Dict[str, Any], path: str,
-                 param_store: ParamStore):
-        self.param_schema = param_schema
-        self.path = path
-        self.param_store = param_store
+    param_schema: Dict[str, Any]
+    path: str
+    param_store: ParamStore
 
 
+@dataclass
 class ScanSpec:
-    """Describes a single scan.
+    """Describes a single scan."""
 
-    :param axes: The list of parameters that are scanned.
-    :param generators: Generators that give the points for each of the specified axes.
-    :param options: Applicable :class:`.ScanOptions`.
-    """
-    def __init__(self, axes: List[ScanAxis], generators: List[ScanGenerator],
-                 options: ScanOptions):
-        self.axes = axes
-        self.generators = generators
-        self.options = options
+    #: The list of parameters that are scanned.
+    axes: List[ScanAxis]
+
+    #: Generators that give the points for each of the specified axes.
+    generators: List[ScanGenerator]
+
+    #: Applicable :class:`.ScanOptions`.
+    options: ScanOptions
 
 
 class ScanRunner(HasEnvironment):
@@ -128,7 +128,7 @@ class ScanRunner(HasEnvironment):
 
 class ResultBatcher:
     """Intercepts all result channel sinks of the given fragment, making sure that every
-    channel has seen exactly one ``push()`` before forwarding the results to whatever 
+    channel has seen exactly one ``push()`` before forwarding the results to whatever
     sinks might have been set originally in one batch.
 
     This makes sure that buggy ``ExpFragment`` implementations that do not always push

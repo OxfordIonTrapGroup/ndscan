@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from itertools import product
 import numpy as np
 import random
@@ -225,19 +226,17 @@ GENERATORS = {
 }
 
 
+@dataclass
 class ScanOptions:
     """
     """
-    def __init__(self,
-                 num_repeats: int = 1,
-                 randomise_order_globally: bool = False,
-                 seed=None):
-        self.num_repeats = num_repeats
-        self.randomise_order_globally = randomise_order_globally
+    num_repeats: int = 1
+    randomise_order_globally: bool = False
+    seed: int = None
 
-        if seed is None:
-            seed = random.getrandbits(32)
-        self.seed = seed
+    def __post_init__(self):
+        if self.seed is None:
+            self.seed = random.getrandbits(32)
 
 
 def generate_points(axis_generators: List[ScanGenerator],
