@@ -102,10 +102,34 @@ class ScanOptions:
         randomise_globally_layout.addWidget(self.randomise_globally_box)
         randomise_globally_layout.setStretchFactor(self.randomise_globally_box, 1)
 
+        #
+
+        self.skip_persistently_failing_container = QtWidgets.QWidget()
+        skip_persistently_failing_layout = QtWidgets.QHBoxLayout()
+        self.skip_persistently_failing_container.setLayout(
+            skip_persistently_failing_layout)
+
+        skip_persistently_failing_label = QtWidgets.QLabel(
+            "Skip point if transitory errors persist: ")
+        skip_persistently_failing_layout.addWidget(skip_persistently_failing_label)
+        skip_persistently_failing_layout.setStretchFactor(
+            skip_persistently_failing_label, 0)
+
+        self.skip_persistently_failing_box = QtWidgets.QCheckBox()
+        self.skip_persistently_failing_box.setChecked(
+            current_scan.get("skip_on_persistent_transitory_error", False))
+        self.skip_persistently_failing_box.setToolTip(
+            "If more than the configured limit of transitory errors occur for a " +
+            "single scan point, skip it and attempt the next point instead of " +
+            "terminating the entire scan. Does not affect regular exceptions.")
+        skip_persistently_failing_layout.addWidget(self.skip_persistently_failing_box)
+        skip_persistently_failing_layout.setStretchFactor(
+            self.skip_persistently_failing_box, 1)
+
     def get_widgets(self) -> List[QtWidgets.QWidget]:
         return [
             self.num_repeats_container, self.no_axis_container,
-            self.randomise_globally_container
+            self.randomise_globally_container, self.skip_persistently_failing_container
         ]
 
     def write_to_params(self, params: Dict[str, Any]) -> None:
@@ -113,6 +137,8 @@ class ScanOptions:
         scan["num_repeats"] = self.num_repeats_box.value()
         scan["no_axes_mode"] = NoAxesMode(self.no_axes_box.currentText()).name
         scan["randomise_order_globally"] = self.randomise_globally_box.isChecked()
+        scan["skip_on_persistent_transitory_error"] = (
+            self.skip_persistently_failing_box.isChecked())
 
 
 class ArgumentEditor(QtWidgets.QTreeWidget):

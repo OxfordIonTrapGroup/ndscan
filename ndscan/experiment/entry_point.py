@@ -100,7 +100,8 @@ class FragmentScanExperiment(EnvExperiment):
         """
         param_stores = self.args.make_override_stores()
 
-        spec, no_axes_mode = self.args.make_scan_spec()
+        spec, no_axes_mode, skip_on_persistent_transitory_error = (
+            self.args.make_scan_spec())
         for ax in spec.axes:
             fqn = ax.param_schema["fqn"]
             param_stores.setdefault(fqn, []).append((ax.path, ax.param_store))
@@ -127,7 +128,8 @@ class FragmentScanExperiment(EnvExperiment):
             spec=spec,
             no_axes_mode=no_axes_mode,
             max_rtio_underflow_retries=self.max_rtio_underflow_retries,
-            max_transitory_error_retries=self.max_transitory_error_retries)
+            max_transitory_error_retries=self.max_transitory_error_retries,
+            skip_on_persistent_transitory_error=skip_on_persistent_transitory_error)
 
     def run(self):
         name = get_class_pretty_name(self.fragment.__class__)
@@ -188,7 +190,7 @@ class ArgumentInterface(HasEnvironment):
                            for s in specs]
         return stores
 
-    def make_scan_spec(self) -> Tuple[ScanSpec, NoAxesMode]:
+    def make_scan_spec(self) -> Tuple[ScanSpec, NoAxesMode, bool]:
         scan = self._params.get("scan", {})
 
         generators = []
@@ -211,9 +213,11 @@ class ArgumentInterface(HasEnvironment):
 
         options = ScanOptions(scan.get("num_repeats", 1),
                               scan.get("randomise_order_globally", False))
-        no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
         spec = ScanSpec(axes, generators, options)
-        return spec, no_axes_mode
+        no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
+        skip_on_persistent_transitory_error = scan.get(
+            "skip_on_persistent_transitory_error", False)
+        return spec, no_axes_mode, skip_on_persistent_transitory_error
 
 
 class TopLevelRunner(HasEnvironment):
@@ -223,11 +227,13 @@ class TopLevelRunner(HasEnvironment):
               no_axes_mode: NoAxesMode = NoAxesMode.single,
               max_rtio_underflow_retries: int = 3,
               max_transitory_error_retries: int = 10,
-              dataset_prefix: Optional[str] = None):
+              dataset_prefix: Optional[str] = None,
+              skip_on_persistent_transitory_error: bool = False):
         self.fragment = fragment
         self.spec = spec
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
+        self.skip_on_persistent_transitory_error = skip_on_persistent_transitory_error
 
         self.setattr_device("ccb")
         self.setattr_device("core")
@@ -328,7 +334,9 @@ class TopLevelRunner(HasEnvironment):
             runner = select_runner_class(self.fragment)(
                 self,
                 max_rtio_underflow_retries=self.max_rtio_underflow_retries,
-                max_transitory_error_retries=self.max_transitory_error_retries)
+                max_transitory_error_retries=self.max_transitory_error_retries,
+                skip_on_persistent_transitory_error=self.
+                skip_on_persistent_transitory_error)
             self._coordinate_sinks = [
                 AppendingDatasetSink(self,
                                      self.dataset_prefix + "points.axis_{}".format(i))

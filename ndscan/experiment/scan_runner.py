@@ -62,7 +62,8 @@ class ScanRunner(HasEnvironment):
     """
     def build(self,
               max_rtio_underflow_retries: int = 3,
-              max_transitory_error_retries: int = 10):
+              max_transitory_error_retries: int = 10,
+              skip_on_persistent_transitory_error: bool = False):
         """
         :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan
             point (by simply trying again) before giving up. Three is a pretty arbitrary
@@ -71,9 +72,16 @@ class ScanRunner(HasEnvironment):
             timing is critical.
         :param max_transitory_error_retries: Number of transitory errors to tolerate per
             scan point (by simply trying again) before giving up.
+        :param skip_on_persistent_transitory_error: By default, transitory errors above
+            the configured limit are raised for the calling code to handle (possibly
+            terminating the experiment). If ``True``, points with too many transitory
+            errors will be skipped instead after logging an error. Consequences for
+            overall system robustness should be considered before using this in
+            automated code.
         """
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
+        self.skip_on_persistent_transitory_error = skip_on_persistent_transitory_error
         self.setattr_device("core")
         self.setattr_device("scheduler")
 
@@ -360,6 +368,9 @@ class KernelScanRunner(ScanRunner):
                 return True
             except TransitoryError:
                 if num_transitory_errors >= self.max_transitory_error_retries:
+                    if self.skip_on_persistent_transitory_error:
+                        self._skip_point()
+                        return False
                     raise
                 num_transitory_errors += 1
                 print("Caught transitory error (", num_transitory_errors, "/",
@@ -405,6 +416,13 @@ class KernelScanRunner(ScanRunner):
         self._result_batcher.discard_current()
 
     @rpc(flags={"async"})
+    def _skip_point(self):
+        self._result_batcher.discard_current()
+        values = self._current_chunk.pop(0)
+        logger.error("Skipping point: %s", values)
+        self._update_host_param_stores()
+
+    @rpc(flags={"async"})
     def _point_completed(self):
         # This might raise an exception, which will only bubble up to the user during
         # the next synchronous RPC request. As this only occurs when the user code
@@ -412,9 +430,13 @@ class KernelScanRunner(ScanRunner):
         # should be acceptable, however.
         self._result_batcher.ensure_complete_and_push()
 
+        # Now that we know that a complete point was successfully produced, also record
+        # the axis coordinates.
         values = self._current_chunk.pop(0)
         for value, sink in zip(values, self._axis_sinks):
             sink.push(value)
+
+        # Prepare for the next point.
         self._update_host_param_stores()
 
     @host_only
