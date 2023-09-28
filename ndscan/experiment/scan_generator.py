@@ -230,8 +230,24 @@ GENERATORS = {
 class ScanOptions:
     """
     """
+
+    #: How many times to iterate through the specified scan points.
+    #:
+    #: For scans with more than one level, the repetitions are executed for each level
+    #: before proceeding to the next one. This way, e.g. :class:`.RefiningGenerator`,
+    #: which produces infinitely many points, can still be employed in interactive
+    #: work when wanting to use repeats to gather statistical information.
     num_repeats: int = 1
+
+    #: Whether to randomise the acquisition order of data points across all axes
+    #: (within a refinement level).
+    #:
+    #: This is complementary to the randomisation options a :class:`.ScanGenerator` will
+    #: typically have, as for a multi-dimensional scan, that alone would still lead to
+    #: data being acquired "stripe by stripe" (hyperplane by hyperplane).
     randomise_order_globally: bool = False
+
+    #: Global seed to use for randomising the point acquisition order (if requested).
     seed: int = None
 
     def __post_init__(self):
