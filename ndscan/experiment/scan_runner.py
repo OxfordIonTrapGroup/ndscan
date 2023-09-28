@@ -6,6 +6,7 @@ will likely be used by end users via
 :class:`~ndscan.experiment.entry_point.FragmentScanExperiment` or subscans.
 """
 
+import logging
 import numpy as np
 from artiq.coredevice.exceptions import RTIOUnderflow
 from artiq.language import *
@@ -14,7 +15,7 @@ from typing import Any, Dict, List, Iterable, Iterator, Tuple, Type
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore, type_string_to_param
-from .result_channels import ResultChannel, ResultSink
+from .result_channels import ResultChannel, ResultSink, SingleUseSink
 from .scan_generator import generate_points, ScanGenerator, ScanOptions
 from .utils import is_kernel
 
@@ -23,6 +24,8 @@ __all__ = [
     "match_default_analysis", "filter_default_analyses", "describe_scan",
     "describe_analyses"
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class ScanAxis:
@@ -94,7 +97,10 @@ class ScanRunner(HasEnvironment):
             # keep the semantics uniform).
             fragment.recompute_param_defaults()
             try:
+                # FIXME: Need to handle transitory errors here.
                 fragment.host_setup()
+
+                # For on-core-device scans, we'll spawn a kernel here.
                 if self.acquire():
                     return
             finally:
@@ -120,6 +126,71 @@ class ScanRunner(HasEnvironment):
         raise NotImplementedError
 
 
+class ResultBatcher:
+    """Intercepts all result channel sinks of the given fragment, making sure that every
+    channel has seen exactly one ``push()`` before forwarding the results to whatever 
+    sinks might have been set originally in one batch.
+
+    This makes sure that buggy ``ExpFragment`` implementations that do not always push
+    a result, or points that failed halfway through, do not lead to "desynchronised"
+    datasets/… (where the indices in the struct-of-arrays construction no longer match
+    up).
+    """
+    def __init__(self, fragment: ExpFragment) -> None:
+        self._fragment = fragment
+        self._orig_sinks = dict[ResultChannel, ResultSink]()
+
+    def install(self) -> None:
+        """Start intercepting results."""
+        channels = dict[str, ResultChannel]()
+        self._fragment._collect_result_channels(channels)
+        for channel in channels.values():
+            if channel.sink is None:
+                continue
+            self._orig_sinks[channel] = channel.sink
+            channel.sink = SingleUseSink()
+
+    def discard_current(self) -> None:
+        """Discard any results that may have been pushed already (e.g. if a point was
+        interrupted.)
+        """
+        for channel in self._orig_sinks.keys():
+            if channel.sink.is_set():
+                # This is normal, e.g. when a transitory error interrupts a point.
+                logger.debug("Discarding result for '%s'", channel)
+            channel.sink.reset()
+
+    def ensure_complete_and_push(self) -> None:
+        """Make sure each result channel has been pushed to (failing if not), and then
+        forward the results to the original sinks.
+        """
+        # First check whether we have all the values.
+        for channel in self._orig_sinks.keys():
+            if not channel.sink.is_set():
+                raise ValueError(f"Missing value for result channel '{channel}' " +
+                                 "(push() not called for current point)")
+        # Only then forward them.
+        for channel, orig_sink in self._orig_sinks.items():
+            orig_sink.push(channel.sink.get())
+            channel.sink.reset()
+
+    def remove(self) -> None:
+        """Stop intercepting results, restoring the original sinks."""
+        self.discard_current()
+
+        # Restore direct access to original sinks for future use.
+        for channel, original_sink in self._orig_sinks.items():
+            channel.set_sink(original_sink)
+        self._orig_sinks.clear()
+
+    def __enter__(self) -> "ResultBatcher":
+        self.install()
+        return self
+
+    def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
+        self.remove()
+
+
 class HostScanRunner(ScanRunner):
     def setup(self, fragment: ExpFragment, axes: List[ScanAxis],
               axis_sinks: List[ResultSink]) -> None:
@@ -131,21 +202,30 @@ class HostScanRunner(ScanRunner):
         self._points = points
 
     def acquire(self) -> bool:
-        try:
-            while True:
-                axis_values = next(self._points, None)
-                if axis_values is None:
-                    return True
-                for (axis, value, sink) in zip(self._axes, axis_values,
-                                               self._axis_sinks):
-                    axis.param_store.set_value(value)
-                    sink.push(value)
-                self._fragment.device_setup()
-                self._fragment.run_once()
-                if self.scheduler.check_pause():
-                    return False
-        finally:
-            self._fragment.device_cleanup()
+        with ResultBatcher(self._fragment) as result_batcher:
+            try:
+                # FIXME: Need to handle transitory errors here (or possibly, would be
+                # enough to do so in ScanRunner.run(), which we want anyway for
+                # host_setup(), etc.).
+                while True:
+                    axis_values = next(self._points, None)
+                    if axis_values is None:
+                        return True
+                    for (axis, value) in zip(self._axes, axis_values):
+                        axis.param_store.set_value(value)
+                    self._fragment.device_setup()
+                    self._fragment.run_once()
+
+                    result_batcher.ensure_complete_and_push()
+                    for (sink, value) in zip(self._axis_sinks, axis_values):
+                        # Now that we know self._fragment successfully produced a
+                        # complete point, also record the axis coordinates.
+                        sink.push(value)
+
+                    if self.scheduler.check_pause():
+                        return False
+            finally:
+                self._fragment.device_cleanup()
 
 
 class KernelScanRunner(ScanRunner):
@@ -190,6 +270,11 @@ class KernelScanRunner(ScanRunner):
             setattr(self, "_param_setter_{}".format(i), axis.param_store.set_value)
         self._run_chunk = self._build_run_chunk(len(axes))
 
+        # We'll have to set up the ResultBatcher on the host during the scan to
+        # appropriately handle the results streaming in via async RPCs, so unfortunately
+        # cannot use the context manager API.
+        self._result_batcher: ResultBatcher | None = None
+
     def set_points(self, points: Iterator[Tuple]) -> None:
         self._points = points
         # Stash away points in current kernel chunk until they have been marked
@@ -215,8 +300,19 @@ class KernelScanRunner(ScanRunner):
         code += "return self._RUN_CHUNK_PROCEED"
         return kernel_from_string(["self"], code)
 
+    @rpc(flags={"async"})
+    def _install_result_batcher(self):
+        self._result_batcher = ResultBatcher(self._fragment)
+        self._result_batcher.install()
+
+    @rpc(flags={"async"})
+    def _remove_result_batcher(self):
+        self._result_batcher.remove()
+        self._result_batcher = None
+
     @kernel
     def acquire(self) -> TBool:
+        self._install_result_batcher()
         try:
             self._last_pause_check_mu = self.core.get_rtio_counter_mu()
             while True:
@@ -230,6 +326,7 @@ class KernelScanRunner(ScanRunner):
                     return True
                 assert result == self._RUN_CHUNK_PROCEED
         finally:
+            self._remove_result_batcher()
             self._fragment.device_cleanup()
         assert False, "Execution never reaches here, return is just to pacify compiler."
         return True
@@ -305,21 +402,19 @@ class KernelScanRunner(ScanRunner):
 
     @rpc(flags={"async"})
     def _retry_point(self):
-        # TODO: Ensure any values pushed to result channels in this iteration are
-        # discarded. For this, we'll need to make ScanRunner aware of the result channel
-        # sinks (not just the axis sinks), or "rebind" the fragment's result channels
-        # to intercept values locally and only forward them to the real sinks in
-        # _point_completed.
-        pass
+        self._result_batcher.discard_current()
 
     @rpc(flags={"async"})
     def _point_completed(self):
+        # This might raise an exception, which will only bubble up to the user during
+        # the next synchronous RPC request. As this only occurs when the user code
+        # contains a logic error (failure to call push() on a result channel), this
+        # should be acceptable, however.
+        self._result_batcher.ensure_complete_and_push()
+
         values = self._current_chunk.pop(0)
         for value, sink in zip(values, self._axis_sinks):
             sink.push(value)
-
-        # TODO: Warn if some result channels have not been pushed to.
-
         self._update_host_param_stores()
 
     @host_only
@@ -331,7 +426,6 @@ class KernelScanRunner(ScanRunner):
         a host RPC to update (e.g. a non-@kernel device_setup()), the RPC'd code will
         execute using the expected values.
         """
-
         if self._is_out_of_points():
             return
         # Set the host-side parameter stores.

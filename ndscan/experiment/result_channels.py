@@ -8,8 +8,9 @@ from typing import Any, Dict, List, Optional
 from .utils import dump_json
 
 __all__ = [
-    "LastValueSink", "ArraySink", "AppendingDatasetSink", "ScalarDatasetSink",
-    "ResultChannel", "NumericChannel", "FloatChannel", "IntChannel", "OpaqueChannel"
+    "SingleUseSink", "LastValueSink", "ArraySink", "AppendingDatasetSink",
+    "ScalarDatasetSink", "ResultChannel", "NumericChannel", "FloatChannel",
+    "IntChannel", "OpaqueChannel"
 ]
 
 
@@ -17,11 +18,51 @@ class ResultSink:
     """
     """
     def push(self, value: Any) -> None:
+        """Record a new value.
+
+        This should never fail; neither in the sense of raising an exception, nor (for
+        sinks that record a series of values) in the sense of failing to record the
+        presence of a value, as code consuming results relies on one ``push()`` each to
+        a set of result channels and subsequently sinks representing a single multi-
+        dimensional data point.
+        """
         raise NotImplementedError
 
 
+class SingleUseSink(ResultSink):
+    """Sink that allows only one value to be pushed (before being cleared)."""
+    def __init__(self):
+        self._is_set: bool = False
+        self._value: Any = None
+
+    def push(self, value: Any) -> None:
+        if self._is_set:
+            raise RuntimeError("Result channel already pushed to")
+        self._value = value
+        self._is_set = True
+
+    def is_set(self) -> bool:
+        return self._is_set
+
+    def get(self) -> Any:
+        if not self._is_set:
+            raise ValueError("No value pushed to sink")
+        return self._value
+
+    def get_last(self) -> Any:
+        # Backwards-compatibility to user fragments which make assumptions about the
+        # presence of ResultChannel.sink with a certain API; "last" is misleading in
+        # this context.
+        return self.get()
+
+    def reset(self) -> None:
+        self._value = None
+        self._is_set = False
+
+
 class LastValueSink(ResultSink):
-    """Sink that stores the last-pushed value."""
+    """Sink that allows multiple values to be pushed, but retains only the last-pushed
+    one."""
     def __init__(self):
         self.value = None
 
