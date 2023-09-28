@@ -251,8 +251,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
             },
             "path": "*"
         }]
-        exp = self._test_run_1d(ScanReboundAddOneExp, "fixtures.ReboundAddOneFragment",
-                                expected_axes)
+        exp = self._test_run_1d(ScanReboundAddOneExp, fragment_fqn, expected_axes)
         self.assertEqual(exp.fragment.add_one.num_host_setup_calls, 1)
         self.assertEqual(exp.fragment.add_one.num_device_setup_calls, 3)
         self.assertEqual(exp.fragment.add_one.num_host_cleanup_calls, 1)
