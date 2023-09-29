@@ -14,16 +14,27 @@ qasync = "^0.24.0"
 sipyco = { git = "https://github.com/m-labs/sipyco.git" }
 oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
 
-# On macOS, there are two issues:
-#  - Qt 5 is not packaged (at least not for ARM64), and
-#  - window embedding is broken, causing upstream ARTIQ to crash when launching applets.
-# Thus, we depend on PyQt6 and a specific branch for macOS, but a more general (but
-# still pre-release) version of ARTIQ otherwise.
-artiq = [
-    { platform = "darwin", git = "https://github.com/dnadlinger/artiq.git", branch = "mac-applets" },
-    { platform = "win32", version = "8.*" },
-    { platform = "linux", version = "8.*" },
-]
+# For ARTIQ, we are running into an annoying Poetry limitation (?): We would like to be
+# able to specify a Git repository source, as ARTIQ is not on PyPI, and additionally we
+# tend to depend on unreleased versions. Additionally, however, we want to be able to
+# use ndscan as a dependency, e.g. from downstream metapackages, where we might also
+# want to depend on a particular version of ARTIQ (for instance, an Oxford-internal
+# development branch for things that have not made it upstream yet). Currently, there
+# does not seem a way for us to just specify a "fallback" Git source; Poetry appears to
+# always consider two differing Git dependencies to be in conflict with each other.
+#
+# On macOS, there are two additional issues: Qt 5 is not packaged (at least not for
+# ARM64), and window embedding is broken, causing upstream ARTIQ to crash when launching
+# applets. There is a temporary branch fixing this at
+# { platform = "darwin", git = "https://github.com/dnadlinger/artiq.git", branch = "mac-applets" },
+# but adding this dependency again somehow causes the Git source to be used for the
+# other platforms (with the aforementioned issues).
+#
+# Thus, for the time being, we leave it up to the user to provide a suitable version of
+# ARTIQ and only specify the Qt dependencies (which could be further refined into
+# optional dependencies of some kind, as in theory, ndscan can run against either Qt
+# version on every platform).
+artiq = { version = "8.*" }
 pyqt5 = { version = "^5.15.9", markers = "sys_platform != 'darwin'" }
 pyqt6 = { version = "^6.5.2", markers = "sys_platform == 'darwin'" }
 
