@@ -10,7 +10,12 @@ python = "^3.10"
 numpy = "^1.24.2"
 h5py = "^3.8.0"
 pyqtgraph = "^0.13.3"
-qasync = "^0.24.0"
+
+# qasync 0.24.2 has horrendous threading issues on Windows, which (for not entirely
+# obvious reasons) mostly show up on Python 3.10 and up. For the time being, depend
+# on a pre-release version with those issues fixed.
+qasync = { git = "https://github.com/dnadlinger/qasync.git", branch = "windows-fixes" }
+
 sipyco = { git = "https://github.com/m-labs/sipyco.git" }
 oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
 
