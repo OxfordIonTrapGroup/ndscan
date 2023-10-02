@@ -245,6 +245,12 @@
 <span class="sd">            - Path of the linked result channel</span>
 <span class="sd">            - Indicates that this result channel should be drawn on the same plot axis</span>
 <span class="sd">              as the given other channel.</span>
+<span class="sd">          * - ``share_pane_with``</span>
+<span class="sd">            - Path of the linked result channel</span>
+<span class="sd">            - Indicates that this result channel should be drawn on the same plot pane</span>
+<span class="sd">              as the given other channel (but e.g. on its own y axis). This restores</span>
+<span class="sd">              the behaviour of previous ``ndscan`` versions, where all axes used to be</span>
+<span class="sd">              shown in a single plot pane.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
