@@ -12,8 +12,9 @@ from .._qt import QtCore, QtGui, QtWidgets
 from .model import Context
 
 
-class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
-    """PlotWidget with the ability to create multiple y axes linked to the same x axis.
+class MultiYAxisPlotItem(pyqtgraph.PlotItem):
+    """Wraps PlotItem with the ability to create multiple y axes linked to the same x
+    axis.
 
     This is somewhat of a hack following the MultiplePlotAxes pyqtgraph example.
     """
@@ -22,34 +23,36 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
         self._num_y_axes = 0
         self._additional_view_boxes = []
         self._additional_right_axes = []
+        self._borderPen = pyqtgraph.functions.mkPen(
+            pyqtgraph.getConfigOption("foreground"), width=0.7)
+        self.draw_border = False
 
     def new_y_axis(self):
         self._num_y_axes += 1
 
-        pi = self.getPlotItem()
         if self._num_y_axes == 1:
-            return pi.getAxis("left"), pi.getViewBox()
+            return self.getAxis("left"), self.getViewBox()
 
         vb = pyqtgraph.ViewBox()
 
         if self._num_y_axes == 2:
             # With more than one axis, we need to start resizing the linked views.
-            pi.getViewBox().sigResized.connect(self._update_additional_view_boxes)
+            self.getViewBox().sigResized.connect(self._update_additional_view_boxes)
 
-            pi.showAxis("right")
-            axis = pi.getAxis("right")
+            self.showAxis("right")
+            axis = self.getAxis("right")
         else:
             axis = pyqtgraph.AxisItem("right")
             # FIXME: Z value setting is cargo-culted in from the pyqtgraph example –
             # what should the correct value be?
             axis.setZValue(-10000)
             self._additional_right_axes.append(axis)
-            pi.layout.addItem(axis, 2, self._num_y_axes)
+            self.layout.addItem(axis, 2, self._num_y_axes)
 
-        pi.scene().addItem(vb)
+        self.scene().addItem(vb)
         axis.linkToView(vb)
         axis.setGrid(False)
-        vb.setXLink(pi)
+        vb.setXLink(self)
         self._additional_view_boxes.append(vb)
         self._update_additional_view_boxes()
         return axis, vb
@@ -57,10 +60,10 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
     def reset_y_axes(self):
         # TODO: Do we need to unlink anything else to avoid leaking memory?
         for vb in self._additional_view_boxes:
-            self.getPlotItem().removeItem(vb)
+            self.removeItem(vb)
         self._additional_view_boxes = []
         for axis in self._additional_right_axes:
-            self.getPlotItem().layout.removeItem(axis)
+            self.layout.removeItem(axis)
         self._additional_right_axes = []
         self._num_y_axes = 0
 
@@ -69,6 +72,57 @@ class MultiYAxisPlotWidget(pyqtgraph.PlotWidget):
             vb.setGeometry(self.getViewBox().sceneBoundingRect())
         for vb in self._additional_view_boxes:
             vb.linkedViewChanged(self.getViewBox(), vb.XAxis)
+
+    def paint(self, painter, *args):
+        super().paint(painter, *args)
+        if self.draw_border:
+            # In what is a bit of a hack, add in a border for the top and right borders
+            # as well to make stacked plots look a bit nicer.
+            painter.setPen(self._borderPen)
+            painter.drawRect(
+                self.mapRectFromScene(self.getViewBox().sceneBoundingRect()))
+
+
+class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
+    """A vertical stack of (potentially) multiple plot panes with a single shared
+    x axis.
+
+    For the sake of clarity, the concept of one such subplot is consistently referred to
+    as a "pane" throughout the code.
+    """
+    def __init__(self):
+        super().__init__()
+        self.panes = list[MultiYAxisPlotItem]()
+
+    def add_pane(self) -> MultiYAxisPlotItem:
+        """Extend layout vertically by one :class:`.MultiYAxisPlotItem`."""
+        plot = MultiYAxisPlotItem()
+        self.addItem(plot)
+        self.nextRow()
+        self.panes.append(plot)
+        return plot
+
+    def link_x_axes(self) -> None:
+        """Fold all x axes into one shared one on the bottom.
+
+        Call after all panes have been added.
+        """
+        max_axis_width = max(p.getAxis("left").width() for p in self.panes)
+        for pane in self.panes:
+            pane.getAxis("left").setWidth(max_axis_width)
+            pane.draw_border = True
+
+        for pane in self.panes[:-1]:
+            pane.setXLink(self.panes[-1])
+            # We can't completely hide the bottom axis, as the vertical grid lines are
+            # also part of it.
+            pane.getAxis("bottom").setStyle(showValues=False)
+
+    def clear(self) -> None:
+        for pane in self.panes:
+            pane.reset_y_axes()
+        self.panes.clear()
+        super().clear()
 
 
 class ContextMenuBuilder:
@@ -105,13 +159,11 @@ class ContextMenuBuilder:
         self._entries.append(action)
 
 
-class ContextMenuPlotWidget(MultiYAxisPlotWidget):
+class ContextMenuPanesWidget(VerticalPanesWidget):
     """PlotWidget with support for dynamically populated context menus."""
-    def __init__(self):
-        super().__init__()
-        self._monkey_patch_context_menu()
+    def add_pane(self) -> MultiYAxisPlotItem:
+        pane = super().add_pane()
 
-    def _monkey_patch_context_menu(self):
         # The pyqtgraph getContextMenus() mechanism by default isn't very useful –
         # returned entries are appended to the menu every time the function is called.
         # This just happens to work out in the most common case where menus are static,
@@ -121,9 +173,15 @@ class ContextMenuPlotWidget(MultiYAxisPlotWidget):
         # raiseContextMenu() implementation to create a new QMenu (ViewBoxMenu) instance
         # every time. This is slightly wasteful, but context menus should be created
         # seldomly enough for the slight increase in latency not to matter.
-        self.plotItem.getContextMenus = self._get_context_menus
 
-        vb = self.plotItem.getViewBox()
+        def get_context_menu(pane_idx=len(self.panes) - 1):
+            builder = ContextMenuBuilder(pane.getViewBox().menu)
+            self.build_context_menu(pane_idx, builder)
+            return builder.finish()
+
+        pane.getContextMenus = get_context_menu
+
+        vb = pane.getViewBox()
         orig_raise_context_menu = vb.raiseContextMenu
 
         def raiseContextMenu(ev):
@@ -132,16 +190,13 @@ class ContextMenuPlotWidget(MultiYAxisPlotWidget):
 
         vb.raiseContextMenu = raiseContextMenu
 
-    def _get_context_menus(self, event):
-        builder = ContextMenuBuilder(self.plotItem.getViewBox().menu)
-        self.build_context_menu(builder)
-        return builder.finish()
+        return pane
 
-    def build_context_menu(self, builder: ContextMenuBuilder) -> None:
+    def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
         pass
 
 
-class AlternateMenuPlotWidget(ContextMenuPlotWidget):
+class AlternateMenuPanesWidget(ContextMenuPanesWidget):
     """PlotWidget with context menu for integration with the
     .container_widget.PlotContainerWidget alternate plot switching functionality.
 
@@ -155,7 +210,7 @@ class AlternateMenuPlotWidget(ContextMenuPlotWidget):
         super().__init__()
         self._get_alternate_plot_names = get_alternate_plot_names
 
-    def build_context_menu(self, builder: ContextMenuBuilder) -> None:
+    def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
         alternate_plot_names = self._get_alternate_plot_names()
         if len(alternate_plot_names) > 1:
             for name in alternate_plot_names:
@@ -165,9 +220,9 @@ class AlternateMenuPlotWidget(ContextMenuPlotWidget):
         builder.ensure_separator()
 
 
-class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
+class SubplotMenuPanesWidget(AlternateMenuPanesWidget):
     """PlotWidget with a context menu to open new windows for subplots (in addition to
-    AlternateMenuPlotWidget functionality).
+    AlternateMenuPanesWidget functionality).
     """
     def __init__(self, context: Context, get_alternate_plot_names):
         super().__init__(get_alternate_plot_names)
@@ -188,12 +243,12 @@ class SubplotMenuPlotWidget(AlternateMenuPlotWidget):
             w.hide()
         super().hideEvent(*args)
 
-    def build_context_menu(self, builder: ContextMenuBuilder) -> None:
+    def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
         for name in self.subscan_roots.keys():
             action = builder.append_action("Open subscan '{}'".format(name))
             action.triggered.connect(lambda *args, name=name: self.open_subplot(name))
         builder.ensure_separator()
-        super().build_context_menu(builder)
+        super().build_context_menu(pane_idx, builder)
 
     def open_subplot(self, name: str):
         widget = self.subplot_widgets.get(name, None)

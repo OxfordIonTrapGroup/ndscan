@@ -81,6 +81,26 @@ def extract_scalar_channels(
     return data_names, error_bar_names
 
 
+def _get_share_name(name: str, keyword: str, channels: Dict[str, Any],
+                    path_to_name: Dict[str, str]):
+    """Extract the name of a channel from a display hint of another channel
+
+    :param name: The name of the channel.
+    :param keyword: The `display_hint` keyword to look for.
+    :param channels: ndscan.channels metadata.
+    :param path_to_name: A dictionary mapping channel paths to channel names.
+        For example for a given list of channel `names`:
+        ```{channels[name]["path"]: name for name in names}```
+    """
+    path = channels[name].get("display_hints", {}).get(keyword, None)
+    if path is None:
+        return name
+    if path not in path_to_name:
+        logger.warning("%s target path '%s' does not exist", keyword, path)
+        return name
+    return path_to_name[path]
+
+
 def group_channels_into_axes(channels: Dict[str, Any],
                              data_names: List[str]) -> List[List[str]]:
     """Extract channels with scalar numerical values from the given channel metadata,
@@ -96,22 +116,13 @@ def group_channels_into_axes(channels: Dict[str, Any],
     # cache the results in a dict to only emit the does-not-exist warning once.
     path_to_name = {channels[name]["path"]: name for name in data_names}
 
-    def get_share_name(name):
-        path = channels[name].get("display_hints", {}).get("share_axis_with", None)
-        if path is None:
-            return name
-        if path not in path_to_name:
-            logger.warning("share_axis_with target path '%s' does not exist", path)
-            return name
-        return path_to_name[path]
-
     # Group data names into axes. We don't know which order we will get the channels in,
     # so just check both directions. This implementation is quadratic, but many other
     # things will break before this becomes a concern.
     axes = []
     share_names = {}
     for index, name in enumerate(data_names):
-        share_name = get_share_name(name)
+        share_name = _get_share_name(name, "share_axis_with", channels, path_to_name)
         share_names[name] = share_name
 
         target_axis = None
@@ -158,6 +169,51 @@ def group_channels_into_axes(channels: Dict[str, Any],
     axes.sort(key=lambda a: a[0])
 
     return [[name for (_, name) in axis] for axis in axes]
+
+
+def group_axes_into_panes(channels: Dict[str, Any],
+                          axes_names: List[List[str]]) -> List[List[List[str]]]:
+    """Group axes returned by :func:`group_channels_into_axes` into plots by
+        ``share_pane_with`` annotations in the channel's ``display_hints``.
+
+    :param channels: ndscan.channels metadata.
+    :param axes_names: The axes to group, see :func:`group_channels_into_axes`.
+        Sets the order of results.
+
+    :return: A list of lists of lists giving the channel names along each axis for each
+        plot.
+    """
+    path_to_name = {channels[n]["path"]: n for names in axes_names for n in names}
+    name_to_axis_idx = {n: i for (i, ax) in enumerate(axes_names) for n in ax}
+
+    axes_share_idxs = []  # List of sets of indices of axes sharing one plot.
+    for (idx, names) in enumerate(axes_names):
+        # The axis indices with which the current axis is to share a plot.
+        share_idxs = set([idx])
+        for name in names:
+            # Map all channel names specified to share a plot with the current axis
+            # to their respective axis.
+            share_name = _get_share_name(name, "share_pane_with", channels,
+                                         path_to_name)
+            share_idxs.add(name_to_axis_idx[share_name])
+
+        # If the current indices are part of any previous plot, merge that
+        # plot into the current one.
+        for existing_share_idxs in axes_share_idxs:
+            # `.copy()` to avoid changed set size during iteration.
+            for share_idx in share_idxs.copy():
+                if share_idx in existing_share_idxs:
+                    share_idxs.update(existing_share_idxs)
+                    existing_share_idxs.clear()
+
+        axes_share_idxs.append(share_idxs)
+
+    # Skip empty sets and sort the remaining axes in original order.
+    plots = [
+        sorted(list(share_idxs)) for share_idxs in axes_share_idxs
+        if len(share_idxs) > 0
+    ]
+    return [[axes_names[axis] for axis in plot] for plot in plots]
 
 
 def extract_linked_datasets(param_schema: Dict[str, Any]) -> List[str]:

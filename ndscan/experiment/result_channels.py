@@ -140,6 +140,12 @@ class ResultChannel:
             - Path of the linked result channel
             - Indicates that this result channel should be drawn on the same plot axis
               as the given other channel.
+          * - ``share_pane_with``
+            - Path of the linked result channel
+            - Indicates that this result channel should be drawn on the same plot pane
+              as the given other channel (but e.g. on its own y axis). This restores
+              the behaviour of previous ``ndscan`` versions, where all axes used to be
+              shown in a single plot pane.
     """
     def __init__(self,
                  path: str,

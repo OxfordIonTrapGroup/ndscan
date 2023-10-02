@@ -10,7 +10,7 @@ from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
-from .plot_widgets import add_source_id_label, AlternateMenuPlotWidget
+from .plot_widgets import add_source_id_label, AlternateMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, setup_axis_item)
 
@@ -181,7 +181,7 @@ class _ImagePlot:
             self.image_item.setRect(self.image_rect)
 
 
-class Image2DPlotWidget(AlternateMenuPlotWidget):
+class Image2DPlotWidget(AlternateMenuPanesWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
@@ -196,33 +196,14 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         self.data_names = []
 
         self.x_schema, self.y_schema = self.model.axes
+
+        self.plot_item = self.add_pane()
+        self.plot_item.showGrid(x=True, y=True)
         self.plot = None
-
-        def setup_axis(schema, location):
-            param = schema["param"]
-            return setup_axis_item(
-                self.getAxis(location),
-                [(param["description"], format_param_identity(schema), None,
-                  param["spec"])])
-
-        self.x_unit_suffix, self.x_data_to_display_scale = \
-            setup_axis(self.x_schema, "bottom")
-        self.y_unit_suffix, self.y_data_to_display_scale = \
-            setup_axis(self.y_schema, "left")
-
-        self.crosshair = LabeledCrosshairCursor(self, self.getPlotItem(),
-                                                self.x_unit_suffix,
-                                                self.x_data_to_display_scale,
-                                                self.y_unit_suffix,
-                                                self.y_data_to_display_scale)
-        self.showGrid(x=True, y=True)
-
-        self.source_label = add_source_id_label(self.getPlotItem().getViewBox(),
-                                                self.model.context)
 
     def _initialise_series(self, channels):
         if self.plot is not None:
-            self.removeItem(self.plot.image_item)
+            self.plot_item.removeItem(self.plot.image_item)
             self.plot = None
 
         try:
@@ -233,14 +214,33 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         if not self.data_names:
             self.error.emit("No scalar result channels to display")
 
+        def setup_axis(schema, location):
+            param = schema["param"]
+            return setup_axis_item(
+                self.plot_item.getAxis(location),
+                [(param["description"], format_param_identity(schema), None,
+                  param["spec"])])
+
+        self.x_unit_suffix, self.x_data_to_display_scale = \
+            setup_axis(self.x_schema, "bottom")
+        self.y_unit_suffix, self.y_data_to_display_scale = \
+            setup_axis(self.y_schema, "left")
+
+        self.crosshair = LabeledCrosshairCursor(self, self.plot_item,
+                                                self.x_unit_suffix,
+                                                self.x_data_to_display_scale,
+                                                self.y_unit_suffix,
+                                                self.y_data_to_display_scale)
+
+        self.source_label = add_source_id_label(self.plot_item.getViewBox(),
+                                                self.model.context)
+
         def bounds(schema):
             return (schema.get(n, None) for n in ("min", "max", "increment"))
 
         image_item = pyqtgraph.ImageItem()
-        self.addItem(image_item)
-        colorbar = self.getPlotItem().addColorBar(image_item,
-                                                  width=15.0,
-                                                  interactive=False)
+        self.plot_item.addItem(image_item)
+        colorbar = self.plot_item.addColorBar(image_item, width=15.0, interactive=False)
         self.plot = _ImagePlot(image_item, colorbar, self.data_names[0],
                                *bounds(self.x_schema), *bounds(self.y_schema), channels)
         self.ready.emit()
@@ -249,7 +249,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
         if self.plot:
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
-    def build_context_menu(self, builder):
+    def build_context_menu(self, pane_idx: int, builder):
         if self.model.context.is_online_master():
             x_datasets = extract_linked_datasets(self.x_schema["param"])
             y_datasets = extract_linked_datasets(self.y_schema["param"])
@@ -278,7 +278,7 @@ class Image2DPlotWidget(AlternateMenuPlotWidget):
                 lambda *a, name=name: self.plot.activate_channel(name))
         builder.ensure_separator()
 
-        super().build_context_menu(builder)
+        super().build_context_menu(pane_idx, builder)
 
     def _set_dataset_from_crosshair(self, dataset, axis):
         if not self.crosshair:

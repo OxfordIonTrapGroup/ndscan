@@ -3,9 +3,9 @@ import pyqtgraph
 
 from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
-from .plot_widgets import add_source_id_label, AlternateMenuPlotWidget
-from .utils import (extract_scalar_channels, group_channels_into_axes, setup_axis_item,
-                    SERIES_COLORS)
+from .plot_widgets import add_source_id_label, AlternateMenuPanesWidget
+from .utils import (extract_scalar_channels, group_channels_into_axes,
+                    group_axes_into_panes, setup_axis_item, SERIES_COLORS)
 
 
 class _Series:
@@ -63,7 +63,7 @@ class _Series:
             self.values = self.values[-n:, :]
 
 
-class Rolling1DPlotWidget(AlternateMenuPlotWidget):
+class Rolling1DPlotWidget(AlternateMenuPanesWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
@@ -77,16 +77,11 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
         self.series = []
         self._history_length = 1024
 
-        self.showGrid(x=True, y=True)
-
-        self.source_label = add_source_id_label(self.getPlotItem().getViewBox(),
-                                                self.model.context)
-
     def _initialise_series(self):
         for s in self.series:
             s.remove_items()
         self.series.clear()
-        self.reset_y_axes()
+        self.clear()
 
         channels = self.model.get_channel_schemata()
         try:
@@ -97,32 +92,40 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
 
         series_idx = 0
         axes = group_channels_into_axes(channels, data_names)
-        for names in axes:
-            axis, view_box = self.new_y_axis()
+        plots_axes = group_axes_into_panes(channels, axes)
+        for axes_names in plots_axes:
+            pane = self.add_pane()
+            pane.showGrid(x=True, y=True)
+            for names in axes_names:
+                axis, view_box = pane.new_y_axis()
 
-            info = []
-            for name in names:
-                color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
-                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
+                info = []
+                for name in names:
+                    color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
+                    data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
 
-                error_bar_item = None
-                error_bar_name = error_bar_names.get(name, None)
-                if error_bar_name:
-                    error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
+                    error_bar_item = None
+                    error_bar_name = error_bar_names.get(name, None)
+                    if error_bar_name:
+                        error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
-                self.series.append(
-                    _Series(view_box, name, data_item, error_bar_name, error_bar_item,
-                            self._history_length))
+                    self.series.append(
+                        _Series(view_box, name, data_item, error_bar_name,
+                                error_bar_item, self._history_length))
 
-                channel = channels[name]
-                label = channel["description"]
-                if not label:
-                    label = channel["path"].split("/")[-1]
-                info.append((label, channel["path"], color, channel))
+                    channel = channels[name]
+                    label = channel["description"]
+                    if not label:
+                        label = channel["path"].split("/")[-1]
+                    info.append((label, channel["path"], color, channel))
 
-                series_idx += 1
+                    series_idx += 1
 
-            setup_axis_item(axis, info)
+                setup_axis_item(axis, info)
+        if len(self.panes) > 1:
+            self.link_x_axes()
+        if self.series:
+            add_source_id_label(self.series[-1].view_box, self.model.context)
 
         self.ready.emit()
 
@@ -135,7 +138,7 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
         for s in self.series:
             s.set_history_length(n)
 
-    def build_context_menu(self, builder):
+    def build_context_menu(self, pane_idx: int, builder):
         if self.model.context.is_online_master():
             # If no new data points are coming in, setting the history size wouldn't do
             # anything.
@@ -161,4 +164,4 @@ class Rolling1DPlotWidget(AlternateMenuPlotWidget):
             action = builder.append_widget_action()
             action.setDefaultWidget(container)
         builder.ensure_separator()
-        super().build_context_menu(builder)
+        super().build_context_menu(pane_idx, builder)

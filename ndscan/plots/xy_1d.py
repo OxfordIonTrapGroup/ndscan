@@ -10,10 +10,10 @@ from .cursor import LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import add_source_id_label, SubplotMenuPlotWidget
+from .plot_widgets import add_source_id_label, SubplotMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, group_channels_into_axes, setup_axis_item,
-                    FIT_COLORS, SERIES_COLORS)
+                    format_param_identity, group_channels_into_axes,
+                    group_axes_into_panes, setup_axis_item, FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
@@ -155,13 +155,12 @@ class _XYSeries(QtCore.QObject):
         self.num_current_points = 0
 
 
-class XY1DPlotWidget(SubplotMenuPlotWidget):
+class XY1DPlotWidget(SubplotMenuPanesWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: ScanModel, get_alternate_plot_names):
         super().__init__(model.context, get_alternate_plot_names)
-
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(self._update_points)
@@ -182,32 +181,25 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
         self.found_duplicate_x_data = False
         self.averaging_enabled = False
 
-        x_schema = self.model.axes[0]
-        self.x_param_spec = x_schema["param"]["spec"]
-        self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
-            self.getAxis("bottom"),
-            [(x_schema["param"]["description"], format_param_identity(x_schema), None,
-              self.x_param_spec)])
-        self.y_unit_suffix = None
-        self.y_data_to_display_scale = None
-        self.crosshair = None
+        self.x_schema = self.model.axes[0]
+        self.x_param_spec = self.x_schema["param"]["spec"]
+
+        self.y_unit_suffixes = []
+        self.y_data_to_display_scales = []
+        self.crosshairs = []
         self._highlighted_spot = None
-        self.showGrid(x=True, y=True)
-
-        view_box = self.getPlotItem().getViewBox()
-        self.source_label = add_source_id_label(view_box, self.model.context)
-
-        view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
 
     def _initialise_series(self, channels):
         # Remove all currently shown items and any extra axes added.
+        # print(self, self.series)
         for s in self.series:
             s.remove_items()
         self.series.clear()
         self.unique_x_data.clear()
         self.found_duplicate_x_data = False
         self._clear_annotations()
-        self.reset_y_axes()
+        self.clear()
+        self.subscan_roots = create_subscan_roots(self.selected_point_model)
 
         try:
             data_names, error_bar_names = extract_scalar_channels(channels)
@@ -217,46 +209,58 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
 
         series_idx = 0
         axes = group_channels_into_axes(channels, data_names)
-        for names in axes:
-            axis, view_box = self.new_y_axis()
+        plots_axes = group_axes_into_panes(channels, axes)
 
-            info = []
-            for name in names:
-                color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
-                data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
-                data_item.sigClicked.connect(self._point_clicked)
+        for axes_names in plots_axes:
+            pane = self.add_pane()
+            pane.showGrid(x=True, y=True)
+            for names in axes_names:
+                axis, view_box = pane.new_y_axis()
+                view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
 
-                error_bar_name = error_bar_names.get(name, None)
+                info = []
+                for name in names:
+                    color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
+                    data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
+                    data_item.sigClicked.connect(self._point_clicked)
 
-                # Always create ErrorBarItem in case averaging is enabled later.
-                error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
+                    error_bar_name = error_bar_names.get(name, None)
 
-                self.series.append(
-                    _XYSeries(view_box, name, data_item, error_bar_name,
-                              error_bar_item))
+                    # Always create ErrorBarItem in case averaging is enabled later.
+                    error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
-                channel = channels[name]
-                label = channel["description"]
-                if not label:
-                    label = channel["path"].split("/")[-1]
-                info.append((label, channel["path"], color, channel))
+                    self.series.append(
+                        _XYSeries(view_box, name, data_item, error_bar_name,
+                                  error_bar_item))
 
-                series_idx += 1
+                    channel = channels[name]
+                    label = channel["description"]
+                    if not label:
+                        label = channel["path"].split("/")[-1]
+                    info.append((label, channel["path"], color, channel))
 
-            suffix, scale = setup_axis_item(axis, info)
-            if self.y_unit_suffix is None:
-                # FIXME: Add multiple lines to the crosshair.
-                self.y_unit_suffix = suffix
-                self.y_data_to_display_scale = scale
+                    series_idx += 1
 
-        if self.crosshair is None:
-            # FIXME: Reinitialise crosshair as necessary on schema changes.
-            self.crosshair = LabeledCrosshairCursor(self, self.getPlotItem(),
-                                                    self.x_unit_suffix,
-                                                    self.x_data_to_display_scale,
-                                                    self.y_unit_suffix,
-                                                    self.y_data_to_display_scale)
-        self.subscan_roots = create_subscan_roots(self.selected_point_model)
+                suffix, scale = setup_axis_item(axis, info)
+                self.y_unit_suffixes.append(suffix)
+                self.y_data_to_display_scales.append(scale)
+        if self.series:
+            add_source_id_label(self.series[-1].view_box, self.model.context)
+
+        if len(self.panes) > 1:
+            self.link_x_axes()
+
+        self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
+            self.panes[-1].getAxis("bottom"),
+            [(self.x_schema["param"]["description"], format_param_identity(
+                self.x_schema), None, self.x_param_spec)])
+
+        for i, plot in enumerate(self.panes):
+            self.crosshairs.append(
+                LabeledCrosshairCursor(self, plot, self.x_unit_suffix,
+                                       self.x_data_to_display_scale,
+                                       self.y_unit_suffixes[i],
+                                       self.y_data_to_display_scales[i]))
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -352,13 +356,14 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             logger.info("Ignoring annotation of kind '%s' with coordinates %s", a.kind,
                         list(a.coordinates.keys()))
 
-    def build_context_menu(self, builder):
+    def build_context_menu(self, pane_idx, builder):
         x_schema = self.model.axes[0]
 
         if self.model.context.is_online_master():
             for d in extract_linked_datasets(x_schema["param"]):
                 action = builder.append_action("Set '{}' from crosshair".format(d))
-                action.triggered.connect(lambda: self._set_dataset_from_crosshair_x(d))
+                action.triggered.connect(
+                    lambda *a, d=d: self._set_dataset_from_crosshair_x(pane_idx, d))
             builder.ensure_separator()
 
         if self.found_duplicate_x_data:
@@ -366,20 +371,20 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             action.setCheckable(True)
             action.setChecked(self.averaging_enabled)
             action.triggered.connect(
-                lambda: self.enable_averaging(not self.averaging_enabled))
+                lambda *a, d=d: self.enable_averaging(not self.averaging_enabled))
             builder.ensure_separator()
 
-        super().build_context_menu(builder)
+        super().build_context_menu(pane_idx, builder)
 
     def enable_averaging(self, enabled: bool):
         self.averaging_enabled = enabled
         self._update_points(self.model.get_point_data())
 
-    def _set_dataset_from_crosshair_x(self, dataset_key):
-        if not self.crosshair:
+    def _set_dataset_from_crosshair_x(self, pane_idx, dataset_key):
+        if not self.crosshairs:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.model.context.set_dataset(dataset_key, self.crosshair.last_x)
+        self.model.context.set_dataset(dataset_key, self.crosshairs[pane_idx].last_x)
 
     def _highlight_spot(self, spot):
         if self._highlighted_spot is not None:
@@ -389,9 +394,10 @@ class XY1DPlotWidget(SubplotMenuPlotWidget):
             spot.setPen("y", width=2)
             self._highlighted_spot = spot
 
-    def _point_clicked(self, scatter_plot_item, spot_items):
-        if not spot_items:
-            # No points clicked – events don't seem to emitted in this case anyway.
+    def _point_clicked(self, scatter_plot_item, spot_items: np.ndarray):
+        if len(spot_items) == 0:
+            # No points clicked. Nota bene: pyqtgraph does not actually seem to emit
+            # events in this case anyway, but this is not well-documented.
             self._background_clicked()
             return
 
