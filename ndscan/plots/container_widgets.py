@@ -125,7 +125,7 @@ class PlotContainerWidget(QtWidgets.QWidget):
         self._subscan_roots = create_subscan_roots(self.model)
         for name, root in self._subscan_roots.items():
             root.model_changed.connect(
-                lambda model: self._set_subscan_plot(name, model))
+                lambda model, name=name: self._set_subscan_plot(name, model))
 
     def _set_subscan_plot(self, name, model):
         old_plot = self._alternate_plots.get(name, None)
