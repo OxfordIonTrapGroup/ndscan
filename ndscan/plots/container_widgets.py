@@ -128,8 +128,8 @@ class PlotContainerWidget(QtWidgets.QWidget):
                 lambda model, name=name: self._set_subscan_plot(name, model))
 
     def _set_subscan_plot(self, name, model):
-        old_plot = self._alternate_plots.get(name, None)
-        if old_plot:
+        label = f"subscan '{name}'"
+        if (old_plot := self._alternate_plots.get(label)) is not None:
             self.widget_stack.removeWidget(old_plot)
 
         try:
@@ -137,7 +137,7 @@ class PlotContainerWidget(QtWidgets.QWidget):
         except NotImplementedError as err:
             logger.info("Ignoring subscan '%s': %s", name, str(err))
             return
-        self._alternate_plots["subscan '{}'".format(name)] = plot
+        self._alternate_plots[label] = plot
         self.widget_stack.addWidget(plot)
         plot.error.connect(self._show_error)
         plot.alternate_plot_requested.connect(self._show_alternate_plot)
