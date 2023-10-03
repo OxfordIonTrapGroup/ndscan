@@ -74,7 +74,8 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ndscan.experiment.scan_generator</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+<span></span><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterator</span>
@@ -324,19 +325,33 @@
 
 <div class="viewcode-block" id="ScanOptions">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_generator.ScanOptions">[docs]</a>
+<span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">ScanOptions</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">num_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                 <span class="n">randomise_order_globally</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">num_repeats</span> <span class="o">=</span> <span class="n">num_repeats</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">randomise_order_globally</span> <span class="o">=</span> <span class="n">randomise_order_globally</span>
 
-        <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">seed</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span></div>
+    <span class="c1">#: How many times to iterate through the specified scan points.</span>
+    <span class="c1">#:</span>
+    <span class="c1">#: For scans with more than one level, the repetitions are executed for each level</span>
+    <span class="c1">#: before proceeding to the next one. This way, e.g. :class:`.RefiningGenerator`,</span>
+    <span class="c1">#: which produces infinitely many points, can still be employed in interactive</span>
+    <span class="c1">#: work when wanting to use repeats to gather statistical information.</span>
+    <span class="n">num_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1">#: Whether to randomise the acquisition order of data points across all axes</span>
+    <span class="c1">#: (within a refinement level).</span>
+    <span class="c1">#:</span>
+    <span class="c1">#: This is complementary to the randomisation options a :class:`.ScanGenerator` will</span>
+    <span class="c1">#: typically have, as for a multi-dimensional scan, that alone would still lead to</span>
+    <span class="c1">#: data being acquired &quot;stripe by stripe&quot; (hyperplane by hyperplane).</span>
+    <span class="n">randomise_order_globally</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1">#: Global seed to use for randomising the point acquisition order (if requested).</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span></div>
 
 
 

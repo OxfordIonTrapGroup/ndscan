@@ -84,8 +84,9 @@
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">dump_json</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span> <span class="s2">&quot;AppendingDatasetSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ScalarDatasetSink&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ResultChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;NumericChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
+    <span class="s2">&quot;SingleUseSink&quot;</span><span class="p">,</span> <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span> <span class="s2">&quot;AppendingDatasetSink&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ScalarDatasetSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ResultChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;NumericChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
 <span class="p">]</span>
 
 
@@ -93,18 +94,67 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a new value.</span>
+
+<span class="sd">        This should never fail; neither in the sense of raising an exception, nor (for</span>
+<span class="sd">        sinks that record a series of values) in the sense of failing to record the</span>
+<span class="sd">        presence of a value, as code consuming results relies on one ``push()`` each to</span>
+<span class="sd">        a set of result channels and subsequently sinks representing a single multi-</span>
+<span class="sd">        dimensional data point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+
+<div class="viewcode-block" id="SingleUseSink">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.SingleUseSink">[docs]</a>
+<span class="k">class</span> <span class="nc">SingleUseSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that allows only one value to be pushed (before being cleared).&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SingleUseSink.push">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.SingleUseSink.push">[docs]</a>
+    <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Result channel already pushed to&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+    <span class="k">def</span> <span class="nf">is_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No value pushed to sink&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="k">def</span> <span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="c1"># Backwards-compatibility to user fragments which make assumptions about the</span>
+        <span class="c1"># presence of ResultChannel.sink with a certain API; &quot;last&quot; is misleading in</span>
+        <span class="c1"># this context.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span> <span class="o">=</span> <span class="kc">False</span></div>
+
 
 
 <div class="viewcode-block" id="LastValueSink">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.LastValueSink">[docs]</a>
 <span class="k">class</span> <span class="nc">LastValueSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that stores the last-pushed value.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that allows multiple values to be pushed, but retains only the last-pushed</span>
+<span class="sd">    one.&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
 
+<div class="viewcode-block" id="LastValueSink.push">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.LastValueSink.push">[docs]</a>
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+
 
 <div class="viewcode-block" id="LastValueSink.get_last">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.LastValueSink.get_last">[docs]</a>
@@ -122,8 +172,11 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
 
+<div class="viewcode-block" id="ArraySink.push">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ArraySink.push">[docs]</a>
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="ArraySink.get_all">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ArraySink.get_all">[docs]</a>
@@ -193,9 +246,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
+<div class="viewcode-block" id="ScalarDatasetSink.push">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink.push">[docs]</a>
     <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_pushed</span> <span class="o">=</span> <span class="kc">True</span></div>
+
 
 <div class="viewcode-block" id="ScalarDatasetSink.get_last">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink.get_last">[docs]</a>

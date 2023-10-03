@@ -82,18 +82,20 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">copy</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">rpc</span>
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">DefaultAnalysis</span>
-<span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">Fragment</span>
+<span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ArraySink</span><span class="p">,</span> <span class="n">LastValueSink</span><span class="p">,</span> <span class="n">OpaqueChannel</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">,</span>
                               <span class="n">SubscanChannel</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="kn">import</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
+<span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="kn">import</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span><span class="p">,</span> <span class="n">generate_points</span>
 <span class="kn">from</span> <span class="nn">.scan_runner</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ScanAxis</span><span class="p">,</span> <span class="n">ScanRunner</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">describe_analyses</span><span class="p">,</span>
-                          <span class="n">describe_scan</span><span class="p">,</span> <span class="n">filter_default_analyses</span><span class="p">)</span>
+                          <span class="n">describe_scan</span><span class="p">,</span> <span class="n">filter_default_analyses</span><span class="p">,</span> <span class="n">select_runner_class</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">is_kernel</span>
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">merge_no_duplicates</span><span class="p">,</span> <span class="n">shorten_to_unambiguous_suffixes</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;setattr_subscan&quot;</span><span class="p">,</span> <span class="s2">&quot;Subscan&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;setattr_subscan&quot;</span><span class="p">,</span> <span class="s2">&quot;Subscan&quot;</span><span class="p">,</span> <span class="s2">&quot;SubscanExpFragment&quot;</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="Subscan">
@@ -104,7 +106,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">run_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ExpFragment</span><span class="p">,</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ArraySink</span><span class="p">]],</span> <span class="kc">None</span><span class="p">],</span>
+        <span class="n">runner</span><span class="p">:</span> <span class="n">ScanRunner</span><span class="p">,</span>
         <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
         <span class="n">possible_axes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ScanAxis</span><span class="p">],</span>
         <span class="n">schema_channel</span><span class="p">:</span> <span class="n">SubscanChannel</span><span class="p">,</span>
@@ -115,7 +117,7 @@
         <span class="n">analyses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">],</span>
         <span class="n">parent_analysis_result_channels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">],</span>
     <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_run_fn</span> <span class="o">=</span> <span class="n">run_fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span> <span class="o">=</span> <span class="n">runner</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span> <span class="o">=</span> <span class="n">fragment</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_possible_axes</span> <span class="o">=</span> <span class="n">possible_axes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_schema_channel</span> <span class="o">=</span> <span class="n">schema_channel</span>
@@ -151,44 +153,87 @@
 <span class="sd">            lists of their values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
+        <span class="c1"># TODO: This is probably superfluous (or if not, the on-kernel-friendly</span>
+        <span class="c1"># implementation might also need something similar).</span>
         <span class="k">for</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">sink</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_scan_spec</span><span class="p">(</span><span class="n">axis_generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span><span class="p">,</span>
+                         <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_push_results</span><span class="p">(</span><span class="n">execute_default_analyses</span><span class="p">)</span></div>
 
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">generators</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">coordinate_sinks</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_scan_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">axis_generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">]],</span>
+                      <span class="n">options</span><span class="p">:</span> <span class="n">ScanOptions</span> <span class="o">=</span> <span class="n">ScanOptions</span><span class="p">()):</span>
+        <span class="n">axes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ScanGenerator</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ArraySink</span><span class="p">]()</span>
 
         <span class="k">for</span> <span class="n">param_handle</span><span class="p">,</span> <span class="n">generator</span> <span class="ow">in</span> <span class="n">axis_generators</span><span class="p">:</span>
             <span class="n">axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_possible_axes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param_handle</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">assert</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Axis not registered in setattr_subscan()&quot;</span>
             <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
             <span class="n">generators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">generator</span><span class="p">)</span>
-            <span class="n">coordinate_sinks</span><span class="p">[</span><span class="n">param_handle</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArraySink</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">[</span><span class="n">param_handle</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArraySink</span><span class="p">()</span>
 
-        <span class="n">spec</span> <span class="o">=</span> <span class="n">ScanSpec</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_run_fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span> <span class="o">=</span> <span class="n">ScanSpec</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_regenerate_points</span><span class="p">()</span>
 
-        <span class="n">scan_schema</span> <span class="o">=</span> <span class="n">describe_scan</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span>
-                                    <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_regenerate_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">set_points</span><span class="p">(</span>
+            <span class="n">generate_points</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spec</span><span class="o">.</span><span class="n">generators</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span><span class="o">.</span><span class="n">options</span><span class="p">))</span>
 
+    <span class="nd">@portable</span>
+    <span class="k">def</span> <span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">execute_default_analyses</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">acquire</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">RestartKernelTransitoryError</span><span class="p">(</span><span class="s2">&quot;Subscan interrupted by pause request&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_finalize</span><span class="p">(</span><span class="n">execute_default_analyses</span><span class="p">)</span>
+
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="k">def</span> <span class="nf">_finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">execute_default_analyses</span><span class="p">):</span>
+        <span class="c1"># Return is ignored for on-kernel-friendly scans.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_push_results</span><span class="p">(</span><span class="n">execute_default_analyses</span><span class="p">)</span>
+        <span class="c1"># Prepare for next subscan.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_regenerate_points</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_push_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">execute_default_analyses</span><span class="p">):</span>
         <span class="n">analysis_schema</span><span class="p">,</span> <span class="n">analysis_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_default_analyses</span><span class="p">(</span>
-            <span class="n">axes</span><span class="p">,</span> <span class="n">coordinate_sinks</span><span class="p">,</span> <span class="n">execute_default_analyses</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">,</span> <span class="n">execute_default_analyses</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_push_schema</span><span class="p">(</span><span class="n">analysis_schema</span><span class="p">)</span>
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_push_coordinates</span><span class="p">()</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_push_values</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">analysis_results</span>
+
+    <span class="k">def</span> <span class="nf">_push_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">analysis_schema</span><span class="p">):</span>
+        <span class="n">scan_schema</span> <span class="o">=</span> <span class="n">describe_scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">_short_child_channel_names</span><span class="p">)</span>
         <span class="n">scan_schema</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">analysis_schema</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_schema_channel</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">scan_schema</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_channels</span><span class="p">,</span> <span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-            <span class="n">channel</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span>
+    <span class="k">def</span> <span class="nf">_push_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">sink</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_channels</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
+            <span class="n">coordinates</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="c1"># Prepare for next iteration.</span>
+            <span class="n">sink</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
+        <span class="k">return</span> <span class="n">coordinates</span>
+
+    <span class="k">def</span> <span class="nf">_push_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">chan</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">v</span> <span class="o">=</span> <span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">()</span>
             <span class="n">values</span><span class="p">[</span><span class="n">chan</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_aggregate_result_channels</span><span class="p">[</span><span class="n">chan</span><span class="p">]</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-
-        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">coordinate_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">analysis_results</span></div>
-
+            <span class="c1"># Prepare for next iteration.</span>
+            <span class="n">sink</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">values</span>
 
     <span class="k">def</span> <span class="nf">_handle_default_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -289,12 +334,25 @@
 <span class="sd">    :return: A :class:`Subscan` instance to use to actually execute the scan.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">assert</span> <span class="n">owner</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="s2">&quot;Can only call install_subscan() during build_fragment()&quot;</span>
+    <span class="k">assert</span> <span class="n">owner</span><span class="o">.</span><span class="n">_building</span><span class="p">,</span> <span class="s2">&quot;Can only create a subscan during build_fragment()&quot;</span>
     <span class="k">assert</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">),</span> <span class="s2">&quot;Field &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scan_name</span><span class="p">)</span>
 
     <span class="c1"># Our own ScanRunner takes care of the fragment lifecycle.</span>
     <span class="n">owner</span><span class="o">.</span><span class="n">detach_fragment</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
 
+    <span class="n">subscan</span> <span class="o">=</span> <span class="n">setup_subscan</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scan_name</span><span class="si">}</span><span class="s2">_&quot;</span><span class="p">,</span> <span class="n">fragment</span><span class="p">,</span> <span class="n">axis_params</span><span class="p">,</span>
+                            <span class="n">save_results_by_default</span><span class="p">,</span> <span class="n">expose_analysis_results</span><span class="p">)</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">,</span> <span class="n">subscan</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">subscan</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">setup_subscan</span><span class="p">(</span><span class="n">result_target</span><span class="p">:</span> <span class="n">Fragment</span><span class="p">,</span>
+                  <span class="n">name_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                  <span class="n">scanned_fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
+                  <span class="n">axis_params</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Fragment</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+                  <span class="n">save_results_by_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                  <span class="n">expose_analysis_results</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Subscan</span><span class="p">:</span>
     <span class="c1"># Override target parameter stores with newly created stores.</span>
     <span class="c1"># TODO: Potentially make handles have identity and accept them directly.</span>
     <span class="n">axes</span> <span class="o">=</span> <span class="p">{}</span>
@@ -312,14 +370,14 @@
         <span class="c1">#    the most common use case anyway).</span>
         <span class="c1">#  - Serialise the scan point coordinates into the scan spec.</span>
         <span class="n">coordinate_channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span><span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
-                                 <span class="n">OpaqueChannel</span><span class="p">,</span>
-                                 <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span><span class="p">))</span>
+            <span class="n">result_target</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span><span class="n">name_prefix</span> <span class="o">+</span> <span class="s2">&quot;axis_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+                                         <span class="n">OpaqueChannel</span><span class="p">,</span>
+                                         <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span><span class="p">))</span>
 
     <span class="c1"># Instead of letting our parent directly manage the subfragment result channels,</span>
     <span class="c1"># we redirect the results to ArraySinks…</span>
     <span class="n">original_channels</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">original_channels</span><span class="p">)</span>
+    <span class="n">scanned_fragment</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">original_channels</span><span class="p">)</span>
 
     <span class="n">child_result_sinks</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">original_channels</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -340,14 +398,14 @@
         <span class="c1"># TODO: Implement ArrayChannel to represent a variable number of dimensions</span>
         <span class="c1"># around a scalar channel so we can keep the schema information here instead of</span>
         <span class="c1"># throwing our hands up in the air helplessly (i.e. using OpaqueChannel).</span>
-        <span class="n">aggregate_result_channels</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
-            <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_channel_&quot;</span> <span class="o">+</span> <span class="n">short_identifier</span><span class="p">,</span>
+        <span class="n">aggregate_result_channels</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">result_target</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span>
+            <span class="n">name_prefix</span> <span class="o">+</span> <span class="s2">&quot;channel_&quot;</span> <span class="o">+</span> <span class="n">short_identifier</span><span class="p">,</span>
             <span class="n">OpaqueChannel</span><span class="p">,</span>
             <span class="n">save_by_default</span><span class="o">=</span><span class="n">save_results_by_default</span> <span class="ow">and</span> <span class="n">channel</span><span class="o">.</span><span class="n">save_by_default</span><span class="p">)</span>
 
-    <span class="n">spec_channel</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span><span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_spec&quot;</span><span class="p">,</span> <span class="n">SubscanChannel</span><span class="p">)</span>
+    <span class="n">spec_channel</span> <span class="o">=</span> <span class="n">result_target</span><span class="o">.</span><span class="n">setattr_result</span><span class="p">(</span><span class="n">name_prefix</span> <span class="o">+</span> <span class="s2">&quot;spec&quot;</span><span class="p">,</span> <span class="n">SubscanChannel</span><span class="p">)</span>
 
-    <span class="n">analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">analyses</span> <span class="o">=</span> <span class="n">filter_default_analyses</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
     <span class="n">parent_analysis_result_channels</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">expose_analysis_results</span><span class="p">:</span>
         <span class="n">analysis_results</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span>
@@ -360,18 +418,106 @@
             <span class="c1"># TODO: Include &quot;analysis_result&quot; in the full name? Seemed a bit verbose</span>
             <span class="c1"># just to avoid collisions in the unlikely case of an analysis result named</span>
             <span class="c1"># &quot;spec&quot;, &quot;axis_0&quot; or similar.</span>
-            <span class="n">full_name</span> <span class="o">=</span> <span class="n">scan_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+            <span class="n">full_name</span> <span class="o">=</span> <span class="n">name_prefix</span> <span class="o">+</span> <span class="n">name</span>
             <span class="n">new_channel</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span>
-            <span class="n">new_channel</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">owner</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">full_name</span><span class="p">])</span>
-            <span class="n">owner</span><span class="o">.</span><span class="n">_register_result_channel</span><span class="p">(</span><span class="n">full_name</span><span class="p">,</span> <span class="n">new_channel</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">new_channel</span><span class="p">)</span>
+            <span class="n">new_channel</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result_target</span><span class="o">.</span><span class="n">_fragment_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">full_name</span><span class="p">])</span>
+            <span class="n">result_target</span><span class="o">.</span><span class="n">_register_result_channel</span><span class="p">(</span><span class="n">full_name</span><span class="p">,</span> <span class="n">new_channel</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                                                   <span class="n">new_channel</span><span class="p">)</span>
             <span class="n">parent_analysis_result_channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_channel</span>
 
-    <span class="n">subscan</span> <span class="o">=</span> <span class="n">Subscan</span><span class="p">(</span>
-        <span class="n">ScanRunner</span><span class="p">(</span><span class="n">owner</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">fragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="n">spec_channel</span><span class="p">,</span> <span class="n">coordinate_channels</span><span class="p">,</span>
-        <span class="n">child_result_sinks</span><span class="p">,</span> <span class="n">aggregate_result_channels</span><span class="p">,</span> <span class="n">short_child_channel_names</span><span class="p">,</span>
-        <span class="n">analyses</span><span class="p">,</span> <span class="n">parent_analysis_result_channels</span><span class="p">)</span>
-    <span class="nb">setattr</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">,</span> <span class="n">subscan</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">subscan</span></div>
+    <span class="c1"># KLUDGE: If we end up running on the kernel, the ARTIQ compiler needs to treat the</span>
+    <span class="c1"># &quot;inner&quot; (subscan) and &quot;outer&quot; (TopLevelRunner/…) ScanRunner instances differently</span>
+    <span class="c1"># in terms of types.</span>
+    <span class="k">class</span> <span class="nc">RunnerInstance</span><span class="p">(</span><span class="n">select_runner_class</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="p">)):</span>
+        <span class="c1"># KLUDGE: In particular, when we manually set the return type annotations for</span>
+        <span class="c1"># the parameter value fetching RPC, this should only affect this instance, so</span>
+        <span class="c1"># override the function. (Would just cloning the function/wrapping it in</span>
+        <span class="c1"># ScanRunner work?)</span>
+        <span class="k">def</span> <span class="nf">_get_param_values_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_param_values_chunk</span><span class="p">()</span>
+
+    <span class="n">runner</span> <span class="o">=</span> <span class="n">RunnerInstance</span><span class="p">(</span><span class="n">result_target</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">SubscanInstance</span><span class="p">(</span><span class="n">Subscan</span><span class="p">):</span>
+        <span class="c1"># ARTIQ compiler needs a different type for each RunnerInstance.</span>
+        <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">SubscanInstance</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">scanned_fragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="n">spec_channel</span><span class="p">,</span>
+                           <span class="n">coordinate_channels</span><span class="p">,</span> <span class="n">child_result_sinks</span><span class="p">,</span>
+                           <span class="n">aggregate_result_channels</span><span class="p">,</span> <span class="n">short_child_channel_names</span><span class="p">,</span>
+                           <span class="n">analyses</span><span class="p">,</span> <span class="n">parent_analysis_result_channels</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SubscanExpFragment">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment">[docs]</a>
+<span class="k">class</span> <span class="nc">SubscanExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+<div class="viewcode-block" id="SubscanExpFragment.build_fragment">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.build_fragment">[docs]</a>
+    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                       <span class="n">scanned_fragment_parent</span><span class="p">:</span> <span class="n">Fragment</span><span class="p">,</span>
+                       <span class="n">scanned_fragment</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ExpFragment</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+                       <span class="n">axis_params</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Fragment</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+                       <span class="n">save_results_by_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                       <span class="n">expose_analysis_results</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">scanned_fragment</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">scanned_fragment_parent</span><span class="p">,</span> <span class="n">scanned_fragment</span><span class="p">)</span>
+        <span class="n">scanned_fragment_parent</span><span class="o">.</span><span class="n">detach_fragment</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span> <span class="o">=</span> <span class="n">scanned_fragment</span>
+        <span class="c1"># FIXME: Fix subscan model name inference code, remove &quot;_&quot;.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span> <span class="o">=</span> <span class="n">setup_subscan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="n">scanned_fragment</span><span class="p">,</span> <span class="n">axis_params</span><span class="p">,</span>
+                                      <span class="n">save_results_by_default</span><span class="p">,</span> <span class="n">expose_analysis_results</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_once</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_run_once</span></div>
+
+
+<div class="viewcode-block" id="SubscanExpFragment.configure">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.configure">[docs]</a>
+    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis_generators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">]],</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">ScanOptions</span> <span class="o">=</span> <span class="n">ScanOptions</span><span class="p">()</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure point generators for each scan axis, and scan options.</span>
+
+<span class="sd">        This only needs to be called once (but can be called multiple times to change</span>
+<span class="sd">        settings between `run_once()` invocations, e.g. from a parent fragment</span>
+<span class="sd">        `{host, device}_setup()`).</span>
+
+<span class="sd">        :param axis_generators: The list of scan axes (dimensions). Each element is a</span>
+<span class="sd">            tuple of parameter to scan (handle must have been passed to</span>
+<span class="sd">            :func:`setattr_subscan` to set up), and the :class:`ScanGenerator` to use</span>
+<span class="sd">            to generate the points.</span>
+<span class="sd">        :param options: :class:`ScanOptions` to control scan execution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">set_scan_spec</span><span class="p">(</span><span class="n">axis_generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+
+    <span class="c1"># We don&#39;t forward prepare(), as there will be a top-level ExpFragment to own the</span>
+    <span class="c1"># scanned fragment anyway, which can then take care of this directly.</span>
+
+<div class="viewcode-block" id="SubscanExpFragment.host_setup">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.host_setup">[docs]</a>
+    <span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SubscanExpFragment.host_cleanup">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.host_cleanup">[docs]</a>
+    <span class="k">def</span> <span class="nf">host_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SubscanExpFragment.run_once">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.run_once">[docs]</a>
+    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span></div>
+
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span> <span class="nf">_kernel_run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span></div>
 
 </pre></div>
 
