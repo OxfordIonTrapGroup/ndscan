@@ -1,8 +1,8 @@
-from typing import Any, Dict, List
+from typing import Any
 from ..utils import SCHEMA_REVISION_KEY, strip_suffix
 
 
-def find_ndscan_roots(datasets: Dict[str, Any]) -> List[str]:
+def find_ndscan_roots(datasets: dict[str, Any]) -> list[str]:
     """Detect ndscan roots among the passed datasets, and returns a list of the name
     prefixes (e.g. ``ndscan.``).
     """
@@ -18,7 +18,7 @@ def find_ndscan_roots(datasets: Dict[str, Any]) -> List[str]:
     return results
 
 
-def get_source_id(datasets: Dict[str, Any], prefixes: List[str]):
+def get_source_id(datasets: dict[str, Any], prefixes: list[str]):
     # Take source_id from first prefix. This is pretty arbitrary, but for
     # experiment-generated files, they will all be the same anyway.
     if (prefixes[0] + "source_id") in datasets:

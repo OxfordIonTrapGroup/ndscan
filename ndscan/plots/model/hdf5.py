@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 import h5py
 from . import (Context, FixedDataSource, Model, Root, ScanModel, SinglePointModel)
 from .utils import call_later, emit_later
@@ -39,7 +39,7 @@ class HDF5Root(Root):
             self._model = HDF5ScanModel(axes, datasets, prefix, schema_revision,
                                         context)
 
-    def get_model(self) -> Optional[Model]:
+    def get_model(self) -> Model | None:
         return self._model
 
 
@@ -56,15 +56,15 @@ class HDF5SingleShotModel(SinglePointModel):
             self._point[key] = datasets[prefix + "point." + key][()]
         emit_later(self.point_changed, self._point)
 
-    def get_channel_schemata(self) -> Dict[str, Any]:
+    def get_channel_schemata(self) -> dict[str, Any]:
         return self._channel_schemata
 
-    def get_point(self) -> Optional[Dict[str, Any]]:
+    def get_point(self) -> dict[str, Any] | None:
         return self._point
 
 
 class HDF5ScanModel(ScanModel):
-    def __init__(self, axes: List[Dict[str, Any]], datasets: h5py.Group, prefix: str,
+    def __init__(self, axes: list[dict[str, Any]], datasets: h5py.Group, prefix: str,
                  schema_revision: int, context: Context):
         super().__init__(axes, schema_revision, context)
 
@@ -88,18 +88,18 @@ class HDF5ScanModel(ScanModel):
                     pass
 
         self._point_data = {}
-        for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
+        for name in ([f"axis_{i}" for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
             self._point_data[name] = datasets[prefix + "points." + name][:]
         emit_later(self.points_appended, self._point_data)
 
-    def get_channel_schemata(self) -> Dict[str, Any]:
+    def get_channel_schemata(self) -> dict[str, Any]:
         return self._channel_schemata
 
-    def get_point_data(self) -> Dict[str, Any]:
+    def get_point_data(self) -> dict[str, Any]:
         return self._point_data
 
-    def get_analysis_result_source(self, name: str) -> Optional[FixedDataSource]:
+    def get_analysis_result_source(self, name: str) -> FixedDataSource | None:
         if name not in self._analysis_result_sources:
             return None
         return self._analysis_result_sources[name]

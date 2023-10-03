@@ -10,9 +10,10 @@ import logging
 import numpy as np
 from artiq.coredevice.exceptions import RTIOUnderflow
 from artiq.language import *
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
-from typing import Any, Dict, List, Iterable, Iterator, Tuple, Type
+from typing import Any
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore, type_string_to_param
@@ -37,7 +38,7 @@ class ScanAxis:
     scan at runtime; i.e. the :class:`.ParamStore` to modify in order to set the
     parameter.
     """
-    param_schema: Dict[str, Any]
+    param_schema: dict[str, Any]
     path: str
     param_store: ParamStore
 
@@ -47,10 +48,10 @@ class ScanSpec:
     """Describes a single scan."""
 
     #: The list of parameters that are scanned.
-    axes: List[ScanAxis]
+    axes: list[ScanAxis]
 
     #: Generators that give the points for each of the specified axes.
-    generators: List[ScanGenerator]
+    generators: list[ScanGenerator]
 
     #: Applicable :class:`.ScanOptions`.
     options: ScanOptions
@@ -86,7 +87,7 @@ class ScanRunner(HasEnvironment):
         self.setattr_device("scheduler")
 
     def run(self, fragment: ExpFragment, spec: ScanSpec,
-            axis_sinks: List[ResultSink]) -> None:
+            axis_sinks: list[ResultSink]) -> None:
         """Run a scan of the given fragment, with axes as specified.
 
         Integrates with the ARTIQ scheduler to pause/terminate execution as requested.
@@ -119,11 +120,11 @@ class ScanRunner(HasEnvironment):
                     self.core.close()
             self.scheduler.pause()
 
-    def setup(self, fragment: ExpFragment, axes: List[ScanAxis],
-              axis_sinks: List[ResultSink]) -> None:
+    def setup(self, fragment: ExpFragment, axes: list[ScanAxis],
+              axis_sinks: list[ResultSink]) -> None:
         raise NotImplementedError
 
-    def set_points(self, points: Iterator[Tuple]) -> None:
+    def set_points(self, points: Iterator[tuple]) -> None:
         raise NotImplementedError
 
     def acquire(self) -> bool:
@@ -200,13 +201,13 @@ class ResultBatcher:
 
 
 class HostScanRunner(ScanRunner):
-    def setup(self, fragment: ExpFragment, axes: List[ScanAxis],
-              axis_sinks: List[ResultSink]) -> None:
+    def setup(self, fragment: ExpFragment, axes: list[ScanAxis],
+              axis_sinks: list[ResultSink]) -> None:
         self._fragment = fragment
         self._axes = axes
         self._axis_sinks = axis_sinks
 
-    def set_points(self, points: Iterator[Tuple]) -> None:
+    def set_points(self, points: Iterator[tuple]) -> None:
         self._points = points
 
     def acquire(self) -> bool:
@@ -241,8 +242,8 @@ class KernelScanRunner(ScanRunner):
     # metaprogramming. While the interface for this class is effortlessly generic, the
     # implementation might well be a long-forgotten ritual for invoking Cthulhu.
 
-    def setup(self, fragment: ExpFragment, axes: List[ScanAxis],
-              axis_sinks: List[ResultSink]) -> None:
+    def setup(self, fragment: ExpFragment, axes: list[ScanAxis],
+              axis_sinks: list[ResultSink]) -> None:
         self._fragment = fragment
 
         # Set up members to be accessed from the kernel through the
@@ -275,7 +276,7 @@ class KernelScanRunner(ScanRunner):
         # express indexing or deconstructing a tuple of values of inhomogeneous types
         # without actually writing it out as an assignment from a tuple value.
         for i, axis in enumerate(axes):
-            setattr(self, "_param_setter_{}".format(i), axis.param_store.set_value)
+            setattr(self, f"_param_setter_{i}", axis.param_store.set_value)
         self._run_chunk = self._build_run_chunk(len(axes))
 
         # We'll have to set up the ResultBatcher on the host during the scan to
@@ -283,7 +284,7 @@ class KernelScanRunner(ScanRunner):
         # cannot use the context manager API.
         self._result_batcher: ResultBatcher | None = None
 
-    def set_points(self, points: Iterator[Tuple]) -> None:
+    def set_points(self, points: Iterator[tuple]) -> None:
         self._points = points
         # Stash away points in current kernel chunk until they have been marked
         # complete so we can resume from interruptions.
@@ -295,9 +296,9 @@ class KernelScanRunner(ScanRunner):
     _RUN_CHUNK_SCAN_COMPLETE = 2
 
     def _build_run_chunk(self, num_axes):
-        param_decl = " ".join("p{0},".format(idx) for idx in range(num_axes))
+        param_decl = " ".join(f"p{idx}," for idx in range(num_axes))
         code = ""
-        code += "({}) = self._get_param_values_chunk()\n".format(param_decl)
+        code += f"({param_decl}) = self._get_param_values_chunk()\n"
         code += "if not p0:\n"  # No more points
         code += "    return self._RUN_CHUNK_SCAN_COMPLETE\n"
         code += "for i in range(len(p0)):\n"
@@ -464,7 +465,7 @@ class KernelScanRunner(ScanRunner):
         return not self._current_chunk
 
 
-def select_runner_class(fragment: ExpFragment) -> Type[ScanRunner]:
+def select_runner_class(fragment: ExpFragment) -> type[ScanRunner]:
     if is_kernel(fragment.run_once):
         return KernelScanRunner
     else:
@@ -481,13 +482,13 @@ def match_default_analysis(analysis: DefaultAnalysis, axes: Iterable[ScanAxis]) 
     the refactoring towards exposing a set of required axis handles from
     DefaultAnalysis, but we should revisit this.)
     """
-    stores = set(a.param_store for a in axes)
+    stores = {a.param_store for a in axes}
     assert None not in stores, "Can only match analyses after stores have been created"
-    return set(a._store for a in analysis.required_axes()) == stores
+    return {a._store for a in analysis.required_axes()} == stores
 
 
 def filter_default_analyses(fragment: ExpFragment,
-                            axes: Iterable[ScanAxis]) -> List[DefaultAnalysis]:
+                            axes: Iterable[ScanAxis]) -> list[DefaultAnalysis]:
     """Return the default analyses of the given fragment that can be executed for the
     given scan spec.
 
@@ -507,7 +508,7 @@ def filter_default_analyses(fragment: ExpFragment,
 
 
 def describe_scan(spec: ScanSpec, fragment: ExpFragment,
-                  short_result_names: Dict[ResultChannel, str]) -> Dict[str, Any]:
+                  short_result_names: dict[ResultChannel, str]) -> dict[str, Any]:
     """Return metadata for the given spec in stringly typed dictionary form.
 
     :param spec: :class:`.ScanSpec` describing the scan.
@@ -538,7 +539,7 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
 
 
 def describe_analyses(analyses: Iterable[DefaultAnalysis],
-                      context: AnnotationContext) -> Dict[str, Any]:
+                      context: AnnotationContext) -> dict[str, Any]:
     """Return metadata for the given analyses in stringly typed dictionary form.
 
     :param analyses: The :class:`.DefaultAnalysis` objects to describe (already filtered
@@ -559,6 +560,6 @@ def describe_analyses(analyses: Iterable[DefaultAnalysis],
         for name, spec in online_analyses.items():
             if name in desc["online_analyses"]:
                 raise ValueError(
-                    "An online analysis with name '{}' already exists".format(name))
+                    f"An online analysis with name '{name}' already exists")
             desc["online_analyses"][name] = spec
     return desc

@@ -25,7 +25,8 @@ situations.)
 
 import logging
 import numpy
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 from ..._qt import QtCore
 from .online_analysis import OnlineNamedFitAnalysis
 
@@ -120,9 +121,9 @@ class OnlineAnalysisDataSource(AnnotationDataSource):
 
 
 class Annotation:
-    def __init__(self, kind: str, parameters: Dict[str, Any],
-                 coordinates: Dict[str, AnnotationDataSource],
-                 data: Dict[str, AnnotationDataSource]):
+    def __init__(self, kind: str, parameters: dict[str, Any],
+                 coordinates: dict[str, AnnotationDataSource],
+                 data: dict[str, AnnotationDataSource]):
         self.kind = kind
         self.parameters = parameters
         self.coordinates = coordinates
@@ -153,14 +154,14 @@ class Model(QtCore.QObject):
         self.context = context
         self.schema_revision = schema_revision
 
-    def get_channel_schemata(self) -> Dict[str, Any]:
+    def get_channel_schemata(self) -> dict[str, Any]:
         raise NotImplementedError
 
 
 class SinglePointModel(Model):
     point_changed = QtCore.pyqtSignal(object)
 
-    def get_point(self) -> Optional[Dict[str, Any]]:
+    def get_point(self) -> dict[str, Any] | None:
         raise NotImplementedError
 
 
@@ -169,7 +170,7 @@ class ScanModel(Model):
     points_appended = QtCore.pyqtSignal(dict)
     annotations_changed = QtCore.pyqtSignal(list)
 
-    def __init__(self, axes: List[Dict[str, Any]], schema_revision: int,
+    def __init__(self, axes: list[dict[str, Any]], schema_revision: int,
                  context: Context):
         super().__init__(schema_revision, context)
         self.axes = axes
@@ -177,13 +178,13 @@ class ScanModel(Model):
         self._annotation_schemata = []
         self._online_analyses = {}
 
-    def get_point_data(self) -> Dict[str, Any]:
+    def get_point_data(self) -> dict[str, Any]:
         raise NotImplementedError
 
-    def get_annotations(self) -> List[Annotation]:
+    def get_annotations(self) -> list[Annotation]:
         return self._annotations
 
-    def get_analysis_result_source(self, name: str) -> Optional[AnnotationDataSource]:
+    def get_analysis_result_source(self, name: str) -> AnnotationDataSource | None:
         raise NotImplementedError
 
     #
@@ -192,7 +193,7 @@ class ScanModel(Model):
     # design.
     #
 
-    def _set_annotation_schemata(self, schemata: List[Dict[str, Any]]):
+    def _set_annotation_schemata(self, schemata: list[dict[str, Any]]):
         """Replace annotations with ones created according to the given schemata.
 
         This will be called by concrete subclasses once/whenever they have received the
@@ -236,7 +237,7 @@ class ScanModel(Model):
                 Annotation(schema["kind"], schema.get("parameters", {}), *sources))
         self.annotations_changed.emit(self._annotations)
 
-    def _set_online_analyses(self, analysis_schemata: Dict[str, Dict[str,
+    def _set_online_analyses(self, analysis_schemata: dict[str, dict[str,
                                                                      Any]]) -> None:
         """Create and hook up online analyses from the given schema.
 

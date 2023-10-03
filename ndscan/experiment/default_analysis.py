@@ -17,7 +17,8 @@ Both can produce annotations; particular values or plot locations highlighted in
 user interface.
 """
 import logging
-from typing import Any, Callable, Dict, List, Iterable, Optional, Set, Tuple, Union
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from ..utils import FIT_OBJECTS
 from .parameters import ParamHandle
@@ -62,7 +63,7 @@ class AnnotationContext:
 
     def describe_coordinate(self, obj) -> str:
         if isinstance(obj, ParamHandle):
-            return "axis_{}".format(self._get_axis_index(obj))
+            return f"axis_{self._get_axis_index(obj)}"
         if isinstance(obj, ResultChannel):
             return "channel_" + self._name_channel(obj)
         return obj
@@ -85,15 +86,15 @@ class Annotation:
     """
     def __init__(self,
                  kind: str,
-                 coordinates: Optional[dict] = None,
-                 parameters: Optional[dict] = None,
-                 data: Optional[dict] = None):
+                 coordinates: dict | None = None,
+                 parameters: dict | None = None,
+                 data: dict | None = None):
         self.kind = kind
         self.coordinates = {} if coordinates is None else coordinates
         self.parameters = {} if parameters is None else parameters
         self.data = {} if data is None else data
 
-    def describe(self, context: AnnotationContext) -> Dict[str, Any]:
+    def describe(self, context: AnnotationContext) -> dict[str, Any]:
         def to_spec_map(dictionary):
             result = {}
             for key, value in dictionary.items():
@@ -113,21 +114,21 @@ class Annotation:
 #: correct concept of identity to use (rather than e.g. directly parameter handles), as
 #: an analysis typically doesn't care whether a parameter was for instance scanned via
 #: the path of the particular handle given or a wildcard path spec.
-AxisIdentity = Tuple[str, str]
+AxisIdentity = tuple[str, str]
 
 
 class DefaultAnalysis:
     """Analysis functionality associated with an `ExpFragment` to be executed when that
     fragment is scanned in a particular way.
     """
-    def required_axes(self) -> Set[ParamHandle]:
+    def required_axes(self) -> set[ParamHandle]:
         """Return the scan axes necessary for the analysis to apply, in form of the
         parameter handles."""
         raise NotImplementedError
 
     def describe_online_analyses(
         self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
         """Exceute analysis and serialise information about resulting annotations and
         online analyses to stringly typed metadata.
 
@@ -139,15 +140,15 @@ class DefaultAnalysis:
         """
         raise NotImplementedError
 
-    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+    def get_analysis_results(self) -> dict[str, ResultChannel]:
         raise NotImplementedError
 
     def execute(
         self,
-        axis_data: Dict[AxisIdentity, list],
-        result_data: Dict[ResultChannel, list],
+        axis_data: dict[AxisIdentity, list],
+        result_data: dict[ResultChannel, list],
         context: AnnotationContext,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Exceute analysis and serialise information about resulting annotations to
         stringly typed metadata.
 
@@ -189,8 +190,8 @@ class CustomAnalysis(DefaultAnalysis):
         self,
         required_axes: Iterable[ParamHandle],
         analyze_fn: Callable[[
-            Dict[ParamHandle, list], Dict[ResultChannel, list], Dict[str, ResultChannel]
-        ], Optional[List[Annotation]]],
+            dict[ParamHandle, list], dict[ResultChannel, list], dict[str, ResultChannel]
+        ], list[Annotation] | None],
         analysis_results: Iterable[ResultChannel] = [],
     ):
         self._required_axis_handles = set(required_axes)
@@ -206,26 +207,26 @@ class CustomAnalysis(DefaultAnalysis):
                                  f"in analysis for axes [{axes}]")
             self._result_channels[name] = channel
 
-    def required_axes(self) -> Set[ParamHandle]:
+    def required_axes(self) -> set[ParamHandle]:
         ""
         return self._required_axis_handles
 
     def describe_online_analyses(
         self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
         ""
         return [], {}
 
-    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+    def get_analysis_results(self) -> dict[str, ResultChannel]:
         ""
         return self._result_channels
 
     def execute(
         self,
-        axis_data: Dict[AxisIdentity, list],
-        result_data: Dict[ResultChannel, list],
+        axis_data: dict[AxisIdentity, list],
+        result_data: dict[ResultChannel, list],
         context: AnnotationContext,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         ""
         user_axis_data = {}
         for handle in self._required_axis_handles:
@@ -323,11 +324,11 @@ class OnlineFit(DefaultAnalysis):
     """
     def __init__(self,
                  fit_type: str,
-                 data: Dict[str, Union[ParamHandle, ResultChannel]],
-                 annotations: Optional[Dict[str, Dict[str, Any]]] = None,
+                 data: dict[str, ParamHandle | ResultChannel],
+                 annotations: dict[str, dict[str, Any]] | None = None,
                  analysis_identifier: str = None,
-                 constants: Optional[Dict[str, Any]] = None,
-                 initial_values: Optional[Dict[str, Any]] = None):
+                 constants: dict[str, Any] | None = None,
+                 initial_values: dict[str, Any] | None = None):
         self.fit_type = fit_type
         if fit_type not in FIT_OBJECTS:
             logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
@@ -339,13 +340,13 @@ class OnlineFit(DefaultAnalysis):
         self.constants = {} if constants is None else constants
         self.initial_values = {} if initial_values is None else initial_values
 
-    def required_axes(self) -> Set[ParamHandle]:
+    def required_axes(self) -> set[ParamHandle]:
         ""
-        return set(a for a in self.data.values() if isinstance(a, ParamHandle))
+        return {a for a in self.data.values() if isinstance(a, ParamHandle)}
 
     def describe_online_analyses(
         self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
         ""
         # TODO: Generalise to higher-dimensional fits.
         channels = [
@@ -402,17 +403,17 @@ class OnlineFit(DefaultAnalysis):
             }
         }
 
-    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+    def get_analysis_results(self) -> dict[str, ResultChannel]:
         ""
         # Could return annotation locations in the future.
         return {}
 
     def execute(
         self,
-        axis_data: Dict[AxisIdentity, list],
-        result_data: Dict[ResultChannel, list],
+        axis_data: dict[AxisIdentity, list],
+        result_data: dict[ResultChannel, list],
         context: AnnotationContext,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         ""
         # Nothing to do off-line for online fits.
         return []
@@ -433,15 +434,15 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
         self._wrapped = wrapped
         self._prefix = prefix
 
-    def required_axes(self) -> Set[ParamHandle]:
+    def required_axes(self) -> set[ParamHandle]:
         return self._wrapped.required_axes()
 
     def describe_online_analyses(
         self, context: AnnotationContext
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
         return self._wrapped.describe_online_analyses(context)
 
-    def get_analysis_results(self) -> Dict[str, ResultChannel]:
+    def get_analysis_results(self) -> dict[str, ResultChannel]:
         # TODO: Prepend to ResultChannel.path as well? For now, nothing relies on the
         # path schema entry for analysis results, so it's a wash.
         return {
@@ -451,8 +452,8 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
 
     def execute(
         self,
-        axis_data: Dict[AxisIdentity, list],
-        result_data: Dict[ResultChannel, list],
+        axis_data: dict[AxisIdentity, list],
+        result_data: dict[ResultChannel, list],
         context: AnnotationContext,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return self._wrapped.execute(axis_data, result_data, context)

@@ -18,7 +18,7 @@ def _make_dimensional_plot(model: ScanModel, get_alternate_names):
     if dim == 2:
         return Image2DPlotWidget(model, get_alternate_names)
     raise NotImplementedError(
-        "Plots for {}-dimensional data are not yet implemented".format(dim))
+        f"Plots for {dim}-dimensional data are not yet implemented")
 
 
 class RootWidget(QtWidgets.QWidget):
@@ -50,7 +50,7 @@ class RootWidget(QtWidgets.QWidget):
         self.plot_container = None
 
     def _set_window_title(self, title):
-        self.setWindowTitle("{} – ndscan".format(title))
+        self.setWindowTitle(f"{title} – ndscan")
 
     def _update_plot(self):
         if self.plot_container:

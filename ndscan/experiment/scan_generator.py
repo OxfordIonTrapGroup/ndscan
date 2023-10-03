@@ -1,8 +1,9 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 from itertools import product
 import numpy as np
 import random
-from typing import Any, Dict, List, Iterator
+from typing import Any
 
 __all__ = [
     "ScanGenerator", "RefiningGenerator", "LinearGenerator", "ListGenerator",
@@ -18,12 +19,12 @@ class ScanGenerator:
         """
         raise NotImplementedError
 
-    def points_for_level(self, level: int, rng=None) -> List[Any]:
+    def points_for_level(self, level: int, rng=None) -> list[Any]:
         """
         """
         raise NotImplementedError
 
-    def describe_limits(self, target: Dict[str, Any]) -> None:
+    def describe_limits(self, target: dict[str, Any]) -> None:
         """
         """
         raise NotImplementedError
@@ -43,7 +44,7 @@ class RefiningGenerator(ScanGenerator):
         # out of points. Will need to be amended for integer parameters.
         return True
 
-    def points_for_level(self, level: int, rng=None) -> List[Any]:
+    def points_for_level(self, level: int, rng=None) -> list[Any]:
         ""
         if level == 0:
             return [self.lower, self.upper]
@@ -57,7 +58,7 @@ class RefiningGenerator(ScanGenerator):
 
         return points
 
-    def describe_limits(self, target: Dict[str, Any]) -> None:
+    def describe_limits(self, target: dict[str, Any]) -> None:
         ""
         target["min"] = self.lower
         target["max"] = self.upper
@@ -98,7 +99,7 @@ class ExpandingGenerator(ScanGenerator):
 
         return level <= max(num_points(self.limit_lower), num_points(self.limit_upper))
 
-    def points_for_level(self, level: int, rng=None) -> List[Any]:
+    def points_for_level(self, level: int, rng=None) -> list[Any]:
         ""
         if level == 0:
             return [self.centre]
@@ -116,7 +117,7 @@ class ExpandingGenerator(ScanGenerator):
             rng.shuffle(points)
         return points
 
-    def describe_limits(self, target: Dict[str, Any]) -> None:
+    def describe_limits(self, target: dict[str, Any]) -> None:
         ""
         if self.limit_lower > float("-inf"):
             target["min"] = self.limit_lower
@@ -139,7 +140,7 @@ class LinearGenerator(ScanGenerator):
         ""
         return level == 0
 
-    def points_for_level(self, level: int, rng=None) -> List[Any]:
+    def points_for_level(self, level: int, rng=None) -> list[Any]:
         ""
         assert level == 0
         points = np.linspace(start=self.start,
@@ -150,7 +151,7 @@ class LinearGenerator(ScanGenerator):
             rng.shuffle(points)
         return points.tolist()
 
-    def describe_limits(self, target: Dict[str, Any]) -> None:
+    def describe_limits(self, target: dict[str, Any]) -> None:
         ""
         target["min"] = min(self.start, self.stop)
         target["max"] = max(self.start, self.stop)
@@ -200,7 +201,7 @@ class ListGenerator(ScanGenerator):
         ""
         return level == 0
 
-    def points_for_level(self, level: int, rng=None) -> List[Any]:
+    def points_for_level(self, level: int, rng=None) -> list[Any]:
         ""
         assert level == 0
         values = self.values
@@ -209,7 +210,7 @@ class ListGenerator(ScanGenerator):
             rng.shuffle(values)
         return values
 
-    def describe_limits(self, target: Dict[str, Any]) -> None:
+    def describe_limits(self, target: dict[str, Any]) -> None:
         ""
         values = np.array(self.values)
         if np.issubdtype(values.dtype, np.number):
@@ -255,7 +256,7 @@ class ScanOptions:
             self.seed = random.getrandbits(32)
 
 
-def generate_points(axis_generators: List[ScanGenerator],
+def generate_points(axis_generators: list[ScanGenerator],
                     options: ScanOptions) -> Iterator[Any]:
     rng = np.random.RandomState(options.seed)
 

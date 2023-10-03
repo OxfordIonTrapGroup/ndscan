@@ -7,8 +7,9 @@ from artiq.applets.simple import SimpleApplet
 import argparse
 import logging
 import pyqtgraph
+from collections.abc import Iterable
 from sipyco import common_args
-from typing import Any, Dict, Iterable
+from typing import Any
 
 from .plots.container_widgets import RootWidget
 from .plots.model import Context
@@ -34,8 +35,8 @@ class _MainWidget(RootWidget):
         self.resize(600, 600)
         self.setWindowTitle("ndscan plot")
 
-    def data_changed(self, values: Dict[str, Any], metadata: Dict[str, Any],
-                     persist: Dict[str, bool], mods: Iterable[Dict[str, Any]]):
+    def data_changed(self, values: dict[str, Any], metadata: dict[str, Any],
+                     persist: dict[str, bool], mods: Iterable[dict[str, Any]]):
         self.root.data_changed(values, mods)
 
 

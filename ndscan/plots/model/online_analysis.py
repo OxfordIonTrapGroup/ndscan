@@ -1,7 +1,7 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from pyqtgraph import SignalProxy
-from typing import Any, Dict
+from typing import Any
 from ..._qt import QtCore
 from ...utils import FIT_OBJECTS
 
@@ -23,7 +23,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
     """
     _trigger_recompute_fit = QtCore.pyqtSignal()
 
-    def __init__(self, schema: Dict[str, Any], parent_model):
+    def __init__(self, schema: dict[str, Any], parent_model):
         super().__init__()
         self._schema = schema
         self._model = parent_model
@@ -61,7 +61,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
             error_key = key + "_error"
             if error_key in result:
                 raise ValueError(
-                    "Fit error key name collides with result: '{}'".format(error_key))
+                    f"Fit error key name collides with result: '{error_key}'")
             result[error_key] = value
         return result
 

@@ -7,7 +7,6 @@
 # in.
 
 import pyqtgraph
-from typing import List
 from .._qt import QtCore, QtGui, QtWidgets
 from .model import Context
 
@@ -135,7 +134,7 @@ class ContextMenuBuilder:
         self._entries = []
         self._target_menu = target_menu
 
-    def finish(self) -> List[QtGui.QAction]:
+    def finish(self) -> list[QtGui.QAction]:
         return self._entries
 
     def ensure_separator(self):
@@ -245,7 +244,7 @@ class SubplotMenuPanesWidget(AlternateMenuPanesWidget):
 
     def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
         for name in self.subscan_roots.keys():
-            action = builder.append_action("Open subscan '{}'".format(name))
+            action = builder.append_action(f"Open subscan '{name}'")
             action.triggered.connect(lambda *args, name=name: self.open_subplot(name))
         builder.ensure_separator()
         super().build_context_menu(pane_idx, builder)

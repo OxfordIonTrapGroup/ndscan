@@ -8,12 +8,12 @@ available.
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Any, Dict
+from typing import Any
 from ..plots.utils import extract_scalar_channels
 from .tools import find_ndscan_roots
 
 
-def make_default_1d_plot(datasets: Dict[str, Any],
+def make_default_1d_plot(datasets: dict[str, Any],
                          root: str,
                          figure,
                          *,
@@ -62,7 +62,7 @@ def make_default_1d_plot(datasets: Dict[str, Any],
     figure.tight_layout()
 
 
-def make_default_plot(datasets: Dict[str, Any],
+def make_default_plot(datasets: dict[str, Any],
                       root: str,
                       figure,
                       *,
@@ -81,7 +81,7 @@ def make_default_plot(datasets: Dict[str, Any],
                 num_axes))
 
 
-def auto_plot(datasets: Dict[str, Any], *, channel_filter=lambda name: True):
+def auto_plot(datasets: dict[str, Any], *, channel_filter=lambda name: True):
     """Display PyPlot figures for all the ndscan roots found among the passed datasets.
 
     :param channel_filter: Called with the name for each result channel; if False, the
@@ -93,4 +93,4 @@ def auto_plot(datasets: Dict[str, Any], *, channel_filter=lambda name: True):
         try:
             make_default_plot(datasets, root, fig, channel_filter=channel_filter)
         except NotImplementedError as e:
-            print("Skipping root '{}': {}".format(root, e))
+            print(f"Skipping root '{root}': {e}")

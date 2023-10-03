@@ -10,7 +10,7 @@
 
 from artiq.language import *
 from artiq.language import units
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any
 from ..utils import eval_param_default, GetDataset
 
 __all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam"]
@@ -29,7 +29,6 @@ def type_string_to_param(name: str):
 class InvalidDefaultError(ValueError):
     """Raised when a default value is outside the specified range of valid parameter
     values."""
-    pass
 
 
 class ParamStore:
@@ -38,7 +37,7 @@ class ParamStore:
         store, i.e. the override/default value it was created for.
     :param value: The initial value.
     """
-    def __init__(self, identity: Tuple[str, str], value):
+    def __init__(self, identity: tuple[str, str], value):
         self.identity = identity
 
         # KLUDGE: To work around ARTIQ compiler type inference failing for empty lists,
@@ -179,7 +178,7 @@ class ParamHandle:
     :param name: The name of the attribute in the owning fragment bound to this
         object.
     """
-    def __init__(self, owner: Type["Fragment"], name: str):
+    def __init__(self, owner: type["Fragment"], name: str):
         self.owner = owner
         self.name = name
         assert name.isidentifier(), ("ParamHandle name should be the identifier it is "
@@ -249,7 +248,7 @@ class BoolParamHandle(ParamHandle):
         return self._store.get_value()
 
 
-def resolve_numeric_scale(scale: Optional[float], unit: str) -> float:
+def resolve_numeric_scale(scale: float | None, unit: str) -> float:
     if scale is not None:
         return scale
     if unit == "":
@@ -277,13 +276,13 @@ class FloatParam(ParamBase):
     def __init__(self,
                  fqn: str,
                  description: str,
-                 default: Union[str, float],
+                 default: str | float,
                  *,
-                 min: Optional[float] = None,
-                 max: Optional[float] = None,
+                 min: float | None = None,
+                 max: float | None = None,
                  unit: str = "",
-                 scale: Optional[float] = None,
-                 step: Optional[float] = None,
+                 scale: float | None = None,
+                 step: float | None = None,
                  is_scannable: bool = True):
 
         ParamBase.__init__(self,
@@ -299,7 +298,7 @@ class FloatParam(ParamBase):
         self.scale = resolve_numeric_scale(scale, unit)
         self.step = step if step is not None else self.scale / 10.0
 
-    def describe(self) -> Dict[str, Any]:
+    def describe(self) -> dict[str, Any]:
         spec = {
             "is_scannable": self.is_scannable,
             "scale": self.scale,
@@ -325,7 +324,7 @@ class FloatParam(ParamBase):
             return eval_param_default(self.default, get_dataset)
         return self.default
 
-    def make_store(self, identity: Tuple[str, str], value: float) -> FloatParamStore:
+    def make_store(self, identity: tuple[str, str], value: float) -> FloatParamStore:
         if self.min is not None and value < self.min:
             raise InvalidDefaultError(
                 f"Value {value} for parameter {self.fqn} below minimum of {self.min}")
@@ -343,12 +342,12 @@ class IntParam(ParamBase):
     def __init__(self,
                  fqn: str,
                  description: str,
-                 default: Union[str, int],
+                 default: str | int,
                  *,
-                 min: Optional[int] = 0,
-                 max: Optional[int] = None,
+                 min: int | None = 0,
+                 max: int | None = None,
                  unit: str = "",
-                 scale: Optional[int] = None,
+                 scale: int | None = None,
                  is_scannable: bool = True):
 
         ParamBase.__init__(self,
@@ -367,7 +366,7 @@ class IntParam(ParamBase):
 
         self.is_scannable = is_scannable
 
-    def describe(self) -> Dict[str, Any]:
+    def describe(self) -> dict[str, Any]:
         spec = {"is_scannable": self.is_scannable, "scale": self.scale}
         if self.min is not None:
             spec["min"] = self.min
@@ -388,7 +387,7 @@ class IntParam(ParamBase):
             return eval_param_default(self.default, get_dataset)
         return self.default
 
-    def make_store(self, identity: Tuple[str, str], value: int) -> IntParamStore:
+    def make_store(self, identity: tuple[str, str], value: int) -> IntParamStore:
         if self.min is not None and value < self.min:
             raise InvalidDefaultError(
                 f"Value {value} for parameter {self.fqn} below minimum of {self.min}")
@@ -416,7 +415,7 @@ class StringParam(ParamBase):
                            default=default,
                            is_scannable=is_scannable)
 
-    def describe(self) -> Dict[str, Any]:
+    def describe(self) -> dict[str, Any]:
         return {
             "fqn": self.fqn,
             "description": self.description,
@@ -430,7 +429,7 @@ class StringParam(ParamBase):
     def eval_default(self, get_dataset: GetDataset) -> str:
         return eval_param_default(self.default, get_dataset)
 
-    def make_store(self, identity: Tuple[str, str], value: str) -> StringParamStore:
+    def make_store(self, identity: tuple[str, str], value: str) -> StringParamStore:
         return StringParamStore(identity, value)
 
 
@@ -442,14 +441,14 @@ class BoolParam:
     def __init__(self,
                  fqn: str,
                  description: str,
-                 default: Union[str, bool],
+                 default: str | bool,
                  is_scannable: bool = True):
         self.fqn = fqn
         self.description = description
         self.default = default
         self.is_scannable = is_scannable
 
-    def describe(self) -> Dict[str, Any]:
+    def describe(self) -> dict[str, Any]:
         return {
             "fqn": self.fqn,
             "description": self.description,
@@ -465,5 +464,5 @@ class BoolParam:
             return eval_param_default(self.default, get_dataset)
         return self.default
 
-    def make_store(self, identity: Tuple[str, str], value: bool) -> BoolParamStore:
+    def make_store(self, identity: tuple[str, str], value: bool) -> BoolParamStore:
         return BoolParamStore(identity, value)

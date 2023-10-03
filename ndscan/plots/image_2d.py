@@ -4,7 +4,6 @@ from itertools import chain, repeat
 import logging
 import numpy as np
 import pyqtgraph
-from typing import Dict, Optional
 
 from .._qt import QtCore, QtGui
 from . import colormaps
@@ -55,10 +54,9 @@ def _coords_to_indices(coords, range_spec):
 class _ImagePlot:
     def __init__(self, image_item: pyqtgraph.ImageItem,
                  colorbar: pyqtgraph.ColorBarItem, active_channel_name: str,
-                 x_min: Optional[float], x_max: Optional[float],
-                 x_increment: Optional[float], y_min: Optional[float],
-                 y_max: Optional[float], y_increment: Optional[float],
-                 channels: Dict[str, dict]):
+                 x_min: float | None, x_max: float | None, x_increment: float | None,
+                 y_min: float | None, y_max: float | None, y_increment: float | None,
+                 channels: dict[str, dict]):
         self.image_item = image_item
         self.colorbar = colorbar
         self.channels = channels
@@ -255,7 +253,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
             y_datasets = extract_linked_datasets(self.y_schema["param"])
             for d, axis in chain(zip(x_datasets, repeat("x")),
                                  zip(y_datasets, repeat("y"))):
-                action = builder.append_action("Set '{}' from crosshair".format(d))
+                action = builder.append_action(f"Set '{d}' from crosshair")
                 action.triggered.connect(lambda *a, axis=axis, d=d:
                                          (self._set_dataset_from_crosshair(d, axis)))
             if len(x_datasets) == 1 and len(y_datasets) == 1:

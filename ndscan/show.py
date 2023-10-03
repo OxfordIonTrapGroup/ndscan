@@ -73,7 +73,7 @@ def load_h5(args):
     except KeyError:
         QtWidgets.QMessageBox.critical(
             None, "Not an ARTIQ results file",
-            "No ARTIQ dataset records found in file: '{}'".format(args.path))
+            f"No ARTIQ dataset records found in file: '{args.path}'")
         sys.exit(1)
 
     prefix = fetch_explicit_prefix(args)
@@ -95,7 +95,7 @@ def load_h5(args):
         if not prefixes:
             QtWidgets.QMessageBox.critical(
                 None, "Not an ndscan file",
-                "No ndscan result datasets found in file: '{}'".format(args.path))
+                f"No ndscan result datasets found in file: '{args.path}'")
             sys.exit(1)
 
     try:
@@ -126,9 +126,8 @@ def main():
 
         roots = [HDF5Root(datasets, p, context) for p in prefixes]
     except Exception as e:
-        QtWidgets.QMessageBox.critical(
-            None, "Error parsing ndscan file",
-            "Error parsing datasets in '{}': {}".format(args.path, e))
+        QtWidgets.QMessageBox.critical(None, "Error parsing ndscan file",
+                                       f"Error parsing datasets in '{args.path}': {e}")
         sys.exit(2)
 
     if len(roots) == 1:

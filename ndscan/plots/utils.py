@@ -1,6 +1,6 @@
 import html
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 from ..utils import eval_param_default
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ FIT_COLORS = [
 
 
 def extract_scalar_channels(
-        channels: Dict[str, Any]) -> Tuple[List[str], Dict[str, str]]:
+        channels: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
     """Extract channels with scalar numerical values from the given channel metadata,
     also mapping error bar channels to their associated value channels.
 
@@ -26,8 +26,10 @@ def extract_scalar_channels(
         bars), the second a dictionary matching those channels to the associated error
         bars, if any.
     """
-    data_names = set(name for name, spec in channels.items()
-                     if spec["type"] in ["int", "float"])
+    data_names = {
+        name
+        for name, spec in channels.items() if spec["type"] in ["int", "float"]
+    }
 
     path_to_name = {channels[name]["path"]: name for name in data_names}
 
@@ -40,7 +42,7 @@ def extract_scalar_channels(
         if not err_path:
             continue
         if err_path not in path_to_name:
-            msg = "Error bar target '{}' does not exist".format(err_path)
+            msg = f"Error bar target '{err_path}' does not exist"
             if err_path in channels:
                 # Previously, this accepted the shortened name instead of the full path;
                 # suggest this to help users migrate.
@@ -81,8 +83,8 @@ def extract_scalar_channels(
     return data_names, error_bar_names
 
 
-def _get_share_name(name: str, keyword: str, channels: Dict[str, Any],
-                    path_to_name: Dict[str, str]):
+def _get_share_name(name: str, keyword: str, channels: dict[str, Any],
+                    path_to_name: dict[str, str]):
     """Extract the name of a channel from a display hint of another channel
 
     :param name: The name of the channel.
@@ -101,8 +103,8 @@ def _get_share_name(name: str, keyword: str, channels: Dict[str, Any],
     return path_to_name[path]
 
 
-def group_channels_into_axes(channels: Dict[str, Any],
-                             data_names: List[str]) -> List[List[str]]:
+def group_channels_into_axes(channels: dict[str, Any],
+                             data_names: list[str]) -> list[list[str]]:
     """Extract channels with scalar numerical values from the given channel metadata,
     also mapping error bar channels to their associated value channels.
 
@@ -171,8 +173,8 @@ def group_channels_into_axes(channels: Dict[str, Any],
     return [[name for (_, name) in axis] for axis in axes]
 
 
-def group_axes_into_panes(channels: Dict[str, Any],
-                          axes_names: List[List[str]]) -> List[List[List[str]]]:
+def group_axes_into_panes(channels: dict[str, Any],
+                          axes_names: list[list[str]]) -> list[list[list[str]]]:
     """Group axes returned by :func:`group_channels_into_axes` into plots by
         ``share_pane_with`` annotations in the channel's ``display_hints``.
 
@@ -189,7 +191,7 @@ def group_axes_into_panes(channels: Dict[str, Any],
     axes_share_idxs = []  # List of sets of indices of axes sharing one plot.
     for (idx, names) in enumerate(axes_names):
         # The axis indices with which the current axis is to share a plot.
-        share_idxs = set([idx])
+        share_idxs = {idx}
         for name in names:
             # Map all channel names specified to share a plot with the current axis
             # to their respective axis.
@@ -216,7 +218,7 @@ def group_axes_into_panes(channels: Dict[str, Any],
     return [[axes_names[axis] for axis in plot] for plot in plots]
 
 
-def extract_linked_datasets(param_schema: Dict[str, Any]) -> List[str]:
+def extract_linked_datasets(param_schema: dict[str, Any]) -> list[str]:
     """Extract datasets mentioned in the default value of the given parameter schema.
 
     :return: A list of dataset keys mentioned.
@@ -236,7 +238,7 @@ def extract_linked_datasets(param_schema: Dict[str, Any]) -> List[str]:
     return datasets
 
 
-def format_param_identity(schema: Dict[str, Any]) -> str:
+def format_param_identity(schema: dict[str, Any]) -> str:
     """Extract a string representation of the parameter identity from the given schema,
     for use in human-readable labels.
     """
@@ -247,7 +249,7 @@ def format_param_identity(schema: Dict[str, Any]) -> str:
     return shortened_fqn + "@" + path
 
 
-def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]]):
+def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]]):
     """Set up an axis item with the appropriate labels/scaling for the given axis
     metadata.
 
@@ -266,7 +268,7 @@ def setup_axis_item(axis_item, axes: List[Tuple[str, str, str, Dict[str, Any]]])
             if isinstance(color, str) and len(color) == 9 and color[0] == "#":
                 # KLUDGE: Reorder RGBA to ARGB.
                 color = "#" + color[7:] + color[1:7]
-            result += "<span style='color: \"{}\"'>".format(color)
+            result += f"<span style='color: \"{color}\"'>"
         unit = spec.get("unit", "")
         if unit:
             unit = "/ " + unit + " "

@@ -4,7 +4,7 @@ Result handling building blocks.
 
 from artiq.language import HasEnvironment, rpc
 import artiq.language.units
-from typing import Any, Dict, List, Optional
+from typing import Any
 from .utils import dump_json
 
 __all__ = [
@@ -82,7 +82,7 @@ class ArraySink(ResultSink):
     def push(self, value: Any) -> None:
         self.data.append(value)
 
-    def get_all(self) -> List[Any]:
+    def get_all(self) -> list[Any]:
         """Return a list of all previously pushed values."""
         return self.data
 
@@ -118,7 +118,7 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
         """Return the last pushed value (or None)."""
         return self.last_value
 
-    def get_all(self) -> List[Any]:
+    def get_all(self) -> list[Any]:
         """Read back the previously pushed values from the target dataset (if any)."""
         return [] if (self.last_value is None) else self.get_dataset(self.key)
 
@@ -191,7 +191,7 @@ class ResultChannel:
     def __init__(self,
                  path: str,
                  description: str = "",
-                 display_hints: Optional[Dict[str, Any]] = None,
+                 display_hints: dict[str, Any] | None = None,
                  save_by_default: bool = True):
         self.path = path
         self.description = description
@@ -200,9 +200,9 @@ class ResultChannel:
         self.sink = None
 
     def __repr__(self) -> str:
-        return "<{}@{}: {}>".format(type(self).__name__, hex(id(self)), self.path)
+        return f"<{type(self).__name__}@{hex(id(self))}: {self.path}>"
 
-    def describe(self) -> Dict[str, Any]:
+    def describe(self) -> dict[str, Any]:
         """
         """
         desc = {
@@ -256,7 +256,7 @@ class NumericChannel(ResultChannel):
     def __init__(self,
                  path: str,
                  description: str = "",
-                 display_hints: Optional[Dict[str, Any]] = None,
+                 display_hints: dict[str, Any] | None = None,
                  min=None,
                  max=None,
                  unit: str = "",
@@ -277,7 +277,7 @@ class NumericChannel(ResultChannel):
         self.scale = scale
         self.unit = unit
 
-    def describe(self) -> Dict[str, Any]:
+    def describe(self) -> dict[str, Any]:
         """"""
         result = super().describe()
         result["scale"] = self.scale

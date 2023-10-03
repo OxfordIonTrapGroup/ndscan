@@ -309,7 +309,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         annotations = self.model.get_annotations()
         for a in annotations:
             if a.kind == "location":
-                if set(a.coordinates.keys()) == set(["axis_0"]):
+                if set(a.coordinates.keys()) == {"axis_0"}:
                     associated_series_idx = max(
                         channel_ref_to_series_idx(chan)
                         for chan in a.parameters.get("associated_channels", [None]))
@@ -325,7 +325,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             if a.kind == "curve":
                 associated_series_idx = None
                 for series_idx, series in enumerate(self.series):
-                    match_coords = set(["axis_0", "channel_" + series.data_name])
+                    match_coords = {"axis_0", "channel_" + series.data_name}
                     if set(a.coordinates.keys()) == match_coords:
                         associated_series_idx = series_idx
                         break
@@ -361,7 +361,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         if self.model.context.is_online_master():
             for d in extract_linked_datasets(x_schema["param"]):
-                action = builder.append_action("Set '{}' from crosshair".format(d))
+                action = builder.append_action(f"Set '{d}' from crosshair")
                 action.triggered.connect(
                     lambda *a, d=d: self._set_dataset_from_crosshair_x(pane_idx, d))
             builder.ensure_separator()

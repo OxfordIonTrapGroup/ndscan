@@ -1,8 +1,9 @@
 """Odds and ends common to all of ndscan."""
 
+from collections.abc import Callable, Iterable
 from enum import Enum, unique
 import oitg.fitting
-from typing import Any, Callable, Dict, Iterable, Optional, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 #: Registry of well-known fit procedure names.
 FIT_OBJECTS = {
@@ -57,7 +58,7 @@ def strip_suffix(string: str, suffix: str) -> str:
 
 def shorten_to_unambiguous_suffixes(
         fqns: Iterable[str], get_last_n_parts: Callable[[str, int],
-                                                        str]) -> Dict[str, str]:
+                                                        str]) -> dict[str, str]:
     short_to_fqns = dict()
     shortened_fqns = dict()
 
@@ -99,7 +100,7 @@ class GetDataset(Protocol):
     If the ``key`` dataset does not exist, the callback should return the value given in
     the second parameter, ``default``, or if that is not specified, raise an exception.
     """
-    def __call__(self, key: str, default: Optional[T] = None) -> T:
+    def __call__(self, key: str, default: T | None = None) -> T:
         ...
 
 
@@ -114,6 +115,6 @@ def merge_no_duplicates(target: dict, source: dict, kind: str = "entries") -> No
     """Merges ``source`` into ``target``, raising a ``ValueError`` on duplicate keys."""
     for k, v in source.items():
         if k in target:
-            raise ValueError("Duplicate {} of key '{}'".format(kind, k))
+            raise ValueError(f"Duplicate {kind} of key '{k}'")
         target[k] = v
     return target

@@ -4,7 +4,7 @@ from enum import Enum, unique
 from functools import partial
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
 from artiq.gui.fuzzy_select import FuzzySelectWidget
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def _try_extract_ndscan_params(
-        arguments: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+        arguments: dict[str, Any]) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     """From a passed dictionary of upstream ARTIQ arguments, extracts the ndscan
     arguments, if there are any.
 
@@ -47,7 +47,7 @@ def _update_ndscan_params(arguments, params):
 
 
 class ScanOptions:
-    def __init__(self, current_scan: Dict[str, Any]):
+    def __init__(self, current_scan: dict[str, Any]):
         self.num_repeats_container = QtWidgets.QWidget()
         num_repeats_layout = QtWidgets.QHBoxLayout()
         self.num_repeats_container.setLayout(num_repeats_layout)
@@ -126,13 +126,13 @@ class ScanOptions:
         skip_persistently_failing_layout.setStretchFactor(
             self.skip_persistently_failing_box, 1)
 
-    def get_widgets(self) -> List[QtWidgets.QWidget]:
+    def get_widgets(self) -> list[QtWidgets.QWidget]:
         return [
             self.num_repeats_container, self.no_axis_container,
             self.randomise_globally_container, self.skip_persistently_failing_container
         ]
 
-    def write_to_params(self, params: Dict[str, Any]) -> None:
+    def write_to_params(self, params: dict[str, Any]) -> None:
         scan = params.setdefault("scan", {})
         scan["num_repeats"] = self.num_repeats_box.value()
         scan["no_axes_mode"] = NoAxesMode(self.no_axes_box.currentText()).name
@@ -713,7 +713,7 @@ class OverrideEntry(LayoutWidget):
         self.current_option_idx = new_idx
 
 
-def _parse_list_pyon(values: str) -> List[float]:
+def _parse_list_pyon(values: str) -> list[float]:
     return pyon.decode("[" + values + "]")
 
 

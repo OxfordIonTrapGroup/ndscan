@@ -6,7 +6,6 @@ another child fragment as part of its execution.
 from collections import OrderedDict
 from copy import copy
 from functools import reduce
-from typing import Dict, List, Tuple, Union
 from artiq.language import kernel, portable, rpc
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, Fragment, RestartKernelTransitoryError
@@ -30,14 +29,14 @@ class Subscan:
         self,
         runner: ScanRunner,
         fragment: ExpFragment,
-        possible_axes: Dict[ParamHandle, ScanAxis],
+        possible_axes: dict[ParamHandle, ScanAxis],
         schema_channel: SubscanChannel,
-        coordinate_channels: List[ResultChannel],
-        child_result_sinks: Dict[ResultChannel, ArraySink],
-        aggregate_result_channels: Dict[ResultChannel, ResultChannel],
-        short_child_channel_names: Dict[str, ResultChannel],
-        analyses: List[DefaultAnalysis],
-        parent_analysis_result_channels: Dict[str, ResultChannel],
+        coordinate_channels: list[ResultChannel],
+        child_result_sinks: dict[ResultChannel, ArraySink],
+        aggregate_result_channels: dict[ResultChannel, ResultChannel],
+        short_child_channel_names: dict[str, ResultChannel],
+        analyses: list[DefaultAnalysis],
+        parent_analysis_result_channels: dict[str, ResultChannel],
     ):
         self._runner = runner
         self._fragment = fragment
@@ -52,10 +51,10 @@ class Subscan:
 
     def run(
         self,
-        axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
+        axis_generators: list[tuple[ParamHandle, ScanGenerator]],
         options: ScanOptions = ScanOptions(),
         execute_default_analyses: bool = True
-    ) -> Tuple[Dict[ParamHandle, list], Dict[ResultChannel, list]]:
+    ) -> tuple[dict[ParamHandle, list], dict[ResultChannel, list]]:
         """Run the subscan with the given axis iteration specifications, and return the
         data point coordinates/result channel values.
 
@@ -84,10 +83,10 @@ class Subscan:
         return self._push_results(execute_default_analyses)
 
     def set_scan_spec(self,
-                      axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
+                      axis_generators: list[tuple[ParamHandle, ScanGenerator]],
                       options: ScanOptions = ScanOptions()):
-        axes: List[ScanAxis] = []
-        generators: List[ScanGenerator] = []
+        axes: list[ScanAxis] = []
+        generators: list[ScanGenerator] = []
         self._coordinate_sinks = OrderedDict[ParamHandle, ArraySink]()
 
         for param_handle, generator in axis_generators:
@@ -156,8 +155,8 @@ class Subscan:
 
     def _handle_default_analyses(
         self,
-        axes: List[ScanAxis],
-        coordinate_sinks: Dict[ParamHandle, ArraySink],
+        axes: list[ScanAxis],
+        coordinate_sinks: dict[ParamHandle, ArraySink],
         always_run: bool,
     ):
         # Re-filter analyses based on actual scan axes to support slightly dodgy use
@@ -224,7 +223,7 @@ class Subscan:
 def setattr_subscan(owner: Fragment,
                     scan_name: str,
                     fragment: ExpFragment,
-                    axis_params: List[Tuple[Fragment, str]],
+                    axis_params: list[tuple[Fragment, str]],
                     save_results_by_default: bool = True,
                     expose_analysis_results: bool = True) -> Subscan:
     """Set up a scan for the given subfragment.
@@ -251,7 +250,7 @@ def setattr_subscan(owner: Fragment,
     """
 
     assert owner._building, "Can only create a subscan during build_fragment()"
-    assert not hasattr(owner, scan_name), "Field '{}' already exists".format(scan_name)
+    assert not hasattr(owner, scan_name), f"Field '{scan_name}' already exists"
 
     # Our own ScanRunner takes care of the fragment lifecycle.
     owner.detach_fragment(fragment)
@@ -265,7 +264,7 @@ def setattr_subscan(owner: Fragment,
 def setup_subscan(result_target: Fragment,
                   name_prefix: str,
                   scanned_fragment: ExpFragment,
-                  axis_params: List[Tuple[Fragment, str]],
+                  axis_params: list[tuple[Fragment, str]],
                   save_results_by_default: bool = True,
                   expose_analysis_results: bool = True) -> Subscan:
     # Override target parameter stores with newly created stores.
@@ -285,7 +284,7 @@ def setup_subscan(result_target: Fragment,
         #    the most common use case anyway).
         #  - Serialise the scan point coordinates into the scan spec.
         coordinate_channels.append(
-            result_target.setattr_result(name_prefix + "axis_{}".format(i),
+            result_target.setattr_result(name_prefix + f"axis_{i}",
                                          OpaqueChannel,
                                          save_by_default=save_results_by_default))
 
@@ -366,8 +365,8 @@ def setup_subscan(result_target: Fragment,
 class SubscanExpFragment(ExpFragment):
     def build_fragment(self,
                        scanned_fragment_parent: Fragment,
-                       scanned_fragment: Union[ExpFragment, str],
-                       axis_params: List[Tuple[Fragment, str]],
+                       scanned_fragment: ExpFragment | str,
+                       axis_params: list[tuple[Fragment, str]],
                        save_results_by_default: bool = True,
                        expose_analysis_results: bool = True) -> None:
         if isinstance(scanned_fragment, str):
@@ -382,7 +381,7 @@ class SubscanExpFragment(ExpFragment):
 
     def configure(
         self,
-        axis_generators: List[Tuple[ParamHandle, ScanGenerator]],
+        axis_generators: list[tuple[ParamHandle, ScanGenerator]],
         options: ScanOptions = ScanOptions()
     ) -> None:
         """Configure point generators for each scan axis, and scan options.

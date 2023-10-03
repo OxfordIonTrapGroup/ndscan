@@ -13,12 +13,13 @@ The two main entry points into the :class:`.ExpFragment` universe are
 from artiq.language import *
 from artiq.coredevice.exceptions import RTIOUnderflow
 from collections import OrderedDict
+from collections.abc import Callable, Iterable
 from contextlib import suppress
 from functools import reduce
 import logging
 import random
 import time
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type
+from typing import Any
 
 from .default_analysis import AnnotationContext
 from .fragment import (ExpFragment, Fragment, RestartKernelTransitoryError,
@@ -51,10 +52,9 @@ logger = logging.getLogger(__name__)
 class ScanSpecError(Exception):
     """Raised when the scan specification passed in :data:`PARAMS_ARG_KEY` is not valid
     for the given fragment."""
-    pass
 
 
-def get_class_pretty_name(cls: Type[object]) -> str:
+def get_class_pretty_name(cls: type[object]) -> str:
     """Return the "pretty name" for the passed class, as used by ARTIQ to display in the
     experiment explorer.
 
@@ -142,7 +142,7 @@ class FragmentScanExperiment(EnvExperiment):
 
 
 class ArgumentInterface(HasEnvironment):
-    def build(self, fragments: List[Fragment], scannable: bool = False) -> None:
+    def build(self, fragments: list[Fragment], scannable: bool = False) -> None:
         self._fragments = fragments
 
         instances = dict()
@@ -176,7 +176,7 @@ class ArgumentInterface(HasEnvironment):
             }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
-    def make_override_stores(self) -> Dict[str, Tuple[str, ParamStore]]:
+    def make_override_stores(self) -> dict[str, tuple[str, ParamStore]]:
         stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
             try:
@@ -190,7 +190,7 @@ class ArgumentInterface(HasEnvironment):
                            for s in specs]
         return stores
 
-    def make_scan_spec(self) -> Tuple[ScanSpec, NoAxesMode, bool]:
+    def make_scan_spec(self) -> tuple[ScanSpec, NoAxesMode, bool]:
         scan = self._params.get("scan", {})
 
         generators = []
@@ -227,7 +227,7 @@ class TopLevelRunner(HasEnvironment):
               no_axes_mode: NoAxesMode = NoAxesMode.single,
               max_rtio_underflow_retries: int = 3,
               max_transitory_error_retries: int = 10,
-              dataset_prefix: Optional[str] = None,
+              dataset_prefix: str | None = None,
               skip_on_persistent_transitory_error: bool = False):
         self.fragment = fragment
         self.spec = spec
@@ -338,8 +338,7 @@ class TopLevelRunner(HasEnvironment):
                 skip_on_persistent_transitory_error=self.
                 skip_on_persistent_transitory_error)
             self._coordinate_sinks = [
-                AppendingDatasetSink(self,
-                                     self.dataset_prefix + "points.axis_{}".format(i))
+                AppendingDatasetSink(self, self.dataset_prefix + f"points.axis_{i}")
                 for i in range(len(self.spec.axes))
             ]
             runner.run(self.fragment, self.spec, self._coordinate_sinks)
@@ -478,7 +477,7 @@ class TopLevelRunner(HasEnvironment):
         push(SCHEMA_REVISION_KEY, SCHEMA_REVISION)
 
         source_prefix = self.get_dataset("system_id", default="rid")
-        push("source_id", "{}_{}".format(source_prefix, self.scheduler.rid))
+        push("source_id", f"{source_prefix}_{self.scheduler.rid}")
 
         push("completed", False)
 
@@ -508,16 +507,16 @@ class TopLevelRunner(HasEnvironment):
         self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
 
 
-def _shorten_result_channel_names(full_names: Iterable[str]) -> Dict[str, str]:
+def _shorten_result_channel_names(full_names: Iterable[str]) -> dict[str, str]:
     return shorten_to_unambiguous_suffixes(full_names,
                                            lambda fqn, n: "/".join(fqn.split("/")[-n:]))
 
 
 def make_fragment_scan_exp(
-        fragment_class: Type[ExpFragment],
+        fragment_class: type[ExpFragment],
         *args,
         max_rtio_underflow_retries: int = 3,
-        max_transitory_error_retries: int = 10) -> Type[FragmentScanExperiment]:
+        max_transitory_error_retries: int = 10) -> type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
 
@@ -616,7 +615,7 @@ def run_fragment_once(
     fragment: ExpFragment,
     max_rtio_underflow_retries: int = 3,
     max_transitory_error_retries: int = 10,
-) -> Dict[ResultChannel, Any]:
+) -> dict[ResultChannel, Any]:
     """Initialise the passed fragment and run it once, capturing and returning the
     values from any result channels.
 
@@ -650,11 +649,11 @@ def run_fragment_once(
 
 
 def create_and_run_fragment_once(env: HasEnvironment,
-                                 fragment_class: Type[ExpFragment],
+                                 fragment_class: type[ExpFragment],
                                  *args,
                                  max_rtio_underflow_retries: int = 3,
                                  max_transitory_error_retries: int = 10,
-                                 **kwargs) -> Dict[str, Any]:
+                                 **kwargs) -> dict[str, Any]:
     """Create an instance of the passed :class:`.ExpFragment` type and runs it once,
     returning the values pushed to any result channels.
 

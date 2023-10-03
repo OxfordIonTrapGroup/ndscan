@@ -51,7 +51,7 @@ def main():
     channel_schemata = json.loads(datasets[prefix + "channels"][()])
 
     for i, name in enumerate(axes_names):
-        dat = datasets[prefix + "points.axis_{}".format(i)][:]
+        dat = datasets[prefix + f"points.axis_{i}"][:]
         point_data[name] = dat
 
     for c, cval in channel_schemata.items():

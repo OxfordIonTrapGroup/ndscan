@@ -7,7 +7,6 @@ import logging
 import numpy
 from oitg import uncertainty_to_string
 import pyqtgraph
-from typing import Dict, Union, Optional, Tuple
 from .._qt import QtCore
 from ..utils import FIT_OBJECTS
 from .model import AnnotationDataSource
@@ -41,9 +40,9 @@ class ComputedCurveItem(AnnotationItem):
     def is_function_supported(function_name: str) -> bool:
         return function_name in FIT_OBJECTS
 
-    def __init__(self, function_name: str,
-                 data_sources: Dict[str, AnnotationDataSource], view_box, curve_item,
-                 x_limits: Tuple[Union[float, None], Union[float, None]]):
+    def __init__(self, function_name: str, data_sources: dict[str,
+                                                              AnnotationDataSource],
+                 view_box, curve_item, x_limits: tuple[float | None, float | None]):
         self._function = FIT_OBJECTS[function_name].fitting_function
         self._data_sources = data_sources
         self._view_box = view_box
@@ -145,8 +144,8 @@ class CurveItem(AnnotationItem):
 class VLineItem(AnnotationItem):
     """Vertical line marking a given x coordinate, with optional confidence interval."""
     def __init__(self, position_source: AnnotationDataSource,
-                 uncertainty_source: Optional[AnnotationDataSource], view_box,
-                 base_color, x_data_to_display_scale, x_unit_suffix):
+                 uncertainty_source: AnnotationDataSource | None, view_box, base_color,
+                 x_data_to_display_scale, x_unit_suffix):
         self._position_source = position_source
         self._uncertainty_source = uncertainty_source
         self._view_box = view_box

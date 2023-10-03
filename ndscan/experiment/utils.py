@@ -1,6 +1,7 @@
 import json
 import numpy
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 
 def path_matches_spec(path: Iterable[str], spec: str) -> bool:
@@ -38,7 +39,7 @@ def dump_json(obj: Any) -> str:
     return json.dumps(obj, cls=NumpyToVanillaEncoder)
 
 
-def to_metadata_broadcast_type(obj: Any) -> Optional[Any]:
+def to_metadata_broadcast_type(obj: Any) -> Any | None:
     """Return ``obj`` in a form that can be directly broadcast/saved as a dataset, or
     (conservatively) return ``None`` if this is not possible.
 

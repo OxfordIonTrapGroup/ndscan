@@ -2,12 +2,13 @@
 Functions for pretty-printing user argument data (scan parameters, overrides, …) for
 FragmentScanExperiments from ARTIQ results.
 """
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 from sipyco import pyon
 from ..utils import PARAMS_ARG_KEY
 
 
-def extract_param_schema(arguments: Dict[str, Any]) -> Dict[str, Any]:
+def extract_param_schema(arguments: dict[str, Any]) -> dict[str, Any]:
     """Extract ndscan parameter data from the given ARTIQ arguments directory.
 
     :param arguments: The arguments for an ARTIQ experiment, as e.g. obtained using
@@ -21,14 +22,14 @@ def extract_param_schema(arguments: Dict[str, Any]) -> Dict[str, Any]:
     return pyon.decode(string)
 
 
-def format_numeric(value, spec: Dict[str, Any]) -> str:
+def format_numeric(value, spec: dict[str, Any]) -> str:
     unit = spec.get("unit", "")
     if not unit:
         return str(value)
     return f"{value / spec['scale']} {unit}"
 
 
-def dump_overrides(schema: Dict[str, Any]) -> Iterable[str]:
+def dump_overrides(schema: dict[str, Any]) -> Iterable[str]:
     """Format information about overrides as a human-readable string.
 
     :return: Generator yielding the output line-by-line.
@@ -42,7 +43,7 @@ def dump_overrides(schema: Dict[str, Any]) -> Iterable[str]:
             yield f"   ({fqn}@{path})"
 
 
-def format_scan_range(typ: str, rang: Dict[str, Any], param_spec: Dict[str,
+def format_scan_range(typ: str, rang: dict[str, Any], param_spec: dict[str,
                                                                        Any]) -> str:
     if typ == "linear":
         start = format_numeric(rang["start"], param_spec["spec"])
@@ -58,7 +59,7 @@ def format_scan_range(typ: str, rang: Dict[str, Any], param_spec: Dict[str,
     return f"<Unknown scan type '{typ}'.>"
 
 
-def dump_scan(schema: Dict[str, Any]) -> Iterable[str]:
+def dump_scan(schema: dict[str, Any]) -> Iterable[str]:
     """Format information about the configured scan (if any) as a human-readable string.
 
     :return: Generator yielding the output line-by-line.
@@ -86,7 +87,7 @@ def dump_scan(schema: Dict[str, Any]) -> Iterable[str]:
     yield f" - Randomise order globally: {scan['randomise_order_globally']}"
 
 
-def summarise(schema: Dict[str, Any]) -> str:
+def summarise(schema: dict[str, Any]) -> str:
     """Convenience method returning a combination of :meth:`dump_overrides` and
     :meth:`dump_scan` ready to be printed.
     """

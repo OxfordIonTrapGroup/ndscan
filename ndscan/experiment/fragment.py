@@ -1,8 +1,9 @@
 from artiq.language import *
 from collections import OrderedDict
+from collections.abc import Iterable
 from copy import deepcopy
 import logging
-from typing import Any, Dict, List, Iterable, Type, Tuple, Optional
+from typing import Any
 
 from .default_analysis import DefaultAnalysis, ResultPrefixAnalysisWrapper
 from .parameters import ParamHandle, ParamStore
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Fragment(HasEnvironment):
     """Main building block."""
-    def build(self, fragment_path: List[str], *args, **kwargs):
+    def build(self, fragment_path: list[str], *args, **kwargs):
         """Initialise this fragment instance; called from the ``HasEnvironment``
         constructor.
 
@@ -81,7 +82,7 @@ class Fragment(HasEnvironment):
         # Now that we know all subfragments, synthesise code for device_setup() and
         # device_cleanup() to forward to subfragments.
         self._device_setup_subfragments_impl = kernel_from_string(["self"], "\n".join([
-            "self.{}.device_setup()".format(s._fragment_path[-1])
+            f"self.{s._fragment_path[-1]}.device_setup()"
             for s in self._subfragments if s not in self._detached_subfragments
         ]) or "pass", portable)
 
@@ -91,7 +92,7 @@ class Fragment(HasEnvironment):
                 continue
             frag = "self." + s._fragment_path[-1]
             code += "try:\n"
-            code += "    {}.device_cleanup()\n".format(frag)
+            code += f"    {frag}.device_cleanup()\n"
             code += "except Exception:\n"
             code += "    logger.error(\"Cleanup failed for '{}'.\")\n".format(
                 s._stringize_path())
@@ -271,7 +272,7 @@ class Fragment(HasEnvironment):
         raise NotImplementedError("build_fragment() not implemented; "
                                   "override it to add parameters/result channels.")
 
-    def setattr_fragment(self, name: str, fragment_class: Type["Fragment"], *args,
+    def setattr_fragment(self, name: str, fragment_class: type["Fragment"], *args,
                          **kwargs) -> "Fragment":
         """Create a subfragment of the given name and type.
 
@@ -289,7 +290,7 @@ class Fragment(HasEnvironment):
         assert self._building, ("Can only call setattr_fragment() "
                                 "during build_fragment()")
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '{}' already exists".format(name)
+        assert not hasattr(self, name), f"Field '{name}' already exists"
 
         frag = fragment_class(self, self._fragment_path + [name], *args, **kwargs)
         self._subfragments.append(frag)
@@ -297,7 +298,7 @@ class Fragment(HasEnvironment):
 
         return frag
 
-    def setattr_param(self, name: str, param_class: Type, description: str, *args,
+    def setattr_param(self, name: str, param_class: type, description: str, *args,
                       **kwargs) -> ParamHandle:
         """Create a parameter of the given name and type.
 
@@ -314,7 +315,7 @@ class Fragment(HasEnvironment):
         """
         assert self._building, "Can only call setattr_param() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '{}' already exists".format(name)
+        assert not hasattr(self, name), f"Field '{name}' already exists"
 
         fqn = self.fqn + "." + name
         self._free_params[name] = param_class(fqn, description, *args, **kwargs)
@@ -326,7 +327,7 @@ class Fragment(HasEnvironment):
     def setattr_param_like(self,
                            name: str,
                            original_owner: "Fragment",
-                           original_name: Optional[str] = None,
+                           original_name: str | None = None,
                            **kwargs) -> ParamHandle:
         """Create a new parameter using an existing parameter as a template.
 
@@ -353,11 +354,11 @@ class Fragment(HasEnvironment):
                                 "build_fragment()")
 
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
-        assert not hasattr(self, name), "Field '{}' already exists".format(name)
+        assert not hasattr(self, name), f"Field '{name}' already exists"
         if original_name is None:
             original_name = name
         assert hasattr(original_owner, original_name), \
-            "Original owner does not have a field of name '{}'".format(original_name)
+            f"Original owner does not have a field of name '{original_name}'"
         assert original_name in original_owner._free_params, (
             "Field '{}' is not a free parameter of original owner; "
             "already rebound?".format(original_name))
@@ -375,7 +376,7 @@ class Fragment(HasEnvironment):
     def setattr_param_rebind(self,
                              name: str,
                              original_owner: "Fragment",
-                             original_name: Optional[str] = None,
+                             original_name: str | None = None,
                              **kwargs) -> ParamHandle:
         """Convenience function combining :meth:`setattr_param_like` and
         :meth:`bind_param` to override a subfragment parmeter.
@@ -406,7 +407,7 @@ class Fragment(HasEnvironment):
 
     def setattr_result(self,
                        name: str,
-                       channel_class: Type[ResultChannel] = FloatChannel,
+                       channel_class: type[ResultChannel] = FloatChannel,
                        *args,
                        **kwargs) -> ResultChannel:
         """Create a result channel of the given name and type.
@@ -432,13 +433,13 @@ class Fragment(HasEnvironment):
                                  channel: ResultChannel) -> None:
         assert name.isidentifier(), ("Result channel name must be a valid "
                                      "Python identifier")
-        assert not hasattr(self, name), "Field '{}' already exists".format(name)
+        assert not hasattr(self, name), f"Field '{name}' already exists"
         self._result_channels[path] = channel
         setattr(self, name, channel)
 
     def override_param(self,
                        param_name: str,
-                       initial_value: Any = None) -> Tuple[Any, ParamStore]:
+                       initial_value: Any = None) -> tuple[Any, ParamStore]:
         """Override the parameter with the given name and set it to the provided value.
 
         See :meth:`bind_param`, which also overrides the parameter, but sets it to
@@ -453,7 +454,7 @@ class Fragment(HasEnvironment):
             bound to.
         """
         param = self._free_params.get(param_name, None)
-        assert param is not None, "Not a free parameter: '{}'".format(param_name)
+        assert param is not None, f"Not a free parameter: '{param_name}'"
         del self._free_params[param_name]
 
         if initial_value is None:
@@ -502,8 +503,8 @@ class Fragment(HasEnvironment):
 
         return param
 
-    def _collect_params(self, params: Dict[str, List[str]],
-                        schemata: Dict[str, dict]) -> None:
+    def _collect_params(self, params: dict[str, list[str]],
+                        schemata: dict[str, dict]) -> None:
         """Collect free parameters of this fragment and all its subfragments.
 
         :param params: Dictionary to write the list of FQNs for each fragment to,
@@ -548,7 +549,7 @@ class Fragment(HasEnvironment):
         self._detached_subfragments.add(fragment)
 
     def init_params(self,
-                    overrides: Dict[str, List[Tuple[str, ParamStore]]] = {}) -> None:
+                    overrides: dict[str, list[tuple[str, ParamStore]]] = {}) -> None:
         """Initialise free parameters of this fragment and all its subfragments.
 
         If, for a given parameter, a relevant override is given, the specified
@@ -619,7 +620,7 @@ class Fragment(HasEnvironment):
         """
         return "/".join(self._fragment_path + [name])
 
-    def get_always_shown_params(self) -> List[ParamHandle]:
+    def get_always_shown_params(self) -> list[ParamHandle]:
         """Return handles of parameters to always show in user interfaces when this
         fragment is the root of the fragment tree (vs. other parameters for which
         overrides need to be explicitly added).
@@ -651,13 +652,13 @@ class Fragment(HasEnvironment):
         """
         return [getattr(self, name) for name in self._free_params.keys()]
 
-    def _get_all_handles_for_param(self, name: str) -> List[ParamHandle]:
+    def _get_all_handles_for_param(self, name: str) -> list[ParamHandle]:
         return [getattr(self, name)] + self._rebound_subfragment_params.get(name, [])
 
     def _stringize_path(self) -> str:
         return "/".join(self._fragment_path)
 
-    def _collect_result_channels(self, channels: Dict[str, ResultChannel]) -> None:
+    def _collect_result_channels(self, channels: dict[str, ResultChannel]) -> None:
         channels.update(self._result_channels)
         for s in self._subfragments:
             if s in self._detached_subfragments:
@@ -699,12 +700,10 @@ class ExpFragment(Fragment):
         :meth:`host_setup` is usually preferable, as this naturally composes across the
         ndscan fragment tree.
         """
-        pass
 
     def run_once(self) -> None:
         """Execute the experiment described by the fragment once with the current
         parameters, producing one set of results (if any)."""
-        pass
 
     def get_default_analyses(self) -> Iterable[DefaultAnalysis]:
         """Return list of :class:`.DefaultAnalysis` instances describing analyses
@@ -750,7 +749,7 @@ class AggregateExpFragment(ExpFragment):
 
         ScanFooBarAggregate = make_fragment_scan_exp(FooBarAggregate)
     """
-    def build_fragment(self, exp_fragments: List[ExpFragment]) -> None:
+    def build_fragment(self, exp_fragments: list[ExpFragment]) -> None:
         """
         :param exp_fragments: The "child" fragments to execute. The fragments will be
             run in the given order. No special treatment is given to the
@@ -804,7 +803,7 @@ class AggregateExpFragment(ExpFragment):
     def _kernel_run_once(self) -> None:
         return self._run_once_impl(self)
 
-    def get_always_shown_params(self) -> List[ParamHandle]:
+    def get_always_shown_params(self) -> list[ParamHandle]:
         """Collect always-shown params from each child fragment, plus any parameters
         directly defined in this fragment as usual.
         """
@@ -844,7 +843,6 @@ class TransitoryError(Exception):
     from user code, it will often be appropriate to do this as well, unless the user
     code base does not use transitory errors at all.
     """
-    pass
 
 
 class RestartKernelTransitoryError(TransitoryError):
@@ -856,4 +854,3 @@ class RestartKernelTransitoryError(TransitoryError):
     experiments needs to yield back to the scheduler (e.g. for an ion loss event to be
     remedied by a second reloading experiment).
     """
-    pass

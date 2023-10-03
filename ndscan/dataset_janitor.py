@@ -17,7 +17,6 @@ import argparse
 import asyncio
 import logging
 import time
-from typing import Optional
 from sipyco import common_args, pc_rpc, sync_struct
 
 logger = logging.getLogger(__name__)
@@ -90,10 +89,10 @@ async def run(args):
     #: or something went wrong with one of the connections.
     wake_loop = asyncio.Event()
 
-    dataset_db: Optional[pc_rpc.AsyncioClient] = None
-    dataset_sub: Optional[sync_struct.Subscriber] = None
+    dataset_db: pc_rpc.AsyncioClient | None = None
+    dataset_sub: sync_struct.Subscriber | None = None
     dataset_sub_broken: bool = False
-    schedule_sub: Optional[sync_struct.Subscriber] = None
+    schedule_sub: sync_struct.Subscriber | None = None
     schedule_sub_broken: bool = False
 
     def all_connected():

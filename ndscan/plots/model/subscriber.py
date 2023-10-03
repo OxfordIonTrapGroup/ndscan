@@ -1,5 +1,6 @@
 import json
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any
 from sipyco.sync_struct import ModAction
 from ...utils import SCHEMA_REVISION_KEY, strip_prefix
 from . import (Annotation, Context, FixedDataSource, Model, Root, ScanModel,
@@ -26,7 +27,7 @@ class SubscriberRoot(Root):
         self._source_id_set = False
         self._axes_initialised = False
 
-    def data_changed(self, values: Dict[str, Any], mods: Iterable[Dict[str,
+    def data_changed(self, values: dict[str, Any], mods: Iterable[dict[str,
                                                                        Any]]) -> None:
         def d(name):
             return values.get(self._prefix + name)
@@ -67,7 +68,7 @@ class SubscriberRoot(Root):
 
         self._model.data_changed(values, mods)
 
-    def get_model(self) -> Optional[Model]:
+    def get_model(self) -> Model | None:
         return self._model
 
 
@@ -80,17 +81,17 @@ class SubscriberSinglePointModel(SinglePointModel):
         self._current_point = None
         self._next_point = {}
 
-    def get_channel_schemata(self) -> Dict[str, Any]:
+    def get_channel_schemata(self) -> dict[str, Any]:
         if self._channel_schemata is None:
             raise ValueError("No complete point yet")
         return self._channel_schemata
 
-    def get_point(self) -> Optional[Dict[str, Any]]:
+    def get_point(self) -> dict[str, Any] | None:
         if self._current_point is None:
             raise ValueError("No complete point yet")
         return self._current_point
 
-    def data_changed(self, values: Dict[str, Any], mods: Iterable[Dict[str,
+    def data_changed(self, values: dict[str, Any], mods: Iterable[dict[str,
                                                                        Any]]) -> None:
         # For single-point scans, points are completed as soon as point_phase flips, at
         # which point we need to emit them. There are slight subtleties in the below, in
@@ -145,7 +146,7 @@ class SubscriberSinglePointModel(SinglePointModel):
 
 
 class SubscriberScanModel(ScanModel):
-    def __init__(self, axes: List[Dict[str, Any]], prefix: str, schema_revision: int,
+    def __init__(self, axes: list[dict[str, Any]], prefix: str, schema_revision: int,
                  context: Context):
         super().__init__(axes, schema_revision, context)
         self._prefix = prefix
@@ -158,7 +159,7 @@ class SubscriberScanModel(ScanModel):
         self._analysis_result_sources = {}
         self._point_data = {}
 
-    def data_changed(self, values: Dict[str, Any], mods: Iterable[Dict[str,
+    def data_changed(self, values: dict[str, Any], mods: Iterable[dict[str,
                                                                        Any]]) -> None:
         if not self._series_initialised:
             channels_json = values.get(self._prefix + "channels")
@@ -193,21 +194,21 @@ class SubscriberScanModel(ScanModel):
         for name, source in self._analysis_result_sources.items():
             source.set(values.get(self._prefix + "analysis_result." + name))
 
-        for name in (["axis_{}".format(i) for i in range(len(self.axes))] +
+        for name in ([f"axis_{i}" for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
             self._point_data[name] = values.get(self._prefix + "points." + name, [])
         self.points_appended.emit(self._point_data)
 
-    def get_annotations(self) -> List[Annotation]:
+    def get_annotations(self) -> list[Annotation]:
         return self._annotations
 
-    def get_channel_schemata(self) -> Dict[str, Any]:
+    def get_channel_schemata(self) -> dict[str, Any]:
         return self._channel_schemata
 
-    def get_point_data(self) -> Dict[str, Any]:
+    def get_point_data(self) -> dict[str, Any]:
         return self._point_data
 
-    def get_analysis_result_source(self, name: str) -> Optional[FixedDataSource]:
+    def get_analysis_result_source(self, name: str) -> FixedDataSource | None:
         if name not in self._analysis_result_sources:
             self._analysis_result_sources[name] = FixedDataSource(None)
         return self._analysis_result_sources[name]
