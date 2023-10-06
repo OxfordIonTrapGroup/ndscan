@@ -90,12 +90,12 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
             self.error.emit(str(e))
             return
 
-        series_idx = 0
         axes = group_channels_into_axes(channels, data_names)
         plots_axes = group_axes_into_panes(channels, axes)
         for axes_names in plots_axes:
             pane = self.add_pane()
             pane.showGrid(x=True, y=True)
+            series_idx = 0
             for names in axes_names:
                 axis, view_box = pane.new_y_axis()
 
