@@ -22,9 +22,10 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
         self._num_y_axes = 0
         self._additional_view_boxes = []
         self._additional_right_axes = []
-        self._borderPen = pyqtgraph.functions.mkPen(
-            pyqtgraph.getConfigOption("foreground"), width=0.7)
-        self.draw_border = False
+
+    def show_border(self):
+        self.getViewBox().setBorder(
+            pyqtgraph.functions.mkPen(pyqtgraph.getConfigOption("foreground")))
 
     def new_y_axis(self):
         self._num_y_axes += 1
@@ -72,15 +73,6 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
         for vb in self._additional_view_boxes:
             vb.linkedViewChanged(self.getViewBox(), vb.XAxis)
 
-    def paint(self, painter, *args):
-        super().paint(painter, *args)
-        if self.draw_border:
-            # In what is a bit of a hack, add in a border for the top and right borders
-            # as well to make stacked plots look a bit nicer.
-            painter.setPen(self._borderPen)
-            painter.drawRect(
-                self.mapRectFromScene(self.getViewBox().sceneBoundingRect()))
-
 
 class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     """A vertical stack of (potentially) multiple plot panes with a single shared
@@ -109,7 +101,7 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         max_axis_width = max(p.getAxis("left").width() for p in self.panes)
         for pane in self.panes:
             pane.getAxis("left").setWidth(max_axis_width)
-            pane.draw_border = True
+            pane.show_border()
 
         for pane in self.panes[:-1]:
             pane.setXLink(self.panes[-1])
