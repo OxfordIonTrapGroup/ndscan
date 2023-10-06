@@ -249,19 +249,43 @@ def format_param_identity(schema: dict[str, Any]) -> str:
     return shortened_fqn + "@" + path
 
 
+def get_axis_scaling_info(spec: dict[str, Any]):
+    """Extract a unit suffix and scaling parameter from the given axis metadata.
+
+    :param spec: The backing parameter/result channel metadata.
+    :return: A tuple ``(unit_suffix, data_to_display_scale)`` of the unit suffix to
+        display when referring to coordinates on this axis, and the scale factor to
+        apply to compute the data from display coordinates due to the applied units.
+    """
+    unit = spec.get("unit", "")
+    unit_suffix = ""
+    if unit:
+        unit_suffix = " " + unit
+    data_to_display_scale = 1 / spec["scale"]
+    return unit_suffix, data_to_display_scale
+
+
 def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]]):
     """Set up an axis item with the appropriate labels/scaling for the given axis
     metadata.
+
+    Sets the axis scale based on the first element in :param:`axes` and appends scaling
+    factors in scientific notation to axes labels where the unit scaling differs.
 
     :param axis_item: The :class:`pyqtgraph.AxisItem` to set up.
     :param axes: A list of tuples ``(description, identity_string, color, spec)``,
         giving for each logical axes to be displayed on the target axis item the name
         and source fragment identity to be displayed, the series color to render it in,
         and the backing parameter/result channel metadata.
-    :return: A tuple ``(unit_suffix, data_to_display_scale)`` of the unit suffix to
-        display when referring to coordinates on this axis, and the scale factor to
-        apply to compute the data from display coordinates due to the applied units.
+    :return: A list of tuples ``(unit_suffix, data_to_display_scale, color)``,
+        giving for each unique unit/scale combination the color of the first data
+        series that is displayed on this axis. These tuples can be passed directly into
+        ``.cursor.CrosshairLabel``.
     """
+    unit_suffix, data_to_display_scale = get_axis_scaling_info(axes[0][3])
+    axis_item.setScale(data_to_display_scale)
+    axis_item.autoSIPrefix = False
+
     def label_html(description, identity_string, color, spec):
         result = ""
         if color is not None:
@@ -269,9 +293,18 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
                 # KLUDGE: Reorder RGBA to ARGB.
                 color = "#" + color[7:] + color[1:7]
             result += f"<span style='color: \"{color}\"'>"
-        unit = spec.get("unit", "")
+
+        unit, display_scale = get_axis_scaling_info(spec)
         if unit:
-            unit = "/ " + unit + " "
+            if display_scale == data_to_display_scale:
+                unit = "/" + unit
+            else:
+                mul = data_to_display_scale / display_scale
+                # Find smallest precision for multiplier, limit to <= 6 digits.
+                precision = next((i for i in range(6) if round(mul, i) == mul), 6)
+                mult_str = "{:.{n}f}".format(mul, n=precision)
+                unit = f" × {mult_str} /{unit} "
+
         result += f"<b>{html.escape(description)} {html.escape(unit)}</b>"
         if color is not None:
             result += "</span>"
@@ -280,16 +313,12 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
     axis_item.setLabel("<br>".join(label_html(*a) for a in axes))
     axis_item.setToolTip("\n".join(identity for _, identity, _, _ in axes if identity))
 
-    if len(axes) != 1:
-        return "", 1.0
-
-    _, _, _, spec = axes[0]
-    unit_suffix = ""
-    unit = spec.get("unit", "")
-    if unit:
-        unit_suffix = " " + unit
-
-    data_to_display_scale = 1 / spec["scale"]
-    axis_item.setScale(data_to_display_scale)
-    axis_item.autoSIPrefix = False
-    return unit_suffix, data_to_display_scale
+    # Get the color of the first axis with this particular (unit, scale) combination.
+    crosshair_info = []
+    seen_combs = set()
+    for _, _, color, spec in axes:
+        scaling_info = get_axis_scaling_info(spec)
+        if scaling_info not in seen_combs:
+            seen_combs.add(scaling_info)
+            crosshair_info.append((*scaling_info, color))
+    return crosshair_info
