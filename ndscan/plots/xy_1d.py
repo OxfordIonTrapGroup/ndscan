@@ -6,14 +6,15 @@ from typing import NamedTuple
 
 from .._qt import QtCore
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
-from .cursor import LabeledCrosshairCursor
+from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import add_source_id_label, SubplotMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, group_channels_into_axes,
-                    group_axes_into_panes, setup_axis_item, FIT_COLORS, SERIES_COLORS)
+                    group_axes_into_panes, get_axis_scaling_info, setup_axis_item,
+                    FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
 
@@ -183,18 +184,18 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         self.x_schema = self.model.axes[0]
         self.x_param_spec = self.x_schema["param"]["spec"]
+        self.x_unit_suffix, self.x_data_to_display_scale = get_axis_scaling_info(
+            self.x_param_spec)
 
-        self.y_unit_suffixes = []
-        self.y_data_to_display_scales = []
         self.crosshairs = []
         self._highlighted_spot = None
 
     def _initialise_series(self, channels):
         # Remove all currently shown items and any extra axes added.
-        # print(self, self.series)
         for s in self.series:
             s.remove_items()
         self.series.clear()
+        self.crosshairs.clear()
         self.unique_x_data.clear()
         self.found_duplicate_x_data = False
         self._clear_annotations()
@@ -214,6 +215,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             pane = self.add_pane()
             pane.showGrid(x=True, y=True)
             series_idx = 0
+            crosshair_items = []
             for names in axes_names:
                 axis, view_box = pane.new_y_axis()
                 view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
@@ -241,26 +243,28 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
                     series_idx += 1
 
-                suffix, scale = setup_axis_item(axis, info)
-                self.y_unit_suffixes.append(suffix)
-                self.y_data_to_display_scales.append(scale)
+                crosshair_label_args = setup_axis_item(axis, info)
+                crosshair_items.extend(
+                    [CrosshairAxisLabel(view_box, *a) for a in crosshair_label_args])
+
+            x_crosshair_item = CrosshairAxisLabel(pane.getViewBox(),
+                                                  self.x_unit_suffix,
+                                                  self.x_data_to_display_scale,
+                                                  is_x=True)
+            crosshair_items = [x_crosshair_item] + crosshair_items
+            crosshair = LabeledCrosshairCursor(self, pane, crosshair_items)
+            self.crosshairs.append(crosshair)
+
         if self.series:
             add_source_id_label(self.series[-1].view_box, self.model.context)
 
         if len(self.panes) > 1:
             self.link_x_axes()
 
-        self.x_unit_suffix, self.x_data_to_display_scale = setup_axis_item(
+        setup_axis_item(
             self.panes[-1].getAxis("bottom"),
             [(self.x_schema["param"]["description"], format_param_identity(
                 self.x_schema), None, self.x_param_spec)])
-
-        for i, plot in enumerate(self.panes):
-            self.crosshairs.append(
-                LabeledCrosshairCursor(self, plot, self.x_unit_suffix,
-                                       self.x_data_to_display_scale,
-                                       self.y_unit_suffixes[i],
-                                       self.y_data_to_display_scales[i]))
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -384,7 +388,9 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         if not self.crosshairs:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.model.context.set_dataset(dataset_key, self.crosshairs[pane_idx].last_x)
+        # The x crosshair is always the first item (see `_initialise_series()`).
+        self.model.context.set_dataset(
+            dataset_key, self.crosshairs[pane_idx].crosshair_items[0].last_value)
 
     def _highlight_spot(self, spot):
         if self._highlighted_spot is not None:
