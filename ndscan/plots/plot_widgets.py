@@ -183,7 +183,7 @@ class ContextMenuPanesWidget(VerticalPanesWidget):
         # every time. This is slightly wasteful, but context menus should be created
         # seldomly enough for the slight increase in latency not to matter.
 
-        def get_context_menu(pane_idx=len(self.panes) - 1):
+        def get_context_menu(*args, pane_idx=len(self.panes) - 1):
             builder = ContextMenuBuilder(pane.getViewBox().menu)
             self.build_context_menu(pane_idx, builder)
             return builder.finish()
