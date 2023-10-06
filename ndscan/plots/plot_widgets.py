@@ -91,9 +91,24 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     def add_pane(self) -> MultiYAxisPlotItem:
         """Extend layout vertically by one :class:`.MultiYAxisPlotItem`."""
         plot = MultiYAxisPlotItem()
+        if self.panes:
+            self.nextRow()
         self.addItem(plot)
-        self.nextRow()
         self.panes.append(plot)
+
+        # KLUDGE: We want all the plot panes (the actual square regions) to be the same
+        # height. For whatever reason, calling either setStyle(showValues=False) in
+        # link_x_axes() or adding the x axis label (in the derived plot widgets) causes,
+        # for two panes, the top one to be significantly taller. The discrepancy is even
+        # larger than if the screen space was just divided into two without regard for
+        # the extra space needed for the axis or tick labels. Setting the row stretch
+        # factor to 0 for all the rows leads to equal, but of course way too small
+        # panes. Leaving the factors at the default (all 1), but setting the preferred
+        # height to a large value, for whatever reason, seems to give the desired
+        # results. We will want to revisit this in the future when it inevitably breaks
+        # again.
+        self.layout.setRowPreferredHeight(len(self.panes) - 1, 10000)
+
         return plot
 
     def link_x_axes(self) -> None:
