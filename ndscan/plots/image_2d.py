@@ -7,11 +7,11 @@ import pyqtgraph
 
 from .._qt import QtCore, QtGui
 from . import colormaps
-from .cursor import LabeledCrosshairCursor
+from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .plot_widgets import add_source_id_label, AlternateMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, setup_axis_item)
+                    format_param_identity, get_axis_scaling_info, setup_axis_item)
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +198,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         self.plot_item = self.add_pane()
         self.plot_item.showGrid(x=True, y=True)
         self.plot = None
+        self.crosshair = None
 
     def _initialise_series(self, channels):
         if self.plot is not None:
@@ -214,21 +215,12 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
         def setup_axis(schema, location):
             param = schema["param"]
-            return setup_axis_item(
-                self.plot_item.getAxis(location),
-                [(param["description"], format_param_identity(schema), None,
-                  param["spec"])])
+            setup_axis_item(self.plot_item.getAxis(location),
+                            [(param["description"], format_param_identity(schema), None,
+                              param["spec"])])
 
-        self.x_unit_suffix, self.x_data_to_display_scale = \
-            setup_axis(self.x_schema, "bottom")
-        self.y_unit_suffix, self.y_data_to_display_scale = \
-            setup_axis(self.y_schema, "left")
-
-        self.crosshair = LabeledCrosshairCursor(self, self.plot_item,
-                                                self.x_unit_suffix,
-                                                self.x_data_to_display_scale,
-                                                self.y_unit_suffix,
-                                                self.y_data_to_display_scale)
+        setup_axis(self.x_schema, "bottom")
+        setup_axis(self.y_schema, "left")
 
         self.source_label = add_source_id_label(self.plot_item.getViewBox(),
                                                 self.model.context)
@@ -241,6 +233,21 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         colorbar = self.plot_item.addColorBar(image_item, width=15.0, interactive=False)
         self.plot = _ImagePlot(image_item, colorbar, self.data_names[0],
                                *bounds(self.x_schema), *bounds(self.y_schema), channels)
+
+        x_scaling_info = get_axis_scaling_info(self.x_schema["param"]["spec"])
+        y_scaling_info = get_axis_scaling_info(self.y_schema["param"]["spec"])
+
+        x_crosshair_item = CrosshairAxisLabel(self.plot_item.getViewBox(),
+                                              *x_scaling_info,
+                                              is_x=True)
+        y_crosshair_item = CrosshairAxisLabel(self.plot_item.getViewBox(),
+                                              *y_scaling_info,
+                                              is_x=False)
+
+        self.crosshair = LabeledCrosshairCursor(
+            self, self.plot_item,
+            [x_crosshair_item, y_crosshair_item])
+
         self.ready.emit()
 
     def _update_points(self, points, invalidate):
@@ -251,17 +258,17 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         if self.model.context.is_online_master():
             x_datasets = extract_linked_datasets(self.x_schema["param"])
             y_datasets = extract_linked_datasets(self.y_schema["param"])
-            for d, axis in chain(zip(x_datasets, repeat("x")),
-                                 zip(y_datasets, repeat("y"))):
+            for d, axis_idx in chain(zip(x_datasets, repeat(0)),
+                                     zip(y_datasets, repeat(1))):
                 action = builder.append_action(f"Set '{d}' from crosshair")
-                action.triggered.connect(lambda *a, axis=axis, d=d:
-                                         (self._set_dataset_from_crosshair(d, axis)))
+                action.triggered.connect(lambda *a, axis_idx=axis_idx, d=d: (
+                    self._set_dataset_from_crosshair(d, axis_idx)))
             if len(x_datasets) == 1 and len(y_datasets) == 1:
                 action = builder.append_action("Set both from crosshair")
 
                 def set_both():
-                    self._set_dataset_from_crosshair(x_datasets[0], "x")
-                    self._set_dataset_from_crosshair(y_datasets[0], "y")
+                    self._set_dataset_from_crosshair(x_datasets[0], 0)
+                    self._set_dataset_from_crosshair(y_datasets[0], 1)
 
                 action.triggered.connect(set_both)
         builder.ensure_separator()
@@ -278,9 +285,9 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
         super().build_context_menu(pane_idx, builder)
 
-    def _set_dataset_from_crosshair(self, dataset, axis):
-        if not self.crosshair:
+    def _set_dataset_from_crosshair(self, dataset, axis_idx):
+        if not self.plot:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
         self.model.context.set_dataset(
-            dataset, self.crosshair.last_x if axis == "x" else self.crosshair.last_y)
+            dataset, self.crosshair.crosshair_items[axis_idx].last_value)
