@@ -51,7 +51,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
     """
     def __init__(self, cursor_target_widget: QtWidgets.QWidget,
                  plot_item: pyqtgraph.PlotItem,
-                 crosshair_entries: list[CrosshairLabel]):
+                 crosshair_items: list[CrosshairLabel]):
         """
         :param cursor_target_widget: Widget to apply the cursor icon to.
         :param plot_item: Linked pyqtgraph plot.
@@ -59,7 +59,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
         super().__init__()
 
         self.plot_item = plot_item
-        self.crosshair_entries = crosshair_entries
+        self.crosshair_items = crosshair_items
 
         self.plot_item.getViewBox().hoverEvent = self._on_viewbox_hover
         cursor_target_widget.setCursor(QtCore.Qt.CursorShape.CrossCursor)
@@ -71,7 +71,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
 
     def _on_viewbox_hover(self, event):
         if event.isExit():
-            for item in self.crosshair_entries:
+            for item in self.crosshair_items:
                 self.plot_item.removeItem(item)
             self._text_shown = False
 
@@ -87,15 +87,15 @@ class LabeledCrosshairCursor(QtCore.QObject):
         # pyqtgraph for performance - don't need any of the fancy interaction
         # or layouting features that come with being a plot item.
 
-        for (i, crosshair_entry) in enumerate(self.crosshair_entries):
+        for (i, crosshair_item) in enumerate(self.crosshair_items):
             if not self._text_shown:
-                self.plot_item.addItem(crosshair_entry)
+                self.plot_item.addItem(crosshair_item)
 
             last_scene_pos = self.last_hover_event.scenePos()
-            crosshair_entry.update(last_scene_pos)
+            crosshair_item.update(last_scene_pos)
 
             text_pos = QtCore.QPointF(last_scene_pos)
             text_pos.setY(last_scene_pos.y() + i * 10)
-            crosshair_entry.setPos(vb.mapSceneToView(text_pos))
+            crosshair_item.setPos(vb.mapSceneToView(text_pos))
 
         self._text_shown = True
