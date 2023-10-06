@@ -5,12 +5,12 @@ from .utils import SERIES_COLORS
 
 
 class CrosshairLabel(pyqtgraph.TextItem):
+    """Text item to be displayed alongside the cursor when hovering a plot"""
     def __init__(self,
                  view_box: pyqtgraph.ViewBox,
-                 unit_suffix: float,
-                 data_to_display_scale: float,
-                 color: str = SERIES_COLORS[0],
-                 is_x: bool = False):
+                 unit_suffix: str = "",
+                 data_to_display_scale: float = 1.0,
+                 color: str = SERIES_COLORS[0]):
         super().__init__(color=color)
         # Don't take text item into account for auto-scaling; otherwise
         # there will be positive feedback if the cursor is towards the
@@ -20,24 +20,43 @@ class CrosshairLabel(pyqtgraph.TextItem):
         self.view_box = view_box
         self.unit_suffix = unit_suffix
         self.data_to_display_scale = data_to_display_scale
-        self.is_x = is_x
-
-        self.last_value = None
 
     def update(self, last_scene_pos: QtCore.QPointF):
         data_coords = self.view_box.mapSceneToView(last_scene_pos)
+        self.update_coords(data_coords)
 
-        x_range, y_range = self.view_box.state["viewRange"]
+    def update_coords(self, data_coords):
+        raise NotImplementedError
+
+    def set_value(self, value: float, limits: tuple[float, float]):
         # We want to be able to resolve at least 1000 points in the displayed
         # range.
-        r = np.array(x_range if self.is_x else y_range) * self.data_to_display_scale
-        smallest_digit = np.floor(np.log10(r[1] - r[0])) - 3
-        width = int(-smallest_digit) if smallest_digit < 0 else 0
+        smallest_digit = np.floor(np.log10(limits[1] - limits[0])) - 3
+        precision = int(-smallest_digit) if smallest_digit < 0 else 0
 
-        coord = data_coords.x() if self.is_x else data_coords.y()
-        self.setText("{0:.{n}f}{1}".format(coord * self.data_to_display_scale,
+        self.setText("{0:.{n}f}{1}".format(value * self.data_to_display_scale,
                                            self.unit_suffix,
-                                           n=width))
+                                           n=precision))
+
+
+class CrosshairAxisLabel(CrosshairLabel):
+    """Crosshair label for axis coordinates
+    """
+    def __init__(self,
+                 view_box: pyqtgraph.ViewBox,
+                 unit_suffix: str = "",
+                 data_to_display_scale: float = 1.0,
+                 color: str = SERIES_COLORS[0],
+                 is_x: bool = False):
+        super().__init__(view_box, unit_suffix, data_to_display_scale, color)
+        self.is_x = is_x
+        self.last_value = None
+
+    def update_coords(self, data_coords):
+        x_range, y_range = self.view_box.state["viewRange"]
+        coord = data_coords.x() if self.is_x else data_coords.y()
+        limits = tuple(x_range if self.is_x else y_range)
+        self.set_value(coord, limits)
         self.last_value = coord
 
 
@@ -50,8 +69,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
     trail of buffered redraws when there are a lot of points.
     """
     def __init__(self, cursor_target_widget: QtWidgets.QWidget,
-                 plot_item: pyqtgraph.PlotItem,
-                 crosshair_items: list[CrosshairLabel]):
+                 plot_item: pyqtgraph.PlotItem, crosshair_items: list[CrosshairLabel]):
         """
         :param cursor_target_widget: Widget to apply the cursor icon to.
         :param plot_item: Linked pyqtgraph plot.
