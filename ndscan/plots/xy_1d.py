@@ -371,7 +371,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             action.setCheckable(True)
             action.setChecked(self.averaging_enabled)
             action.triggered.connect(
-                lambda: self.enable_averaging(not self.averaging_enabled))
+                lambda *a: self.enable_averaging(not self.averaging_enabled))
             builder.ensure_separator()
 
         super().build_context_menu(pane_idx, builder)
