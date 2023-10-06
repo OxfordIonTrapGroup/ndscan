@@ -83,6 +83,9 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     """
     def __init__(self):
         super().__init__()
+        self.layout: QtGui.QGraphicsGridLayout = self.ci.layout
+        self.layout.setContentsMargins(3, 3, 3, 3)
+        self.layout.setVerticalSpacing(3)
         self.panes = list[MultiYAxisPlotItem]()
 
     def add_pane(self) -> MultiYAxisPlotItem:
