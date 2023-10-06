@@ -7,7 +7,7 @@ import pyqtgraph
 
 from .._qt import QtCore, QtGui
 from . import colormaps
-from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
+from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .plot_widgets import add_source_id_label, AlternateMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
@@ -51,6 +51,58 @@ def _coords_to_indices(coords, range_spec):
     return np.rint((np.array(coords) - min) / increment).astype(int)
 
 
+class CrosshairZDataLabel(CrosshairLabel):
+    """Crosshair label for the z value of a 2D image
+
+    :param x_range: A tuple of `(min, max, increment)` for the x axis of the image.
+    :param y_range: A tuple of `(min, max, increment)` for the y axis of the image.
+
+    All other arguments are forwarded to ``CrosshairLabel.__init__()``.
+    """
+    def __init__(self, x_range: tuple[float, float, float],
+                 y_range: tuple[float, float, float], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.x_range = x_range
+        self.y_range = y_range
+        self.image_data = None
+        self.z_limits = None
+
+    def set_crosshair_info(self, unit_suffix: str, data_to_display_scale: float,
+                           _color):
+        """Update the unit/scale information of the underlying data.
+
+        :param unit_suffix: The unit (including a leading space).
+        :param data_to_display_scale: The scaling factor corresponding to the unit.
+        :param _color: This parameter has no effect.
+        """
+        self.unit_suffix = unit_suffix
+        self.data_to_display_scale = data_to_display_scale
+
+    def set_image_data(self, image_data: np.ndarray, z_limits: tuple[float, float]):
+        """Update the underlying image data object and the data limits.
+
+        :param image_data: 2D numpy array containing the data that is displayed.
+        :param z_limits: The current colormap limits.
+        """
+        self.image_data = image_data
+        self.z_limits = z_limits
+
+    def update_coords(self, data_coords):
+        if self.image_data is None:
+            return
+        z = np.nan
+
+        x_idx = _coords_to_indices([data_coords.x()], self.x_range)[0]
+        y_idx = _coords_to_indices([data_coords.y()], self.y_range)[0]
+        shape = self.image_data.shape
+        if (0 <= x_idx < shape[0]) and (0 <= y_idx < shape[1]):
+            z = self.image_data[x_idx, y_idx]
+        if np.isnan(z):
+            self.setText("NaN")
+        else:
+            self.set_value(z, self.z_limits)
+
+
 class _ImagePlot:
     def __init__(self, image_item: pyqtgraph.ImageItem,
                  colorbar: pyqtgraph.ColorBarItem, active_channel_name: str,
@@ -76,6 +128,10 @@ class _ImagePlot:
         self.y_range = None
         self.image_data = None
 
+        self.z_crosshair_item = CrosshairZDataLabel(
+            (self.x_min, self.x_max, self.x_increment),
+            (self.y_min, self.y_max, self.y_increment), self.image_item.getViewBox())
+
         self.activate_channel(active_channel_name)
 
     def activate_channel(self, channel_name: str):
@@ -85,8 +141,10 @@ class _ImagePlot:
         label = channel["description"]
         if not label:
             label = channel["path"].split("/")[-1]
-        setup_axis_item(self.colorbar.getAxis("right"),
-                        [(label, channel["path"], None, channel)])
+        crosshair_info = setup_axis_item(self.colorbar.getAxis("right"),
+                                         [(label, channel["path"], None, channel)])
+        # Update crosshair label.
+        self.z_crosshair_item.set_crosshair_info(*crosshair_info[0])
 
         self._invalidate_current()
         self._update()
@@ -174,6 +232,7 @@ class _ImagePlot:
         self.colorbar.setColorMap(cmap)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
+        self.z_crosshair_item.set_image_data(self.image_data, self.current_z_limits)
         if num_skip == 0:
             # Image size has changed, set plot item size accordingly.
             self.image_item.setRect(self.image_rect)
@@ -246,7 +305,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
         self.crosshair = LabeledCrosshairCursor(
             self, self.plot_item,
-            [x_crosshair_item, y_crosshair_item])
+            [x_crosshair_item, y_crosshair_item, self.plot.z_crosshair_item])
 
         self.ready.emit()
 
