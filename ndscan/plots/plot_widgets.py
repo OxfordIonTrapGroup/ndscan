@@ -116,6 +116,11 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
 
         Call after all panes have been added.
         """
+        if len(self.panes) < 2:
+            # Nothing to link; just leave everything to the default pyqtgraph layout,
+            # which has better (responsive) y-axis width scaling.
+            return
+
         max_axis_width = max(p.getAxis("left").width() for p in self.panes)
         for pane in self.panes:
             pane.getAxis("left").setWidth(max_axis_width)
