@@ -192,6 +192,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
     def _initialise_series(self, channels):
         # Remove all currently shown items and any extra axes added.
+        self.clear_panes()
+        self.clear()
         for s in self.series:
             s.remove_items()
         self.series.clear()
@@ -199,7 +201,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.unique_x_data.clear()
         self.found_duplicate_x_data = False
         self._clear_annotations()
-        self.clear()
+
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
 
         try:
