@@ -31,7 +31,8 @@ class CrosshairLabel(pyqtgraph.TextItem):
     def set_value(self, value: float, limits: tuple[float, float]):
         # We want to be able to resolve at least 1000 points in the displayed
         # range.
-        smallest_digit = np.floor(np.log10(limits[1] - limits[0])) - 3
+        span = (limits[1] - limits[0]) * self.data_to_display_scale
+        smallest_digit = np.floor(np.log10(span)) - 3
         precision = int(-smallest_digit) if smallest_digit < 0 else 0
 
         self.setText("{0:.{n}f}{1}".format(value * self.data_to_display_scale,
