@@ -78,10 +78,11 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
         self._history_length = 1024
 
     def _initialise_series(self):
+        self.clear_panes()
+        self.clear()
         for s in self.series:
             s.remove_items()
         self.series.clear()
-        self.clear()
 
         channels = self.model.get_channel_schemata()
         try:

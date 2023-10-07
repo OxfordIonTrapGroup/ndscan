@@ -139,11 +139,10 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
             # also part of it.
             pane.getAxis("bottom").setStyle(showValues=False)
 
-    def clear(self) -> None:
+    def clear_panes(self):
         for pane in self.panes:
             pane.reset_y_axes()
         self.panes.clear()
-        super().clear()
 
 
 class ContextMenuBuilder:
