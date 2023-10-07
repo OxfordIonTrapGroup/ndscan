@@ -121,9 +121,16 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
             # which has better (responsive) y-axis width scaling.
             return
 
+        # Ensure left spines of all panes are aligned by forcing the y axes to the same
+        # width.
+        # FIXME: This should be dynamic (e.g. if the number of tick digits changes).
         max_axis_width = max(p.getAxis("left").width() for p in self.panes)
         for pane in self.panes:
             pane.getAxis("left").setWidth(max_axis_width)
+
+        # With more than one stacked plot with grids, having a complete border instead
+        # of drawing only the axes looks nicer.
+        for pane in self.panes:
             pane.show_border()
 
         for pane in self.panes[:-1]:
