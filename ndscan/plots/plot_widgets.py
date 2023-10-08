@@ -17,11 +17,13 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
 
     This is somewhat of a hack following the MultiplePlotAxes pyqtgraph example.
     """
-    def __init__(self):
+    def __init__(self, context):
         super().__init__()
+        self.context = context
         self._num_y_axes = 0
         self._additional_view_boxes = []
         self._additional_right_axes = []
+        self._source_id_label = None
 
     def show_border(self):
         self.getViewBox().setBorder(
@@ -31,7 +33,9 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
         self._num_y_axes += 1
 
         if self._num_y_axes == 1:
-            return self.getAxis("left"), self.getViewBox()
+            view_box = self.getViewBox()
+            self._source_id_label = add_source_id_label(view_box, self.context)
+            return self.getAxis("left"), view_box
 
         vb = pyqtgraph.ViewBox()
 
@@ -59,6 +63,8 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
 
     def reset_y_axes(self):
         # TODO: Do we need to unlink anything else to avoid leaking memory?
+        if self._source_id_label:
+            self.getViewBox().removeItem(self._source_id_label)
         for vb in self._additional_view_boxes:
             self.removeItem(vb)
         self._additional_view_boxes = []
@@ -88,9 +94,9 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         self.layout.setVerticalSpacing(3)
         self.panes = list[MultiYAxisPlotItem]()
 
-    def add_pane(self) -> MultiYAxisPlotItem:
+    def add_pane(self, context: Context) -> MultiYAxisPlotItem:
         """Extend layout vertically by one :class:`.MultiYAxisPlotItem`."""
-        plot = MultiYAxisPlotItem()
+        plot = MultiYAxisPlotItem(context)
         if self.panes:
             self.nextRow()
         self.addItem(plot)
@@ -181,8 +187,8 @@ class ContextMenuBuilder:
 
 class ContextMenuPanesWidget(VerticalPanesWidget):
     """PlotWidget with support for dynamically populated context menus."""
-    def add_pane(self) -> MultiYAxisPlotItem:
-        pane = super().add_pane()
+    def add_pane(self, *args, **kwargs) -> MultiYAxisPlotItem:
+        pane = super().add_pane(*args, *kwargs)
 
         # The pyqtgraph getContextMenus() mechanism by default isn't very useful –
         # returned entries are appended to the menu every time the function is called.
