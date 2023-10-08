@@ -3,7 +3,8 @@ import pyqtgraph
 
 from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
-from .plot_widgets import AlternateMenuPanesWidget
+from .plot_widgets import (AlternateMenuPanesWidget,
+                           build_channel_selection_context_menu)
 from .utils import (extract_scalar_channels, get_default_hidden_channels,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, setup_axis_item, SERIES_COLORS)
@@ -78,6 +79,11 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
         self.series = []
         self._history_length = 1024
 
+        # List of all scalar channel names for the context menu.
+        self.data_names = None
+        # Set of channel names that are currently hidden.
+        self.hidden_channels = None
+
     def _initialise_series(self):
         self.clear_panes()
         self.clear()
@@ -87,15 +93,17 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
 
         channels = self.model.get_channel_schemata()
         try:
-            data_names, error_bar_names = extract_scalar_channels(channels)
+            self.data_names, error_bar_names = extract_scalar_channels(channels)
         except ValueError as e:
             self.error.emit(str(e))
             return
 
-        axes = group_channels_into_axes(channels, data_names)
+        axes = group_channels_into_axes(channels, self.data_names)
         panes_axes = group_axes_into_panes(channels, axes)
-        hidden_channels = get_default_hidden_channels(channels, data_names)
-        panes_axes_shown = hide_series_from_groups(panes_axes, hidden_channels)
+        if self.hidden_channels is None:
+            self.hidden_channels = get_default_hidden_channels(
+                channels, self.data_names)
+        panes_axes_shown = hide_series_from_groups(panes_axes, self.hidden_channels)
 
         for axes_series in panes_axes_shown:
             pane = self.add_pane(self.model.context)
@@ -165,4 +173,10 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
             action = builder.append_widget_action()
             action.setDefaultWidget(container)
         builder.ensure_separator()
+
+        if len(self.data_names) > 1:
+            build_channel_selection_context_menu(builder, self._initialise_series,
+                                                 self.data_names, self.hidden_channels)
+            builder.ensure_separator()
+
         super().build_context_menu(pane_idx, builder)

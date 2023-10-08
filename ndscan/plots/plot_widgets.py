@@ -9,6 +9,7 @@
 import pyqtgraph
 from .._qt import QtCore, QtGui, QtWidgets
 from .model import Context
+from typing import Callable
 
 
 class MultiYAxisPlotItem(pyqtgraph.PlotItem):
@@ -324,3 +325,49 @@ def add_source_id_label(view_box: pyqtgraph.ViewBox,
     update_text_pos()
 
     return text_item
+
+
+def build_channel_selection_context_menu(builder: ContextMenuBuilder,
+                                         state_changed_callback: Callable[[], None],
+                                         data_names: list[str],
+                                         hidden_channels: set[str]):
+    """Create a submenu of checkboxes to control the set of `hidden_channels`.
+
+    :param builder: Instance of ``ContextMenuBuilder``.
+    :param state_changed_callback: Method to call when ``hidden_channels`` has been
+        changged.
+    :param data_names: List of channel names to select from.
+    :param hidden_channels: The set of hidden channels, modified in-place depending
+        on the state of the checkboxes created here.
+    """
+    container = QtWidgets.QWidget()
+    layout = QtWidgets.QVBoxLayout()
+    container.setLayout(layout)
+    submenu = builder.append_menu("Select channels to show")
+    action = QtWidgets.QWidgetAction(submenu)
+    action.setDefaultWidget(container)
+    submenu.addAction(action)
+
+    checkboxes = [QtWidgets.QCheckBox(name) for name in data_names]
+
+    def state_changed(state, name):
+        if state == 0:
+            hidden_channels.add(name)
+        else:
+            hidden_channels.discard(name)
+        # Prevent the user from hiding all channels.
+        if sum(cb.isChecked() for cb in checkboxes) == 1:
+            for cb in checkboxes:
+                if cb.isChecked():
+                    cb.setEnabled(False)
+                    break
+        else:
+            for cb in checkboxes:
+                cb.setEnabled(True)
+        state_changed_callback()
+
+    for name, checkbox in zip(data_names, checkboxes):
+        checkbox.setTristate(False)
+        checkbox.setChecked(name not in hidden_channels)
+        checkbox.stateChanged.connect(lambda a, n=name: state_changed(a, n))
+        layout.addWidget(checkbox)
