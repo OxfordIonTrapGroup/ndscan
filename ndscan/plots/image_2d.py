@@ -9,7 +9,7 @@ from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
-from .plot_widgets import add_source_id_label, AlternateMenuPanesWidget
+from .plot_widgets import AlternateMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, get_axis_scaling_info, setup_axis_item)
 
@@ -260,7 +260,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
         self.x_schema, self.y_schema = self.model.axes
 
-        self.plot_item = self.add_pane()
+        self.plot_item = self.add_pane(self.model.context)
         self.plot_item.showGrid(x=True, y=True)
         self.plot = None
         self.crosshair = None
@@ -286,9 +286,6 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
         setup_axis(self.x_schema, "bottom")
         setup_axis(self.y_schema, "left")
-
-        self.source_label = add_source_id_label(self.plot_item.getViewBox(),
-                                                self.model.context)
 
         def bounds(schema):
             return (schema.get(n, None) for n in ("min", "max", "increment"))

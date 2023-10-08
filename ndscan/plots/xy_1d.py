@@ -10,7 +10,7 @@ from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import add_source_id_label, SubplotMenuPanesWidget
+from .plot_widgets import SubplotMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, group_channels_into_axes,
                     group_axes_into_panes, get_axis_scaling_info, setup_axis_item,
@@ -214,7 +214,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         plots_axes = group_axes_into_panes(channels, axes)
 
         for axes_names in plots_axes:
-            pane = self.add_pane()
+            pane = self.add_pane(self.model.context)
             pane.showGrid(x=True, y=True)
             series_idx = 0
             crosshair_items = []
@@ -256,9 +256,6 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             crosshair_items = [x_crosshair_item] + crosshair_items
             crosshair = LabeledCrosshairCursor(self, pane, crosshair_items)
             self.crosshairs.append(crosshair)
-
-        if self.series:
-            add_source_id_label(self.series[-1].view_box, self.model.context)
 
         if len(self.panes) > 1:
             self.link_x_axes()

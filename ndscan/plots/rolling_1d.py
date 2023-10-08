@@ -3,7 +3,7 @@ import pyqtgraph
 
 from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
-from .plot_widgets import add_source_id_label, AlternateMenuPanesWidget
+from .plot_widgets import AlternateMenuPanesWidget
 from .utils import (extract_scalar_channels, group_channels_into_axes,
                     group_axes_into_panes, setup_axis_item, SERIES_COLORS)
 
@@ -94,7 +94,7 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
         axes = group_channels_into_axes(channels, data_names)
         plots_axes = group_axes_into_panes(channels, axes)
         for axes_names in plots_axes:
-            pane = self.add_pane()
+            pane = self.add_pane(self.model.context)
             pane.showGrid(x=True, y=True)
             series_idx = 0
             for names in axes_names:
@@ -125,8 +125,6 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
                 setup_axis_item(axis, info)
         if len(self.panes) > 1:
             self.link_x_axes()
-        if self.series:
-            add_source_id_label(self.series[-1].view_box, self.model.context)
 
         self.ready.emit()
 
