@@ -14,6 +14,10 @@ FIT_COLORS = [
 ]
 
 
+def _get_priority(channel_metadata: dict[str, Any]):
+    return channel_metadata.get("display_hints", {}).get("priority", 0)
+
+
 def extract_scalar_channels(
         channels: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
     """Extract channels with scalar numerical values from the given channel metadata,
@@ -63,13 +67,27 @@ def extract_scalar_channels(
 
     # Sort by descending priority and then path (the latter for stable order).
     def sort_key(name):
-        priority = channels[name].get("display_hints", {}).get("priority", 0)
+        priority = _get_priority(channels[name])
         return -priority, channels[name]["path"]
 
     data_names = list(data_names)
     data_names.sort(key=sort_key)
 
     return data_names, error_bar_names
+
+
+def get_default_hidden_channels(channels: dict[str, Any], data_names: list[str]):
+    """Returns all negative-priority channels, except one if all are.
+
+    :param channels: ndscan.channels metadata.
+    :param data_names: List of channel names to consider. See
+        :func:``extract_scalar_channels()``.
+    """
+    hidden_channels = set(n for n in data_names if _get_priority(channels[n]) < 0)
+    # Even if all channels have negative priority, show at least one.
+    if len(hidden_channels) < len(data_names):
+        hidden_channels.discard(data_names[0])
+    return hidden_channels
 
 
 def _get_share_name(name: str, keyword: str, channels: dict[str, Any],
