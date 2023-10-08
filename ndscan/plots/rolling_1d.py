@@ -4,8 +4,9 @@ import pyqtgraph
 from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
 from .plot_widgets import AlternateMenuPanesWidget
-from .utils import (extract_scalar_channels, group_channels_into_axes,
-                    group_axes_into_panes, setup_axis_item, SERIES_COLORS)
+from .utils import (extract_scalar_channels, get_default_hidden_channels,
+                    group_channels_into_axes, group_axes_into_panes,
+                    hide_series_from_groups, setup_axis_item, SERIES_COLORS)
 
 
 class _Series:
@@ -92,16 +93,18 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
             return
 
         axes = group_channels_into_axes(channels, data_names)
-        plots_axes = group_axes_into_panes(channels, axes)
-        for axes_names in plots_axes:
+        panes_axes = group_axes_into_panes(channels, axes)
+        hidden_channels = get_default_hidden_channels(channels, data_names)
+        panes_axes_shown = hide_series_from_groups(panes_axes, hidden_channels)
+
+        for axes_series in panes_axes_shown:
             pane = self.add_pane(self.model.context)
             pane.showGrid(x=True, y=True)
-            series_idx = 0
-            for names in axes_names:
+            for series in axes_series:
                 axis, view_box = pane.new_y_axis()
 
                 info = []
-                for name in names:
+                for (series_idx, name) in series:
                     color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
                     data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
 
@@ -120,9 +123,8 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
                         label = channel["path"].split("/")[-1]
                     info.append((label, channel["path"], color, channel))
 
-                    series_idx += 1
-
                 setup_axis_item(axis, info)
+
         if len(self.panes) > 1:
             self.link_x_axes()
 

@@ -12,8 +12,9 @@ from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import SubplotMenuPanesWidget
 from .utils import (extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, group_channels_into_axes,
-                    group_axes_into_panes, get_axis_scaling_info, setup_axis_item,
+                    get_default_hidden_channels, format_param_identity,
+                    group_channels_into_axes, group_axes_into_panes,
+                    hide_series_from_groups, get_axis_scaling_info, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS)
 
 logger = logging.getLogger(__name__)
@@ -211,19 +212,20 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             return
 
         axes = group_channels_into_axes(channels, data_names)
-        plots_axes = group_axes_into_panes(channels, axes)
+        panes_axes = group_axes_into_panes(channels, axes)
+        hidden_channels = get_default_hidden_channels(channels, data_names)
+        panes_axes_shown = hide_series_from_groups(panes_axes, hidden_channels)
 
-        for axes_names in plots_axes:
+        for axes_series in panes_axes_shown:
             pane = self.add_pane(self.model.context)
             pane.showGrid(x=True, y=True)
-            series_idx = 0
             crosshair_items = []
-            for names in axes_names:
+            for series in axes_series:
                 axis, view_box = pane.new_y_axis()
                 view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
 
                 info = []
-                for name in names:
+                for (series_idx, name) in series:
                     color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
                     data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
                     data_item.sigClicked.connect(self._point_clicked)
@@ -235,15 +237,13 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
                     self.series.append(
                         _XYSeries(view_box, name, data_item, error_bar_name,
-                                  error_bar_item))
+                                  error_bar_item, series_idx))
 
                     channel = channels[name]
                     label = channel["description"]
                     if not label:
                         label = channel["path"].split("/")[-1]
                     info.append((label, channel["path"], color, channel))
-
-                    series_idx += 1
 
                 crosshair_label_args = setup_axis_item(axis, info)
                 crosshair_items.extend(
