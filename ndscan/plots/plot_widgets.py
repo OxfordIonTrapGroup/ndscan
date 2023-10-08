@@ -180,6 +180,11 @@ class ContextMenuBuilder:
         self._append(action)
         return action
 
+    def append_menu(self, title) -> QtWidgets.QMenu:
+        menu = QtWidgets.QMenu(title, parent=self._target_menu)
+        self._append(menu)
+        return menu
+
     def _append(self, action):
         self._last_was_no_separator = True
         self._entries.append(action)
