@@ -53,7 +53,8 @@ def combined_uncertainty(points: list[SourcePoint], num_samples_per_point=1):
 
 
 class _XYSeries(QtCore.QObject):
-    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item):
+    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item,
+                 series_idx, pane_idx):
         super().__init__(view_box)
 
         self.view_box = view_box
@@ -62,6 +63,8 @@ class _XYSeries(QtCore.QObject):
         self.error_bar_item = error_bar_item
         self.error_bar_name = error_bar_name
         self.num_current_points = 0
+        self.series_idx = series_idx
+        self.pane_idx = pane_idx
 
         #: Whether to average points with the same x coordinate.
         self.averaging_enabled = False
@@ -243,7 +246,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
                     self.series.append(
                         _XYSeries(view_box, name, data_item, error_bar_name,
-                                  error_bar_item, series_idx))
+                                  error_bar_item, series_idx,
+                                  len(self.panes) - 1))
 
                     channel = channels[name]
                     label = channel["description"]
@@ -304,11 +308,26 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
     def _update_annotations(self):
         self._clear_annotations()
 
-        def channel_ref_to_series_idx(ref):
-            for i, s in enumerate(self.series):
-                if "channel_" + s.data_name == ref:
-                    return i
-            return 0
+        def channel_refs_to_series(refs):
+            associated_series = []
+            seen_panes = set[int]()
+            for series in self.series:
+                if series.pane_idx in seen_panes:
+                    # Limit to one entry per pane.
+                    continue
+                use_series = False
+                if refs is None:
+                    # Append an entry in each viewbox.
+                    use_series = True
+                else:
+                    for ref in refs:
+                        if "channel_" + series.data_name == ref:
+                            use_series = True
+                            break
+                if use_series:
+                    associated_series.append(series)
+                    seen_panes.add(series.pane_idx)
+            return associated_series
 
         def make_curve_item(series_idx):
             color = FIT_COLORS[series_idx % len(FIT_COLORS)]
@@ -319,51 +338,57 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         for a in annotations:
             if a.kind == "location":
                 if set(a.coordinates.keys()) == {"axis_0"}:
-                    associated_series_idx = max(
-                        channel_ref_to_series_idx(chan)
-                        for chan in a.parameters.get("associated_channels", [None]))
+                    channel_refs = a.parameters.get("associated_channels", None)
+                    associated_series = channel_refs_to_series(channel_refs)
+                    for series in associated_series:
+                        color = FIT_COLORS[series.series_idx % len(FIT_COLORS)]
+                        line = VLineItem(
+                            a.coordinates["axis_0"],
+                            a.data.get("axis_0_error", None),
+                            series.view_box,
+                            color,
+                            self.x_data_to_display_scale,
+                            self.x_unit_suffix,
+                        )
+                        self.annotation_items.append(line)
 
-                    color = FIT_COLORS[associated_series_idx % len(FIT_COLORS)]
-                    vb = self.series[associated_series_idx].view_box
-                    line = VLineItem(a.coordinates["axis_0"],
-                                     a.data.get("axis_0_error", None), vb, color,
-                                     self.x_data_to_display_scale, self.x_unit_suffix)
-                    self.annotation_items.append(line)
-                    continue
-
-            if a.kind == "curve":
-                associated_series_idx = None
-                for series_idx, series in enumerate(self.series):
+            elif a.kind == "curve":
+                associated_series = None
+                for series in self.series:
                     match_coords = {"axis_0", "channel_" + series.data_name}
                     if set(a.coordinates.keys()) == match_coords:
-                        associated_series_idx = series_idx
+                        associated_series = series
                         break
-                if associated_series_idx is not None:
-                    curve = make_curve_item(associated_series_idx)
-                    series = self.series[associated_series_idx]
-                    vb = series.view_box
-                    item = CurveItem(a.coordinates["axis_0"],
-                                     a.coordinates["channel_" + series.data_name], vb,
-                                     curve)
+                if associated_series is not None:
+                    item = CurveItem(
+                        a.coordinates["axis_0"],
+                        a.coordinates["channel_" + associated_series.data_name],
+                        associated_series.view_box,
+                        make_curve_item(associated_series.series_idx),
+                    )
                     self.annotation_items.append(item)
-                    continue
 
-            if a.kind == "computed_curve":
+            elif a.kind == "computed_curve":
                 function_name = a.parameters.get("function_name", None)
                 if ComputedCurveItem.is_function_supported(function_name):
-                    associated_series_idx = max(
-                        channel_ref_to_series_idx(chan)
-                        for chan in a.parameters.get("associated_channels", [None]))
+                    channel_refs = a.parameters.get("associated_channels", [])
+                    associated_series = channel_refs_to_series(channel_refs)
+                    for series in associated_series:
+                        x_limits = [
+                            self.x_param_spec.get(n, None) for n in ("min", "max")
+                        ]
+                        item = ComputedCurveItem(
+                            function_name,
+                            a.data,
+                            series.view_box,
+                            make_curve_item(series.series_idx),
+                            x_limits,
+                        )
+                        self.annotation_items.append(item)
 
-                    x_limits = [self.x_param_spec.get(n, None) for n in ("min", "max")]
-                    curve = make_curve_item(associated_series_idx)
-                    vb = self.series[associated_series_idx].view_box
-                    item = ComputedCurveItem(function_name, a.data, vb, curve, x_limits)
-                    self.annotation_items.append(item)
-                    continue
-
-            logger.info("Ignoring annotation of kind '%s' with coordinates %s", a.kind,
-                        list(a.coordinates.keys()))
+            else:
+                logger.info("Ignoring annotation of kind '%s' with coordinates %s",
+                            a.kind, list(a.coordinates.keys()))
 
     def build_context_menu(self, pane_idx, builder):
         x_schema = self.model.axes[0]
