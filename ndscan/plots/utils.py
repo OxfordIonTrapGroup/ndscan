@@ -62,23 +62,12 @@ def extract_scalar_channels(
     data_names -= set(error_bar_names.values())
 
     # Sort by descending priority and then path (the latter for stable order).
-    def get_priority(name):
-        return channels[name].get("display_hints", {}).get("priority", 0)
+    def sort_key(name):
+        priority = channels[name].get("display_hints", {}).get("priority", 0)
+        return -priority, channels[name]["path"]
 
     data_names = list(data_names)
-    data_names.sort(key=lambda name: (-get_priority(name), channels[name]["path"]))
-
-    # HACK: Don't show negative-priority channels by default (but leave at least one).
-    # Instead of removing them entirely, they should just be hidden at a higher layer
-    # (and still be accessible from a context menu).
-    while len(data_names) > 1:
-        if get_priority(data_names[-1]) >= 0:
-            break
-        try:
-            del error_bar_names[data_names[-1]]
-        except KeyError:
-            pass
-        data_names = data_names[:-1]
+    data_names.sort(key=sort_key)
 
     return data_names, error_bar_names
 
@@ -212,10 +201,40 @@ def group_axes_into_panes(channels: dict[str, Any],
 
     # Skip empty sets and sort the remaining axes in original order.
     plots = [
-        sorted(list(share_idxs)) for share_idxs in axes_share_idxs
-        if len(share_idxs) > 0
+        sorted(share_idxs) for share_idxs in axes_share_idxs if len(share_idxs) > 0
     ]
     return [[axes_names[axis] for axis in plot] for plot in plots]
+
+
+def hide_series_from_groups(panes_axes_names: list[list[list[str]]],
+                            hidden_names: set[str]):
+    """To produce a stable layout and style (series placement and color), we iterate
+        once over all series and keep only those that are not hidden, skipping empty
+        axes and panes as we go, before actually creating the layout/plot items.
+
+    :param panes_axes_names: Names of series names for each axis in each pane,
+        as returned by :func:``group_axes_into_panes()``.
+    :param hidden_names: A set of names which are to be removed from the groups.
+        If a group is empty as a result, this group is removed.
+
+    :return: A list of lists of lists giving a tuple of channel name and the index in
+        the original series for each axis and plot, after removing the hidden elements.
+    """
+    panes_axes_shown = []
+    for axes_names in panes_axes_names:
+        series_idx = 0
+        axes_shown = []
+        for names in axes_names:
+            series_shown = []
+            for name in names:
+                if name not in hidden_names:
+                    series_shown.append((series_idx, name))
+                series_idx += 1
+            if len(series_shown) > 0:
+                axes_shown.append(series_shown)
+        if len(axes_shown) > 0:
+            panes_axes_shown.append(axes_shown)
+    return panes_axes_shown
 
 
 def extract_linked_datasets(param_schema: dict[str, Any]) -> list[str]:
