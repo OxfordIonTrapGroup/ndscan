@@ -10,7 +10,7 @@ from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import SubplotMenuPanesWidget
+from .plot_widgets import SubplotMenuPanesWidget, build_channel_selection_context_menu
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     get_default_hidden_channels, format_param_identity,
                     group_channels_into_axes, group_axes_into_panes,
@@ -167,13 +167,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(self._update_points)
         self.model.annotations_changed.connect(self._update_annotations)
-
         # FIXME: Just re-set values instead of throwing away everything.
-        def rewritten(points):
-            self._initialise_series(self.model.get_channel_schemata())
-            self._update_points(points)
-
-        self.model.points_rewritten.connect(rewritten)
+        self.model.points_rewritten.connect(self._rewrite)
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
 
@@ -191,6 +186,15 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.crosshairs = []
         self._highlighted_spot = None
 
+        # List of all scalar channel names for the context menu.
+        self.data_names = None
+        # Set of channel names that are currently hidden.
+        self.hidden_channels = None
+
+    def _rewrite(self, points):
+        self._initialise_series(self.model.get_channel_schemata())
+        self._update_points(points)
+
     def _initialise_series(self, channels):
         # Remove all currently shown items and any extra axes added.
         self.clear_panes()
@@ -206,15 +210,17 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
 
         try:
-            data_names, error_bar_names = extract_scalar_channels(channels)
+            (self.data_names, error_bar_names) = extract_scalar_channels(channels)
         except ValueError as e:
             self.error.emit(str(e))
             return
 
-        axes = group_channels_into_axes(channels, data_names)
+        axes = group_channels_into_axes(channels, self.data_names)
         panes_axes = group_axes_into_panes(channels, axes)
-        hidden_channels = get_default_hidden_channels(channels, data_names)
-        panes_axes_shown = hide_series_from_groups(panes_axes, hidden_channels)
+        if self.hidden_channels is None:
+            self.hidden_channels = get_default_hidden_channels(
+                channels, self.data_names)
+        panes_axes_shown = hide_series_from_groups(panes_axes, self.hidden_channels)
 
         for axes_series in panes_axes_shown:
             pane = self.add_pane(self.model.context)
@@ -375,6 +381,12 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             action.setChecked(self.averaging_enabled)
             action.triggered.connect(
                 lambda *a: self.enable_averaging(not self.averaging_enabled))
+            builder.ensure_separator()
+
+        if len(self.data_names) > 1:
+            build_channel_selection_context_menu(
+                builder, lambda: self._rewrite(self.model.get_point_data()),
+                self.data_names, self.hidden_channels)
             builder.ensure_separator()
 
         super().build_context_menu(pane_idx, builder)
