@@ -70,7 +70,7 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: SinglePointModel, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
+        super().__init__(model.context, get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
@@ -106,7 +106,7 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
         panes_axes_shown = hide_series_from_groups(panes_axes, self.hidden_channels)
 
         for axes_series in panes_axes_shown:
-            pane = self.add_pane(self.model.context)
+            pane = self.add_pane()
             pane.showGrid(x=True, y=True)
             for series in axes_series:
                 axis, view_box = pane.new_y_axis()

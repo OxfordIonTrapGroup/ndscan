@@ -226,7 +226,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         panes_axes_shown = hide_series_from_groups(panes_axes, self.hidden_channels)
 
         for axes_series in panes_axes_shown:
-            pane = self.add_pane(self.model.context)
+            pane = self.add_pane()
             pane.showGrid(x=True, y=True)
             crosshair_items = []
             for series in axes_series:

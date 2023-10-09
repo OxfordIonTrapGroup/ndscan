@@ -18,13 +18,11 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
 
     This is somewhat of a hack following the MultiplePlotAxes pyqtgraph example.
     """
-    def __init__(self, context):
+    def __init__(self):
         super().__init__()
-        self.context = context
         self._num_y_axes = 0
         self._additional_view_boxes = []
         self._additional_right_axes = []
-        self._source_id_label = None
 
     def show_border(self):
         self.getViewBox().setBorder(
@@ -34,9 +32,7 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
         self._num_y_axes += 1
 
         if self._num_y_axes == 1:
-            view_box = self.getViewBox()
-            self._source_id_label = add_source_id_label(view_box, self.context)
-            return self.getAxis("left"), view_box
+            return self.getAxis("left"), self.getViewBox()
 
         vb = pyqtgraph.ViewBox()
 
@@ -88,16 +84,18 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     For the sake of clarity, the concept of one such subplot is consistently referred to
     as a "pane" throughout the code.
     """
-    def __init__(self):
+    def __init__(self, context: Context):
         super().__init__()
+        self._context = context
         self.layout: QtGui.QGraphicsGridLayout = self.ci.layout
         self.layout.setContentsMargins(3, 3, 3, 3)
         self.layout.setVerticalSpacing(3)
+        self.context = context
         self.panes = list[MultiYAxisPlotItem]()
 
-    def add_pane(self, context: Context) -> MultiYAxisPlotItem:
+    def add_pane(self) -> MultiYAxisPlotItem:
         """Extend layout vertically by one :class:`.MultiYAxisPlotItem`."""
-        plot = MultiYAxisPlotItem(context)
+        plot = MultiYAxisPlotItem()
         if self.panes:
             self.nextRow()
         self.addItem(plot)
@@ -145,6 +143,8 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
             # We can't completely hide the bottom axis, as the vertical grid lines are
             # also part of it.
             pane.getAxis("bottom").setStyle(showValues=False)
+
+        add_source_id_label(self.panes[-1].getViewBox(), self._context)
 
     def clear_panes(self):
         for pane in self.panes:
@@ -238,8 +238,8 @@ class AlternateMenuPanesWidget(ContextMenuPanesWidget):
 
     alternate_plot_requested = QtCore.pyqtSignal(str)
 
-    def __init__(self, get_alternate_plot_names):
-        super().__init__()
+    def __init__(self, context: Context, get_alternate_plot_names):
+        super().__init__(context)
         self._get_alternate_plot_names = get_alternate_plot_names
 
     def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
@@ -257,9 +257,7 @@ class SubplotMenuPanesWidget(AlternateMenuPanesWidget):
     AlternateMenuPanesWidget functionality).
     """
     def __init__(self, context: Context, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
-        self._context = context
-
+        super().__init__(context, get_alternate_plot_names)
         #: Maps subscan names to model Root instances.
         self.subscan_roots = {}
 
