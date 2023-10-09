@@ -59,11 +59,10 @@ class CrosshairZDataLabel(CrosshairLabel):
 
     All other arguments are forwarded to ``CrosshairLabel.__init__()``.
     """
-    def __init__(self, x_range: tuple[float, float, float],
-                 y_range: tuple[float, float, float], *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.x_range = x_range
-        self.y_range = y_range
+        self.x_range = None
+        self.y_range = None
         self.image_data = None
         self.z_limits = None
 
@@ -78,13 +77,21 @@ class CrosshairZDataLabel(CrosshairLabel):
         self.unit_suffix = unit_suffix
         self.data_to_display_scale = data_to_display_scale
 
-    def set_image_data(self, image_data: np.ndarray, z_limits: tuple[float, float]):
+    def set_image_data(
+        self,
+        image_data: np.ndarray,
+        x_range: tuple[float, float, float],
+        y_range: tuple[float, float, float],
+        z_limits: tuple[float, float],
+    ):
         """Update the underlying image data object and the data limits.
 
         :param image_data: 2D numpy array containing the data that is displayed.
         :param z_limits: The current colormap limits.
         """
         self.image_data = image_data
+        self.x_range = x_range
+        self.y_range = y_range
         self.z_limits = z_limits
 
     def update_coords(self, data_coords):
@@ -128,9 +135,7 @@ class _ImagePlot:
         self.y_range = None
         self.image_data = None
 
-        self.z_crosshair_item = CrosshairZDataLabel(
-            (self.x_min, self.x_max, self.x_increment),
-            (self.y_min, self.y_max, self.y_increment), self.image_item.getViewBox())
+        self.z_crosshair_item = CrosshairZDataLabel(self.image_item.getViewBox())
 
         self.activate_channel(active_channel_name)
 
@@ -232,7 +237,8 @@ class _ImagePlot:
         self.colorbar.setColorMap(cmap)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
-        self.z_crosshair_item.set_image_data(self.image_data, self.current_z_limits)
+        self.z_crosshair_item.set_image_data(self.image_data, self.x_range,
+                                             self.y_range, self.current_z_limits)
         if num_skip == 0:
             # Image size has changed, set plot item size accordingly.
             self.image_item.setRect(self.image_rect)
