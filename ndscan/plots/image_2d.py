@@ -249,7 +249,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: ScanModel, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
+        super().__init__(model.context, get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
@@ -260,7 +260,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
         self.x_schema, self.y_schema = self.model.axes
 
-        self.plot_item = self.add_pane(self.model.context)
+        self.plot_item = self.add_pane()
         self.plot_item.showGrid(x=True, y=True)
         self.plot = None
         self.crosshair = None
