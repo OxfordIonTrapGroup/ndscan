@@ -60,8 +60,6 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
 
     def reset_y_axes(self):
         # TODO: Do we need to unlink anything else to avoid leaking memory?
-        if self._source_id_label:
-            self.getViewBox().removeItem(self._source_id_label)
         for vb in self._additional_view_boxes:
             self.removeItem(vb)
         self._additional_view_boxes = []
