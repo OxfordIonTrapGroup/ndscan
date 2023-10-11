@@ -145,13 +145,14 @@ class VLineItem(AnnotationItem):
     """Vertical line marking a given x coordinate, with optional confidence interval."""
     def __init__(self, position_source: AnnotationDataSource,
                  uncertainty_source: AnnotationDataSource | None, view_box, base_color,
-                 x_data_to_display_scale, x_unit_suffix):
+                 x_data_to_display_scale, x_unit_suffix, show_label):
         self._position_source = position_source
         self._uncertainty_source = uncertainty_source
         self._view_box = view_box
         self._x_data_to_display_scale = x_data_to_display_scale
         self._x_unit_suffix = x_unit_suffix
         self._added_to_plot = False
+        self._show_label = show_label
 
         # Position label within initial view range.
         ymax_view = view_box.viewRange()[1][1]
@@ -222,7 +223,9 @@ class VLineItem(AnnotationItem):
         else:
             label = uncertainty_to_string(x * self._x_data_to_display_scale,
                                           delta_x * self._x_data_to_display_scale)
-        self._center_line.label.setFormat(label + self._x_unit_suffix)
+
+        if self._show_label:
+            self._center_line.label.setFormat(label + self._x_unit_suffix)
 
         self._left_line.setPos(x - delta_x)
         self._center_line.setPos(x)
