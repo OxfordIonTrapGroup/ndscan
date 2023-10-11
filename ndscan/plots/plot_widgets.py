@@ -130,16 +130,15 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         for pane in self.panes:
             pane.getAxis("left").setWidth(max_axis_width)
 
-        # With more than one stacked plot with grids, having a complete border instead
-        # of drawing only the axes looks nicer.
-        for pane in self.panes:
+            # With more than one stacked plot with grids, having a complete border
+            # instead of drawing only the axes looks nicer.
             pane.show_border()
 
-        for pane in self.panes[:-1]:
-            pane.setXLink(self.panes[-1])
-            # We can't completely hide the bottom axis, as the vertical grid lines are
-            # also part of it.
-            pane.getAxis("bottom").setStyle(showValues=False)
+            if pane is not self.panes[-1]:
+                pane.setXLink(self.panes[-1])
+                # We can't completely hide the bottom axis, as the vertical grid lines
+                # are also part of it.
+                pane.getAxis("bottom").setStyle(showValues=False)
 
     def clear_panes(self):
         for pane in self.panes:
