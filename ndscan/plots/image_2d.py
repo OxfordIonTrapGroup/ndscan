@@ -9,7 +9,7 @@ from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
-from .plot_widgets import AlternateMenuPanesWidget
+from .plot_widgets import AlternateMenuPanesWidget, add_source_id_label
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, get_axis_scaling_info, setup_axis_item)
 
@@ -249,7 +249,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: ScanModel, get_alternate_plot_names):
-        super().__init__(model.context, get_alternate_plot_names)
+        super().__init__(get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
@@ -309,6 +309,8 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         self.crosshair = LabeledCrosshairCursor(
             self, self.plot_item,
             [x_crosshair_item, y_crosshair_item, self.plot.z_crosshair_item])
+
+        add_source_id_label(self.plot_item.getViewBox(), self.model.context)
 
         self.ready.emit()
 

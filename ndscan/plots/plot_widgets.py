@@ -23,6 +23,7 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
         self._num_y_axes = 0
         self._additional_view_boxes = []
         self._additional_right_axes = []
+        self._source_id_label = None
 
     def show_border(self):
         self.getViewBox().setBorder(
@@ -82,13 +83,11 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     For the sake of clarity, the concept of one such subplot is consistently referred to
     as a "pane" throughout the code.
     """
-    def __init__(self, context: Context):
+    def __init__(self):
         super().__init__()
-        self._context = context
         self.layout: QtGui.QGraphicsGridLayout = self.ci.layout
         self.layout.setContentsMargins(3, 3, 3, 3)
         self.layout.setVerticalSpacing(3)
-        self.context = context
         self.panes = list[MultiYAxisPlotItem]()
 
     def add_pane(self) -> MultiYAxisPlotItem:
@@ -142,8 +141,6 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
             # also part of it.
             pane.getAxis("bottom").setStyle(showValues=False)
 
-        add_source_id_label(self.panes[-1].getViewBox(), self._context)
-
     def clear_panes(self):
         for pane in self.panes:
             pane.reset_y_axes()
@@ -191,8 +188,8 @@ class ContextMenuBuilder:
 
 class ContextMenuPanesWidget(VerticalPanesWidget):
     """PlotWidget with support for dynamically populated context menus."""
-    def add_pane(self, *args, **kwargs) -> MultiYAxisPlotItem:
-        pane = super().add_pane(*args, *kwargs)
+    def add_pane(self) -> MultiYAxisPlotItem:
+        pane = super().add_pane()
 
         # The pyqtgraph getContextMenus() mechanism by default isn't very useful –
         # returned entries are appended to the menu every time the function is called.
@@ -236,8 +233,8 @@ class AlternateMenuPanesWidget(ContextMenuPanesWidget):
 
     alternate_plot_requested = QtCore.pyqtSignal(str)
 
-    def __init__(self, context: Context, get_alternate_plot_names):
-        super().__init__(context)
+    def __init__(self, get_alternate_plot_names):
+        super().__init__()
         self._get_alternate_plot_names = get_alternate_plot_names
 
     def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
@@ -255,7 +252,9 @@ class SubplotMenuPanesWidget(AlternateMenuPanesWidget):
     AlternateMenuPanesWidget functionality).
     """
     def __init__(self, context: Context, get_alternate_plot_names):
-        super().__init__(context, get_alternate_plot_names)
+        super().__init__(get_alternate_plot_names)
+        self._context = context
+
         #: Maps subscan names to model Root instances.
         self.subscan_roots = {}
 

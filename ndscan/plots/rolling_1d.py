@@ -4,7 +4,7 @@ import pyqtgraph
 from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
 from .plot_widgets import (AlternateMenuPanesWidget,
-                           build_channel_selection_context_menu)
+                           build_channel_selection_context_menu, add_source_id_label)
 from .utils import (extract_scalar_channels, get_default_hidden_channels,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, setup_axis_item, SERIES_COLORS)
@@ -70,7 +70,7 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
     ready = QtCore.pyqtSignal()
 
     def __init__(self, model: SinglePointModel, get_alternate_plot_names):
-        super().__init__(model.context, get_alternate_plot_names)
+        super().__init__(get_alternate_plot_names)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
@@ -135,6 +135,8 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
 
         if len(self.panes) > 1:
             self.link_x_axes()
+
+        add_source_id_label(self.panes[-1].getViewBox(), self.model.context)
 
         self.ready.emit()
 

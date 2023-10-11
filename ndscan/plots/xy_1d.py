@@ -10,7 +10,8 @@ from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import SubplotMenuPanesWidget, build_channel_selection_context_menu
+from .plot_widgets import (SubplotMenuPanesWidget, build_channel_selection_context_menu,
+                           add_source_id_label)
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     get_default_hidden_channels, format_param_identity,
                     group_channels_into_axes, group_axes_into_panes,
@@ -269,6 +270,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         if len(self.panes) > 1:
             self.link_x_axes()
+
+        add_source_id_label(self.panes[-1].getViewBox(), self.model.context)
 
         setup_axis_item(
             self.panes[-1].getAxis("bottom"),
