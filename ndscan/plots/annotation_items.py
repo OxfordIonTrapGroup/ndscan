@@ -153,6 +153,11 @@ class VLineItem(AnnotationItem):
         self._x_unit_suffix = x_unit_suffix
         self._added_to_plot = False
 
+        # Position label within initial view range.
+        ymax_view = view_box.viewRange()[1][1]
+        ymax_scene = view_box.mapViewToScene(QtCore.QPointF(0, ymax_view)).y()
+        ypos_label = view_box.mapSceneToView(QtCore.QPointF(0, ymax_scene + 7)).y()
+
         self._left_line = pyqtgraph.InfiniteLine(movable=False,
                                                  angle=90,
                                                  pen={
@@ -163,7 +168,7 @@ class VLineItem(AnnotationItem):
                                                    angle=90,
                                                    label="",
                                                    labelOpts={
-                                                       "position": 0.97,
+                                                       "position": ypos_label,
                                                        "color": base_color,
                                                        "movable": True
                                                    },
