@@ -87,7 +87,7 @@ class ScanRunner(HasEnvironment):
         self.setattr_device("scheduler")
 
     def run(self, fragment: ExpFragment, spec: ScanSpec,
-            axis_sinks: list[ResultSink]) -> None:
+            axis_sinks: list[ResultSink], live_analyses: list[DefaultAnalysis]) -> None:
         """Run a scan of the given fragment, with axes as specified.
 
         Integrates with the ARTIQ scheduler to pause/terminate execution as requested.
@@ -224,7 +224,6 @@ class HostScanRunner(ScanRunner):
                         axis.param_store.set_value(value)
                     self._fragment.device_setup()
                     self._fragment.run_once()
-                    self._fragment.live_analyses()
 
                     result_batcher.ensure_complete_and_push()
                     for (sink, value) in zip(self._axis_sinks, axis_values):
@@ -356,7 +355,6 @@ class KernelScanRunner(ScanRunner):
             try:
                 self._fragment.device_setup()
                 self._fragment.run_once()
-                self._fragment.live_analyses()
                 break
             except RTIOUnderflow:
                 if num_underflows >= self.max_rtio_underflow_retries:
@@ -490,7 +488,8 @@ def match_default_analysis(analysis: DefaultAnalysis, axes: Iterable[ScanAxis]) 
 
 
 def filter_default_analyses(fragment: ExpFragment,
-                            axes: Iterable[ScanAxis]) -> list[DefaultAnalysis]:
+                            axes: Iterable[ScanAxis],
+                            live_analysis_only: bool = False) -> list[DefaultAnalysis]:
     """Return the default analyses of the given fragment that can be executed for the
     given scan spec.
 
@@ -504,8 +503,12 @@ def filter_default_analyses(fragment: ExpFragment,
                 f"Unexpected get_default_analyses() return value for {fragment}: "
                 "Expected list of ndscan.experiment.DefaultAnalysis instances, got "
                 f"element of type '{analysis}'")
-        if match_default_analysis(analysis, ax):
-            result.append(analysis)
+        if not match_default_analysis(analysis, ax):
+            continue
+        if live_analysis_only:
+            if not analysis.do_live:
+                continue
+        result.append(analysis)
     return result
 
 

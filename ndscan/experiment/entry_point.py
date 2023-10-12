@@ -16,6 +16,8 @@ from collections import OrderedDict
 from collections.abc import Callable, Iterable
 from contextlib import suppress
 from functools import reduce
+from concurrent.futures.process import ProcessPoolExecutor
+from concurrent.futures import Future
 import logging
 import random
 import time
@@ -28,8 +30,9 @@ from .parameters import ParamStore, type_string_to_param
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
-from .scan_runner import (ScanAxis, ScanSpec, describe_scan, describe_analyses,
-                          filter_default_analyses, select_runner_class)
+from .scan_runner import (ScanAxis, ScanSpec, DefaultAnalysis, describe_scan,
+                          describe_analyses, filter_default_analyses,
+                          select_runner_class)
 from .utils import dump_json, is_kernel, to_metadata_broadcast_type
 from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY, SCHEMA_REVISION,
                      SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes, strip_suffix)
@@ -220,6 +223,25 @@ class ArgumentInterface(HasEnvironment):
         return spec, no_axes_mode, skip_on_persistent_transitory_error
 
 
+class LiveAnalysisRunner:
+    def __init__(self, analyze_fn: callable):
+        self._analyze_fn = analyze_fn
+        self._future = None
+
+    def start(self):
+        with ProcessPoolExecutor() as executor:
+            self._future: Future = executor.submit(self._run_live_analysis)
+
+    def stop(self):
+        if self._future is not None:
+            self._future.cancel()
+
+    def _run_live_analysis(self):
+        while True:
+            self._analyze_fn()
+            time.sleep(1.0)
+
+
 class TopLevelRunner(HasEnvironment):
     def build(self,
               fragment: ExpFragment,
@@ -342,10 +364,15 @@ class TopLevelRunner(HasEnvironment):
                 AppendingDatasetSink(self, self.dataset_prefix + f"points.axis_{i}")
                 for i in range(len(self.spec.axes))
             ]
-            self.fragment.register_live_analyses(self.spec.axes,
-                                             self._coordinate_sinks,
-                                             self._scan_result_sinks)
-            runner.run(self.fragment, self.spec, self._coordinate_sinks)
+            live_analyses = filter_default_analyses(self.fragment,
+                                                    self.spec.axes,
+                                                    live_analysis_only=True)
+            la_runner = LiveAnalysisRunner(lambda: self.analyze(live_analyses))
+            try:
+                la_runner.start()
+                runner.run(self.fragment, self.spec, self._coordinate_sinks)
+            finally:
+                la_runner.stop()
             self._set_completed()
 
         return self._make_coordinate_dict(), self._make_value_dict()
@@ -357,19 +384,23 @@ class TopLevelRunner(HasEnvironment):
     def _make_value_dict(self):
         return {c: s.get_all() for c, s in self._scan_result_sinks.items()}
 
-    def analyze(self):
+    def analyze(self, analyses_override: list[DefaultAnalysis] = None):
         if self._coordinate_sinks is None:
             # Continuous scan or got an exception early on, so there is no data to
             # analyse – gracefully ignore this to keep FragmentScanExperiment
             # implementation simple.
             return
-        if not self._analyses:
+        if analyses_override:
+            analyses = analyses_override
+        else:
+            analyses = self._analyses
+        if not analyses:
             return
 
         annotations = []
         coordinates = self._make_coordinate_dict()
         values = self._make_value_dict()
-        for a in self._analyses:
+        for a in analyses:
             annotations += a.execute(coordinates, values, self._annotation_context)
 
         if annotations:

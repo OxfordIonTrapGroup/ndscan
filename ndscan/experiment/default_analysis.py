@@ -160,6 +160,10 @@ class DefaultAnalysis:
         """
         raise NotImplementedError
 
+    @property
+    def do_live(self):
+        return False
+
 
 class CustomAnalysis(DefaultAnalysis):
     r""":class:`DefaultAnalysis` that executes a user-defined analysis function in the
@@ -193,9 +197,11 @@ class CustomAnalysis(DefaultAnalysis):
             dict[ParamHandle, list], dict[ResultChannel, list], dict[str, ResultChannel]
         ], list[Annotation] | None],
         analysis_results: Iterable[ResultChannel] = [],
+        do_live: bool = False
     ):
         self._required_axis_handles = set(required_axes)
         self._analyze_fn = analyze_fn
+        self._do_live = do_live
 
         self._result_channels = {}
         for channel in analysis_results:
@@ -249,28 +255,9 @@ class CustomAnalysis(DefaultAnalysis):
             annotations = []
         return [a.describe(context) for a in annotations]
 
-
-class LiveAnalysis(CustomAnalysis):
-    def execute(self,
-                axis_data: dict[AxisIdentity, list],
-                result_data: dict[ResultChannel, list],
-                ) -> list[dict[str, Any]]:
-        user_axis_data = {}
-        for handle in self._required_axis_handles:
-            user_axis_data[handle] = axis_data[handle._store.identity]
-
-        try:
-            self._analyze_fn(user_axis_data,
-                             result_data,
-                             self._result_channels)
-        except TypeError as orignal_exception:
-            # Tolerate old analysis functions that do not take analysis result channels.
-            try:
-                self._analyze_fn(user_axis_data, result_data)
-            except TypeError:
-                # KLUDGE: If that also fails (e.g. there is a TypeError in the actual
-                # implementation), let the original exception bubble up.
-                raise orignal_exception
+    @property
+    def do_live(self):
+        return self._do_live
 
 
 #: Default points of interest for various fit types (e.g. highlighting the π time for a
