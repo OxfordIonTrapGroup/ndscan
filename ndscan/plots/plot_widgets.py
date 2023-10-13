@@ -23,7 +23,6 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
         self._num_y_axes = 0
         self._additional_view_boxes = []
         self._additional_right_axes = []
-        self._source_id_label = None
 
     def show_border(self):
         self.getViewBox().setBorder(
