@@ -155,9 +155,7 @@ class VLineItem(AnnotationItem):
         self._show_label = show_label
 
         # Position label within initial view range.
-        ymax_view = view_box.viewRange()[1][1]
-        ymax_scene = view_box.mapViewToScene(QtCore.QPointF(0, ymax_view)).y()
-        ypos_label = view_box.mapSceneToView(QtCore.QPointF(0, ymax_scene + 7)).y()
+        ypos_label = (view_box.height() - 7) / view_box.height()
 
         self._left_line = pyqtgraph.InfiniteLine(movable=False,
                                                  angle=90,
