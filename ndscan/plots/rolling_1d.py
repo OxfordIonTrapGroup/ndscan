@@ -1,5 +1,6 @@
 import numpy as np
 import pyqtgraph
+from collections import deque
 
 from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
@@ -71,13 +72,13 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
 
     def __init__(self, model: SinglePointModel, get_alternate_plot_names):
         super().__init__(get_alternate_plot_names)
+        self.series = []
+        self._history_length = 1024
+        self._points = deque(maxlen=self._history_length)
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.point_changed.connect(self._append_point)
-
-        self.series = []
-        self._history_length = 1024
 
         # List of all scalar channel names for the context menu.
         self.data_names = None
@@ -140,13 +141,23 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
         self.ready.emit()
 
     def _append_point(self, point):
+        self._points.append(point)
         for s in self.series:
             s.append(point)
+
+    def _rewrite(self):
+        self._initialise_series()
+        for point in self._points:
+            for s in self.series:
+                s.append(point)
 
     def set_history_length(self, n):
         self._history_length = n
         for s in self.series:
             s.set_history_length(n)
+        points = deque(maxlen=self._history_length)
+        points.extend(self._points)
+        self._points = points
 
     def build_context_menu(self, pane_idx: int, builder):
         if self.model.context.is_online_master():
@@ -176,7 +187,7 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
         builder.ensure_separator()
 
         if len(self.data_names) > 1:
-            build_channel_selection_context_menu(builder, self._initialise_series,
+            build_channel_selection_context_menu(builder, self._rewrite,
                                                  self.data_names, self.hidden_channels)
             builder.ensure_separator()
 
