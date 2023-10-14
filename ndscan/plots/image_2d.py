@@ -204,19 +204,6 @@ class _ImagePlot:
             avg += (z - avg) / num
             self.averages_by_coords[(x, y)] = (avg, num)
 
-        # Update z autorange if active.
-        z_limits = self._active_fixed_z_limits()
-        if z_limits is None:  # TODO: Provide manual override.
-            data_min = np.min(z_data[num_skip:num_to_show])
-            data_max = np.max(z_data[num_skip:num_to_show])
-            if self.current_z_limits is None:
-                z_limits = (data_min, data_max)
-            else:
-                z_limits = (min(self.current_z_limits[0],
-                                data_min), max(self.current_z_limits[1], data_max))
-        self.current_z_limits = z_limits
-        self.colorbar.setLevels(z_limits)
-
         # Determine range of x/y values to show and prepare image buffer accordingly if
         # it changed.
         x_range = _calc_range_spec(self.x_min, self.x_max, self.x_increment, x_data)
@@ -256,6 +243,13 @@ class _ImagePlot:
         if display_hints.get("coordinate_type", "") == "cyclic":
             cmap = colormaps.kovesi_c8
         self.colorbar.setColorMap(cmap)
+
+        # Update z autorange if active.
+        z_limits = self._active_fixed_z_limits()
+        if z_limits is None:  # TODO: Provide manual override.
+            z_limits = (np.nanmin(self.image_data), np.nanmax(self.image_data))
+        self.current_z_limits = z_limits
+        self.colorbar.setLevels(z_limits)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
         self.z_crosshair_item.set_image_data(self.image_data, self.x_range,
