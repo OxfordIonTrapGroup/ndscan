@@ -283,6 +283,9 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         self.plot = None
         self.crosshair = None
 
+        self.found_duplicate_coords = False
+        self.unique_coords = set[tuple[float, float]]()
+
     def _initialise_series(self, channels):
         if self.plot is not None:
             self.plot_item.removeItem(self.plot.image_item)
@@ -334,6 +337,18 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
     def _update_points(self, points, invalidate):
         if self.plot:
+            if invalidate:
+                self.found_duplicate_coords = False
+                self.unique_coords.clear()
+            # If all points were unique so far, check if we have duplicates now.
+            if not self.found_duplicate_coords:
+                num_skip = len(self.unique_coords)
+                for x in zip(points["axis_0"][num_skip:], points["axis_1"][num_skip:]):
+                    if x in self.unique_coords:
+                        self.found_duplicate_coords = True
+                        break
+                    else:
+                        self.unique_coords.add(x)
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
     def build_context_menu(self, pane_idx: int, builder):
@@ -355,7 +370,7 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
                 action.triggered.connect(set_both)
         builder.ensure_separator()
 
-        if any(num > 0 for _, num in self.plot.averages_by_coords.values()):
+        if self.found_duplicate_coords:
             action = builder.append_action("Average points with same coordinates")
             action.setCheckable(True)
             action.setChecked(self.plot.averaging_enabled)
