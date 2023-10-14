@@ -135,6 +135,11 @@ class _ImagePlot:
         self.y_range = None
         self.image_data = None
 
+        #: Whether to average points with the same coordinates.
+        self.averaging_enabled = False
+        #: Keeps track of the running average and the number of samples therein.
+        self.averages_by_coords = dict[tuple[float, float], tuple[float, int]]()
+
         self.z_crosshair_item = CrosshairZDataLabel(self.image_item.getViewBox())
 
         self.activate_channel(active_channel_name)
@@ -152,17 +157,18 @@ class _ImagePlot:
         self.z_crosshair_item.set_crosshair_info(*crosshair_info[0])
 
         self._invalidate_current()
-        self._update()
+        self.update(self.averaging_enabled)
 
     def data_changed(self, points, invalidate_previous: bool = False):
         self.points = points
         if invalidate_previous:
             self._invalidate_current()
-        self._update()
+        self.update(self.averaging_enabled)
 
     def _invalidate_current(self):
         self.num_shown = 0
         self.current_z_limits = None
+        self.averages_by_coords.clear()
 
     def _active_fixed_z_limits(self) -> tuple[float, float] | None:
         channel = self.channels[self.active_channel_name]
@@ -172,7 +178,7 @@ class _ImagePlot:
             return None
         return channel["min"], channel["max"]
 
-    def _update(self):
+    def update(self, averaging_enabled):
         if not self.points:
             return
 
@@ -185,10 +191,18 @@ class _ImagePlot:
 
         num_to_show = min(len(x_data), len(y_data), len(z_data))
 
-        if num_to_show == self.num_shown:
+        if (num_to_show == self.num_shown
+                and averaging_enabled == self.averaging_enabled):
             return
         num_skip = self.num_shown
-        self.num_shown = num_to_show
+
+        # Update running averages.
+        for x, y, z in zip(x_data[num_skip:num_to_show], y_data[num_skip:num_to_show],
+                           z_data[num_skip:num_to_show]):
+            avg, num = self.averages_by_coords.get((x, y), (0., 0))
+            num += 1
+            avg += (z - avg) / num
+            self.averages_by_coords[(x, y)] = (avg, num)
 
         # Update z autorange if active.
         z_limits = self._active_fixed_z_limits()
@@ -224,10 +238,17 @@ class _ImagePlot:
 
             num_skip = 0
 
+        # Revisit all coordinates in current image if averaging was toggled.
+        if averaging_enabled != self.averaging_enabled:
+            num_skip = 0
+
         x_inds = _coords_to_indices(x_data[num_skip:num_to_show], self.x_range)
         y_inds = _coords_to_indices(y_data[num_skip:num_to_show], self.y_range)
-        for x, y, z in zip(x_inds, y_inds, z_data[num_skip:num_to_show]):
-            self.image_data[x, y] = z
+        for i, (x_idx, y_idx) in enumerate(zip(x_inds, y_inds)):
+            data_idx = num_skip + i
+            coords, z = (x_data[data_idx], y_data[data_idx]), z_data[data_idx]
+            self.image_data[x_idx, y_idx] = (self.averages_by_coords[coords][0]
+                                             if averaging_enabled else z)
 
         cmap = colormaps.plasma
         channel = self.channels[self.active_channel_name]
@@ -242,6 +263,9 @@ class _ImagePlot:
         if num_skip == 0:
             # Image size has changed, set plot item size accordingly.
             self.image_item.setRect(self.image_rect)
+
+        self.num_shown = num_to_show
+        self.averaging_enabled = averaging_enabled
 
 
 class Image2DPlotWidget(AlternateMenuPanesWidget):
@@ -336,6 +360,14 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
 
                 action.triggered.connect(set_both)
         builder.ensure_separator()
+
+        if any(num > 0 for _, num in self.plot.averages_by_coords.values()):
+            action = builder.append_action("Average points with same coordinates")
+            action.setCheckable(True)
+            action.setChecked(self.plot.averaging_enabled)
+            action.triggered.connect(
+                lambda *a: self.plot.update(not self.plot.averaging_enabled))
+            builder.ensure_separator()
 
         self.channel_menu_group = QtGui.QActionGroup(self)
         for name in self.data_names:
