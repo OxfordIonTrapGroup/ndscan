@@ -63,6 +63,12 @@ class ScanOptions:
         num_repeats_layout.addWidget(self.num_repeats_box)
         num_repeats_layout.setStretchFactor(self.num_repeats_box, 0)
 
+        self.infinite_repeat_box = QtWidgets.QCheckBox("∞")
+        self.infinite_repeat_box.setToolTip("Infinitely repeat scan (~2³¹ times)")
+        self.infinite_repeat_box.stateChanged.connect(
+            lambda checked: self.num_repeats_box.setEnabled(not checked))
+        num_repeats_layout.addWidget(self.infinite_repeat_box)
+        num_repeats_layout.setStretchFactor(self.infinite_repeat_box, 0)
         num_repeats_layout.addStretch()
 
         #
@@ -133,7 +139,12 @@ class ScanOptions:
 
     def write_to_params(self, params: dict[str, Any]) -> None:
         scan = params.setdefault("scan", {})
-        scan["num_repeats"] = self.num_repeats_box.value()
+        # For simplicity, we realise infinite repeats as int32.max, as this should take
+        # many days even for very fast single-point scans, and in either case would
+        # produce many GiB of data, to where it would be more practical to just schedule
+        # multiple experiments if for whatever reason more repeats were required.
+        scan["num_repeats"] = (2**31 - 1 if self.infinite_repeat_box.isChecked() else
+                               self.num_repeats_box.value())
         scan["no_axes_mode"] = NoAxesMode(self.no_axes_box.currentText()).name
         scan["randomise_order_globally"] = self.randomise_globally_box.isChecked()
         scan["skip_on_persistent_transitory_error"] = (
