@@ -701,6 +701,11 @@
                 <span class="k">if</span> <span class="n">path_matches_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">,</span> <span class="n">override_pathspec</span><span class="p">):</span>
                     <span class="n">store</span> <span class="o">=</span> <span class="n">override_store</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">store</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">default_param</span><span class="p">,</span> <span class="n">default_store</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_params</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">param</span> <span class="o">==</span> <span class="n">default_param</span><span class="p">:</span>
+                        <span class="n">store</span> <span class="o">=</span> <span class="n">default_store</span>
+                        <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">store</span><span class="p">:</span>
                 <span class="n">identity</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">fqn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">value</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_or_set_default</span><span class="p">)</span>
