@@ -375,7 +375,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             elif a.kind == "computed_curve":
                 function_name = a.parameters.get("function_name", None)
                 if ComputedCurveItem.is_function_supported(function_name):
-                    channel_refs = a.parameters.get("associated_channels", [])
+                    channel_refs = a.parameters.get("associated_channels", None)
                     associated_series = channel_refs_to_series(channel_refs)
                     for series in associated_series:
                         x_limits = [
