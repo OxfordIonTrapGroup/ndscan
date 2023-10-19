@@ -5,11 +5,10 @@ from functools import partial
 import logging
 import os
 from typing import Any
-from artiq.dashboard.experiments import _WheelFilter
 from artiq.gui.entries import procdesc_to_entry
 from artiq.gui.fuzzy_select import FuzzySelectWidget
 from artiq.gui.scientific_spinbox import ScientificSpinBox
-from artiq.gui.tools import LayoutWidget, disable_scroll_wheel
+from artiq.gui.tools import WheelFilter, LayoutWidget, disable_scroll_wheel
 from sipyco import pyon
 
 from .._qt import QtCore, QtGui, QtWidgets
@@ -166,7 +165,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.setStyleSheet("QTreeWidget {background: " +
                            self.palette().midlight().color().name() + " ;}")
 
-        self.viewport().installEventFilter(_WheelFilter(self.viewport()))
+        self.viewport().installEventFilter(WheelFilter(self.viewport()))
 
         self._bg_gradient = QtGui.QLinearGradient(
             0, 0, 0,
