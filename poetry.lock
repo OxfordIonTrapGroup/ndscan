@@ -24,7 +24,7 @@ develop = false
 type = "git"
 url = "https://github.com/dnadlinger/artiq.git"
 reference = "mac-applets"
-resolved_reference = "4b8de60e496066b35a1d5756c7e532170a0867fc"
+resolved_reference = "932efa37247f53269b0483c7f65f26b408ca212c"
 
 [[package]]
 name = "babel"
@@ -1333,7 +1333,7 @@ test = ["pytest", "rich", "virtualenv (>20)"]
 
 [[package]]
 name = "sipyco"
-version = "1.5"
+version = "1.6"
 description = "Simple Python communications"
 optional = false
 python-versions = "*"
@@ -1344,7 +1344,7 @@ develop = false
 type = "git"
 url = "https://github.com/m-labs/sipyco.git"
 reference = "HEAD"
-resolved_reference = "5467dcf9738673ab9a49e6f2377bda7c551b5f90"
+resolved_reference = "c0a7ed350ccfb85474217057fc47b3f258ca8d99"
 
 [[package]]
 name = "six"
