@@ -625,6 +625,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             options["Fixed"] = StringFixedScanOption
         elif schema["type"] == "bool":
             options["Fixed"] = BoolFixedScanOption
+            if is_scannable:
+                options["Scanning"] = BoolScanOption
         else:
             # TODO: Properly handle int, add errors (or default to PYON value).
             options["Fixed"] = FixedScanOption
@@ -1063,6 +1065,32 @@ class ListScanOption(NumericScanOption):
             "type": "list",
             "range": {
                 "values": values,
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+
+class BoolScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        dummy_box = QtWidgets.QCheckBox()
+        dummy_box.setTristate()
+        dummy_box.setEnabled(False)
+        dummy_box.setCheckState(1)
+        layout.addWidget(dummy_box)
+        layout.setStretchFactor(dummy_box, 0)
+        layout.addWidget(self._make_divider())
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 1)
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "list",
+            "range": {
+                "values": [False, True],
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }
