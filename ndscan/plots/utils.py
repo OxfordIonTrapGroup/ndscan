@@ -298,7 +298,7 @@ def get_axis_scaling_info(spec: dict[str, Any]):
     unit_suffix = ""
     if unit:
         unit_suffix = " " + unit
-    data_to_display_scale = 1 / spec["scale"]
+    data_to_display_scale = 1 / spec.get("scale", 1)
     return unit_suffix, data_to_display_scale
 
 
