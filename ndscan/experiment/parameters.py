@@ -458,6 +458,7 @@ class BoolParam(ParamBase):
             "type": "bool",
             "default": str(self.default),
             "spec": {
+                "categories": [False, True],
                 "is_scannable": self.is_scannable
             }
         }
