@@ -229,9 +229,6 @@ class HostScanRunner(ScanRunner):
                     for (sink, value) in zip(self._axis_sinks, axis_values):
                         # Now that we know self._fragment successfully produced a
                         # complete point, also record the axis coordinates.
-                        if isinstance(value, np.bool_):
-                            # Convert as `np.bool_` is not PYON-serializable.
-                            value = bool(value)
                         sink.push(value)
 
                     if self.scheduler.check_pause():
@@ -437,9 +434,6 @@ class KernelScanRunner(ScanRunner):
         # the axis coordinates.
         values = self._current_chunk.pop(0)
         for value, sink in zip(values, self._axis_sinks):
-            if isinstance(value, np.bool_):
-                # Convert as `np.bool_` is not PYON-serializable.
-                value = bool(value)
             sink.push(value)
 
         # Prepare for the next point.
