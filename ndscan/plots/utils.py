@@ -365,7 +365,7 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
         categoric = "categories" in spec
         if categoric and not categories:
             # First categoric axis defines categories.
-            categories = spec["categories"]
+            categories = map(repr, spec["categories"])
             continue
         # Any further non-categoric or different categories?
         if categories and (not categoric or (spec["categories"] != categories)):
