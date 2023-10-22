@@ -352,7 +352,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                             color,
                             self.x_data_to_display_scale,
                             self.x_unit_suffix,
-                            show_label=(series is associated_series[-1]),
+                            show_label=(series is associated_series[0]),
                         )
                         self.annotation_items.append(line)
 
