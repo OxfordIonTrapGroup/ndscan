@@ -629,6 +629,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 options["Scanning"] = BoolScanOption
         elif schema["type"] == "enum":
             options["Fixed"] = EnumFixedScanOption
+            if is_scannable:
+                options["Scanning"] = EnumScanOption
         else:
             # TODO: Properly handle int, add errors (or default to PYON value).
             options["Fixed"] = FixedScanOption
@@ -790,7 +792,7 @@ class BoolFixedScanOption(ScanOption):
 class EnumFixedScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
         self.box = QtWidgets.QComboBox()
-        self.box.addItems(self.entry.schema["options"])
+        self.box.addItems(self.entry.schema["spec"]["categories"])
         layout.addWidget(self.box)
 
     def write_to_params(self, params: dict) -> None:
@@ -1107,6 +1109,26 @@ class BoolScanOption(NumericScanOption):
             "type": "list",
             "range": {
                 "values": [False, True],
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+
+
+class EnumScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "list",
+            "range": {
+                "values": self.entry.schema["spec"]["categories"],
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }
