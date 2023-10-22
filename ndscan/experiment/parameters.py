@@ -22,6 +22,7 @@ def type_string_to_param(name: str):
         "float": FloatParam,
         "int": IntParam,
         "string": StringParam,
+        "enum": EnumParam,
         "bool": BoolParam
     }[name]
 
@@ -490,9 +491,9 @@ class EnumParam:
             "fqn": self.fqn,
             "description": self.description,
             "type": "enum",
-            "options": self.options,
             "default": str(self.default),
             "spec": {
+                "categories": self.options,
                 "is_scannable": self.is_scannable
             }
         }

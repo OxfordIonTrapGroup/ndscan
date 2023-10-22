@@ -300,6 +300,11 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 else:
                     self.unique_x_data.add(x)
 
+        # Convert categorical axis values into numeric values.
+        if "categories" in self.x_param_spec:
+            to_idx = {x: i for i, x in enumerate(self.x_param_spec["categories"])}
+            x_data = [to_idx[x] for x in x_data]
+
         for s in self.series:
             s.update(x_data, points, self.averaging_enabled)
 

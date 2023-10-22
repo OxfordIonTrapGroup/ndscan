@@ -358,4 +358,20 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
         if scaling_info not in seen_combs:
             seen_combs.add(scaling_info)
             crosshair_info.append((*scaling_info, color))
+
+    # For categorical data, change the axis ticks.
+    categories = None
+    for _, _, _, spec in axes:
+        categoric = "categories" in spec
+        if categoric and not categories:
+            # First categoric axis defines categories.
+            categories = spec["categories"]
+            continue
+        # Any further non-categoric or different categories?
+        if categories and (not categoric or (spec["categories"] != categories)):
+            # Default to numeric axis in case of conflict.
+            categories = None
+            break
+    if categories:
+        axis_item.setTicks([list(enumerate(categories))])
     return crosshair_info
