@@ -494,7 +494,7 @@ class EnumParam:
             "fqn": self.fqn,
             "description": self.description,
             "type": "enum",
-            "default": str(self.default),
+            "default": self.default,
             "spec": {
                 "categories": self.options,
                 "is_scannable": self.is_scannable
