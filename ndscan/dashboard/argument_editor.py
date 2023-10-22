@@ -1115,7 +1115,6 @@ class BoolScanOption(NumericScanOption):
         params["scan"].setdefault("axes", []).append(spec)
 
 
-
 class EnumScanOption(NumericScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
         self.check_randomise = self._make_randomise_box()
