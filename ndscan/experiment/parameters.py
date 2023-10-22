@@ -13,7 +13,7 @@ from artiq.language import units
 from typing import Any
 from ..utils import eval_param_default, GetDataset
 
-__all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam"]
+__all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam", "EnumParam"]
 
 
 def type_string_to_param(name: str):
@@ -466,3 +466,39 @@ class BoolParam:
 
     def make_store(self, identity: tuple[str, str], value: bool) -> BoolParamStore:
         return BoolParamStore(identity, value)
+
+
+class EnumParam:
+    HandleType = StringParamHandle
+    StoreType = StringParamStore
+    CompilerType = TStr
+
+    def __init__(self,
+                 fqn: str,
+                 description: str,
+                 options: list[str],
+                 default: str,
+                 is_scannable: bool = True):
+        self.fqn = fqn
+        self.description = description
+        self.options = options
+        self.default = default
+        self.is_scannable = is_scannable
+
+    def describe(self) -> dict[str, Any]:
+        return {
+            "fqn": self.fqn,
+            "description": self.description,
+            "type": "enum",
+            "options": self.options,
+            "default": str(self.default),
+            "spec": {
+                "is_scannable": self.is_scannable
+            }
+        }
+
+    def eval_default(self, get_dataset: GetDataset) -> str:
+        return eval_param_default(self.default, get_dataset)
+
+    def make_store(self, identity: tuple[str, str], value: str) -> StringParamStore:
+        return StringParamStore(identity, value)
