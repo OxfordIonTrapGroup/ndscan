@@ -627,6 +627,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             options["Fixed"] = BoolFixedScanOption
             if is_scannable:
                 options["Scanning"] = BoolScanOption
+        elif schema["type"] == "enum":
+            options["Fixed"] = EnumFixedScanOption
         else:
             # TODO: Properly handle int, add errors (or default to PYON value).
             options["Fixed"] = FixedScanOption
@@ -783,6 +785,20 @@ class BoolFixedScanOption(ScanOption):
 
     def set_value(self, value) -> None:
         self.box.setChecked(value)
+
+
+class EnumFixedScanOption(ScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box = QtWidgets.QComboBox()
+        self.box.addItems(self.entry.schema["options"])
+        layout.addWidget(self.box)
+
+    def write_to_params(self, params: dict) -> None:
+        o = {"path": self.entry.path, "value": self.box.currentText()}
+        params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
+
+    def set_value(self, value) -> None:
+        self.box.setCurrentText(value)
 
 
 class NumericScanOption(ScanOption):
