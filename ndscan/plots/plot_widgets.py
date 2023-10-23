@@ -343,11 +343,7 @@ def build_channel_selection_context_menu(builder: ContextMenuBuilder,
 
     checkboxes = [QtWidgets.QCheckBox(name) for name in data_names]
 
-    def state_changed(state, name):
-        if state == 0:
-            hidden_channels.add(name)
-        else:
-            hidden_channels.discard(name)
+    def update_checkboxes_enabled():
         # Prevent the user from hiding all channels.
         if sum(cb.isChecked() for cb in checkboxes) == 1:
             for cb in checkboxes:
@@ -357,6 +353,13 @@ def build_channel_selection_context_menu(builder: ContextMenuBuilder,
         else:
             for cb in checkboxes:
                 cb.setEnabled(True)
+
+    def state_changed(state, name):
+        if state == 0:
+            hidden_channels.add(name)
+        else:
+            hidden_channels.discard(name)
+        update_checkboxes_enabled()
         state_changed_callback()
 
     for name, checkbox in zip(data_names, checkboxes):
@@ -364,3 +367,4 @@ def build_channel_selection_context_menu(builder: ContextMenuBuilder,
         checkbox.setChecked(name not in hidden_channels)
         checkbox.stateChanged.connect(lambda a, n=name: state_changed(a, n))
         layout.addWidget(checkbox)
+    update_checkboxes_enabled()
