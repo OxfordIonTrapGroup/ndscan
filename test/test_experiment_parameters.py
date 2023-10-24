@@ -71,7 +71,6 @@ class BoolParamCase(unittest.TestCase):
                 "type": "bool",
                 "default": "True",
                 "spec": {
-                    'categories': [False, True],
                     "is_scannable": True
                 }
             })
