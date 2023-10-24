@@ -12,19 +12,18 @@ from artiq.language import *
 from artiq.language import units
 from typing import Any
 from ..utils import eval_param_default, GetDataset
+from enum import Enum
 
-__all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam", "EnumParam"]
+__all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam", "enum_param_factory"]
+
+#: Maps type string to Param implementation. EnumParams are dynamically added to this
+#: collection.
+_type_string_to_param = {}
 
 
 def type_string_to_param(name: str):
     """Resolve a param schema type string to the corresponding Param implementation."""
-    return {
-        "float": FloatParam,
-        "int": IntParam,
-        "string": StringParam,
-        "enum": EnumParam,
-        "bool": BoolParam
-    }[name]
+    return _type_string_to_param[name]
 
 
 class InvalidDefaultError(ValueError):
@@ -470,37 +469,98 @@ class BoolParam:
         return BoolParamStore(identity, value)
 
 
-class EnumParam:
-    HandleType = StringParamHandle
-    StoreType = StringParamStore
-    CompilerType = TStr
+def enum_param_factory(cls: Enum):
+    """Create a new parameter type based on the given `Enum`.
 
-    def __init__(self,
-                 fqn: str,
-                 description: str,
-                 options: list[str],
-                 default: str,
-                 is_scannable: bool = True):
-        self.fqn = fqn
-        self.description = description
-        self.options = options
-        self.default = default
-        self.is_scannable = is_scannable
+    :returns: A tuple of ``(EnumParam, EnumParamHandle, EnumParamStore)``.
+    """
+    class EnumParamStore(ParamStore):
+        @portable
+        def _notify_handles(self):
+            for h in self._handles:
+                h._changed_after_use = True
 
-    def describe(self) -> dict[str, Any]:
-        return {
-            "fqn": self.fqn,
-            "description": self.description,
-            "type": "enum",
-            "default": self.default,
-            "spec": {
-                "categories": self.options,
-                "is_scannable": self.is_scannable
+        @portable
+        def _do_nothing(self):
+            pass
+
+        @portable
+        def get_value(self) -> cls:
+            return self._value
+
+        @portable
+        def set_value(self, value):
+            new_value = self.coerce(value)
+            if new_value == self._value:
+                return
+            self._value = new_value
+            self._notify()
+
+        @portable
+        def coerce(self, value):
+            return cls(value)
+
+    class EnumParamHandle(ParamHandle):
+        @portable
+        def get(self) -> cls:
+            return self._store.get_value()
+
+        @portable
+        def use(self) -> cls:
+            self._changed_after_use = False
+            return self._store.get_value()
+
+    # Create unique identifier for the enum.
+    type_string = f"enum_{id(cls)}"
+
+    class EnumParam:
+        HandleType = EnumParamHandle
+        StoreType = EnumParamStore
+        CompilerType = cls
+
+        def __init__(self,
+                     fqn: str,
+                     description: str,
+                     default: cls,
+                     is_scannable: bool = True):
+            self.fqn = fqn
+            self.description = description
+            assert isinstance(default, cls), "Default must be member of the Enum."
+            self.default = default
+            self.is_scannable = is_scannable
+
+        def _option_to_str(option):
+            return (option.value
+                    if isinstance(self.default.value, str) else option.name)
+
+        def describe(self) -> dict[str, Any]:
+            return {
+                "fqn": self.fqn,
+                "description": self.description,
+                "type": type_string,
+                "default": repr(self._option_to_str(self.default)),
+                "spec": {
+                    "categories": [self._option_to_str(o) for o in cls],
+                    "is_scannable": self.is_scannable
+                }
             }
-        }
 
-    def eval_default(self, get_dataset: GetDataset) -> str:
-        return eval_param_default(self.default, get_dataset)
+        def eval_default(self, get_dataset: GetDataset) -> cls:
+            return cls[eval_param_default(repr(self._option_to_str(self.default)),
+                                          get_dataset)]
 
-    def make_store(self, identity: tuple[str, str], value: str) -> StringParamStore:
-        return StringParamStore(identity, value)
+        def make_store(self, identity: tuple[str, str], value: cls) -> EnumParamStore:
+            return EnumParamStore(identity, value)
+
+    # Add dynamically created EnumParam to the global collection.
+    _type_string_to_param[type_string] = EnumParam
+
+    return (EnumParam, EnumParamHandle, EnumParamStore)
+
+
+_type_string_to_param.update({
+    "float": FloatParam,
+    "int": IntParam,
+    "string": StringParam,
+    "bool": BoolParam
+})
