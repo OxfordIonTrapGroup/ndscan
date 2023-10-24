@@ -124,7 +124,8 @@ class EnumParamCase(unittest.TestCase):
                 "type": f"enum_Options_{id(Options)}",
                 "default": "'second'",
                 "spec": {
-                    "enum_display_map": {o.name: o.value for o in Options},
+                    "enum_display_map": {o.name: o.value
+                                         for o in Options},
                     "is_scannable": True
                 }
             })
@@ -136,7 +137,8 @@ class EnumParamCase(unittest.TestCase):
                 "type": f"enum_Options_{id(Options)}",
                 "default": "'second'",
                 "spec": {
-                    "enum_display_map": {o.name: o.value for o in Options},
+                    "enum_display_map": {o.name: o.value
+                                         for o in Options},
                     "is_scannable": True
                 }
             })
