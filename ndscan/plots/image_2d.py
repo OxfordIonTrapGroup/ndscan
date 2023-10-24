@@ -12,7 +12,7 @@ from .model import ScanModel
 from .plot_widgets import AlternateMenuPanesWidget, add_source_id_label
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, get_axis_scaling_info, setup_axis_item,
-                    categoric_to_numeric)
+                    enum_to_numeric)
 
 logger = logging.getLogger(__name__)
 
@@ -152,8 +152,9 @@ class _ImagePlot:
         label = channel["description"]
         if not label:
             label = channel["path"].split("/")[-1]
-        crosshair_info = setup_axis_item(self.colorbar.getAxis("right"),
-                                         [(label, channel["path"], None, channel)])
+        crosshair_info = setup_axis_item(
+            self.colorbar.getAxis("right"),
+            [(label, channel["path"], channel["type"], None, channel)])
         # Update crosshair label.
         self.z_crosshair_item.set_crosshair_info(*crosshair_info[0])
 
@@ -303,8 +304,8 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         def setup_axis(schema, location):
             param = schema["param"]
             setup_axis_item(self.plot_item.getAxis(location),
-                            [(param["description"], format_param_identity(schema), None,
-                              param["spec"])])
+                            [(param["description"], format_param_identity(schema),
+                              param["type"], None, param["spec"])])
 
         setup_axis(self.x_schema, "bottom")
         setup_axis(self.y_schema, "left")
@@ -351,10 +352,12 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
                     else:
                         self.unique_coords.add(x)
 
-            points["axis_0"] = categoric_to_numeric(self.x_schema["param"]["spec"],
-                                                    points["axis_0"])
-            points["axis_1"] = categoric_to_numeric(self.y_schema["param"]["spec"],
-                                                    points["axis_1"])
+            if self.x_schema["param"]["type"].startswith("enum"):
+                points["axis_0"] = enum_to_numeric(self.x_schema["param"]["spec"],
+                                                   points["axis_0"])
+            if self.y_schema["param"]["type"].startswith("enum"):
+                points["axis_1"] = enum_to_numeric(self.y_schema["param"]["spec"],
+                                                   points["axis_1"])
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
     def build_context_menu(self, pane_idx: int, builder):
