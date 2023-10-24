@@ -362,16 +362,29 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
     # For categorical data, change the axis ticks.
     categories = None
     for _, _, _, spec in axes:
-        categoric = "categories" in spec
+        categoric = "display_categories" in spec
         if categoric and not categories:
             # First categoric axis defines categories.
-            categories = map(repr, spec["categories"])
+            categories = map(str, spec["display_categories"])
             continue
         # Any further non-categoric or different categories?
-        if categories and (not categoric or (spec["categories"] != categories)):
+        if categories and (not categoric or (spec["display_categories"] != categories)):
             # Default to numeric axis in case of conflict.
             categories = None
             break
     if categories:
         axis_item.setTicks([list(enumerate(categories))])
     return crosshair_info
+
+
+def categoric_to_numeric(spec: dict[str, Any], values: list[Any]):
+    """If `spec` indicates categoric data, convert categoric `values` into integers
+    enumerating the categories. Otherwise returns the original `values`.
+    """
+    if "display_categories" not in spec:
+        return values
+    try:
+        to_idx = {x: i for i, x in enumerate(spec["display_categories"])}
+        return [to_idx[x] for x in values]
+    except KeyError:
+        raise KeyError("Unexpected categoric value found.")

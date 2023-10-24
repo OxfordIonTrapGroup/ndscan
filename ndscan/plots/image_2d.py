@@ -11,7 +11,8 @@ from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .plot_widgets import AlternateMenuPanesWidget, add_source_id_label
 from .utils import (extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, get_axis_scaling_info, setup_axis_item)
+                    format_param_identity, get_axis_scaling_info, setup_axis_item,
+                    categoric_to_numeric)
 
 logger = logging.getLogger(__name__)
 
@@ -350,15 +351,10 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
                     else:
                         self.unique_coords.add(x)
 
-            x_spec = self.x_schema["param"]["spec"]
-            if "categories" in x_spec:
-                to_idx = {x: i for i, x in enumerate(x_spec["categories"])}
-                points["axis_0"] = [to_idx[x] for x in points["axis_0"]]
-            y_spec = self.y_schema["param"]["spec"]
-            if "categories" in y_spec:
-                to_idx = {x: i for i, x in enumerate(y_spec["categories"])}
-                points["axis_1"] = [to_idx[y] for y in points["axis_1"]]
-
+            points["axis_0"] = categoric_to_numeric(self.x_schema["param"]["spec"],
+                                                    points["axis_0"])
+            points["axis_1"] = categoric_to_numeric(self.y_schema["param"]["spec"],
+                                                    points["axis_1"])
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
     def build_context_menu(self, pane_idx: int, builder):
