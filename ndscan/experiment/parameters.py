@@ -457,7 +457,7 @@ class BoolParam(ParamBase):
             "type": "bool",
             "default": str(self.default),
             "spec": {
-                "categories": [False, True],
+                "display_categories": [False, True],
                 "is_scannable": self.is_scannable
             }
         }
@@ -542,7 +542,7 @@ def enum_param_factory(cls: Enum):
                 "type": type_string,
                 "default": repr(self._option_to_str(self.default)),
                 "spec": {
-                    "categories": [self._option_to_str(o) for o in cls],
+                    "display_categories": [self._option_to_str(o) for o in cls],
                     "is_scannable": self.is_scannable
                 }
             }

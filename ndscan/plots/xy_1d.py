@@ -16,7 +16,7 @@ from .utils import (extract_linked_datasets, extract_scalar_channels,
                     get_default_hidden_channels, format_param_identity,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, get_axis_scaling_info, setup_axis_item,
-                    FIT_COLORS, SERIES_COLORS)
+                    FIT_COLORS, SERIES_COLORS, categoric_to_numeric)
 
 logger = logging.getLogger(__name__)
 
@@ -299,11 +299,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 else:
                     self.unique_x_data.add(x)
 
-        # Convert categorical axis values into numeric values.
-        if "categories" in self.x_param_spec:
-            to_idx = {x: i for i, x in enumerate(self.x_param_spec["categories"])}
-            x_data = [to_idx[x] for x in x_data]
-
+        x_data = categoric_to_numeric(self.x_param_spec, x_data)
         for s in self.series:
             s.update(x_data, points, self.averaging_enabled)
 
