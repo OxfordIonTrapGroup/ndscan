@@ -627,7 +627,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             options["Fixed"] = BoolFixedScanOption
             if is_scannable:
                 options["Scanning"] = BoolScanOption
-        elif schema["type"] == "enum":
+        elif schema["type"].startswith("enum"):
             options["Fixed"] = EnumFixedScanOption
             if is_scannable:
                 options["Scanning"] = EnumScanOption
