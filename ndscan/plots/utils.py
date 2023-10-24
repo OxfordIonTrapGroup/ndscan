@@ -384,12 +384,12 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, str, dict[str, An
     return crosshair_info
 
 
-def enum_to_numeric(spec: dict[str, Any], values: list[Any]):
+def enum_to_numeric(categories, values: list[Any]):
     """If `spec` indicates categoric data, convert categoric `values` into integers
     enumerating the categories.
     """
     try:
-        to_idx = {x: i for i, x in enumerate(spec["enum_display_map"].keys())}
+        to_idx = {x: i for i, x in enumerate(categories)}
         return [to_idx[x] for x in values]
     except KeyError:
         raise KeyError("Unexpected enum value found.")
