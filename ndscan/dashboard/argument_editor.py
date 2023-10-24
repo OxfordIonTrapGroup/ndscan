@@ -797,7 +797,7 @@ class EnumFixedScanOption(ScanOption):
         layout.addWidget(self.box)
 
     def write_to_params(self, params: dict) -> None:
-        to_name_map = {val: key for key, val in self._to_display_map}
+        to_name_map = {val: key for key, val in self._to_display_map.items()}
         o = {"path": self.entry.path, "value": to_name_map[self.box.currentText()]}
         params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
 
