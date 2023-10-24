@@ -792,15 +792,17 @@ class BoolFixedScanOption(ScanOption):
 class EnumFixedScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
         self.box = QtWidgets.QComboBox()
-        self.box.addItems(self.entry.schema["spec"]["categories"])
+        self._to_display_map = self.entry.schema["spec"]["enum_display_map"]
+        self.box.addItems(self._to_display_map.values())
         layout.addWidget(self.box)
 
     def write_to_params(self, params: dict) -> None:
-        o = {"path": self.entry.path, "value": self.box.currentText()}
+        to_name_map = {val: key for key, val in self._to_display_map}
+        o = {"path": self.entry.path, "value": to_name_map[self.box.currentText()]}
         params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
 
     def set_value(self, value) -> None:
-        self.box.setCurrentText(value)
+        self.box.setCurrentText(self._to_display_map[value])
 
 
 class NumericScanOption(ScanOption):
@@ -1120,6 +1122,7 @@ class EnumScanOption(NumericScanOption):
         self.check_randomise = self._make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
+        self._to_display_map = self.entry.schema["spec"]["enum_display_map"]
 
     def write_to_params(self, params: dict) -> None:
         spec = {
@@ -1127,7 +1130,7 @@ class EnumScanOption(NumericScanOption):
             "path": self.entry.path,
             "type": "list",
             "range": {
-                "values": self.entry.schema["spec"]["categories"],
+                "values": list(self._to_display_map.keys()),
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }

@@ -13,6 +13,7 @@ from artiq.language import units
 from typing import Any
 from ..utils import eval_param_default, GetDataset
 from enum import Enum
+from collections import OrderedDict
 
 __all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam", "enum_param_factory"]
 
@@ -497,7 +498,7 @@ def enum_param_factory(enum: Enum):
 
         @portable
         def coerce(self, value):
-            return enum(value)
+            return enum[value]
 
     class EnumParamHandle(ParamHandle):
         @portable
@@ -538,16 +539,18 @@ def enum_param_factory(enum: Enum):
             return (option.value if isinstance(option, str) else option.name)
 
         def describe(self) -> dict[str, Any]:
+            # Mapping names of `enum` members to display strings. At this point, we
+            # decide to display `enum.value` instead of `enum.name` if the former is
+            # a string.
+            enum_display_map = OrderedDict(
+                (o.name, o.value if isinstance(o.value, str) else o.name) for o in enum)
             return {
                 "fqn": self.fqn,
                 "description": self.description,
                 "type": type_string,
                 "default": self.default,
                 "spec": {
-                    "enum_display_map": {
-                        o.name: o.value if isinstance(o.value, str) else o.name
-                        for o in enum
-                    },
+                    "enum_display_map": enum_display_map,
                     "is_scannable": self.is_scannable
                 }
             }

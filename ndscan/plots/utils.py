@@ -302,7 +302,7 @@ def get_axis_scaling_info(spec: dict[str, Any]):
     return unit_suffix, data_to_display_scale
 
 
-def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]]):
+def setup_axis_item(axis_item, axes: list[tuple[str, str, str, str, dict[str, Any]]]):
     """Set up an axis item with the appropriate labels/scaling for the given axis
     metadata.
 
@@ -310,20 +310,21 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
     factors in scientific notation to axes labels where the unit scaling differs.
 
     :param axis_item: The :class:`pyqtgraph.AxisItem` to set up.
-    :param axes: A list of tuples ``(description, identity_string, color, spec)``,
+    :param axes: A list of tuples ``(description, identity_string, type, color, spec)``,
         giving for each logical axes to be displayed on the target axis item the name
-        and source fragment identity to be displayed, the series color to render it in,
-        and the backing parameter/result channel metadata.
+        and source fragment identity to be displayed, the type of the underlying data,
+        the series color to render it in, and the backing parameter/result channel
+        metadata.
     :return: A list of tuples ``(unit_suffix, data_to_display_scale, color)``,
         giving for each unique unit/scale combination the color of the first data
         series that is displayed on this axis. These tuples can be passed directly into
         ``.cursor.CrosshairLabel``.
     """
-    unit_suffix, data_to_display_scale = get_axis_scaling_info(axes[0][3])
+    unit_suffix, data_to_display_scale = get_axis_scaling_info(axes[0][-1])
     axis_item.setScale(data_to_display_scale)
     axis_item.autoSIPrefix = False
 
-    def label_html(description, identity_string, color, spec):
+    def label_html(description, identity_string, _, color, spec):
         result = ""
         if color is not None:
             if isinstance(color, str) and len(color) == 9 and color[0] == "#":
@@ -348,12 +349,13 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
         return result
 
     axis_item.setLabel("<br>".join(label_html(*a) for a in axes))
-    axis_item.setToolTip("\n".join(identity for _, identity, _, _ in axes if identity))
+    axis_item.setToolTip("\n".join(identity for _, identity, _, _, _ in axes
+                                   if identity))
 
     # Get the color of the first axis with this particular (unit, scale) combination.
     crosshair_info = []
     seen_combs = set()
-    for _, _, color, spec in axes:
+    for _, _, _, color, spec in axes:
         scaling_info = get_axis_scaling_info(spec)
         if scaling_info not in seen_combs:
             seen_combs.add(scaling_info)
@@ -361,14 +363,19 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
 
     # For categorical data, change the axis ticks.
     categories = None
-    for _, _, _, spec in axes:
-        categoric = "display_categories" in spec
-        if categoric and not categories:
-            # First categoric axis defines categories.
-            categories = map(str, spec["display_categories"])
+    for _, _, ty, _, spec in axes:
+        # Determine applicable categories based on axis type and spec.
+        cats = None
+        if ty == "bool":
+            cats = ["False", "True"]
+        elif ty.startswith("enum"):
+            cats = list(spec["enum_display_map"].values())
+        # First categoric entry defines this axis' categories.
+        if not categories and cats:
+            categories = cats
             continue
-        # Any further non-categoric or different categories?
-        if categories and (not categoric or (spec["display_categories"] != categories)):
+        # Any other non-categoric entries or entries with different categories?
+        if categories and cats:
             # Default to numeric axis in case of conflict.
             categories = None
             break
@@ -377,14 +384,12 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, dict[str, Any]]])
     return crosshair_info
 
 
-def categoric_to_numeric(spec: dict[str, Any], values: list[Any]):
+def enum_to_numeric(spec: dict[str, Any], values: list[Any]):
     """If `spec` indicates categoric data, convert categoric `values` into integers
-    enumerating the categories. Otherwise returns the original `values`.
+    enumerating the categories.
     """
-    if "display_categories" not in spec:
-        return values
     try:
-        to_idx = {x: i for i, x in enumerate(spec["display_categories"])}
+        to_idx = {x: i for i, x in enumerate(spec["enum_display_map"].keys())}
         return [to_idx[x] for x in values]
     except KeyError:
-        raise KeyError("Unexpected categoric value found.")
+        raise KeyError("Unexpected enum value found.")

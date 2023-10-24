@@ -16,7 +16,7 @@ from .utils import (extract_linked_datasets, extract_scalar_channels,
                     get_default_hidden_channels, format_param_identity,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, get_axis_scaling_info, setup_axis_item,
-                    FIT_COLORS, SERIES_COLORS, categoric_to_numeric)
+                    FIT_COLORS, SERIES_COLORS, enum_to_numeric)
 
 logger = logging.getLogger(__name__)
 
@@ -254,7 +254,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                     label = channel["description"]
                     if not label:
                         label = channel["path"].split("/")[-1]
-                    info.append((label, channel["path"], color, channel))
+                    info.append(
+                        (label, channel["path"], channel["type"], color, channel))
 
                 crosshair_label_args = setup_axis_item(axis, info)
                 crosshair_items.extend(
@@ -273,10 +274,10 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         add_source_id_label(self.panes[-1].getViewBox(), self.model.context)
 
-        setup_axis_item(
-            self.panes[-1].getAxis("bottom"),
-            [(self.x_schema["param"]["description"], format_param_identity(
-                self.x_schema), None, self.x_param_spec)])
+        setup_axis_item(self.panes[-1].getAxis("bottom"), [
+            (self.x_schema["param"]["description"], format_param_identity(
+                self.x_schema), self.x_schema["param"]["type"], None, self.x_param_spec)
+        ])
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -300,7 +301,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 else:
                     self.unique_x_data.add(x)
 
-        x_data = categoric_to_numeric(self.x_param_spec, x_data)
+        if self.x_schema["param"]["type"].startswith("enum"):
+            x_data = enum_to_numeric(self.x_param_spec, x_data)
         for s in self.series:
             s.update(x_data, points, self.averaging_enabled)
 
