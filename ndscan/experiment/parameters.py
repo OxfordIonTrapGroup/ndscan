@@ -468,10 +468,10 @@ class BoolParam:
         return BoolParamStore(identity, value)
 
 
-def enum_param_factory(cls: Enum):
+def enum_param_factory(enum: Enum):
     """Create a new parameter type based on the given `Enum`.
 
-    :returns: A tuple of ``(EnumParam, EnumParamHandle, EnumParamStore)``.
+    :returns: A tuple of ``(EnumParam, EnumParamHandle, EnumParamStore)`` types.
     """
     class EnumParamStore(ParamStore):
         @portable
@@ -484,7 +484,7 @@ def enum_param_factory(cls: Enum):
             pass
 
         @portable
-        def get_value(self) -> cls:
+        def get_value(self) -> enum:
             return self._value
 
         @portable
@@ -497,58 +497,66 @@ def enum_param_factory(cls: Enum):
 
         @portable
         def coerce(self, value):
-            return cls(value)
+            return enum(value)
 
     class EnumParamHandle(ParamHandle):
         @portable
-        def get(self) -> cls:
+        def get(self) -> enum:
             return self._store.get_value()
 
         @portable
-        def use(self) -> cls:
+        def use(self) -> enum:
             self._changed_after_use = False
             return self._store.get_value()
 
     # Create unique identifier for the enum.
-    type_string = f"enum_{id(cls)}"
+    type_string = f"enum_{enum.__name__}_{id(enum)}"
 
     class EnumParam:
         HandleType = EnumParamHandle
         StoreType = EnumParamStore
-        CompilerType = cls
+        CompilerType = enum
 
         def __init__(self,
                      fqn: str,
                      description: str,
-                     default: cls,
+                     default: enum | str,
                      is_scannable: bool = True):
             self.fqn = fqn
             self.description = description
-            assert isinstance(default, cls), "Default must be member of the Enum."
-            self.default = default
+
+            # `self.default` is either an instance of the `enum`, or a string value to
+            # be `eval`uated later, mapping to the name of a member of `enum`.
+            if isinstance(default, enum):
+                self.default = repr(default.name)
+            else:
+                self.default = default
+
             self.is_scannable = is_scannable
 
-        def _option_to_str(option):
-            return (option.value
-                    if isinstance(self.default.value, str) else option.name)
+        def _option_to_str(self, option):
+            return (option.value if isinstance(option, str) else option.name)
 
         def describe(self) -> dict[str, Any]:
             return {
                 "fqn": self.fqn,
                 "description": self.description,
                 "type": type_string,
-                "default": repr(self._option_to_str(self.default)),
+                "default": self.default,
                 "spec": {
-                    "display_categories": [self._option_to_str(o) for o in cls],
+                    "enum_display_map": {
+                        o.name: o.value if isinstance(o.value, str) else o.name
+                        for o in enum
+                    },
                     "is_scannable": self.is_scannable
                 }
             }
 
-        def eval_default(self, get_dataset: GetDataset) -> cls:
-            return cls[eval_param_default(repr(self._option_to_str(self.default)),
-                                          get_dataset)]
+        def eval_default(self, get_dataset: GetDataset) -> enum:
+            default = eval_param_default(self.default, get_dataset)
+            return enum[default]
 
-        def make_store(self, identity: tuple[str, str], value: cls) -> EnumParamStore:
+        def make_store(self, identity: tuple[str, str], value: enum) -> EnumParamStore:
             return EnumParamStore(identity, value)
 
     # Add dynamically created EnumParam to the global collection.
