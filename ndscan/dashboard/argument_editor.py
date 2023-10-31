@@ -625,6 +625,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             options["Fixed"] = StringFixedScanOption
         elif schema["type"] == "bool":
             options["Fixed"] = BoolFixedScanOption
+            if is_scannable:
+                options["Scanning"] = BoolScanOption
+        elif schema["type"].startswith("enum"):
+            options["Fixed"] = EnumFixedScanOption
+            if is_scannable:
+                options["Scanning"] = EnumScanOption
         else:
             # TODO: Properly handle int, add errors (or default to PYON value).
             options["Fixed"] = FixedScanOption
@@ -781,6 +787,22 @@ class BoolFixedScanOption(ScanOption):
 
     def set_value(self, value) -> None:
         self.box.setChecked(value)
+
+
+class EnumFixedScanOption(ScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box = QtWidgets.QComboBox()
+        self._to_display_map = self.entry.schema["spec"]["enum_display_map"]
+        self.box.addItems(self._to_display_map.values())
+        layout.addWidget(self.box)
+
+    def write_to_params(self, params: dict) -> None:
+        to_name_map = {val: key for key, val in self._to_display_map.items()}
+        o = {"path": self.entry.path, "value": to_name_map[self.box.currentText()]}
+        params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
+
+    def set_value(self, value) -> None:
+        self.box.setCurrentText(self._to_display_map[value])
 
 
 class NumericScanOption(ScanOption):
@@ -1063,6 +1085,52 @@ class ListScanOption(NumericScanOption):
             "type": "list",
             "range": {
                 "values": values,
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+
+class BoolScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        dummy_box = QtWidgets.QCheckBox()
+        dummy_box.setTristate()
+        dummy_box.setEnabled(False)
+        dummy_box.setCheckState(1)
+        layout.addWidget(dummy_box)
+        layout.setStretchFactor(dummy_box, 0)
+        layout.addWidget(self._make_divider())
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 1)
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "list",
+            "range": {
+                "values": [False, True],
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+
+class EnumScanOption(NumericScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+        self._to_display_map = self.entry.schema["spec"]["enum_display_map"]
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "list",
+            "range": {
+                "values": list(self._to_display_map.keys()),
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }

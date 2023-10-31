@@ -206,7 +206,6 @@ class ListGenerator(ScanGenerator):
         assert level == 0
         values = self.values
         if self.randomise_order:
-            values = np.array(self.values)
             rng.shuffle(values)
         return values
 

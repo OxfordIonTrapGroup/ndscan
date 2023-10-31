@@ -130,7 +130,8 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
                     label = channel["description"]
                     if not label:
                         label = channel["path"].split("/")[-1]
-                    info.append((label, channel["path"], color, channel))
+                    info.append(
+                        (label, channel["path"], channel["type"], color, channel))
 
                 setup_axis_item(axis, info)
 
