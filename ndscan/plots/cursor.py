@@ -29,9 +29,14 @@ class CrosshairLabel(pyqtgraph.TextItem):
         raise NotImplementedError
 
     def set_value(self, value: float, limits: tuple[float, float]):
-        # We want to be able to resolve at least 1000 points in the displayed
-        # range.
-        span = (limits[1] - limits[0]) * self.data_to_display_scale
+        # Base case: we want to resolve at least milli-units on the data's scale.
+        span = self.data_to_display_scale
+        if limits[1] > limits[0]:
+            # Preferred case: we want to resolve >1000 points in the displayed range.
+            span *= (limits[1] - limits[0])
+        elif np.abs(value) > 0:
+            # Fallback case: we want to resolve >3 significant figures of the value.
+            span *= value
         smallest_digit = np.floor(np.log10(span)) - 3
         precision = int(-smallest_digit) if smallest_digit < 0 else 0
 
