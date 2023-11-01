@@ -287,14 +287,32 @@ class Fragment(HasEnvironment):
             :meth:`build_fragment` call.
         :return: The newly created fragment instance.
         """
-        assert self._building, ("Can only call setattr_fragment() "
+        assert not hasattr(self, name), f"Field '{name}' already exists"
+        frag = self.make_subfragment(name, fragment_class, *args, **kwargs)
+        setattr(self, name, frag)
+        return frag
+
+    def make_subfragment(self, name: str, fragment_class: type["Fragment"], *args,
+                         **kwargs) -> "Fragment":
+        """Build and return a fragment, adding it as a subfragment but
+        without setting it as an attribute
+        
+        Can only be called during :meth:`build_fragment`.
+
+        :param name: The fragment name; part of the fragment path. 
+        :param fragment_class: The type of the subfragment to instantiate.
+        :param args: Any extra arguments to forward to the subfragment
+            :meth:`build_fragment` call.
+        :param kwargs: Any extra keyword arguments to forward to the subfragment
+            :meth:`build_fragment` call.
+        :return: The newly created fragment instance.
+        """
+        assert self._building, ("Can only call setattr_fragment() or get_fragment()"
                                 "during build_fragment()")
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
-        assert not hasattr(self, name), f"Field '{name}' already exists"
 
         frag = fragment_class(self, self._fragment_path + [name], *args, **kwargs)
         self._subfragments.append(frag)
-        setattr(self, name, frag)
 
         return frag
 
