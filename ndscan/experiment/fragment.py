@@ -81,21 +81,36 @@ class Fragment(HasEnvironment):
 
         # Now that we know all subfragments, synthesise code for device_setup() and
         # device_cleanup() to forward to subfragments.
-        self._device_setup_subfragments_impl = kernel_from_string(["self"], "\n".join([
-            f"self.{s._fragment_path[-1]}.device_setup()"
-            for s in self._subfragments if s not in self._detached_subfragments
-        ]) or "pass", portable)
+        setup_code_entries = []
+        cleanup_code_entries = []
+        valid_subfragments = [
+            f for f in self._subfragments if f not in self._detached_subfragments
+        ]
+
+        for s in valid_subfragments:
+            name_of_subfrag_list = "__subfrags_" + s.__class__.__name__
+            if not hasattr(self, name_of_subfrag_list):
+                setattr(self, name_of_subfrag_list, [])
+            subfrag_list = getattr(self, name_of_subfrag_list)
+            subfrag_list.append(s)
+            setup_code_entries.append(
+                f"self.{name_of_subfrag_list}[{len(subfrag_list)-1}].device_setup()")
+            cleanup_code_entries.append(
+                f"self.{name_of_subfrag_list}[{len(subfrag_list)-1}].device_cleanup()")
+
+        cleanup_code_entries = list(reversed(cleanup_code_entries))
+
+        self._device_setup_subfragments_impl = kernel_from_string(
+            ["self"], "\n".join(setup_code_entries) or "pass", portable)
 
         code = ""
-        for s in self._subfragments[::-1]:
-            if s in self._detached_subfragments:
-                continue
-            frag = "self." + s._fragment_path[-1]
+        for cleanup_entry, subfrag in zip(cleanup_code_entries,
+                                          valid_subfragments[::-1]):
             code += "try:\n"
-            code += f"    {frag}.device_cleanup()\n"
+            code += f"    {cleanup_entry}\n"
             code += "except Exception:\n"
             code += "    logger.error(\"Cleanup failed for '{}'.\")\n".format(
-                s._stringize_path())
+                subfrag._stringize_path())
         self._device_cleanup_subfragments_impl = kernel_from_string(
             ["self", "logger"], code[:-1] if code else "pass", portable)
 
@@ -296,10 +311,10 @@ class Fragment(HasEnvironment):
                          **kwargs) -> "Fragment":
         """Build and return a fragment, adding it as a subfragment but
         without setting it as an attribute
-        
+
         Can only be called during :meth:`build_fragment`.
 
-        :param name: The fragment name; part of the fragment path. 
+        :param name: The fragment name; part of the fragment path.
         :param fragment_class: The type of the subfragment to instantiate.
         :param args: Any extra arguments to forward to the subfragment
             :meth:`build_fragment` call.
