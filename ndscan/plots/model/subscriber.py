@@ -37,14 +37,14 @@ class SubscriberRoot(Root):
         if schema_revision is None:
             return
 
-        if not self._title_set:
-            fqn = d("fragment_fqn")
+        fqn = d("fragment_fqn")
+        if not self._title_set or self._context.get_title() != fqn:
             if fqn:
                 self._context.set_title(fqn)
                 self._title_set = True
 
-        if not self._source_id_set:
-            source_id = d("source_id")
+        source_id = d("source_id")
+        if not self._source_id_set or self._context.get_source_id() != source_id:
             if source_id:
                 self._context.set_source_id(source_id)
                 self._source_id_set = True
@@ -194,10 +194,21 @@ class SubscriberScanModel(ScanModel):
         for name, source in self._analysis_result_sources.items():
             source.set(values.get(self._prefix + "analysis_result." + name))
 
+        point_data_changed = False
         for name in ([f"axis_{i}" for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
-            self._point_data[name] = values.get(self._prefix + "points." + name, [])
-        self.points_appended.emit(self._point_data)
+            point_values = values.get(self._prefix + "points." + name, [])
+            if not point_data_changed:
+                # Check if points were appended or rewritten.
+                if name in self._point_data:
+                    imax = min(len(point_values), len(self._point_data[name]))
+                    if point_values[:imax] != self._point_data[name][:imax]:
+                        point_data_changed = True
+            self._point_data[name] = point_values
+        if point_data_changed:
+            self.points_rewritten.emit(self._point_data)
+        else:
+            self.points_appended.emit(self._point_data)
 
     def get_annotations(self) -> list[Annotation]:
         return self._annotations
