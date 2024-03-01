@@ -151,8 +151,8 @@ def load_ndscan(
                 description=ax["param"].get("description", ""),
                 path=ax["path"],
                 scale=ax["param"]["spec"]["scale"],
-                step=ax["param"]["spec"]["step"],
-                unit=ax["param"]["spec"]["unit"],
+                step=ax["param"]["spec"].get("step", 1.0),
+                unit=ax["param"]["spec"].get("unit", ""),
                 ax_idx=i,
             ) for i, ax in enumerate(axs)
         ]
