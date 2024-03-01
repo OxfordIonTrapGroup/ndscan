@@ -67,6 +67,13 @@ class ResultArgs:
     scale: float
     is_ndscan: bool
 
+@dataclass
+class ResultAnalysis:
+    value: Any
+    path: str
+    description: str
+    scale: float
+    unit: str
 
 def load_ndscan(
     day: Union[None, str, List[str]] = None,
@@ -75,8 +82,13 @@ def load_ndscan(
     class_name: Union[None, str, List[str]] = None,
     experiment: Optional[str] = None,
     root_path: Optional[str] = None,
-) -> Tuple[Dict[str, ResultData], List[ResultAxis], Dict[str, ResultArgs], Dict[str,
-                                                                                Any]]:
+) -> Tuple[
+    Dict[str, ResultData],
+    List[ResultAxis],
+    Dict[str, ResultAnalysis],
+    Dict[str, ResultArgs],
+    Dict[str,Any]
+    ]:
     """
     Unpacks the results from an N-dimensional ndscan experiment to make scan data
     and axes more accessible. Returns sorted results and axes.
@@ -107,11 +119,14 @@ def load_ndscan(
                 - ax_idx: The index of the axis in the N-dimensional scan, with 0 being
                     the innermost axis being scanned.
 
+        - analyses: a dictionary of ResultAnalysis instances that contains the analyses of
+            the experiment.
+
         - args: A dictionary containing the arguments submitted to the experiment.
 
         - raw_results: the raw output of load_result().
     """
-    # TODO: add analyses and annotations.
+    # TODO: add online analyses and annotations.
     raw_results = load_result(
         day=day,
         hour=hour,
@@ -195,7 +210,21 @@ def load_ndscan(
             )
     args["completed"] = d[base_key + "completed"]
 
-    return scan_results, scan_axes, args, raw_results
+    analyses = {}
+    analyses_schema = pyon.decode(d[base_key + "analysis_results"])
+    for key, schem in analyses_schema.items():
+        path = schem["path"]
+        val = d[base_key + f"analysis_result.{path}"]
+        analysis = ResultAnalysis(
+            value=val,
+            path=path,
+            description=schem.get("description", ""),
+            scale=schem.get("scale", 1.0),
+            unit=schem.get("unit", ""),
+        )
+        analyses[key] = analysis
+
+    return scan_results, scan_axes, analyses, args, raw_results
 
 
 def sort_data(
