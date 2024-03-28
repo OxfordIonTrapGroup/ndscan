@@ -9,7 +9,8 @@ will likely be used by end users via
 import logging
 import numpy as np
 from artiq.coredevice.exceptions import RTIOUnderflow
-from artiq.language import *
+from artiq.language import (HasEnvironment, host_only, kernel, kernel_from_string, rpc,
+                            TList, TTuple)
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
@@ -320,7 +321,7 @@ class KernelScanRunner(ScanRunner):
         self._result_batcher = None
 
     @kernel
-    def acquire(self) -> TBool:
+    def acquire(self) -> bool:
         self._install_result_batcher()
         try:
             self._last_pause_check_mu = self.core.get_rtio_counter_mu()
@@ -341,7 +342,7 @@ class KernelScanRunner(ScanRunner):
         return True
 
     @kernel
-    def _run_point(self) -> TBool:
+    def _run_point(self) -> bool:
         """Execute the fragment for a single point (with the currently set parameters).
 
         :return: Whether the kernel should be exited/experiment should be paused before
@@ -381,7 +382,7 @@ class KernelScanRunner(ScanRunner):
         return False
 
     @kernel
-    def _should_pause(self) -> TBool:
+    def _should_pause(self) -> bool:
         current_time_mu = self.core.get_rtio_counter_mu()
         if (current_time_mu - self._last_pause_check_mu >
                 self._pause_check_interval_mu):

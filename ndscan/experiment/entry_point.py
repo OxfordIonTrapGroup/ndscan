@@ -10,7 +10,8 @@ The two main entry points into the :class:`.ExpFragment` universe are
    :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.
 """
 
-from artiq.language import *
+from artiq.language import (EnvExperiment, HasEnvironment, kernel, portable, PYONValue,
+                            rpc, TerminationRequested)
 from artiq.coredevice.exceptions import RTIOUnderflow
 from collections import OrderedDict
 from collections.abc import Callable, Iterable

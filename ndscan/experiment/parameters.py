@@ -8,10 +8,10 @@
 # machinery for all supported value types, in particular to handle cases where e.g.
 # both an int and a float parameter is scanned at the same time.
 
-from artiq.language import *
-from artiq.language import units
+from artiq.language import host_only, portable, units
 from typing import Any
 from ..utils import eval_param_default, GetDataset
+from numpy import int32
 
 __all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam"]
 
@@ -72,7 +72,7 @@ class FloatParamStore(ParamStore):
         pass
 
     @portable
-    def get_value(self) -> TFloat:
+    def get_value(self) -> float:
         return self._value
 
     @portable
@@ -99,7 +99,7 @@ class IntParamStore(ParamStore):
         pass
 
     @portable
-    def get_value(self) -> TInt32:
+    def get_value(self) -> int32:
         return self._value
 
     @portable
@@ -126,7 +126,7 @@ class StringParamStore(ParamStore):
         pass
 
     @portable
-    def get_value(self) -> TStr:
+    def get_value(self) -> str:
         return self._value
 
     @portable
@@ -153,7 +153,7 @@ class BoolParamStore(ParamStore):
         pass
 
     @portable
-    def get_value(self) -> TBool:
+    def get_value(self) -> bool:
         return self._value
 
     @portable
@@ -200,50 +200,50 @@ class ParamHandle:
         self._changed_after_use = True
 
     @portable
-    def changed_after_use(self) -> TBool:
+    def changed_after_use(self) -> bool:
         return self._changed_after_use
 
 
 class FloatParamHandle(ParamHandle):
     @portable
-    def get(self) -> TFloat:
+    def get(self) -> float:
         return self._store.get_value()
 
     @portable
-    def use(self) -> TFloat:
+    def use(self) -> float:
         self._changed_after_use = False
         return self._store.get_value()
 
 
 class IntParamHandle(ParamHandle):
     @portable
-    def get(self) -> TInt32:
+    def get(self) -> int32:
         return self._store.get_value()
 
     @portable
-    def use(self) -> TInt32:
+    def use(self) -> int32:
         self._changed_after_use = False
         return self._store.get_value()
 
 
 class StringParamHandle(ParamHandle):
     @portable
-    def get(self) -> TStr:
+    def get(self) -> str:
         return self._store.get_value()
 
     @portable
-    def use(self) -> TStr:
+    def use(self) -> str:
         self._changed_after_use = False
         return self._store.get_value()
 
 
 class BoolParamHandle(ParamHandle):
     @portable
-    def get(self) -> TBool:
+    def get(self) -> bool:
         return self._store.get_value()
 
     @portable
-    def use(self) -> TBool:
+    def use(self) -> bool:
         self._changed_after_use = False
         return self._store.get_value()
 
@@ -271,7 +271,7 @@ class ParamBase:
 class FloatParam(ParamBase):
     HandleType = FloatParamHandle
     StoreType = FloatParamStore
-    CompilerType = TFloat
+    CompilerType = float
 
     def __init__(self,
                  fqn: str,
@@ -337,7 +337,7 @@ class FloatParam(ParamBase):
 class IntParam(ParamBase):
     HandleType = IntParamHandle
     StoreType = IntParamStore
-    CompilerType = TInt32
+    CompilerType = int32
 
     def __init__(self,
                  fqn: str,
@@ -401,7 +401,7 @@ class IntParam(ParamBase):
 class StringParam(ParamBase):
     HandleType = StringParamHandle
     StoreType = StringParamStore
-    CompilerType = TStr
+    CompilerType = str
 
     def __init__(self,
                  fqn: str,
@@ -436,7 +436,7 @@ class StringParam(ParamBase):
 class BoolParam:
     HandleType = BoolParamHandle
     StoreType = BoolParamStore
-    CompilerType = TBool
+    CompilerType = bool
 
     def __init__(self,
                  fqn: str,
