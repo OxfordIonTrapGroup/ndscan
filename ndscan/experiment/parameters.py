@@ -320,7 +320,7 @@ class FloatParam(ParamBase):
         }
 
     def eval_default(self, get_dataset: GetDataset) -> float:
-        if type(self.default) is str:
+        if isinstance(self.default, str):
             return eval_param_default(self.default, get_dataset)
         return self.default
 
@@ -383,7 +383,7 @@ class IntParam(ParamBase):
         }
 
     def eval_default(self, get_dataset: GetDataset) -> int:
-        if type(self.default) is str:
+        if isinstance(self.default, str):
             return eval_param_default(self.default, get_dataset)
         return self.default
 
@@ -460,7 +460,7 @@ class BoolParam:
         }
 
     def eval_default(self, get_dataset: GetDataset) -> bool:
-        if type(self.default) is str:
+        if isinstance(self.default, str):
             return eval_param_default(self.default, get_dataset)
         return self.default
 
