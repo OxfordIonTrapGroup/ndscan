@@ -1,4 +1,4 @@
-from artiq.language import *
+from artiq.language import HasEnvironment, kernel, kernel_from_string, portable
 from collections import OrderedDict
 from collections.abc import Iterable
 from copy import deepcopy
