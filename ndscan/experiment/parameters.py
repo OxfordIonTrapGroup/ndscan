@@ -435,7 +435,7 @@ class StringParam(ParamBase):
         return StringParamStore(identity, value)
 
 
-class BoolParam:
+class BoolParam(ParamBase):
     HandleType = BoolParamHandle
     StoreType = BoolParamStore
     CompilerType = bool
@@ -445,10 +445,10 @@ class BoolParam:
                  description: str,
                  default: str | bool,
                  is_scannable: bool = True):
-        self.fqn = fqn
-        self.description = description
-        self.default = default
-        self.is_scannable = is_scannable
+        super().__init__(fqn=fqn,
+                         description=description,
+                         default=default,
+                         is_scannable=is_scannable)
 
     def describe(self) -> dict[str, Any]:
         return {
