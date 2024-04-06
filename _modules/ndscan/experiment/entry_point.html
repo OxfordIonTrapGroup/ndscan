@@ -86,7 +86,8 @@
 <span class="sd">   :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="p">(</span><span class="n">EnvExperiment</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">PYONValue</span><span class="p">,</span>
+                            <span class="n">rpc</span><span class="p">,</span> <span class="n">TerminationRequested</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">artiq.coredevice.exceptions</span> <span class="kn">import</span> <span class="n">RTIOUnderflow</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>

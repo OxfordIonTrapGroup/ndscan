@@ -85,7 +85,8 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">artiq.coredevice.exceptions</span> <span class="kn">import</span> <span class="n">RTIOUnderflow</span>
-<span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="p">(</span><span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">host_only</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_from_string</span><span class="p">,</span> <span class="n">rpc</span><span class="p">,</span>
+                            <span class="n">TList</span><span class="p">,</span> <span class="n">TTuple</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
@@ -414,7 +415,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_result_batcher</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TBool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_install_result_batcher</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
@@ -435,7 +436,7 @@
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">_run_point</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TBool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_run_point</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the fragment for a single point (with the currently set parameters).</span>
 
 <span class="sd">        :return: Whether the kernel should be exited/experiment should be paused before</span>
@@ -475,7 +476,7 @@
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">_should_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TBool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_should_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">current_time_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">current_time_mu</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_pause_check_mu</span> <span class="o">&gt;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_pause_check_interval_mu</span><span class="p">):</span>
