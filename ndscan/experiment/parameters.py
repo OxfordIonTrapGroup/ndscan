@@ -178,7 +178,9 @@ class ParamHandle:
     :param name: The name of the attribute in the owning fragment bound to this
         object.
     """
-    def __init__(self, owner: type["Fragment"], name: str):
+    def __init__(self, owner: Any, name: str):
+        # `owner` will typically be a Fragment instance; no type hint to avoid circular
+        # dependency.
         self.owner = owner
         self.name = name
         assert name.isidentifier(), ("ParamHandle name should be the identifier it is "
