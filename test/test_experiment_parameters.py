@@ -23,13 +23,13 @@ class FloatParamCase(unittest.TestCase):
 
     def test_evaluate_default(self):
         def mock_get_dataset(key: str, default=None):
-            return {"baz": 42.}[key]
+            return {"baz": 42.0}[key]
 
-        param = FloatParam("foo", "bar", 0.)
-        self.assertEqual(param.eval_default(mock_get_dataset), 0.)
+        param = FloatParam("foo", "bar", 0.0)
+        self.assertEqual(param.eval_default(mock_get_dataset), 0.0)
 
-        param = FloatParam("foo", "bar", "dataset('baz', 0.)")
-        self.assertEqual(param.eval_default(mock_get_dataset), 42.)
+        param = FloatParam("foo", "bar", "dataset('baz', 0.0)")
+        self.assertEqual(param.eval_default(mock_get_dataset), 42.0)
 
 
 class IntParamCase(unittest.TestCase):
