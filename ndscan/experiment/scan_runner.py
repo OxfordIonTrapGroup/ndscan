@@ -9,8 +9,7 @@ will likely be used by end users via
 import logging
 import numpy as np
 from artiq.coredevice.exceptions import RTIOUnderflow
-from artiq.language import (HasEnvironment, host_only, kernel, kernel_from_string, rpc,
-                            TList, TTuple)
+from artiq.language import HasEnvironment, host_only, kernel, kernel_from_string, rpc
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
@@ -263,10 +262,9 @@ class KernelScanRunner(ScanRunner):
         # run_chunk() correctly.
         self._get_param_values_chunk.__func__.__annotations__ = {
             "return":
-            TTuple([
-                TList(type_string_to_param(a.param_schema["type"]).CompilerType)
-                for a in axes
-            ])
+            tuple.__class_getitem__(
+                tuple(list[type_string_to_param(a.param_schema["type"]).CompilerType]
+                      for a in axes))
         }
 
         # Build kernel function that calls _get_param_values_chunk() and iterates over
