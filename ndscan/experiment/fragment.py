@@ -1,4 +1,4 @@
-from artiq.language import HasEnvironment, kernel, kernel_from_string, portable
+from artiq.language import HasEnvironment, kernel, kernel_from_string, portable, rpc
 from collections import OrderedDict
 from collections.abc import Iterable
 from copy import deepcopy
@@ -17,6 +17,23 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+
+@rpc(flags={"async"})
+def _log_failed_cleanup_host(path: str) -> None:
+    logger.error(f"device_cleanup() failed for '{path}'.")
+
+
+@portable
+def _log_failed_cleanup(path: str) -> None:
+    """Log error message for failed subfragment ``device_cleanup``.
+
+    Single kernel (well, portable) function, rather than directly an RPC call, to
+    tighten up kernel codegen for multiple cleanups.
+    """
+    # TODO: Figure out how to funnel the original exception details over RPC to provide
+    # a more usable error message to the user.
+    _log_failed_cleanup_host(path)
 
 
 class Fragment(HasEnvironment):
@@ -81,23 +98,56 @@ class Fragment(HasEnvironment):
 
         # Now that we know all subfragments, synthesise code for device_setup() and
         # device_cleanup() to forward to subfragments.
-        self._device_setup_subfragments_impl = kernel_from_string(["self"], "\n".join([
-            f"self.{s._fragment_path[-1]}.device_setup()"
-            for s in self._subfragments if s not in self._detached_subfragments
-        ]) or "pass", portable)
+        code = ""
+        for s in self._subfragments:
+            if s in self._detached_subfragments:
+                continue
+            if s._has_trivial_device_setup():
+                continue
+            code += f"self.{s._fragment_path[-1]}.device_setup()\n"
+        if code:
+            self._all_subfragment_setup_trivial = False
+            self._device_setup_subfragments_impl = kernel_from_string(["self"],
+                                                                      code[:-1],
+                                                                      portable)
+        else:
+            self._all_subfragment_setup_trivial = True
+            # TODO: Make this work across multiple types to save on empty …_impl().
+            # self.device_setup_subfragments = self._noop
+            self._device_setup_subfragments_impl = kernel_from_string(["self"], "pass",
+                                                                      portable)
 
         code = ""
         for s in self._subfragments[::-1]:
             if s in self._detached_subfragments:
                 continue
+            if s._has_trivial_device_cleanup():
+                continue
             frag = "self." + s._fragment_path[-1]
             code += "try:\n"
             code += f"    {frag}.device_cleanup()\n"
-            code += "except Exception:\n"
-            code += "    logger.error(\"Cleanup failed for '{}'.\")\n".format(
-                s._stringize_path())
-        self._device_cleanup_subfragments_impl = kernel_from_string(
-            ["self", "logger"], code[:-1] if code else "pass", portable)
+            code += "except:\n"
+            code += f"    log_failed_cleanup('{s._stringize_path()}')\n"
+        if code:
+            self._all_subfragment_cleanup_trivial = False
+            self._device_cleanup_subfragments_impl = kernel_from_string(
+                ["self", "log_failed_cleanup"], code[:-1], portable)
+        else:
+            self._all_subfragment_cleanup_trivial = True
+            # TODO: Make this work across multiple types to save on empty …_impl().
+            # self.device_cleanup_subfragments = self._noop
+            self._device_cleanup_subfragments_impl = kernel_from_string(
+                ["self", "log_failed_cleanup"], "pass", portable)
+
+    def _has_trivial_device_setup(self):
+        assert not self._building
+        empty_setup = self.device_setup.__func__ is Fragment.device_setup
+        return empty_setup and self._all_subfragment_setup_trivial
+
+    def _has_trivial_device_cleanup(self):
+        assert not self._building
+        empty_cleanup = self.device_cleanup.__func__ is Fragment.device_cleanup
+        return empty_cleanup and self._all_subfragment_cleanup_trivial
 
     def host_setup(self):
         """Perform host-side initialisation.
@@ -252,7 +302,7 @@ class Fragment(HasEnvironment):
         to be generic on the `self` type.)
         """
         # Forward to implementation generated using kernel_from_string().
-        self._device_cleanup_subfragments_impl(self, logger)
+        self._device_cleanup_subfragments_impl(self, _log_failed_cleanup)
 
     def build_fragment(self, *args, **kwargs) -> None:
         """Initialise this fragment, building up the hierarchy of subfragments,
