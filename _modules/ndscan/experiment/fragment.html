@@ -74,7 +74,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ndscan.experiment.fragment</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_from_string</span><span class="p">,</span> <span class="n">portable</span>
+<span></span><span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_from_string</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">rpc</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
@@ -93,6 +93,23 @@
 <span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+<span class="k">def</span> <span class="nf">_log_failed_cleanup_host</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;device_cleanup() failed for &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@portable</span>
+<span class="k">def</span> <span class="nf">_log_failed_cleanup</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log error message for failed subfragment ``device_cleanup``.</span>
+
+<span class="sd">    Single kernel (well, portable) function, rather than directly an RPC call, to</span>
+<span class="sd">    tighten up kernel codegen for multiple cleanups.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO: Figure out how to funnel the original exception details over RPC to provide</span>
+    <span class="c1"># a more usable error message to the user.</span>
+    <span class="n">_log_failed_cleanup_host</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Fragment">
@@ -161,24 +178,57 @@
 
         <span class="c1"># Now that we know all subfragments, synthesise code for device_setup() and</span>
         <span class="c1"># device_cleanup() to forward to subfragments.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
-            <span class="sa">f</span><span class="s2">&quot;self.</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">.device_setup()&quot;</span>
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span>
-        <span class="p">])</span> <span class="ow">or</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">_has_trivial_device_setup</span><span class="p">():</span>
+                <span class="k">continue</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;self.</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">.device_setup()</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">code</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_setup_trivial</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span>
+                                                                      <span class="n">code</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                                                      <span class="n">portable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_setup_trivial</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="c1"># TODO: Make this work across multiple types to save on empty …_impl().</span>
+            <span class="c1"># self.device_setup_subfragments = self._noop</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device_setup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">([</span><span class="s2">&quot;self&quot;</span><span class="p">],</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span>
+                                                                      <span class="n">portable</span><span class="p">)</span>
 
         <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">:</span>
                 <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">_has_trivial_device_cleanup</span><span class="p">():</span>
+                <span class="k">continue</span>
             <span class="n">frag</span> <span class="o">=</span> <span class="s2">&quot;self.&quot;</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;try:</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="n">code</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">frag</span><span class="si">}</span><span class="s2">.device_cleanup()</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;except Exception:</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    logger.error(</span><span class="se">\&quot;</span><span class="s2">Cleanup failed for &#39;</span><span class="si">{}</span><span class="s2">&#39;.</span><span class="se">\&quot;</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_device_cleanup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">(</span>
-            <span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">,</span> <span class="s2">&quot;logger&quot;</span><span class="p">],</span> <span class="n">code</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">code</span> <span class="k">else</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span></div>
+            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;except:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;    log_failed_cleanup(&#39;</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">()</span><span class="si">}</span><span class="s2">&#39;)</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">code</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_cleanup_trivial</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device_cleanup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">,</span> <span class="s2">&quot;log_failed_cleanup&quot;</span><span class="p">],</span> <span class="n">code</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">portable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_cleanup_trivial</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="c1"># TODO: Make this work across multiple types to save on empty …_impl().</span>
+            <span class="c1"># self.device_cleanup_subfragments = self._noop</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device_cleanup_subfragments_impl</span> <span class="o">=</span> <span class="n">kernel_from_string</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">,</span> <span class="s2">&quot;log_failed_cleanup&quot;</span><span class="p">],</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span></div>
 
+
+    <span class="k">def</span> <span class="nf">_has_trivial_device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span>
+        <span class="n">empty_setup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_setup</span><span class="o">.</span><span class="vm">__func__</span> <span class="ow">is</span> <span class="n">Fragment</span><span class="o">.</span><span class="n">device_setup</span>
+        <span class="k">return</span> <span class="n">empty_setup</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_setup_trivial</span>
+
+    <span class="k">def</span> <span class="nf">_has_trivial_device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span>
+        <span class="n">empty_cleanup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_cleanup</span><span class="o">.</span><span class="vm">__func__</span> <span class="ow">is</span> <span class="n">Fragment</span><span class="o">.</span><span class="n">device_cleanup</span>
+        <span class="k">return</span> <span class="n">empty_cleanup</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_cleanup_trivial</span>
 
 <div class="viewcode-block" id="Fragment.host_setup">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.host_setup">[docs]</a>
@@ -350,7 +400,7 @@
 <span class="sd">        to be generic on the `self` type.)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Forward to implementation generated using kernel_from_string().</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_device_cleanup_subfragments_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_cleanup_subfragments_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_log_failed_cleanup</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Fragment.build_fragment">
