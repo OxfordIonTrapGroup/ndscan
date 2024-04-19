@@ -7,6 +7,7 @@ from ndscan.experiment import *
 from ndscan.experiment.utils import is_kernel
 from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from sipyco import pyon
+from emulator_environment import KernelEmulatorCase
 from fixtures import (AddOneFragment, ReboundAddOneFragment, TrivialKernelFragment,
                       TransitoryErrorFragment, MultiPointTransitoryErrorFragment,
                       RequestTerminationFragment, AddOneAggregate,
@@ -348,11 +349,6 @@ class RunOnceCase(HasEnvironmentCase):
         })
         self.assertEqual(len(fragment._default_params), 1)
 
-    def test_run_once_kernel(self):
-        fragment = self.create(TrivialKernelFragment, [])
-        run_fragment_once(fragment)
-        self.assertEqual(self.core.run.call_count, 1)
-
     def test_create_and_run_once(self):
         self.assertEqual(
             create_and_run_fragment_once(self.create(HasEnvironment), AddOneFragment),
@@ -384,6 +380,12 @@ class RunOnceCase(HasEnvironmentCase):
         fragment.num_run_once_to_restart_fail = 3
         with self.assertRaises(RestartKernelTransitoryError):
             run_fragment_once(fragment, max_transitory_error_retries=2)
+
+
+class RunOneKernelCase(KernelEmulatorCase):
+    def test_run_once_kernel(self):
+        fragment = self.create(TrivialKernelFragment, [])
+        run_fragment_once(fragment)
 
 
 class TopLevelRunnerCase(HasEnvironmentCase):
