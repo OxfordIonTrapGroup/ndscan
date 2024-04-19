@@ -1,0 +1,215 @@
+{
+  "nodes": {
+    "artiq": {
+      "inputs": {
+        "artiq-comtools": "artiq-comtools",
+        "mozilla-overlay": "mozilla-overlay",
+        "nixpkgs": "nixpkgs",
+        "sipyco": "sipyco",
+        "src-migen": "src-migen",
+        "src-misoc": "src-misoc",
+        "src-pythonparser": "src-pythonparser"
+      },
+      "locked": {
+        "lastModified": 1713564755,
+        "narHash": "sha256-6hze8ysmWwGm078GFNT0RQNzrWRtSmf5YTNAYgZ3B4A=",
+        "owner": "dnadlinger",
+        "repo": "artiq",
+        "rev": "ecaadad155e74f964cf893304cdeb22608432e7e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dnadlinger",
+        "ref": "dpn/emulator",
+        "repo": "artiq",
+        "type": "github"
+      }
+    },
+    "artiq-comtools": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "artiq",
+          "nixpkgs"
+        ],
+        "sipyco": [
+          "artiq",
+          "sipyco"
+        ]
+      },
+      "locked": {
+        "lastModified": 1707216368,
+        "narHash": "sha256-ZXoqzG2QsVsybALLYXs473avXcyKSZNh2kIgcPo60XQ=",
+        "owner": "m-labs",
+        "repo": "artiq-comtools",
+        "rev": "e5d0204490bccc07ef9141b0d7c405ab01cb8273",
+        "type": "github"
+      },
+      "original": {
+        "owner": "m-labs",
+        "repo": "artiq-comtools",
+        "type": "github"
+      }
+    },
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1694529238,
+        "narHash": "sha256-zsNZZGTGnMOf9YpHKJqMSsa0dXbfmxeoJ7xHlrt+xmY=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "ff7b65b44d01cf9ba6a71320833626af21126384",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "mozilla-overlay": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1704373101,
+        "narHash": "sha256-+gi59LRWRQmwROrmE1E2b3mtocwueCQqZ60CwLG+gbg=",
+        "owner": "mozilla",
+        "repo": "nixpkgs-mozilla",
+        "rev": "9b11a87c0cc54e308fa83aac5b4ee1816d5418a2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mozilla",
+        "repo": "nixpkgs-mozilla",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1711668574,
+        "narHash": "sha256-u1dfs0ASQIEr1icTVrsKwg2xToIpn7ZXxW3RHfHxshg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "219951b495fc2eac67b1456824cc1ec1fd2ee659",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-23.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "artiq": "artiq",
+        "src-oitg": "src-oitg"
+      }
+    },
+    "sipyco": {
+      "inputs": {
+        "nixpkgs": [
+          "artiq",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1708937641,
+        "narHash": "sha256-Hkb9VYFzFgkYxfbh4kYcDSn7DbMUYehoQDeTALrxo2Q=",
+        "owner": "m-labs",
+        "repo": "sipyco",
+        "rev": "4a28b311ce0069454b4e8fe1e6049db11b9f1296",
+        "type": "github"
+      },
+      "original": {
+        "owner": "m-labs",
+        "repo": "sipyco",
+        "type": "github"
+      }
+    },
+    "src-migen": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1702942348,
+        "narHash": "sha256-gKIfHZxsv+jcgDFRW9mPqmwqbZXuRvXefkZcSFjOGHw=",
+        "owner": "m-labs",
+        "repo": "migen",
+        "rev": "50934ad10a87ade47219b796535978b9bdf24023",
+        "type": "github"
+      },
+      "original": {
+        "owner": "m-labs",
+        "repo": "migen",
+        "type": "github"
+      }
+    },
+    "src-misoc": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1699352904,
+        "narHash": "sha256-SglyTmXOPv8jJOjwAjJrj/WhAkItQfUbvKfUqrynwRg=",
+        "ref": "refs/heads/master",
+        "rev": "a53859f2167c31ab5225b6c09f30cf05527b94f4",
+        "revCount": 2452,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/m-labs/misoc.git"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/m-labs/misoc.git"
+      }
+    },
+    "src-oitg": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1712874276,
+        "narHash": "sha256-5AEvGWNxV6+p20f1ivH9jLqVLVhdaPOJuOTIrVYvR9c=",
+        "owner": "OxfordIonTrapGroup",
+        "repo": "oitg",
+        "rev": "c172e73a2600feed4052b1b7edefaada7ee4e533",
+        "type": "github"
+      },
+      "original": {
+        "owner": "OxfordIonTrapGroup",
+        "repo": "oitg",
+        "type": "github"
+      }
+    },
+    "src-pythonparser": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1628745371,
+        "narHash": "sha256-p6TgeeaK4NEmbhimEXp31W8hVRo4DgWmcCoqZ+UdN60=",
+        "owner": "m-labs",
+        "repo": "pythonparser",
+        "rev": "5413ee5c9f8760e95c6acd5d6e88dabb831ad201",
+        "type": "github"
+      },
+      "original": {
+        "owner": "m-labs",
+        "repo": "pythonparser",
+        "type": "github"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
