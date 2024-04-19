@@ -37,6 +37,14 @@ class SubscriberRoot(Root):
         if schema_revision is None:
             return
 
+        source_id = d("source_id")
+        if self._context.get_source_id() != source_id:
+            # If the source_id changed, clear the applet.
+            self._model = None
+            self._title_set = False
+            self._source_id_set = False
+            self._axes_initialised = False
+
         if not self._title_set:
             fqn = d("fragment_fqn")
             if fqn:
@@ -44,7 +52,6 @@ class SubscriberRoot(Root):
                 self._title_set = True
 
         if not self._source_id_set:
-            source_id = d("source_id")
             if source_id:
                 self._context.set_source_id(source_id)
                 self._source_id_set = True
