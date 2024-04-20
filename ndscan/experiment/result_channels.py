@@ -122,6 +122,9 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
         """Read back the previously pushed values from the target dataset (if any)."""
         return [] if (self.last_value is None) else self.get_dataset(self.key)
 
+    def clear(self):
+        self.set_dataset(self.key, [], broadcast=self.broadcast)
+
 
 class ScalarDatasetSink(ResultSink, HasEnvironment):
     """Sink that writes pushed results to a dataset, overwriting its previous value
@@ -142,6 +145,9 @@ class ScalarDatasetSink(ResultSink, HasEnvironment):
     def get_last(self) -> Any:
         """Return the last pushed value, or ``None`` if none yet."""
         return self.get_dataset(self.key) if self.has_pushed else None
+
+    def clear(self):
+        pass
 
 
 class ResultChannel:
