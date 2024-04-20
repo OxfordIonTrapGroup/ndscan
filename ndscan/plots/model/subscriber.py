@@ -44,6 +44,10 @@ class SubscriberRoot(Root):
             self._title_set = False
             self._source_id_set = False
             self._axes_initialised = False
+            keys = list(values.keys())
+            for key in keys:
+                if "points." in key:
+                    del values[key]
 
         if not self._title_set:
             fqn = d("fragment_fqn")
