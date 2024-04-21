@@ -35,23 +35,28 @@ Scans
 .. automodule:: ndscan.experiment.scan_generator
     :members:
 
+:mod:`ndscan.experiment.scan_runner` module
++++++++++++++++++++++++++++++++++++++++++++
+
+.. automodule:: ndscan.experiment.scan_runner
+    :members:
+
 :mod:`ndscan.experiment.subscan` module
 +++++++++++++++++++++++++++++++++++++++
 
 .. automodule:: ndscan.experiment.subscan
     :members:
 
+:mod:`ndscan.experiment.annotations` module
++++++++++++++++++++++++++++++++++++++++++++
+
+.. automodule:: ndscan.experiment.annotations
+    :members:
+
 :mod:`ndscan.experiment.default_analysis` module
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. automodule:: ndscan.experiment.default_analysis
-    :members:
-
-
-:mod:`ndscan.experiment.scan_runner` module
-+++++++++++++++++++++++++++++++++++++++++++
-
-.. automodule:: ndscan.experiment.scan_runner
     :members:
 
 
@@ -81,21 +86,30 @@ ndscan.results API
 
 .. automodule:: ndscan.results
 
+General result handling tools
+-----------------------------
+
+:mod:`ndscan.results.tools` module
+++++++++++++++++++++++++++++++++++
+
+.. automodule:: ndscan.results.tools
+    :members:
+
+Query and extract parameters used
+---------------------------------
 
 :mod:`ndscan.results.arguments` module
---------------------------------------
+++++++++++++++++++++++++++++++++++++++
 
 .. automodule:: ndscan.results.arguments
     :members:
 
+Quick plotting for notebooks
+----------------------------
+
 :mod:`ndscan.results.pyplot` module
------------------------------------
++++++++++++++++++++++++++++++++++++
 
 .. automodule:: ndscan.results.pyplot
     :members:
 
-:mod:`ndscan.results.tools` module
-----------------------------------
-
-.. automodule:: ndscan.results.tools
-    :members:
