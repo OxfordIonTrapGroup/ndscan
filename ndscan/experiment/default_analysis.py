@@ -1,26 +1,28 @@
-"""
+r"""
 Interfaces and declarations for analyses.
 
 Conceptually, analyses are attached to a fragment, and produce results "the next level
 up" – that is, they condense all the points from a scan over a particular choice of
-parameters into a few parameters.
+parameters into a few derived results.
 
 Two modalities are supported:
- - Declarative fits of a number of pre-defined functions, to be excecuted locally by the
+ - Declarative fits of a number of pre-defined functions, to be executed locally by the
    user interface displaying the result data, and updated as data continues to
    accumulate ("online analysis").
  - A separate analysis step executed at the end, after a scan has been completed. This
    is the equivalent of ARTIQ's ``EnvExperiment.analyze()``, and is executed within the
    master worker process ("execute an analysis", "analysis results").
 
-Both can produce annotations; particular values or plot locations highlighted in the
-user interface.
+Both can produce :class:`Annotation`\ s; particular values or plot locations highlighted
+in the user interface.
 """
 import logging
 from collections.abc import Callable, Iterable
 from typing import Any
 
 from ..utils import FIT_OBJECTS
+from .annotations import (AnnotationValueRef, AnnotationContext, Annotation,
+                          computed_curve, axis_location)
 from .parameters import ParamHandle
 from .result_channels import ResultChannel
 
@@ -30,85 +32,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-class AnnotationValueRef:
-    """Marker type to distinguish an already-serialised annotation value source
-    specification from an user-supplied value of dictionary type.
-    """
-    def __init__(self, kind: str, **kwargs):
-        self.spec = {"kind": kind, **kwargs}
-
-
-class AnnotationContext:
-    """Resolves entities in user-specified annotation schemata to stringly-typed
-    dictionary form.
-
-    The user-facing interface to annotations allows references to parameters, result
-    channels, etc. to be given as their representation in the fragment tree. Thus, to
-    write annotations to scan metadata, it is necessary to resolve these to a
-    JSON-compatible form to funnel them to the applet (or any number of other dataset
-    consumers).
-
-    This class encapsulates the knowledge of the order of scan axes, shortened names of
-    result channels, etc. – that is, the global state – necessary to produce these
-    schema descriptions.
-    """
-    def __init__(self, get_axis_index: Callable[[ParamHandle], int],
-                 name_channel: Callable[[ResultChannel], str],
-                 analysis_result_is_exported: Callable[[ResultChannel], bool]):
-        self._get_axis_index = get_axis_index
-        self._name_channel = name_channel
-        self._analysis_result_is_exported = analysis_result_is_exported
-
-    def describe_coordinate(self, obj) -> str:
-        if isinstance(obj, ParamHandle):
-            return f"axis_{self._get_axis_index(obj)}"
-        if isinstance(obj, ResultChannel):
-            return "channel_" + self._name_channel(obj)
-        return obj
-
-    def describe_value(self, obj) -> AnnotationValueRef:
-        if isinstance(obj, AnnotationValueRef):
-            return obj
-        if isinstance(obj, ResultChannel):
-            # Only emit analysis result reference if it is actually exported (might not
-            # be for a subscan) – emit direct value reference otherwise.
-            if self._analysis_result_is_exported(obj):
-                return AnnotationValueRef("analysis_result", name=obj.path)
-            obj = obj.sink.get_last()
-        return AnnotationValueRef("fixed", value=obj)
-
-
-class Annotation:
-    """Annotation to be displayed alongside scan result data, recording derived
-    quantities (e.g. a fit minimizer).
-    """
-    def __init__(self,
-                 kind: str,
-                 coordinates: dict | None = None,
-                 parameters: dict | None = None,
-                 data: dict | None = None):
-        self.kind = kind
-        self.coordinates = {} if coordinates is None else coordinates
-        self.parameters = {} if parameters is None else parameters
-        self.data = {} if data is None else data
-
-    def describe(self, context: AnnotationContext) -> dict[str, Any]:
-        def to_spec_map(dictionary):
-            result = {}
-            for key, value in dictionary.items():
-                keyspec = context.describe_coordinate(key)
-                valuespec = context.describe_value(value).spec
-                result[keyspec] = valuespec
-            return result
-
-        spec = {"kind": self.kind}
-        spec["coordinates"] = to_spec_map(self.coordinates)
-        spec["parameters"] = self.parameters
-        spec["data"] = to_spec_map(self.data)
-        return spec
-
 
 #: A tuple ``(fqn, path_spec)`` describing an axis being scanned over. This is the
 #: correct concept of identity to use (rather than e.g. directly parameter handles), as
@@ -141,6 +64,9 @@ class DefaultAnalysis:
         raise NotImplementedError
 
     def get_analysis_results(self) -> dict[str, ResultChannel]:
+        r"""Return :class:`ResultChannel`\ s for the results produced by the analysis,
+        as a dictionary indexed by name.
+        """
         raise NotImplementedError
 
     def execute(
@@ -367,28 +293,21 @@ class OnlineFit(DefaultAnalysis):
                                       result_key=key)
 
         annotations = [
-            Annotation("computed_curve",
-                       parameters={
-                           "function_name": self.fit_type,
-                           "associated_channels": channels
-                       },
-                       data={
-                           k: analysis_ref(k)
-                           for k in FIT_OBJECTS[self.fit_type].parameter_names
-                       })
+            computed_curve(function_name=self.fit_type,
+                           parameters={
+                               k: analysis_ref(k)
+                               for k in FIT_OBJECTS[self.fit_type].parameter_names
+                           },
+                           associated_channels=channels)
         ]
         for a in self.annotations.values():
             # TODO: Change API to allow more general annotations.
             if set(a.keys()) == set("x"):
                 annotations.append(
-                    Annotation(
-                        "location",
-                        coordinates={self.data["x"]: analysis_ref(a["x"])},
-                        data={
-                            context.describe_coordinate(self.data["x"]) + "_error":
-                            analysis_ref(a["x"] + "_error")
-                        },
-                        parameters={"associated_channels": channels}))
+                    axis_location(axis=self.data["x"],
+                                  position=analysis_ref(a["x"]),
+                                  position_error=analysis_ref(a["x"] + "_error"),
+                                  associated_channels=channels))
 
         return [a.describe(context) for a in annotations], {
             analysis_identifier: {
