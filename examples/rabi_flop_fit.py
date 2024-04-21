@@ -40,14 +40,13 @@ class RabiFlopWithAnalysis(RabiFlopSim):
         # We can also return custom annotations to be displayed, which can make use of
         # the analysis results.
         return [
-            Annotation("location",
-                       coordinates={self.duration: analysis_results["t_pi"]},
-                       data={"axis_0_error": analysis_results["t_pi_err"]}),
-            Annotation(
-                "curve", {
-                    self.duration: analysis_results["fit_xs"],
-                    self.readout.p: analysis_results["fit_ys"]
-                })
+            annotations.axis_location(axis=self.duration,
+                                      position=analysis_results["t_pi"],
+                                      position_error=analysis_results["t_pi_err"]),
+            annotations.curve_1d(x_axis=self.duration,
+                                 x_values=analysis_results["fit_xs"],
+                                 y_axis=self.readout.p,
+                                 y_values=analysis_results["fit_ys"])
         ]
 
 
