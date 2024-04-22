@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ndscan.experiment.annotations &mdash; ndscan  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/annotations.html"/>
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ndscan
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html">ndscan.experiment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs.html#module-ndscan.results">ndscan.results API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../coding-conventions.html">Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../design-retrospective.html">Design retrospective</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ndscan</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ndscan.experiment.annotations</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ndscan.experiment.annotations</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Annotations are a way for analyses (:mod:`ndscan.experiment.default_analysis`) to</span>
+<span class="sd">specify additional information to be displayed to the user along with the scan data, for</span>
+<span class="sd">instance a fit curve or a line indicating a centre frequency or oscillation period</span>
+<span class="sd">derived from the analysis.</span>
+
+<span class="sd">Conceptually, annotations express hints about a suitable user interface for exploration</span>
+<span class="sd">of experimental data, rather than a mechanism for data storage or exchange. To make</span>
+<span class="sd">analysis results programmatically accessible to other parts fo a complex experiment,</span>
+<span class="sd">analysis result channels (see</span>
+<span class="sd">:meth:`.DefaultAnalysis.get_analysis_results`) should be used instead.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span>
+<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;curve_1d&quot;</span><span class="p">,</span> <span class="s2">&quot;curve&quot;</span><span class="p">,</span> <span class="s2">&quot;computed_curve&quot;</span><span class="p">,</span> <span class="s2">&quot;axis_location&quot;</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">AnnotationValueRef</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Marker type to distinguish an already-serialised annotation value source</span>
+<span class="sd">    specification from an user-supplied value of dictionary type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spec</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">AxisAssociatedKeyRef</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Kludge to allow referring to an axis in annotation data before the actual index</span>
+<span class="sd">    is known (from the AnnotationContext when describe()ing the annotation).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="n">ParamHandle</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span> <span class="nc">AnnotationContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves entities in user-specified annotation schemata to stringly-typed</span>
+<span class="sd">    dictionary form.</span>
+
+<span class="sd">    The user-facing interface to annotations allows references to parameters, result</span>
+<span class="sd">    channels, etc. to be given as their representation in the fragment tree. Thus, to</span>
+<span class="sd">    write annotations to scan metadata, it is necessary to resolve these to a</span>
+<span class="sd">    JSON-compatible form to funnel them to the applet (or any number of other dataset</span>
+<span class="sd">    consumers).</span>
+
+<span class="sd">    This is not quite an abstract interface, in that the class already encapsulates the</span>
+<span class="sd">    information on how to refer to the different object types in the scan schema. What</span>
+<span class="sd">    is, however, still missing is the knowledge of the order of scan axes, the shortened</span>
+<span class="sd">    names of result channels, etc. – that is, the scan-global state – necessary to</span>
+<span class="sd">    actually derive the final stringly-typed descriptions, which are supplied via</span>
+<span class="sd">    callbacks.</span>
+
+<span class="sd">    :param get_axis_index: Given a :class:`ParamHandle` that is being scanned over,</span>
+<span class="sd">        return its index among the scan axes.</span>
+<span class="sd">    :param name_channel: Given a :class:`ResultChannel`, return the flattened name</span>
+<span class="sd">        in the context of the scan (as used e.g. for the ``points.channel_…`` dataset</span>
+<span class="sd">        key).</span>
+<span class="sd">    :param analysis_result_is_exported: Given an analysis result :class:`ResultChannel`,</span>
+<span class="sd">        return whether it is actually accessible in the datasets (e.g. subscan result</span>
+<span class="sd">        channels might not be exposed).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_axis_index</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ParamHandle</span><span class="p">],</span> <span class="nb">int</span><span class="p">],</span>
+                 <span class="n">name_channel</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ResultChannel</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
+                 <span class="n">analysis_result_is_exported</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ResultChannel</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_axis_index</span> <span class="o">=</span> <span class="n">get_axis_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_channel</span> <span class="o">=</span> <span class="n">name_channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_result_is_exported</span> <span class="o">=</span> <span class="n">analysis_result_is_exported</span>
+
+    <span class="k">def</span> <span class="nf">describe_coordinate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ParamHandle</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;axis_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_axis_index</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;channel_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_channel</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">AxisAssociatedKeyRef</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">key</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">describe_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AnnotationValueRef</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">AnnotationValueRef</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">obj</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">):</span>
+            <span class="c1"># Only emit analysis result reference if it is actually exported; write out</span>
+            <span class="c1"># the value inline otherwise.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_result_is_exported</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;analysis_result&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Annotation">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.Annotation">[docs]</a>
+<span class="k">class</span> <span class="nc">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An annotation to be displayed alongside scan result data, recording derived</span>
+<span class="sd">    quantities (e.g. a fit minimizer).</span>
+
+<span class="sd">    See :func:`curve`, :func:`curve_1d`, :func:`computed_curve`, :func:`axis_location`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">coordinates</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">coordinates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">coordinates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">def</span> <span class="nf">to_spec_map</span><span class="p">(</span><span class="n">dictionary</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">keyspec</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">valuespec</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">describe_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">spec</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">keyspec</span><span class="p">]</span> <span class="o">=</span> <span class="n">valuespec</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="n">spec</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">}</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;coordinates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_spec_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">)</span>
+        <span class="c1"># FIXME: to_spec_map() on parameters as well for associated_channels?</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_spec_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">spec</span></div>
+
+
+
+<div class="viewcode-block" id="curve">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.curve">[docs]</a>
+<span class="k">def</span> <span class="nf">curve</span><span class="p">(</span>
+    <span class="n">coordinates</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">,</span>
+                      <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a curve annotation from a dictionary of coordinate lists.</span>
+
+<span class="sd">    This will typically be shown as a connected line in the plot applet. See</span>
+<span class="sd">    :func:`curve_1d` for an alternative signature that is slightly more</span>
+<span class="sd">    explicit/self-documenting for one-dimensional scans (the only type of curve</span>
+<span class="sd">    supported in the plot applet at this point).</span>
+
+<span class="sd">    If the curve data comes from a functional relationship matching one of the</span>
+<span class="sd">    predefined fit types (:data:`ndscan.util.FIT_OBJECTS`), prefer</span>
+<span class="sd">    :func:`computed_curve`, as this allows for unlimited resolution (also if the user</span>
+<span class="sd">    looks at a range outside that corresponding to the source scan) and is more</span>
+<span class="sd">    efficient to store.</span>
+
+<span class="sd">    :param coordinates: A dictionary mapping, for each dimension, the axis in question</span>
+<span class="sd">        (:class:`.ParamHandle`/:class:`.ResultChannel`) to a list of coordinates for</span>
+<span class="sd">        each curve point. Each list must have the same length.</span>
+
+<span class="sd">    :return: The :class:`Annotation` object describing the curve.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_points</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">normalise</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">nonlocal</span> <span class="n">num_points</span>
+        <span class="k">if</span> <span class="n">num_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">num_points</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_points</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span><span class="si">}</span><span class="s2"> values for &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;, previously had </span><span class="si">{</span><span class="n">num_points</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">values</span>
+
+    <span class="k">return</span> <span class="n">Annotation</span><span class="p">(</span><span class="s2">&quot;curve&quot;</span><span class="p">,</span>
+                      <span class="n">coordinates</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">normalise</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+                                   <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">coordinates</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span></div>
+
+
+
+<div class="viewcode-block" id="curve_1d">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.curve_1d">[docs]</a>
+<span class="k">def</span> <span class="nf">curve_1d</span><span class="p">(</span><span class="n">x_axis</span><span class="p">:</span> <span class="n">ParamHandle</span><span class="p">,</span>
+             <span class="n">x_values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">,</span>
+             <span class="n">y_axis</span><span class="p">:</span> <span class="n">ResultChannel</span><span class="p">,</span>
+             <span class="n">y_values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a curve annotation from explicit lists of x and y coordinates.</span>
+
+<span class="sd">    This will typically be shown as a connected line in the plot applet. See</span>
+<span class="sd">    :func:`curve` for a generic variant covering multiple dimensions (though curve</span>
+<span class="sd">    annotations are currently only displayed for one-dimensional scans in the applet).</span>
+
+<span class="sd">    If the curve data comes from a functional relationship matching one of the</span>
+<span class="sd">    predefined fit types (:data:`ndscan.util.FIT_OBJECTS`), prefer</span>
+<span class="sd">    :func:`computed_curve_1d` as this allows for unlimited resolution (also if the user</span>
+<span class="sd">    looks at a range outside that corresponding to the source scan) and is more</span>
+<span class="sd">    efficient to store.</span>
+
+<span class="sd">    :param x_axis: The parameter corresponding to the x axis of the curve.</span>
+<span class="sd">    :param x_values: A list of x coordinates for the curve points.</span>
+<span class="sd">    :param y_axis: The result channel corresponding to the y axis of the curve.</span>
+<span class="sd">    :param y_values: A list of y coordinates for the curve points.</span>
+
+<span class="sd">    :return: The :class:`Annotation` object describing the curve.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">curve</span><span class="p">({</span><span class="n">x_axis</span><span class="p">:</span> <span class="n">x_values</span><span class="p">,</span> <span class="n">y_axis</span><span class="p">:</span> <span class="n">y_values</span><span class="p">})</span></div>
+
+
+
+<div class="viewcode-block" id="computed_curve">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.computed_curve">[docs]</a>
+<span class="k">def</span> <span class="nf">computed_curve</span><span class="p">(</span><span class="n">function_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                   <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">],</span>
+                   <span class="n">associated_channels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a curve annotation that is computed from a well-known fit function</span>
+<span class="sd">    (:data:`ndscan.util.FIT_OBJECTS`).</span>
+
+<span class="sd">    This will typically be shown as a connected line in the plot applet. See</span>
+<span class="sd">    :func:`curve`/:func:`curve_1d` for a variant defined by a discrete list of points</span>
+<span class="sd">    instead of the evaluation of a function.</span>
+
+<span class="sd">    :param function_name: The name of the function to use, matching the keys in</span>
+<span class="sd">        :data:`ndscan.util.FIT_OBJECTS`.</span>
+<span class="sd">    :param parameters: The fixed parameters to evaluate the function with at each point,</span>
+<span class="sd">        given as a dictionary (see :attr:`oitg.fitting.FitBase.parameter_names` for the</span>
+<span class="sd">        expected keys).</span>
+<span class="sd">    :param associated_channels: If given, the curve will be shown on the same</span>
+<span class="sd">        axis/plot/etc. as the given result channels (possibly more than once). Prefer</span>
+<span class="sd">        explicitly specifying this to avoid unexpected behaviour if e.g. additional</span>
+<span class="sd">        result channels with different logical meanings (units, etc.) are added to the</span>
+<span class="sd">        experiment later.</span>
+
+<span class="sd">    :return: The :class:`Annotation` object describing the curve.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">function_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FIT_OBJECTS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">known_types</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FIT_OBJECTS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Computed curve type &#39;</span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">&#39; is not among the &quot;</span> <span class="o">+</span>
+                         <span class="sa">f</span><span class="s2">&quot;known FIT_OBJECTS (</span><span class="si">{</span><span class="n">known_types</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+    <span class="n">given_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">expected_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">FIT_OBJECTS</span><span class="p">[</span><span class="n">function_name</span><span class="p">]</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">given_params</span> <span class="o">!=</span> <span class="n">expected_params</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected parameters for curve type &#39;</span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span> <span class="o">+</span>
+                         <span class="sa">f</span><span class="s2">&quot;(expected </span><span class="si">{</span><span class="n">expected_params</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">given_params</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;function_name&quot;</span><span class="p">:</span> <span class="n">function_name</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">associated_channels</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;associated_channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">associated_channels</span>
+    <span class="k">return</span> <span class="n">Annotation</span><span class="p">(</span><span class="s2">&quot;computed_curve&quot;</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">parameters</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="axis_location">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.axis_location">[docs]</a>
+<span class="k">def</span> <span class="nf">axis_location</span><span class="p">(</span><span class="n">axis</span><span class="p">:</span> <span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">,</span>
+                  <span class="n">position</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">,</span>
+                  <span class="n">position_error</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">associated_channels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an annotation marking a specific location on the given axis.</span>
+
+<span class="sd">    This will typically be shown as a vertical/horizontal line in the plot applet</span>
+<span class="sd">    (though currently only vertical lines for x axis positions are implemented on the</span>
+<span class="sd">    applet side).</span>
+
+<span class="sd">    :param axis: The parameter or result channel the location corresponds to.</span>
+<span class="sd">    :param position: The location to mark, given in the same units as the axis or</span>
+<span class="sd">        parameter value. Typically a numerical value, though once scans over</span>
+<span class="sd">        non-numerical axes are implemented, this could also be one instance of a</span>
+<span class="sd">        categorical value.</span>
+<span class="sd">    :param position_error: Optionally, the uncertainty (&quot;error bar&quot;) associated with the</span>
+<span class="sd">        given position.</span>
+<span class="sd">    :param associated_channels: If given, the curve will be shown on the same</span>
+<span class="sd">        axis/plot/etc. as the given result channels (possibly more than once). Prefer</span>
+<span class="sd">        explicitly specifying this to avoid unexpected behaviour if e.g. additional</span>
+<span class="sd">        result channels with different logical meanings (units, etc.) are added to the</span>
+<span class="sd">        experiment later.</span>
+
+<span class="sd">    :return: The :class:`Annotation` object describing the curve.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">associated_channels</span><span class="p">:</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;associated_channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">associated_channels</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">position_error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">AxisAssociatedKeyRef</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">position_error</span>
+    <span class="k">return</span> <span class="n">Annotation</span><span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span>
+                      <span class="n">coordinates</span><span class="o">=</span><span class="p">{</span><span class="n">axis</span><span class="p">:</span> <span class="n">position</span><span class="p">},</span>
+                      <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+                      <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, David Nadlinger.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
