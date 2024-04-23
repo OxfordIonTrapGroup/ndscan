@@ -515,7 +515,7 @@ def enum_param_factory(enum: Enum):
     # Create unique identifier for the enum.
     type_string = f"enum_{enum.__name__}_{id(enum)}"
 
-    class EnumParam:
+    class EnumParam(ParamBase):
         HandleType = EnumParamHandle
         StoreType = EnumParamStore
         CompilerType = enum
@@ -525,17 +525,15 @@ def enum_param_factory(enum: Enum):
                      description: str,
                      default: enum | str,
                      is_scannable: bool = True):
-            self.fqn = fqn
-            self.description = description
-
             # `self.default` is either an instance of the `enum`, or a string value to
             # be `eval`uated later, mapping to the name of a member of `enum`.
             if isinstance(default, enum):
-                self.default = repr(default.name)
-            else:
-                self.default = default
+                default = repr(default.name)
 
-            self.is_scannable = is_scannable
+            super().__init__(fqn=fqn,
+                             description=description,
+                             default=default,
+                             is_scannable=is_scannable)
 
         def _option_to_str(self, option):
             return (option.value if isinstance(option, str) else option.name)
