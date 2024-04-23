@@ -1,12 +1,26 @@
 from mock_environment import HasEnvironmentCase
-from enum import Enum
+from enum import Enum, unique
+import unittest
 from ndscan.experiment.fragment import Fragment
 from ndscan.experiment.parameters import (FloatParam, IntParam, BoolParam,
                                           enum_param_factory)
 
+
 # "Container class" to hide base class from unittest auto-discovery.
 class GenericBase:
     class Cases(HasEnvironmentCase):
+        def to_dataset_value(self, x):
+            """Hook for parameter types that require a dataset (get_dataset(), etc.)
+            representation that is not just the value itself.
+            """
+            return x
+
+        def to_dataset_fn_arg(self, x):
+            """Hook for parameter types that require a default=dataset(key, <…>)
+            representation that is not just the string-formatted value itself.
+            """
+            return x
+
         def test_describe(self):
             param = self.CLASS("foo", **self.EXAMPLE_KWARGS)
             self.assertEqual(param.describe(),
@@ -14,12 +28,14 @@ class GenericBase:
 
         def test_evaluate_default(self):
             def mock_get_dataset(key: str, default=None):
-                return {"baz": self.DEFAULT_1}[key]
+                return {"baz": self.to_dataset_value(self.DEFAULT_1)}[key]
 
             param = self.CLASS("foo", "bar", self.DEFAULT_0)
             self.assertEqual(param.eval_default(mock_get_dataset), self.DEFAULT_0)
 
-            param = self.CLASS("foo", "bar", f"dataset('baz', {self.DEFAULT_0})")
+            param = self.CLASS(
+                "foo", "bar",
+                f"dataset('baz', {self.to_dataset_fn_arg(self.DEFAULT_0)})")
             self.assertEqual(param.eval_default(mock_get_dataset), self.DEFAULT_1)
 
         def test_rebind(self):
@@ -107,42 +123,63 @@ class BoolParamCase(GenericBase.Cases):
     }
 
 
+@unique
+class Options(Enum):
+    first = "A"
+    second = "B"
+    third = "C"
+
+
+class EnumParamElemCase(GenericBase.Cases):
+    CLASS = enum_param_factory(Options)[0]
+    def to_dataset_value(self, x):
+        return x.name
+    def to_dataset_fn_arg(self, x):
+        return f"'{x.name}'"
+    DEFAULT_0 = Options.second
+    DEFAULT_1 = Options.third
+    EXAMPLE_KWARGS = {
+        "description": "bar",
+        "default": Options.first,
+    }
+    EXPECTED_DESCRIPTION = {
+        "description": "bar",
+        "type": f"enum_Options_{id(Options)}",
+        "default": "'first'",
+        "spec": {
+            "enum_display_map": {o.name: o.value
+                                 for o in Options},
+            "is_scannable": True
+        }
+    }
+
+
+class EnumParamStringCase(GenericBase.Cases):
+    CLASS = enum_param_factory(Options)[0]
+    def to_dataset_value(self, x):
+        return x.name
+    def to_dataset_fn_arg(self, x):
+        return f"'{x.name}'"
+    DEFAULT_0 = Options.second
+    DEFAULT_1 = Options.third
+    EXAMPLE_KWARGS = {
+        "description": "bar",
+        "default": "'first'",
+    }
+    EXPECTED_DESCRIPTION = {
+        "fqn": "foo",
+        "description": "bar",
+        "type": f"enum_Options_{id(Options)}",
+        "default": "'first'",
+        "spec": {
+            "enum_display_map": {o.name: o.value
+                                 for o in Options},
+            "is_scannable": True
+        }
+    }
+
+
 class EnumParamCase(unittest.TestCase):
-    def test_describe(self):
-        class Options(Enum):
-            first = "A"
-            second = "B"
-            third = "C"
-
-        (EnumParam, _, _) = enum_param_factory(Options)
-
-        param = EnumParam("foo", "bar", Options.second)
-        self.assertEqual(
-            param.describe(), {
-                "fqn": "foo",
-                "description": "bar",
-                "type": f"enum_Options_{id(Options)}",
-                "default": "'second'",
-                "spec": {
-                    "enum_display_map": {o.name: o.value
-                                         for o in Options},
-                    "is_scannable": True
-                }
-            })
-        param = EnumParam("foo", "bar", "'second'")
-        self.assertEqual(
-            param.describe(), {
-                "fqn": "foo",
-                "description": "bar",
-                "type": f"enum_Options_{id(Options)}",
-                "default": "'second'",
-                "spec": {
-                    "enum_display_map": {o.name: o.value
-                                         for o in Options},
-                    "is_scannable": True
-                }
-            })
-
     def test_evaluate_default(self):
         class StrOptions(Enum):
             first = "A"
