@@ -471,7 +471,7 @@ class BoolParam(ParamBase):
         return BoolParamStore(identity, value)
 
 
-def enum_param_factory(enum: Enum):
+def enum_param_factory(enum: type[Enum]):
     """Create a new parameter type based on the given `Enum`.
 
     :returns: A tuple of ``(EnumParam, EnumParamHandle, EnumParamStore)`` types.
