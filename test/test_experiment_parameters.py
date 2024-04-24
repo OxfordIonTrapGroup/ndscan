@@ -131,7 +131,7 @@ class Options(Enum):
 
 
 class EnumParamElemCase(GenericBase.Cases):
-    CLASS = enum_param_factory(Options)[0]
+    CLASS = enum_param_factory(Options)
     def to_dataset_value(self, x):
         return x.name
     def to_dataset_fn_arg(self, x):
@@ -155,7 +155,7 @@ class EnumParamElemCase(GenericBase.Cases):
 
 
 class EnumParamStringCase(GenericBase.Cases):
-    CLASS = enum_param_factory(Options)[0]
+    CLASS = enum_param_factory(Options)
     def to_dataset_value(self, x):
         return x.name
     def to_dataset_fn_arg(self, x):
@@ -191,8 +191,8 @@ class EnumParamCase(unittest.TestCase):
             second = 2
             third = 3
 
-        (StrEnumParam, _, _) = enum_param_factory(StrOptions)
-        (IntEnumParam, _, _) = enum_param_factory(IntOptions)
+        StrEnumParam = enum_param_factory(StrOptions)
+        IntEnumParam = enum_param_factory(IntOptions)
 
         def mock_get_dataset(key: str, default=None):
             try:

@@ -565,7 +565,7 @@ def enum_param_factory(enum: Enum):
     # Add dynamically created EnumParam to the global collection.
     _type_string_to_param[type_string] = EnumParam
 
-    return (EnumParam, EnumParamHandle, EnumParamStore)
+    return EnumParam
 
 
 _type_string_to_param.update({
