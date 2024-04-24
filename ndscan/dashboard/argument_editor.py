@@ -642,6 +642,15 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         return OverrideEntry(options, schema, path, self._randomise_scan_icon)
 
 
+def make_divider():
+    f = QtWidgets.QFrame()
+    f.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+    f.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+    f.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,
+                    QtWidgets.QSizePolicy.Policy.Expanding)
+    return f
+
+
 class OverrideEntry(LayoutWidget):
     value_changed = QtCore.pyqtSignal()
 
@@ -728,6 +737,14 @@ class OverrideEntry(LayoutWidget):
         self.widget_stack.setCurrentIndex(new_idx)
         self.current_option_idx = new_idx
 
+    def make_randomise_box(self):
+        box = QtWidgets.QCheckBox()
+        box.setToolTip("Randomise scan point order")
+        box.setIcon(self.randomise_icon)
+        box.setChecked(True)
+        box.stateChanged.connect(self.value_changed)
+        return box
+
 
 def _parse_list_pyon(values: str) -> list[float]:
     return pyon.decode("[" + values + "]")
@@ -813,14 +830,6 @@ class NumericScanOption(ScanOption):
         super().__init__(entry)
         self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
 
-    def _make_divider(self):
-        f = QtWidgets.QFrame()
-        f.setFrameShape(QtWidgets.QFrame.Shape.VLine)
-        f.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
-        f.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,
-                        QtWidgets.QSizePolicy.Policy.Expanding)
-        return f
-
     def _make_spin_box(self):
         box = ScientificSpinBox()
         disable_scroll_wheel(box)
@@ -844,14 +853,6 @@ class NumericScanOption(ScanOption):
         unit = spec.get("unit", "")
         if unit:
             box.setSuffix(" " + unit)
-        return box
-
-    def _make_randomise_box(self):
-        box = QtWidgets.QCheckBox()
-        box.setToolTip("Randomise scan point order")
-        box.setIcon(self.entry.randomise_icon)
-        box.setChecked(True)
-        box.stateChanged.connect(self.entry.value_changed)
         return box
 
 
@@ -912,7 +913,7 @@ class RangeScanOption(NumericScanOption):
         self.check_infinite.stateChanged.connect(
             lambda *_: self.box_points.setEnabled(not self.check_infinite.isChecked()))
 
-        self.check_randomise = self._make_randomise_box()
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
@@ -950,11 +951,11 @@ class MinMaxScanOption(RangeScanOption):
         layout.addWidget(self.box_start)
         layout.setStretchFactor(self.box_start, 1)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self._build_points_ui(layout)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self.box_stop = self._make_spin_box()
         layout.addWidget(self.box_stop)
@@ -991,7 +992,7 @@ class CentreSpanScanOption(RangeScanOption):
         layout.addWidget(self.box_half_span)
         layout.setStretchFactor(self.box_half_span, 1)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self._build_points_ui(layout)
 
@@ -1017,13 +1018,13 @@ class ExpandingScanOption(NumericScanOption):
         layout.addWidget(self.box_centre)
         layout.setStretchFactor(self.box_centre, 1)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
-        self.check_randomise = self._make_randomise_box()
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self.box_spacing = self._make_spin_box()
         self.box_spacing.setSuffix(self.box_spacing.suffix() + " steps")
@@ -1070,9 +1071,9 @@ class ListScanOption(NumericScanOption):
         self.box_pyon.setValidator(Validator(self.entry))
         layout.addWidget(self.box_pyon)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
-        self.check_randomise = self._make_randomise_box()
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
@@ -1094,7 +1095,7 @@ class ListScanOption(NumericScanOption):
         params["scan"].setdefault("axes", []).append(spec)
 
 
-class BoolScanOption(NumericScanOption):
+class BoolScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
         dummy_box = QtWidgets.QCheckBox()
         dummy_box.setTristate()
@@ -1102,8 +1103,8 @@ class BoolScanOption(NumericScanOption):
         dummy_box.setCheckState(1)
         layout.addWidget(dummy_box)
         layout.setStretchFactor(dummy_box, 0)
-        layout.addWidget(self._make_divider())
-        self.check_randomise = self._make_randomise_box()
+        layout.addWidget(make_divider())
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 1)
 
@@ -1120,9 +1121,9 @@ class BoolScanOption(NumericScanOption):
         params["scan"].setdefault("axes", []).append(spec)
 
 
-class EnumScanOption(NumericScanOption):
+class EnumScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
-        self.check_randomise = self._make_randomise_box()
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
