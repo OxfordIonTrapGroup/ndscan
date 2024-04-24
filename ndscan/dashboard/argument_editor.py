@@ -627,7 +627,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             options["Fixed"] = BoolFixedScanOption
             if is_scannable:
                 options["Scanning"] = BoolScanOption
-        elif schema["type"].startswith("enum"):
+        elif schema["type"] == "enum":
             options["Fixed"] = EnumFixedScanOption
             if is_scannable:
                 options["Scanning"] = EnumScanOption
@@ -792,13 +792,16 @@ class BoolFixedScanOption(ScanOption):
 class EnumFixedScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
         self.box = QtWidgets.QComboBox()
-        self._to_display_map = self.entry.schema["spec"]["enum_display_map"]
-        self.box.addItems(self._to_display_map.values())
+        self._members = self.entry.schema["spec"]["members"]
+        self._member_values_to_keys = {val: key for key, val in self._members.items()}
+        self.box.addItems(self._members.values())
         layout.addWidget(self.box)
 
     def write_to_params(self, params: dict) -> None:
-        to_name_map = {val: key for key, val in self._to_display_map.items()}
-        o = {"path": self.entry.path, "value": to_name_map[self.box.currentText()]}
+        o = {
+            "path": self.entry.path,
+            "value": self._member_values_to_keys[self.box.currentText()]
+        }
         params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
 
     def set_value(self, value) -> None:
@@ -1122,7 +1125,6 @@ class EnumScanOption(NumericScanOption):
         self.check_randomise = self._make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
-        self._to_display_map = self.entry.schema["spec"]["enum_display_map"]
 
     def write_to_params(self, params: dict) -> None:
         spec = {
@@ -1130,7 +1132,7 @@ class EnumScanOption(NumericScanOption):
             "path": self.entry.path,
             "type": "list",
             "range": {
-                "values": list(self._to_display_map.keys()),
+                "values": list(self.entry.schema["spec"]["members"].keys()),
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }

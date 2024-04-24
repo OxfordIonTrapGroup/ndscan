@@ -352,14 +352,12 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
                     else:
                         self.unique_coords.add(x)
 
-            if self.x_schema["param"]["type"].startswith("enum"):
+            if self.x_schema["param"]["type"] == "enum":
                 points["axis_0"] = enum_to_numeric(
-                    self.x_schema["param"]["spec"]["enum_display_map"].keys(),
-                    points["axis_0"])
-            if self.y_schema["param"]["type"].startswith("enum"):
+                    self.x_schema["param"]["spec"]["members"].keys(), points["axis_0"])
+            if self.y_schema["param"]["type"] == "enum":
                 points["axis_1"] = enum_to_numeric(
-                    self.y_schema["param"]["spec"]["enum_display_map"].keys(),
-                    points["axis_1"])
+                    self.y_schema["param"]["spec"]["members"].keys(), points["axis_1"])
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
     def build_context_menu(self, pane_idx: int, builder):

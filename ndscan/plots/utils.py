@@ -368,8 +368,8 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, str, dict[str, An
         cats = None
         if ty == "bool":
             cats = ["False", "True"]
-        elif ty.startswith("enum"):
-            cats = list(spec["enum_display_map"].values())
+        elif ty == "enum":
+            cats = list(spec["members"].values())
         # First categoric entry defines this axis' categories.
         if not categories and cats:
             categories = cats
