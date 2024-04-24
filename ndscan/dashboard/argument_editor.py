@@ -690,6 +690,10 @@ class OverrideEntry(LayoutWidget):
         self.addWidget(self.widget_stack, col=1)
         self.sync_values = {}
 
+    def user_readable_name(self) -> str:
+        """Return a user-readable description of the entry for error messages."""
+        return self.schema["fqn"] + "@" + (self.path or "/")
+
     def read_from_params(self, params: dict, manager_datasets) -> None:
         for o in params.get("overrides", {}).get(self.schema["fqn"], []):
             if o["path"] == self.path:
@@ -715,8 +719,8 @@ class OverrideEntry(LayoutWidget):
 
             value = eval_param_default(self.schema["default"], get_dataset)
         except Exception as e:
-            logger.error("Failed to evaluate defaults string \"%s\": %s",
-                         self.schema["default"], e)
+            logger.error("Failed to evaluate defaults string \"%s\" for %s: %s",
+                         self.schema["default"], self.user_readable_name(), e)
             value = None
         self._set_fixed_value(value)
         self.disable_scan()
@@ -822,7 +826,13 @@ class EnumFixedScanOption(ScanOption):
         params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
 
     def set_value(self, value) -> None:
-        self.box.setCurrentText(self._to_display_map[value])
+        try:
+            text = self._members[value]
+        except KeyError:
+            text = next(iter(self._members.values()))
+            logger.warning(f"Stored value '{value}' not in schema for enum parameter "
+                           f"'{self.entry.user_readable_name()}', setting to '{text}'")
+        self.box.setCurrentText(text)
 
 
 class NumericScanOption(ScanOption):
