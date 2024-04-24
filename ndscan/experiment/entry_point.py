@@ -25,7 +25,7 @@ from typing import Any
 from .default_analysis import AnnotationContext
 from .fragment import (ExpFragment, Fragment, RestartKernelTransitoryError,
                        TransitoryError)
-from .parameters import ParamStore, type_string_to_param
+from .parameters import ParamBase, ParamStore
 from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
                               ResultChannel)
 from .scan_generator import GENERATORS, ScanOptions
@@ -146,11 +146,12 @@ class ArgumentInterface(HasEnvironment):
     def build(self, fragments: list[Fragment], scannable: bool = False) -> None:
         self._fragments = fragments
 
-        instances = dict()
-        self._schemata = dict()
+        instances = dict[str, list[str]]()
+        self._schemata = dict[str, dict]()
+        self._sample_instances = dict[str, ParamBase]()
         always_shown_params = []
         for fragment in fragments:
-            fragment._collect_params(instances, self._schemata)
+            fragment._collect_params(instances, self._schemata, self._sample_instances)
 
             for handle in fragment.get_always_shown_params():
                 path = handle.owner._stringize_path()
@@ -181,11 +182,12 @@ class ArgumentInterface(HasEnvironment):
         stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
             try:
-                store_type = type_string_to_param(self._schemata[fqn]["type"]).StoreType
+                store_type = self._sample_instances[fqn].StoreType
             except KeyError:
-                raise KeyError("Parameter schema not found (likely due to outdated "
-                               "argument editor after changes to experiment; "
-                               "try Recompute All Arguments)")
+                raise KeyError("Experiment does not have parameters matching "
+                               f"overrride for FQN '{fqn}' " +
+                               "(likely due to outdated argument editor after " +
+                               "changes to experiment; try Recompute All Arguments)")
 
             stores[fqn] = [(s["path"], store_type((fqn, s["path"]), s["value"]))
                            for s in specs]
@@ -207,7 +209,13 @@ class ArgumentInterface(HasEnvironment):
             fqn = axspec["fqn"]
             pathspec = axspec["path"]
 
-            store_type = type_string_to_param(self._schemata[fqn]["type"]).StoreType
+            try:
+                store_type = self._sample_instances[fqn].StoreType
+            except KeyError:
+                raise KeyError("Experiment does not have parameters matching "
+                               f"scan axis with FQN '{fqn}' " +
+                               "(likely due to outdated argument editor after " +
+                               "changes to experiment; try Recompute All Arguments)")
             store = store_type((fqn, pathspec),
                                generator.points_for_level(0, random)[0])
             axes.append(ScanAxis(self._schemata[fqn], pathspec, store))

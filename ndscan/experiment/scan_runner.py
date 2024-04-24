@@ -13,10 +13,10 @@ from artiq.language import HasEnvironment, host_only, kernel, kernel_from_string
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
-from typing import Any
+from typing import Any, get_type_hints
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
-from .parameters import ParamStore, type_string_to_param
+from .parameters import ParamStore
 from .result_channels import ResultChannel, ResultSink, SingleUseSink
 from .scan_generator import generate_points, ScanGenerator, ScanOptions
 from .utils import is_kernel
@@ -263,7 +263,7 @@ class KernelScanRunner(ScanRunner):
         self._get_param_values_chunk.__func__.__annotations__ = {
             "return":
             tuple.__class_getitem__(
-                tuple(list[type_string_to_param(a.param_schema["type"]).CompilerType]
+                tuple(list[get_type_hints(a.param_store.get_value)["return"]]
                       for a in axes))
         }
 
