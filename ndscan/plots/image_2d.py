@@ -53,11 +53,6 @@ def _coords_to_indices(coords, range_spec):
 
 class CrosshairZDataLabel(CrosshairLabel):
     """Crosshair label for the z value of a 2D image
-
-    :param x_range: A tuple of `(min, max, increment)` for the x axis of the image.
-    :param y_range: A tuple of `(min, max, increment)` for the y axis of the image.
-
-    All other arguments are forwarded to ``CrosshairLabel.__init__()``.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -105,7 +100,7 @@ class CrosshairZDataLabel(CrosshairLabel):
         if (0 <= x_idx < shape[0]) and (0 <= y_idx < shape[1]):
             z = self.image_data[x_idx, y_idx]
         if np.isnan(z):
-            self.setText("NaN")
+            self.setText("")
         else:
             self.set_value(z, self.z_limits)
 
