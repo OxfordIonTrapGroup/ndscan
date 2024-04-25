@@ -436,6 +436,10 @@ class IntParam(ParamBase):
         return IntParamStore(identity, value)
 
 
+def _raise_not_implemented(*args):
+    raise NotImplementedError
+
+
 class StringParam(ParamBase):
     HandleType = StringParamHandle
     StoreType = StringParamStore
@@ -446,7 +450,19 @@ class StringParam(ParamBase):
                  description: str,
                  default: str,
                  is_scannable: bool = True):
-
+        try:
+            eval_param_default(default, _raise_not_implemented)
+        except NotImplementedError:
+            # This parsed and called dataset(), so okay.
+            pass
+        except Exception:
+            # Contrary to usual ndscan style, do not put quotation marks around the
+            # value here and rather put it inside parentheses for clarity, as the user
+            # error is likely to be missing quotes. Also do not chain this onto the
+            # eval() error, as that does not add any extra information.
+            raise InvalidDefaultError(
+                "Default value for StringParam must be valid PYON, missing quotes? " +
+                f"(got: {default})") from None
         ParamBase.__init__(self,
                            fqn=fqn,
                            description=description,
@@ -591,6 +607,17 @@ class EnumParam(ParamBase):
             else:
                 raise InvalidDefaultError("Unexpected default for EnumParam " +
                                           f"'{default}' (type {type(default)})")
+        if isinstance(default, str):
+            try:
+                enum_class[eval_param_default(default, _raise_not_implemented)]
+            except NotImplementedError:
+                # This parsed and called dataset(), so okay.
+                pass
+            except Exception:
+                raise InvalidDefaultError(
+                    "str default values for EnumParm must be valid PYON strings " +
+                    "(including quotes) that evaluate to the name of an enum member " +
+                    f"(got: \"{default}\")")
         self.StoreType, self.HandleType = _get_enum_compiler_types(enum_class)
         super().__init__(fqn=fqn,
                          description=description,
