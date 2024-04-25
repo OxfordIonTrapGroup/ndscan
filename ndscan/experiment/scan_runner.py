@@ -13,7 +13,7 @@ from artiq.language import HasEnvironment, host_only, kernel, kernel_from_string
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
-from typing import Any, get_type_hints
+from typing import Any
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
 from .parameters import ParamStore
@@ -262,9 +262,7 @@ class KernelScanRunner(ScanRunner):
         # run_chunk() correctly.
         self._get_param_values_chunk.__func__.__annotations__ = {
             "return":
-            tuple.__class_getitem__(
-                tuple(list[get_type_hints(a.param_store.get_value)["return"]]
-                      for a in axes))
+            tuple.__class_getitem__(tuple(list[a.param_store.RpcType] for a in axes))
         }
 
         # Build kernel function that calls _get_param_values_chunk() and iterates over
@@ -275,7 +273,7 @@ class KernelScanRunner(ScanRunner):
         # express indexing or deconstructing a tuple of values of inhomogeneous types
         # without actually writing it out as an assignment from a tuple value.
         for i, axis in enumerate(axes):
-            setattr(self, f"_param_setter_{i}", axis.param_store.set_value)
+            setattr(self, f"_param_setter_{i}", axis.param_store.set_from_rpc)
         self._run_chunk = self._build_run_chunk(len(axes))
 
         # We'll have to set up the ResultBatcher on the host during the scan to
@@ -408,7 +406,10 @@ class KernelScanRunner(ScanRunner):
                 # KLUDGE: Explicitly coerce value to the target type here so we can use
                 # the regular (float) scans for integers until proper support for int
                 # scans is implemented.
-                values[i].append(axis.param_store.coerce(value))
+                values[i].append(
+                    axis.param_store.to_rpc_type(
+                        axis.param_store.coerce(
+                            axis.param_store.value_from_pyon(value))))
         return values
 
     @rpc(flags={"async"})
@@ -453,7 +454,7 @@ class KernelScanRunner(ScanRunner):
         # Set the host-side parameter stores.
         next_values = self._current_chunk[0]
         for value, axis in zip(next_values, self._axes):
-            axis.param_store.set_value(value)
+            axis.param_store.set_value(axis.param_store.value_from_pyon(value))
 
     @host_only
     def _is_out_of_points(self):

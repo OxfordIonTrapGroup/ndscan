@@ -50,7 +50,7 @@ class MockScheduler:
         return (self.num_check_pause_calls >=
                 self.num_check_pause_calls_until_termination)
 
-    def check_pause(self):
+    def check_pause(self) -> bool:
         self.num_check_pause_calls += 1
         return self._should_terminate()
 

@@ -188,8 +188,9 @@ class ArgumentInterface(HasEnvironment):
                                f"overrride for FQN '{fqn}' " +
                                "(likely due to outdated argument editor after " +
                                "changes to experiment; try Recompute All Arguments)")
-
-            stores[fqn] = [(s["path"], store_type((fqn, s["path"]), s["value"]))
+            stores[fqn] = [(s["path"],
+                            store_type((fqn, s["path"]),
+                                       store_type.value_from_pyon(s["value"])))
                            for s in specs]
         return stores
 
@@ -216,8 +217,8 @@ class ArgumentInterface(HasEnvironment):
                                f"scan axis with FQN '{fqn}' " +
                                "(likely due to outdated argument editor after " +
                                "changes to experiment; try Recompute All Arguments)")
-            store = store_type((fqn, pathspec),
-                               generator.points_for_level(0, random)[0])
+            first_value = generator.points_for_level(0, random)[0]
+            store = store_type((fqn, pathspec), store_type.value_from_pyon(first_value))
             axes.append(ScanAxis(self._schemata[fqn], pathspec, store))
 
         options = ScanOptions(scan.get("num_repeats", 1),

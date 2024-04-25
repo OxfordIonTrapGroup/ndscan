@@ -51,8 +51,31 @@ class ParamStore:
         if not self._handles:
             self._notify = self._do_nothing
 
+    RpcType = Any  # to be overridden by subclasses
+
+    @host_only
+    def to_rpc_type(self, value) -> RpcType:
+        """For types that need to be represented differently in the RPC layer (enums),
+        convert the value from overrides/scan generators/etc. to the type used across
+        the RPC interface.
+        """
+        return value
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        """For types that need to be represented differently in the RPC layer (enums),
+        convert the value back to the type used in the kernel.
+        """
+        self.set_value(value)
+
+    @classmethod
+    def value_from_pyon(cls, value):
+        return value
+
 
 class FloatParamStore(ParamStore):
+    RpcType = float
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -78,8 +101,14 @@ class FloatParamStore(ParamStore):
     def coerce(self, value):
         return float(value)
 
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
+
 
 class IntParamStore(ParamStore):
+    RpcType = int32
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -103,10 +132,16 @@ class IntParamStore(ParamStore):
 
     @portable
     def coerce(self, value):
-        return int(value)
+        return int32(value)
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
 
 
 class StringParamStore(ParamStore):
+    RpcType = str
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -130,10 +165,16 @@ class StringParamStore(ParamStore):
 
     @portable
     def coerce(self, value):
-        return str(value)
+        return value
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
 
 
 class BoolParamStore(ParamStore):
+    RpcType = bool
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -158,6 +199,10 @@ class BoolParamStore(ParamStore):
     @portable
     def coerce(self, value):
         return bool(value)
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
 
 
 class ParamHandle:
@@ -467,8 +512,15 @@ _enum_compiler_type_cache = {}
 def _get_enum_compiler_types(
         enum_type: type[Enum]) -> tuple[type[ParamStore], type[ParamHandle]]:
     if enum_type not in _enum_compiler_type_cache:
+        # Cannot have `-> enum_type` annotations on get_value()/get()/use() here, as
+        # this gives an "is not an ARTIQ type" error (despite working just fine when
+        # relying on type inference).
 
         class EnumParamStore(ParamStore):
+            RpcType = int32
+            # TODO: Make sure this is emitted efficiently as a global by the compiler.
+            instances = [o for o in enum_type]
+
             @portable
             def _notify_handles(self):
                 for h in self._handles:
@@ -479,28 +531,41 @@ def _get_enum_compiler_types(
                 pass
 
             @portable
-            def get_value(self) -> enum_type:
+            def get_value(self):
                 return self._value
 
             @portable
             def set_value(self, value):
-                new_value = self.coerce(value)
-                if new_value == self._value:
+                if value is self._value:
                     return
-                self._value = new_value
+                self._value = value
                 self._notify()
 
             @portable
             def coerce(self, value):
+                # Can't ensure type matches on compiler, since enums are arbitrary
+                # classes as far as the ARTIQ compiler is concerned.
+                return value
+
+            @host_only
+            def to_rpc_type(self, value: enum_type) -> RpcType:
+                return self.instances.index(value)
+
+            @portable
+            def set_from_rpc(self, value: RpcType):
+                self.set_value(self.instances[value])
+
+            @classmethod
+            def value_from_pyon(cls, value):
                 return enum_type[value]
 
         class EnumParamHandle(ParamHandle):
             @portable
-            def get(self) -> enum_type:
+            def get(self):
                 return self._store.get_value()
 
             @portable
-            def use(self) -> enum_type:
+            def use(self):
                 self._changed_after_use = False
                 return self._store.get_value()
 
@@ -570,8 +635,8 @@ class EnumParam(ParamBase):
                                           f"'{value}' (type {type(value)})")
 
             # Converting the overall result rather than wrapping get_dataset is a bit
-            # overly permissive in that it also allows "foo" to refer to Foo.foo, rather
-            # than just when used as "dataset('bar', 'foo')"
+            # overly permissive in that it also allows "'foo'" to refer to Foo.foo,
+            # rather than just when used as "dataset('bar', 'foo')"
             return to_member(eval_param_default(self.default, get_dataset))
         return self.default
 
