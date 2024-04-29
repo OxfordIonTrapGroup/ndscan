@@ -15,7 +15,7 @@
         <script src="../../../_static/jquery.js?v=5d32c60e"></script>
         <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
         <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
         <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -101,7 +101,7 @@
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">AnnotationContext</span>
 <span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ExpFragment</span><span class="p">,</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span><span class="p">,</span>
                        <span class="n">TransitoryError</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">type_string_to_param</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamBase</span><span class="p">,</span> <span class="n">ParamStore</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="p">(</span><span class="n">AppendingDatasetSink</span><span class="p">,</span> <span class="n">LastValueSink</span><span class="p">,</span> <span class="n">ScalarDatasetSink</span><span class="p">,</span>
                               <span class="n">ResultChannel</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="kn">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">ScanOptions</span>
@@ -240,11 +240,12 @@
     <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Fragment</span><span class="p">],</span> <span class="n">scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragments</span> <span class="o">=</span> <span class="n">fragments</span>
 
-        <span class="n">instances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">instances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sample_instances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamBase</span><span class="p">]()</span>
         <span class="n">always_shown_params</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">fragment</span> <span class="ow">in</span> <span class="n">fragments</span><span class="p">:</span>
-            <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">)</span>
+            <span class="n">fragment</span><span class="o">.</span><span class="n">_collect_params</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_instances</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_always_shown_params</span><span class="p">():</span>
                 <span class="n">path</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">()</span>
@@ -275,13 +276,15 @@
         <span class="n">stores</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">specs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;overrides&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
+                <span class="n">store_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_instances</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span><span class="o">.</span><span class="n">StoreType</span>
             <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Parameter schema not found (likely due to outdated &quot;</span>
-                               <span class="s2">&quot;argument editor after changes to experiment; &quot;</span>
-                               <span class="s2">&quot;try Recompute All Arguments)&quot;</span><span class="p">)</span>
-
-            <span class="n">stores</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]),</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]))</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Experiment does not have parameters matching &quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;overrride for FQN &#39;</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">&#39; &quot;</span> <span class="o">+</span>
+                               <span class="s2">&quot;(likely due to outdated argument editor after &quot;</span> <span class="o">+</span>
+                               <span class="s2">&quot;changes to experiment; try Recompute All Arguments)&quot;</span><span class="p">)</span>
+            <span class="n">stores</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span>
+                            <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]),</span>
+                                       <span class="n">store_type</span><span class="o">.</span><span class="n">value_from_pyon</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])))</span>
                            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">stores</span>
 
@@ -301,9 +304,15 @@
             <span class="n">fqn</span> <span class="o">=</span> <span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">]</span>
             <span class="n">pathspec</span> <span class="o">=</span> <span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span>
 
-            <span class="n">store_type</span> <span class="o">=</span> <span class="n">type_string_to_param</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">StoreType</span>
-            <span class="n">store</span> <span class="o">=</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">pathspec</span><span class="p">),</span>
-                               <span class="n">generator</span><span class="o">.</span><span class="n">points_for_level</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">random</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">store_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_instances</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span><span class="o">.</span><span class="n">StoreType</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Experiment does not have parameters matching &quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;scan axis with FQN &#39;</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">&#39; &quot;</span> <span class="o">+</span>
+                               <span class="s2">&quot;(likely due to outdated argument editor after &quot;</span> <span class="o">+</span>
+                               <span class="s2">&quot;changes to experiment; try Recompute All Arguments)&quot;</span><span class="p">)</span>
+            <span class="n">first_value</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">points_for_level</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">random</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">store</span> <span class="o">=</span> <span class="n">store_type</span><span class="p">((</span><span class="n">fqn</span><span class="p">,</span> <span class="n">pathspec</span><span class="p">),</span> <span class="n">store_type</span><span class="o">.</span><span class="n">value_from_pyon</span><span class="p">(</span><span class="n">first_value</span><span class="p">))</span>
             <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ScanAxis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schemata</span><span class="p">[</span><span class="n">fqn</span><span class="p">],</span> <span class="n">pathspec</span><span class="p">,</span> <span class="n">store</span><span class="p">))</span>
 
         <span class="n">options</span> <span class="o">=</span> <span class="n">ScanOptions</span><span class="p">(</span><span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_repeats&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>

@@ -15,7 +15,7 @@
         <script src="../../../_static/jquery.js?v=5d32c60e"></script>
         <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
         <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
         <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -92,7 +92,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
 <span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">DefaultAnalysis</span>
 <span class="kn">from</span> <span class="nn">.fragment</span> <span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">TransitoryError</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">type_string_to_param</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamStore</span>
 <span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ResultSink</span><span class="p">,</span> <span class="n">SingleUseSink</span>
 <span class="kn">from</span> <span class="nn">.scan_generator</span> <span class="kn">import</span> <span class="n">generate_points</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">is_kernel</span>
@@ -356,9 +356,7 @@
         <span class="c1"># run_chunk() correctly.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_param_values_chunk</span><span class="o">.</span><span class="vm">__func__</span><span class="o">.</span><span class="vm">__annotations__</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;return&quot;</span><span class="p">:</span>
-            <span class="nb">tuple</span><span class="o">.</span><span class="n">__class_getitem__</span><span class="p">(</span>
-                <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="n">type_string_to_param</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">CompilerType</span><span class="p">]</span>
-                      <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">))</span>
+            <span class="nb">tuple</span><span class="o">.</span><span class="n">__class_getitem__</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">RpcType</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">))</span>
         <span class="p">}</span>
 
         <span class="c1"># Build kernel function that calls _get_param_values_chunk() and iterates over</span>
@@ -369,7 +367,7 @@
         <span class="c1"># express indexing or deconstructing a tuple of values of inhomogeneous types</span>
         <span class="c1"># without actually writing it out as an assignment from a tuple value.</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axes</span><span class="p">):</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_param_setter_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_param_setter_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_from_rpc</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_chunk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_run_chunk</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">))</span>
 
         <span class="c1"># We&#39;ll have to set up the ResultBatcher on the host during the scan to</span>
@@ -502,7 +500,10 @@
                 <span class="c1"># KLUDGE: Explicitly coerce value to the target type here so we can use</span>
                 <span class="c1"># the regular (float) scans for integers until proper support for int</span>
                 <span class="c1"># scans is implemented.</span>
-                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">to_rpc_type</span><span class="p">(</span>
+                        <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span>
+                            <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">value_from_pyon</span><span class="p">(</span><span class="n">value</span><span class="p">))))</span>
         <span class="k">return</span> <span class="n">values</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
@@ -547,7 +548,7 @@
         <span class="c1"># Set the host-side parameter stores.</span>
         <span class="n">next_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">next_values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">):</span>
-            <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">value_from_pyon</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
 
     <span class="nd">@host_only</span>
     <span class="k">def</span> <span class="nf">_is_out_of_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
