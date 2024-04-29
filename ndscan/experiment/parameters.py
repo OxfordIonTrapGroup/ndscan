@@ -9,21 +9,12 @@
 # both an int and a float parameter is scanned at the same time.
 
 from artiq.language import host_only, portable, units
+from enum import Enum
+from numpy import int32
 from typing import Any
 from ..utils import eval_param_default, GetDataset
-from numpy import int32
 
-__all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam"]
-
-
-def type_string_to_param(name: str):
-    """Resolve a param schema type string to the corresponding Param implementation."""
-    return {
-        "float": FloatParam,
-        "int": IntParam,
-        "string": StringParam,
-        "bool": BoolParam
-    }[name]
+__all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam", "EnumParam"]
 
 
 class InvalidDefaultError(ValueError):
@@ -60,8 +51,31 @@ class ParamStore:
         if not self._handles:
             self._notify = self._do_nothing
 
+    RpcType = Any  # to be overridden by subclasses
+
+    @host_only
+    def to_rpc_type(self, value) -> RpcType:
+        """For types that need to be represented differently in the RPC layer (enums),
+        convert the value from overrides/scan generators/etc. to the type used across
+        the RPC interface.
+        """
+        return value
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        """For types that need to be represented differently in the RPC layer (enums),
+        convert the value back to the type used in the kernel.
+        """
+        self.set_value(value)
+
+    @classmethod
+    def value_from_pyon(cls, value):
+        return value
+
 
 class FloatParamStore(ParamStore):
+    RpcType = float
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -87,8 +101,14 @@ class FloatParamStore(ParamStore):
     def coerce(self, value):
         return float(value)
 
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
+
 
 class IntParamStore(ParamStore):
+    RpcType = int32
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -112,10 +132,16 @@ class IntParamStore(ParamStore):
 
     @portable
     def coerce(self, value):
-        return int(value)
+        return int32(value)
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
 
 
 class StringParamStore(ParamStore):
+    RpcType = str
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -139,10 +165,16 @@ class StringParamStore(ParamStore):
 
     @portable
     def coerce(self, value):
-        return str(value)
+        return value
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
 
 
 class BoolParamStore(ParamStore):
+    RpcType = bool
+
     @portable
     def _notify_handles(self):
         for h in self._handles:
@@ -167,6 +199,10 @@ class BoolParamStore(ParamStore):
     @portable
     def coerce(self, value):
         return bool(value)
+
+    @portable
+    def set_from_rpc(self, value) -> None:
+        self.set_value(value)
 
 
 class ParamHandle:
@@ -273,7 +309,7 @@ class ParamBase:
 class FloatParam(ParamBase):
     HandleType = FloatParamHandle
     StoreType = FloatParamStore
-    CompilerType = float
+    CompilerType = float  # deprecated (not used in ndscan anymore); will go away
 
     def __init__(self,
                  fqn: str,
@@ -339,7 +375,7 @@ class FloatParam(ParamBase):
 class IntParam(ParamBase):
     HandleType = IntParamHandle
     StoreType = IntParamStore
-    CompilerType = int32
+    CompilerType = int32  # deprecated (not used in ndscan anymore); will go away
 
     def __init__(self,
                  fqn: str,
@@ -400,17 +436,33 @@ class IntParam(ParamBase):
         return IntParamStore(identity, value)
 
 
+def _raise_not_implemented(*args):
+    raise NotImplementedError
+
+
 class StringParam(ParamBase):
     HandleType = StringParamHandle
     StoreType = StringParamStore
-    CompilerType = str
+    CompilerType = str  # deprecated (not used in ndscan anymore); will go away
 
     def __init__(self,
                  fqn: str,
                  description: str,
                  default: str,
                  is_scannable: bool = True):
-
+        try:
+            eval_param_default(default, _raise_not_implemented)
+        except NotImplementedError:
+            # This parsed and called dataset(), so okay.
+            pass
+        except Exception:
+            # Contrary to usual ndscan style, do not put quotation marks around the
+            # value here and rather put it inside parentheses for clarity, as the user
+            # error is likely to be missing quotes. Also do not chain this onto the
+            # eval() error, as that does not add any extra information.
+            raise InvalidDefaultError(
+                "Default value for StringParam must be valid PYON, missing quotes? " +
+                f"(got: {default})") from None
         ParamBase.__init__(self,
                            fqn=fqn,
                            description=description,
@@ -438,7 +490,7 @@ class StringParam(ParamBase):
 class BoolParam(ParamBase):
     HandleType = BoolParamHandle
     StoreType = BoolParamStore
-    CompilerType = bool
+    CompilerType = bool  # deprecated (not used in ndscan anymore); will go away
 
     def __init__(self,
                  fqn: str,
@@ -468,3 +520,152 @@ class BoolParam(ParamBase):
 
     def make_store(self, identity: tuple[str, str], value: bool) -> BoolParamStore:
         return BoolParamStore(identity, value)
+
+
+_enum_compiler_type_cache = {}
+
+
+def _get_enum_compiler_types(
+        enum_type: type[Enum]) -> tuple[type[ParamStore], type[ParamHandle]]:
+    if enum_type not in _enum_compiler_type_cache:
+        # Cannot have `-> enum_type` annotations on get_value()/get()/use() here, as
+        # this gives an "is not an ARTIQ type" error (despite working just fine when
+        # relying on type inference).
+
+        class EnumParamStore(ParamStore):
+            RpcType = int32
+            # TODO: Make sure this is emitted efficiently as a global by the compiler.
+            instances = [o for o in enum_type]
+
+            @portable
+            def _notify_handles(self):
+                for h in self._handles:
+                    h._changed_after_use = True
+
+            @portable
+            def _do_nothing(self):
+                pass
+
+            @portable
+            def get_value(self):
+                return self._value
+
+            @portable
+            def set_value(self, value):
+                if value is self._value:
+                    return
+                self._value = value
+                self._notify()
+
+            @portable
+            def coerce(self, value):
+                # Can't ensure type matches on compiler, since enums are arbitrary
+                # classes as far as the ARTIQ compiler is concerned.
+                return value
+
+            @host_only
+            def to_rpc_type(self, value: enum_type) -> RpcType:
+                return self.instances.index(value)
+
+            @portable
+            def set_from_rpc(self, value: RpcType):
+                self.set_value(self.instances[value])
+
+            @classmethod
+            def value_from_pyon(cls, value):
+                return enum_type[value]
+
+        class EnumParamHandle(ParamHandle):
+            @portable
+            def get(self):
+                return self._store.get_value()
+
+            @portable
+            def use(self):
+                self._changed_after_use = False
+                return self._store.get_value()
+
+        _enum_compiler_type_cache[enum_type] = (EnumParamStore, EnumParamHandle)
+    return _enum_compiler_type_cache[enum_type]
+
+
+class EnumParam(ParamBase):
+    # EnumParam can't support HandleType/StoreType as class attributes, as we need
+    # one class per actual enum type
+
+    def __init__(self,
+                 fqn: str,
+                 description: str,
+                 default: Enum | str,
+                 enum_class: type[Enum] | None = None,
+                 is_scannable: bool = True):
+        if enum_class is None:
+            if isinstance(default, Enum):
+                enum_class = type(default)
+            elif isinstance(default, str):
+                raise ValueError("enum_class must be specified if default is a string")
+            else:
+                raise InvalidDefaultError("Unexpected default for EnumParam " +
+                                          f"'{default}' (type {type(default)})")
+        if isinstance(default, str):
+            try:
+                enum_class[eval_param_default(default, _raise_not_implemented)]
+            except NotImplementedError:
+                # This parsed and called dataset(), so okay.
+                pass
+            except Exception:
+                raise InvalidDefaultError(
+                    "str default values for EnumParm must be valid PYON strings " +
+                    "(including quotes) that evaluate to the name of an enum member " +
+                    f"(got: \"{default}\")")
+        self.StoreType, self.HandleType = _get_enum_compiler_types(enum_class)
+        super().__init__(fqn=fqn,
+                         description=description,
+                         default=default,
+                         enum_class=enum_class,
+                         is_scannable=is_scannable)
+
+    def describe(self) -> dict[str, Any]:
+        # Mapping names of `enum` members to display strings. At this point, we
+        # decide to display `enum.value` instead of `enum.name` if the former is
+        # a string.
+        members = {
+            o.name: o.value if isinstance(o.value, str) else o.name
+            for o in self.enum_class
+        }
+        # Enums are not PYON-compatible, so we need to express enum values by their
+        # names. As strings in default values are always eval()d (they could be
+        # dataset()) calls, use repr() to add quotes.
+        default = self.default
+        if isinstance(default, Enum):
+            default = repr(default.name)
+        return {
+            "fqn": self.fqn,
+            "description": self.description,
+            "type": "enum",
+            "default": default,
+            "spec": {
+                "members": members,
+                "is_scannable": self.is_scannable
+            }
+        }
+
+    def eval_default(self, get_dataset: GetDataset) -> Enum:
+        if isinstance(self.default, str):
+
+            def to_member(value):
+                if isinstance(value, str):
+                    return self.enum_class[value]
+                if isinstance(value, self.enum_class):
+                    return value
+                raise InvalidDefaultError("Unexpected default for EnumParam " +
+                                          f"'{value}' (type {type(value)})")
+
+            # Converting the overall result rather than wrapping get_dataset is a bit
+            # overly permissive in that it also allows "'foo'" to refer to Foo.foo,
+            # rather than just when used as "dataset('bar', 'foo')"
+            return to_member(eval_param_default(self.default, get_dataset))
+        return self.default
+
+    def make_store(self, identity: tuple[str, str], value: Enum) -> ParamStore:
+        return self.StoreType(identity, value)

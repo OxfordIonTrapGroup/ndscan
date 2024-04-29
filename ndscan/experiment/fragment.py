@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from .default_analysis import DefaultAnalysis, ResultPrefixAnalysisWrapper
-from .parameters import ParamHandle, ParamStore
+from .parameters import ParamHandle, ParamStore, ParamBase
 from .result_channels import ResultChannel, FloatChannel
 from .utils import is_kernel, path_matches_spec
 from ..utils import strip_prefix
@@ -368,9 +368,10 @@ class Fragment(HasEnvironment):
         assert not hasattr(self, name), f"Field '{name}' already exists"
 
         fqn = self.fqn + "." + name
-        self._free_params[name] = param_class(fqn, description, *args, **kwargs)
+        param = param_class(fqn, description, *args, **kwargs)
+        self._free_params[name] = param
 
-        handle = param_class.HandleType(self, name)
+        handle = param.HandleType(self, name)
         setattr(self, name, handle)
         return handle
 
@@ -553,8 +554,8 @@ class Fragment(HasEnvironment):
 
         return param
 
-    def _collect_params(self, params: dict[str, list[str]],
-                        schemata: dict[str, dict]) -> None:
+    def _collect_params(self, params: dict[str, list[str]], schemata: dict[str, dict],
+                        sample_instances: dict[str, ParamBase]) -> None:
         """Collect free parameters of this fragment and all its subfragments.
 
         :param params: Dictionary to write the list of FQNs for each fragment to,
@@ -567,17 +568,25 @@ class Fragment(HasEnvironment):
         fqns = []
         for param in self._free_params.values():
             fqn = param.fqn
+
+            if fqn in sample_instances:
+                assert isinstance(sample_instances[fqn], type(param)), \
+                    f"Parameter type mismatch for '{fqn}' in '{path}'"
+            else:
+                sample_instances[fqn] = param
+
             schema = param.describe()
             if fqn in schemata:
                 if schemata[fqn] != schema:
                     logger.warn("Mismatch in parameter schema '%s' for '%s'", fqn, path)
             else:
                 schemata[fqn] = schema
+
             fqns.append(fqn)
         params[path] = fqns
 
         for s in self._subfragments:
-            s._collect_params(params, schemata)
+            s._collect_params(params, schemata, sample_instances)
 
     def detach_fragment(self, fragment: "Fragment") -> None:
         """Detach a subfragment from the execution machinery, causing its setup and

@@ -625,6 +625,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             options["Fixed"] = StringFixedScanOption
         elif schema["type"] == "bool":
             options["Fixed"] = BoolFixedScanOption
+            if is_scannable:
+                options["Scanning"] = BoolScanOption
+        elif schema["type"] == "enum":
+            options["Fixed"] = EnumFixedScanOption
+            if is_scannable:
+                options["Scanning"] = EnumScanOption
         else:
             # TODO: Properly handle int, add errors (or default to PYON value).
             options["Fixed"] = FixedScanOption
@@ -634,6 +640,15 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 options["Expanding"] = ExpandingScanOption
                 options["List"] = ListScanOption
         return OverrideEntry(options, schema, path, self._randomise_scan_icon)
+
+
+def make_divider():
+    f = QtWidgets.QFrame()
+    f.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+    f.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+    f.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,
+                    QtWidgets.QSizePolicy.Policy.Expanding)
+    return f
 
 
 class OverrideEntry(LayoutWidget):
@@ -675,6 +690,10 @@ class OverrideEntry(LayoutWidget):
         self.addWidget(self.widget_stack, col=1)
         self.sync_values = {}
 
+    def user_readable_name(self) -> str:
+        """Return a user-readable description of the entry for error messages."""
+        return self.schema["fqn"] + "@" + (self.path or "/")
+
     def read_from_params(self, params: dict, manager_datasets) -> None:
         for o in params.get("overrides", {}).get(self.schema["fqn"], []):
             if o["path"] == self.path:
@@ -700,8 +719,8 @@ class OverrideEntry(LayoutWidget):
 
             value = eval_param_default(self.schema["default"], get_dataset)
         except Exception as e:
-            logger.error("Failed to evaluate defaults string \"%s\": %s",
-                         self.schema["default"], e)
+            logger.error("Failed to evaluate defaults string \"%s\" for %s: %s",
+                         self.schema["default"], self.user_readable_name(), e)
             value = None
         self._set_fixed_value(value)
         self.disable_scan()
@@ -721,6 +740,14 @@ class OverrideEntry(LayoutWidget):
         self.options[new_idx].read_sync_values(self.sync_values)
         self.widget_stack.setCurrentIndex(new_idx)
         self.current_option_idx = new_idx
+
+    def make_randomise_box(self):
+        box = QtWidgets.QCheckBox()
+        box.setToolTip("Randomise scan point order")
+        box.setIcon(self.randomise_icon)
+        box.setChecked(True)
+        box.stateChanged.connect(self.value_changed)
+        return box
 
 
 def _parse_list_pyon(values: str) -> list[float]:
@@ -783,18 +810,35 @@ class BoolFixedScanOption(ScanOption):
         self.box.setChecked(value)
 
 
+class EnumFixedScanOption(ScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.box = QtWidgets.QComboBox()
+        self._members = self.entry.schema["spec"]["members"]
+        self._member_values_to_keys = {val: key for key, val in self._members.items()}
+        self.box.addItems(self._members.values())
+        layout.addWidget(self.box)
+
+    def write_to_params(self, params: dict) -> None:
+        o = {
+            "path": self.entry.path,
+            "value": self._member_values_to_keys[self.box.currentText()]
+        }
+        params["overrides"].setdefault(self.entry.schema["fqn"], []).append(o)
+
+    def set_value(self, value) -> None:
+        try:
+            text = self._members[value]
+        except KeyError:
+            text = next(iter(self._members.values()))
+            logger.warning(f"Stored value '{value}' not in schema for enum parameter "
+                           f"'{self.entry.user_readable_name()}', setting to '{text}'")
+        self.box.setCurrentText(text)
+
+
 class NumericScanOption(ScanOption):
     def __init__(self, entry: OverrideEntry):
         super().__init__(entry)
         self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
-
-    def _make_divider(self):
-        f = QtWidgets.QFrame()
-        f.setFrameShape(QtWidgets.QFrame.Shape.VLine)
-        f.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
-        f.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,
-                        QtWidgets.QSizePolicy.Policy.Expanding)
-        return f
 
     def _make_spin_box(self):
         box = ScientificSpinBox()
@@ -819,14 +863,6 @@ class NumericScanOption(ScanOption):
         unit = spec.get("unit", "")
         if unit:
             box.setSuffix(" " + unit)
-        return box
-
-    def _make_randomise_box(self):
-        box = QtWidgets.QCheckBox()
-        box.setToolTip("Randomise scan point order")
-        box.setIcon(self.entry.randomise_icon)
-        box.setChecked(True)
-        box.stateChanged.connect(self.entry.value_changed)
         return box
 
 
@@ -887,7 +923,7 @@ class RangeScanOption(NumericScanOption):
         self.check_infinite.stateChanged.connect(
             lambda *_: self.box_points.setEnabled(not self.check_infinite.isChecked()))
 
-        self.check_randomise = self._make_randomise_box()
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
@@ -925,11 +961,11 @@ class MinMaxScanOption(RangeScanOption):
         layout.addWidget(self.box_start)
         layout.setStretchFactor(self.box_start, 1)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self._build_points_ui(layout)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self.box_stop = self._make_spin_box()
         layout.addWidget(self.box_stop)
@@ -966,7 +1002,7 @@ class CentreSpanScanOption(RangeScanOption):
         layout.addWidget(self.box_half_span)
         layout.setStretchFactor(self.box_half_span, 1)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self._build_points_ui(layout)
 
@@ -992,13 +1028,13 @@ class ExpandingScanOption(NumericScanOption):
         layout.addWidget(self.box_centre)
         layout.setStretchFactor(self.box_centre, 1)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
-        self.check_randomise = self._make_randomise_box()
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
         self.box_spacing = self._make_spin_box()
         self.box_spacing.setSuffix(self.box_spacing.suffix() + " steps")
@@ -1045,9 +1081,9 @@ class ListScanOption(NumericScanOption):
         self.box_pyon.setValidator(Validator(self.entry))
         layout.addWidget(self.box_pyon)
 
-        layout.addWidget(self._make_divider())
+        layout.addWidget(make_divider())
 
-        self.check_randomise = self._make_randomise_box()
+        self.check_randomise = self.entry.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
@@ -1063,6 +1099,51 @@ class ListScanOption(NumericScanOption):
             "type": "list",
             "range": {
                 "values": values,
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+
+class BoolScanOption(ScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        dummy_box = QtWidgets.QCheckBox()
+        dummy_box.setTristate()
+        dummy_box.setEnabled(False)
+        dummy_box.setCheckState(1)
+        layout.addWidget(dummy_box)
+        layout.setStretchFactor(dummy_box, 0)
+        layout.addWidget(make_divider())
+        self.check_randomise = self.entry.make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 1)
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "list",
+            "range": {
+                "values": [False, True],
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        params["scan"].setdefault("axes", []).append(spec)
+
+
+class EnumScanOption(ScanOption):
+    def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.check_randomise = self.entry.make_randomise_box()
+        layout.addWidget(self.check_randomise)
+        layout.setStretchFactor(self.check_randomise, 0)
+
+    def write_to_params(self, params: dict) -> None:
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "type": "list",
+            "range": {
+                "values": list(self.entry.schema["spec"]["members"].keys()),
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }

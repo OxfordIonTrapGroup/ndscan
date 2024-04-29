@@ -11,6 +11,7 @@ from mock_environment import MockDatasetDB, MockScheduler
 artiq_root = os.getenv("ARTIQ_ROOT")
 
 try:
+    from artiq.language.environment import ProcessArgumentManager
     from artiq.master.databases import DeviceDB
     from artiq.master.worker_db import DeviceManager, DatasetManager, DeviceError
     from artiq.coredevice.core import CompileError
@@ -29,15 +30,19 @@ class KernelEmulatorCase(unittest.TestCase):
         self.device_db = DeviceDB(os.path.join(artiq_root, "device_db.py"))
         self.dataset_db = MockDatasetDB()
         self.device_mgr = DeviceManager(self.device_db,
-                                        virtual_devices={"scheduler": MockScheduler()})
+                                        virtual_devices={
+                                            "ccb": unittest.mock.Mock(),
+                                            "scheduler": MockScheduler()
+                                        })
         self.dataset_mgr = DatasetManager(self.dataset_db)
 
     def tearDown(self):
         self.device_mgr.close_devices()
 
     def create(self, cls, *args, **kwargs):
+        arg_mgr = ProcessArgumentManager({})
         try:
-            exp = cls((self.device_mgr, self.dataset_mgr, None, {}), *args, **kwargs)
+            exp = cls((self.device_mgr, self.dataset_mgr, arg_mgr, {}), *args, **kwargs)
         except DeviceError as e:
             # skip if ddb does not match requirements
             raise unittest.SkipTest("test device not available: `{}`".format(*e.args))

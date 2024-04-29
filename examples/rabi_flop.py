@@ -1,5 +1,6 @@
 from ndscan.experiment import *
 from oitg.errorbars import binom_onesided
+from enum import Enum, unique
 import random
 import numpy as np
 import time
@@ -37,6 +38,12 @@ class Readout(Fragment):
         self.p_err.push(p_err)
 
 
+@unique
+class InitialState(Enum):
+    dark = "Dark"
+    bright = "Bright"
+
+
 class RabiFlopSim(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("readout", Readout)
@@ -54,12 +61,16 @@ class RabiFlopSim(ExpFragment):
                            unit="us",
                            min=0.0)
         self.setattr_param("detuning", FloatParam, "Detuning", 0.0 * MHz, unit="MHz")
+        self.setattr_param("initial_state", EnumParam, "Initial state",
+                           InitialState.bright)
 
     def run_once(self):
         omega0 = 2 * np.pi * self.rabi_freq.get()
         delta = 2 * np.pi * self.detuning.get()
         omega = np.sqrt(omega0**2 + delta**2)
-        p = 1 - (omega0 / omega * np.sin(omega / 2 * self.duration.get()))**2
+        p = (omega0 / omega * np.sin(omega / 2 * self.duration.get()))**2
+        if self.initial_state.get() == InitialState.bright:
+            p = 1 - p
         self.readout.simulate_shots(p)
         time.sleep(0.01)
 
