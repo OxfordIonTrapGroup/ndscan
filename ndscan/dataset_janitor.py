@@ -146,9 +146,14 @@ async def run(args):
             dataset_db = pc_rpc.AsyncioClient()
             while True:
                 try:
-                    await dataset_db.connect_rpc(args.server, args.port_control,
-                                                 "master_dataset_db")
-                    break
+                    try:
+                        await dataset_db.connect_rpc(args.server, args.port_control,
+                                                     "dataset_db")
+                        break
+                    except pc_rpc.IncompatibleServer:
+                        await dataset_db.connect_rpc(args.server, args.port_control,
+                                                     "master_dataset_db")
+                        break
                 except ConnectionRefusedError as e:
                     logger.error(
                         "Connection refused for dataset_db RPC service, retrying: %s",
