@@ -300,9 +300,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 else:
                     self.unique_x_data.add(x)
 
-        if self.x_schema["param"]["type"].startswith("enum"):
-            x_data = enum_to_numeric(self.x_param_spec["enum_display_map"].keys(),
-                                     x_data)
+        if self.x_schema["param"]["type"] == "enum":
+            x_data = enum_to_numeric(self.x_param_spec["members"].keys(), x_data)
         for s in self.series:
             s.update(x_data, points, self.averaging_enabled)
 
