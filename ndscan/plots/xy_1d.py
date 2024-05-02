@@ -47,7 +47,7 @@ def combined_uncertainty(points: list[SourcePoint], num_samples_per_point=1):
     """
     n = len(points)
     y = [p.y for p in points]
-    total_var = np.var(y) / max(1, num_samples_per_point * n - 1)  # max() avoids 0/0
+    total_var = np.nanvar(y) / max(1, num_samples_per_point * n - 1)  # max() avoids 0/0
     if points[0].y_err is not None:
         total_var += sum(p.y_err**2 for p in points) / n**2
     return np.sqrt(total_var)
@@ -139,7 +139,7 @@ class _XYSeries(QtCore.QObject):
         # same distribution, and 2) the number of samples per point are equal for all
         # points -- see ``combined_uncertainty()``.
         y_data = np.array(
-            [np.mean([p.y for p in self.source_points_by_x[x]]) for x in x_data])
+            [np.nanmean([p.y for p in self.source_points_by_x[x]]) for x in x_data])
         y_err = np.array(
             [combined_uncertainty(self.source_points_by_x[x]) for x in x_data])
 
