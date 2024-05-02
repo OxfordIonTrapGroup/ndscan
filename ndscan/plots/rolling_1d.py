@@ -137,7 +137,7 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
 
         if len(self.panes) > 1:
             self.link_x_axes()
-            add_source_id_label(self.panes[-1].getViewBox(), self.model.context)
+        add_source_id_label(self.panes[-1].getViewBox(), self.model.context)
 
         self.ready.emit()
 
