@@ -4,18 +4,16 @@ from .._qt import QtCore, QtWidgets
 from .utils import SERIES_COLORS
 
 
-class CrosshairLabel(pyqtgraph.TextItem):
+class CrosshairLabel(QtWidgets.QGraphicsSimpleTextItem):
     """Text item to be displayed alongside the cursor when hovering a plot"""
     def __init__(self,
                  view_box: pyqtgraph.ViewBox,
                  unit_suffix: str = "",
                  data_to_display_scale: float = 1.0,
                  color: str = SERIES_COLORS[0]):
-        super().__init__(color=color)
-        # Don't take text item into account for auto-scaling; otherwise
-        # there will be positive feedback if the cursor is towards the
-        # bottom right of the screen.
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemHasNoContents)
+        super().__init__()
+
+        self.setBrush(pyqtgraph.mkBrush(color))
 
         self.view_box = view_box
         self.unit_suffix = unit_suffix
@@ -84,6 +82,8 @@ class LabeledCrosshairCursor(QtCore.QObject):
 
         self.plot_item = plot_item
         self.crosshair_items = crosshair_items
+        for item in self.crosshair_items:
+            item.setParentItem(self.plot_item)
 
         self.plot_item.getViewBox().hoverEvent = self._on_viewbox_hover
         cursor_target_widget.setCursor(QtCore.Qt.CursorShape.CrossCursor)
@@ -91,13 +91,11 @@ class LabeledCrosshairCursor(QtCore.QObject):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self._update_text)
         self.timer.setSingleShot(True)
-        self._text_shown = False
 
     def _on_viewbox_hover(self, event):
         if event.isExit():
             for item in self.crosshair_items:
-                self.plot_item.removeItem(item)
-            self._text_shown = False
+                item.setVisible(False)
 
             self.timer.stop()
             return
@@ -106,20 +104,12 @@ class LabeledCrosshairCursor(QtCore.QObject):
         self.timer.start(0)
 
     def _update_text(self):
-        vb = self.plot_item.getViewBox()
-        # TODO: Draw text directly to graphics scene rather than going through
-        # pyqtgraph for performance - don't need any of the fancy interaction
-        # or layouting features that come with being a plot item.
-
-        for (i, crosshair_item) in enumerate(self.crosshair_items):
-            if not self._text_shown:
-                self.plot_item.addItem(crosshair_item)
-
-            last_scene_pos = self.last_hover_event.scenePos()
-            crosshair_item.update(last_scene_pos)
-
-            text_pos = QtCore.QPointF(last_scene_pos)
-            text_pos.setY(last_scene_pos.y() + i * 10)
-            crosshair_item.setPos(vb.mapSceneToView(text_pos))
-
-        self._text_shown = True
+        for (i, item) in enumerate(self.crosshair_items):
+            # Update text using last coordinate information.
+            scene_pos = self.last_hover_event.scenePos()
+            item.update(scene_pos)
+            # Move label to the last cursor position.
+            text_pos = scene_pos - item.sceneBoundingRect().topLeft()
+            item.moveBy(text_pos.x() + 4, text_pos.y() + 10 * i + 2)
+            # Show label.
+            item.setVisible(True)
