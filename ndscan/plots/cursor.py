@@ -1,27 +1,54 @@
 import numpy as np
 import pyqtgraph
-from .._qt import QtCore, QtWidgets
+from .._qt import QtCore, QtGui, QtWidgets
 from .utils import SERIES_COLORS
 
 
-class CrosshairLabel(QtWidgets.QGraphicsSimpleTextItem):
-    """Text item to be displayed alongside the cursor when hovering a plot"""
+class CrosshairLabel:
+    """Text to be displayed alongside the cursor when hovering a plot
+
+    To keep the text readable on all backgrounds, the label is drawn with a black
+    outline. QGraphicsScene does not support ``CompositionMode``s, so this is the next
+    best thing. To implement this, we need to render the text twice, as Qt does not
+    seem to support drawing an outline that does not obstruct the actual character
+    shape. The best way to implement this appears to be to simply create two
+    ``QGraphicsSimpleTextItem``s placed on top of each other (overriding
+    ``QGraphicsSimpleTextItem.paint()`` to render the item twice with different pen
+    settings performs badly for some reason).
+    """
     def __init__(self,
                  view_box: pyqtgraph.ViewBox,
                  unit_suffix: str = "",
                  data_to_display_scale: float = 1.0,
-                 color: str = SERIES_COLORS[0]):
-        super().__init__()
-
-        self.setBrush(pyqtgraph.mkBrush(color))
+                 color: str = SERIES_COLORS[0]) -> None:
+        bg, fg = self.text_items = [
+            QtWidgets.QGraphicsSimpleTextItem(),
+            QtWidgets.QGraphicsSimpleTextItem(),
+        ]
+        bg.setPen(
+            QtGui.QPen(
+                QtGui.QColor(QtCore.Qt.GlobalColor.black),
+                3,
+                QtCore.Qt.PenStyle.SolidLine,
+                QtCore.Qt.PenCapStyle.RoundCap,
+                QtCore.Qt.PenJoinStyle.RoundJoin,
+            ))
+        fg.setBrush(pyqtgraph.mkBrush(color))
 
         self.view_box = view_box
         self.unit_suffix = unit_suffix
         self.data_to_display_scale = data_to_display_scale
 
-    def update(self, last_scene_pos: QtCore.QPointF):
+    def set_parent_item(self, parent):
+        for label in self.text_items:
+            label.setParentItem(parent)
+
+    def update(self, last_scene_pos: QtCore.QPointF, y_idx: int):
         data_coords = self.view_box.mapSceneToView(last_scene_pos)
         self.update_coords(data_coords)
+        for label in self.text_items:
+            text_pos = last_scene_pos - label.sceneBoundingRect().topLeft()
+            label.moveBy(text_pos.x() + 3, text_pos.y() + 11 * y_idx + 2)
 
     def update_coords(self, data_coords):
         raise NotImplementedError
@@ -38,9 +65,15 @@ class CrosshairLabel(QtWidgets.QGraphicsSimpleTextItem):
         smallest_digit = np.floor(np.log10(span)) - 3
         precision = int(-smallest_digit) if smallest_digit < 0 else 0
 
-        self.setText("{0:.{n}f}{1}".format(value * self.data_to_display_scale,
-                                           self.unit_suffix,
-                                           n=precision))
+        text = "{0:.{n}f}{1}".format(value * self.data_to_display_scale,
+                                     self.unit_suffix,
+                                     n=precision)
+        for label in self.text_items:
+            label.setText(text)
+
+    def set_visible(self, visible: bool):
+        for label in self.text_items:
+            label.setVisible(visible)
 
 
 class CrosshairAxisLabel(CrosshairLabel):
@@ -65,8 +98,7 @@ class CrosshairAxisLabel(CrosshairLabel):
 
 
 class LabeledCrosshairCursor(QtCore.QObject):
-    """
-    Manages a crosshair cursor for a PlotWidget, with adjacient labels giving the data
+    """Manages a crosshair cursor for a PlotWidget, with adjacent labels giving the data
     coordinates corresponding to its position.
 
     The TextItems for displaying the coordinates are updated on a timer to avoid a lag
@@ -83,7 +115,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
         self.plot_item = plot_item
         self.crosshair_items = crosshair_items
         for item in self.crosshair_items:
-            item.setParentItem(self.plot_item)
+            item.set_parent_item(self.plot_item)
 
         self.plot_item.getViewBox().hoverEvent = self._on_viewbox_hover
         cursor_target_widget.setCursor(QtCore.Qt.CursorShape.CrossCursor)
@@ -95,8 +127,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
     def _on_viewbox_hover(self, event):
         if event.isExit():
             for item in self.crosshair_items:
-                item.setVisible(False)
-
+                item.set_visible(False)
             self.timer.stop()
             return
 
@@ -105,11 +136,6 @@ class LabeledCrosshairCursor(QtCore.QObject):
 
     def _update_text(self):
         for (i, item) in enumerate(self.crosshair_items):
-            # Update text using last coordinate information.
             scene_pos = self.last_hover_event.scenePos()
-            item.update(scene_pos)
-            # Move label to the last cursor position.
-            text_pos = scene_pos - item.sceneBoundingRect().topLeft()
-            item.moveBy(text_pos.x() + 4, text_pos.y() + 10 * i + 2)
-            # Show label.
-            item.setVisible(True)
+            item.update(scene_pos, i)
+            item.set_visible(True)
