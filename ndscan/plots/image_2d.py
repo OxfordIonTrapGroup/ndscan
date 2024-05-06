@@ -136,7 +136,7 @@ class _ImagePlot:
         #: Keeps track of the running average and the number of samples therein.
         self.averages_by_coords = dict[tuple[float, float], tuple[float, int]]()
 
-        self.z_crosshair_item = CrosshairZDataLabel(self.image_item.getViewBox())
+        self.z_crosshair_label = CrosshairZDataLabel(self.image_item.getViewBox())
 
         self.activate_channel(active_channel_name)
 
@@ -151,7 +151,7 @@ class _ImagePlot:
             self.colorbar.getAxis("right"),
             [(label, channel["path"], channel["type"], None, channel)])
         # Update crosshair label.
-        self.z_crosshair_item.set_crosshair_info(*crosshair_info[0])
+        self.z_crosshair_label.set_crosshair_info(*crosshair_info[0])
 
         self._invalidate_current()
         self.update(self.averaging_enabled)
@@ -249,8 +249,8 @@ class _ImagePlot:
         self.colorbar.setLevels(z_limits)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
-        self.z_crosshair_item.set_image_data(self.image_data, self.x_range,
-                                             self.y_range, self.current_z_limits)
+        self.z_crosshair_label.set_image_data(self.image_data, self.x_range,
+                                              self.y_range, self.current_z_limits)
         if num_skip == 0:
             # Image size has changed, set plot item size accordingly.
             self.image_item.setRect(self.image_rect)
@@ -317,16 +317,15 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         x_scaling_info = get_axis_scaling_info(self.x_schema["param"]["spec"])
         y_scaling_info = get_axis_scaling_info(self.y_schema["param"]["spec"])
 
-        x_crosshair_item = CrosshairAxisLabel(self.plot_item.getViewBox(),
-                                              *x_scaling_info,
-                                              is_x=True)
-        y_crosshair_item = CrosshairAxisLabel(self.plot_item.getViewBox(),
-                                              *y_scaling_info,
-                                              is_x=False)
+        x_label = CrosshairAxisLabel(self.plot_item.getViewBox(),
+                                     *x_scaling_info,
+                                     is_x=True)
+        y_label = CrosshairAxisLabel(self.plot_item.getViewBox(),
+                                     *y_scaling_info,
+                                     is_x=False)
 
         self.crosshair = LabeledCrosshairCursor(
-            self, self.plot_item,
-            [x_crosshair_item, y_crosshair_item, self.plot.z_crosshair_item])
+            self, self.plot_item, [x_label, y_label, self.plot.z_crosshair_label])
 
         add_source_id_label(self.plot_item.getViewBox(), self.model.context)
 

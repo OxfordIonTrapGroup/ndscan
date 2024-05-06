@@ -105,7 +105,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
     trail of buffered redraws when there are a lot of points.
     """
     def __init__(self, cursor_target_widget: QtWidgets.QWidget,
-                 plot_item: pyqtgraph.PlotItem, crosshair_items: list[CrosshairLabel]):
+                 plot_item: pyqtgraph.PlotItem, labels: list[CrosshairLabel]):
         """
         :param cursor_target_widget: Widget to apply the cursor icon to.
         :param plot_item: Linked pyqtgraph plot.
@@ -113,8 +113,8 @@ class LabeledCrosshairCursor(QtCore.QObject):
         super().__init__()
 
         self.plot_item = plot_item
-        self.crosshair_items = crosshair_items
-        for item in self.crosshair_items:
+        self.labels = labels
+        for item in self.labels:
             item.set_parent_item(self.plot_item)
 
         self.plot_item.getViewBox().hoverEvent = self._on_viewbox_hover
@@ -126,7 +126,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
 
     def _on_viewbox_hover(self, event):
         if event.isExit():
-            for item in self.crosshair_items:
+            for item in self.labels:
                 item.set_visible(False)
             self.timer.stop()
             return
@@ -135,7 +135,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
         self.timer.start(0)
 
     def _update_text(self):
-        for (i, item) in enumerate(self.crosshair_items):
+        for (i, item) in enumerate(self.labels):
             scene_pos = self.last_hover_event.scenePos()
             item.update(scene_pos, i)
             item.set_visible(True)

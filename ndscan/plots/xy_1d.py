@@ -228,7 +228,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         for axes_series in panes_axes_shown:
             pane = self.add_pane()
             pane.showGrid(x=True, y=True)
-            crosshair_items = []
+            crosshair_labels = []
             for series in axes_series:
                 axis, view_box = pane.new_y_axis()
                 view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
@@ -257,15 +257,15 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                         (label, channel["path"], channel["type"], color, channel))
 
                 crosshair_label_args = setup_axis_item(axis, info)
-                crosshair_items.extend(
+                crosshair_labels.extend(
                     [CrosshairAxisLabel(view_box, *a) for a in crosshair_label_args])
 
-            x_crosshair_item = CrosshairAxisLabel(pane.getViewBox(),
-                                                  self.x_unit_suffix,
-                                                  self.x_data_to_display_scale,
-                                                  is_x=True)
-            crosshair_items = [x_crosshair_item] + crosshair_items
-            crosshair = LabeledCrosshairCursor(self, pane, crosshair_items)
+            x_label = CrosshairAxisLabel(pane.getViewBox(),
+                                         self.x_unit_suffix,
+                                         self.x_data_to_display_scale,
+                                         is_x=True)
+            crosshair_labels = [x_label] + crosshair_labels
+            crosshair = LabeledCrosshairCursor(self, pane, crosshair_labels)
             self.crosshairs.append(crosshair)
 
         if len(self.panes) > 1:
@@ -432,7 +432,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             return
         # The x crosshair is always the first item (see `_initialise_series()`).
         self.model.context.set_dataset(
-            dataset_key, self.crosshairs[pane_idx].crosshair_items[0].last_value)
+            dataset_key, self.crosshairs[pane_idx].crosshair_labels[0].last_value)
 
     def _highlight_spot(self, spot):
         if self._highlighted_spot is not None:
