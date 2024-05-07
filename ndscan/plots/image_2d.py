@@ -397,5 +397,5 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
         if not self.plot:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.model.context.set_dataset(
-            dataset, self.crosshair.crosshair_items[axis_idx].last_value)
+        self.model.context.set_dataset(dataset,
+                                       self.crosshair.labels[axis_idx].last_value)

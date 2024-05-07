@@ -431,8 +431,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
         # The x crosshair is always the first item (see `_initialise_series()`).
-        self.model.context.set_dataset(
-            dataset_key, self.crosshairs[pane_idx].crosshair_labels[0].last_value)
+        self.model.context.set_dataset(dataset_key,
+                                       self.crosshairs[pane_idx].labels[0].last_value)
 
     def _highlight_spot(self, spot):
         if self._highlighted_spot is not None:
