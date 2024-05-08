@@ -46,8 +46,8 @@ def combined_uncertainty(points: list[SourcePoint], num_samples_per_point=1):
     where we overestimate the true standard deviation if actually,
     ``num_samples_per_point > 1``.
     """
-    n = len(points)
     y = [p.y for p in points]
+    n = len(y) - np.count_nonzero(np.isnan(y))
     total_var = np.nanvar(y) / max(1, num_samples_per_point * n - 1)  # max() avoids 0/0
     if points[0].y_err is not None:
         total_var += sum(p.y_err**2 for p in points) / n**2
