@@ -4,12 +4,14 @@ from itertools import chain, repeat
 import logging
 import numpy as np
 import pyqtgraph
+from oitg.uncertainty_to_string import uncertainty_to_string
 
 from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
-from .plot_widgets import AlternateMenuPanesWidget, add_source_id_label
+from .plot_widgets import (AlternateMenuPanesWidget, add_source_id_label,
+                           build_num_samples_per_point_context_menu)
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, get_axis_scaling_info, setup_axis_item,
                     enum_to_numeric)
@@ -60,6 +62,7 @@ class CrosshairZDataLabel(CrosshairLabel):
         self.x_range = None
         self.y_range = None
         self.image_data = None
+        self.error_data = None
         self.z_limits = None
 
     def set_crosshair_info(self, unit_suffix: str, data_to_display_scale: float,
@@ -76,6 +79,7 @@ class CrosshairZDataLabel(CrosshairLabel):
     def set_image_data(
         self,
         image_data: np.ndarray,
+        error_data: np.ndarray,
         x_range: tuple[float, float, float],
         y_range: tuple[float, float, float],
         z_limits: tuple[float, float],
@@ -86,6 +90,7 @@ class CrosshairZDataLabel(CrosshairLabel):
         :param z_limits: The current colormap limits.
         """
         self.image_data = image_data
+        self.error_data = error_data
         self.x_range = x_range
         self.y_range = y_range
         self.z_limits = z_limits
@@ -100,10 +105,14 @@ class CrosshairZDataLabel(CrosshairLabel):
         shape = self.image_data.shape
         if (0 <= x_idx < shape[0]) and (0 <= y_idx < shape[1]):
             z = self.image_data[x_idx, y_idx]
+            z_err = self.error_data[x_idx, y_idx]
         if np.isnan(z):
             self.set_text("")
         else:
-            self.set_value(z, self.z_limits)
+            if np.isnan(z_err):
+                self.set_value(z, self.z_limits)
+            else:
+                self.set_text(uncertainty_to_string(z, z_err))
 
 
 class _ImagePlot:
@@ -130,11 +139,14 @@ class _ImagePlot:
         self.x_range = None
         self.y_range = None
         self.image_data = None
+        self.error_data = None
 
         #: Whether to average points with the same coordinates.
         self.averaging_enabled = False
+        #: Assumed number of samples per point for calculating the combined uncertainty.
+        self.num_samples_per_point = 1
         #: Keeps track of the running average and the number of samples therein.
-        self.averages_by_coords = dict[tuple[float, float], tuple[float, int]]()
+        self.averages_by_coords = dict[tuple[float, float], tuple[float, float, int]]()
 
         self.z_crosshair_label = CrosshairZDataLabel(self.image_item.getViewBox())
 
@@ -154,13 +166,13 @@ class _ImagePlot:
         self.z_crosshair_label.set_crosshair_info(*crosshair_info[0])
 
         self._invalidate_current()
-        self.update(self.averaging_enabled)
+        self.update(self.averaging_enabled, self.num_samples_per_point)
 
     def data_changed(self, points, invalidate_previous: bool = False):
         self.points = points
         if invalidate_previous:
             self._invalidate_current()
-        self.update(self.averaging_enabled)
+        self.update(self.averaging_enabled, self.num_samples_per_point)
 
     def _invalidate_current(self):
         self.num_shown = 0
@@ -175,7 +187,7 @@ class _ImagePlot:
             return None
         return channel["min"], channel["max"]
 
-    def update(self, averaging_enabled):
+    def update(self, averaging_enabled: bool, num_samples_per_point: int):
         if not self.points:
             return
 
@@ -189,17 +201,22 @@ class _ImagePlot:
         num_to_show = min(len(x_data), len(y_data), len(z_data))
 
         if (num_to_show == self.num_shown
-                and averaging_enabled == self.averaging_enabled):
+                and averaging_enabled == self.averaging_enabled
+                and num_samples_per_point == self.num_samples_per_point):
             return
+        if num_samples_per_point != self.num_samples_per_point:
+            self._invalidate_current()
+
         num_skip = self.num_shown
 
         # Update running averages.
         for x, y, z in zip(x_data[num_skip:num_to_show], y_data[num_skip:num_to_show],
                            z_data[num_skip:num_to_show]):
-            avg, num = self.averages_by_coords.get((x, y), (0., 0))
+            avg, err, num = self.averages_by_coords.get((x, y), (0., 0., 0))
+            # TODO: Update error
             num += 1
             avg += (z - avg) / num
-            self.averages_by_coords[(x, y)] = (avg, num)
+            self.averages_by_coords[(x, y)] = (avg, err, num)
 
         # Determine range of x/y values to show and prepare image buffer accordingly if
         # it changed.
@@ -213,6 +230,7 @@ class _ImagePlot:
             # TODO: Splat old data for progressively less blurry look on refining scans?
             self.image_data = np.full(
                 (_num_points_in_range(x_range), _num_points_in_range(y_range)), np.nan)
+            self.error_data = np.full_like(self.image_data, np.nan)
 
             self.image_rect = QtCore.QRectF(
                 QtCore.QPointF(x_range[0] - x_range[2] / 2,
@@ -233,6 +251,8 @@ class _ImagePlot:
             coords, z = (x_data[data_idx], y_data[data_idx]), z_data[data_idx]
             self.image_data[x_idx, y_idx] = (self.averages_by_coords[coords][0]
                                              if averaging_enabled else z)
+            self.error_data[x_idx, y_idx] = (self.averages_by_coords[coords][1]
+                                             if averaging_enabled else np.nan)
 
         cmap = colormaps.plasma
         channel = self.channels[self.active_channel_name]
@@ -257,6 +277,7 @@ class _ImagePlot:
 
         self.num_shown = num_to_show
         self.averaging_enabled = averaging_enabled
+        self.num_samples_per_point = num_samples_per_point
 
 
 class Image2DPlotWidget(AlternateMenuPanesWidget):
@@ -377,8 +398,14 @@ class Image2DPlotWidget(AlternateMenuPanesWidget):
             action = builder.append_action("Average points with same coordinates")
             action.setCheckable(True)
             action.setChecked(self.plot.averaging_enabled)
-            action.triggered.connect(
-                lambda *a: self.plot.update(not self.plot.averaging_enabled))
+            action.triggered.connect(lambda *a: self.plot.update(
+                not self.plot.averaging_enabled, self.plot.num_samples_per_point))
+
+            if self.plot.averaging_enabled:
+                build_num_samples_per_point_context_menu(
+                    builder,
+                    lambda num: self.plot.update(self.plot.averaging_enabled, num),
+                    self.plot.num_samples_per_point)
             builder.ensure_separator()
 
         self.channel_menu_group = QtGui.QActionGroup(self)

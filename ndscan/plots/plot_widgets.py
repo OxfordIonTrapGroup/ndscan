@@ -368,3 +368,22 @@ def build_channel_selection_context_menu(builder: ContextMenuBuilder,
         checkbox.stateChanged.connect(lambda a, n=name: state_changed(a, n))
         layout.addWidget(checkbox)
     update_checkboxes_enabled()
+
+
+def build_num_samples_per_point_context_menu(builder: ContextMenuBuilder,
+                                             value_changed_callback: Callable[[], None],
+                                             current_num_samples_per_point: int):
+    num_samples_box = QtWidgets.QSpinBox()
+    num_samples_box.setMinimum(1)
+    num_samples_box.setMaximum(2**16)
+    num_samples_box.setValue(current_num_samples_per_point)
+    num_samples_box.valueChanged.connect(value_changed_callback)
+    container = QtWidgets.QWidget()
+    layout = QtWidgets.QHBoxLayout()
+    container.setLayout(layout)
+    label = QtWidgets.QLabel("Samples per point:")
+    layout.addWidget(label)
+    layout.addWidget(num_samples_box)
+    layout.insertStretch(0)
+    action = builder.append_widget_action()
+    action.setDefaultWidget(container)

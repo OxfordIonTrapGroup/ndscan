@@ -11,6 +11,7 @@ from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import (SubplotMenuPanesWidget, build_channel_selection_context_menu,
+                           build_num_samples_per_point_context_menu,
                            add_source_id_label)
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     get_default_hidden_channels, format_param_identity,
@@ -422,20 +423,9 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 lambda *a: self.enable_averaging(not self.averaging_enabled))
 
             if self.averaging_enabled:
-                num_samples_box = QtWidgets.QSpinBox()
-                num_samples_box.setMinimum(1)
-                num_samples_box.setMaximum(2**16)
-                num_samples_box.setValue(self.num_samples_per_point)
-                num_samples_box.valueChanged.connect(self.change_num_samples_per_point)
-                container = QtWidgets.QWidget()
-                layout = QtWidgets.QHBoxLayout()
-                container.setLayout(layout)
-                label = QtWidgets.QLabel("Samples per point:")
-                layout.addWidget(label)
-                layout.addWidget(num_samples_box)
-                layout.insertStretch(0)
-                action = builder.append_widget_action()
-                action.setDefaultWidget(container)
+                build_num_samples_per_point_context_menu(
+                    builder, self.change_num_samples_per_point,
+                    self.num_samples_per_point)
 
             builder.ensure_separator()
 
