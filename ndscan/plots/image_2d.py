@@ -101,7 +101,7 @@ class CrosshairZDataLabel(CrosshairLabel):
         if (0 <= x_idx < shape[0]) and (0 <= y_idx < shape[1]):
             z = self.image_data[x_idx, y_idx]
         if np.isnan(z):
-            self.set_visible(False)
+            self.set_text("")
         else:
             self.set_value(z, self.z_limits)
 
