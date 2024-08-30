@@ -32,7 +32,7 @@ oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
 # Qt 5 and Qt 6, but since early ARTIQ 9, upstream ARTIQ has switched to Qt 6. If
 # working against older versions of ARTIQ is of interest, we can revisit the way the
 # dependencies are specified here.
-artiq = { version = ">=8.*" }
+artiq = { version = ">=8.0.dev0" }
 pyqt6 = { version = "^6.5.2" }
 
 [tool.poetry.group.dev.dependencies]
