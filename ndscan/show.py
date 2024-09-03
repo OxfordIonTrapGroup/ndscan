@@ -3,6 +3,8 @@
 import asyncio
 import argparse
 from collections import OrderedDict
+from dataclasses import dataclass
+from datetime import datetime, timezone
 import h5py
 import os
 import sys
@@ -16,6 +18,30 @@ from .plots.model.hdf5 import HDF5Root
 from .results.arguments import extract_param_schema, summarise
 from .results.tools import find_ndscan_roots, get_source_id
 from .utils import shorten_to_unambiguous_suffixes, strip_suffix
+
+
+@dataclass
+class ArtiqMetadata:
+    rid: int
+    start_time: float
+    run_time: float
+    artiq_version: str
+
+
+def format_epoch_timestamp_as_utc(timestamp: float) -> str:
+    dt = datetime.fromtimestamp(timestamp, timezone.utc)
+    return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def print_metadata(m: ArtiqMetadata):
+    print("Metadata")
+    print("========")
+    print()
+    print(" - RID:", m.rid)
+    print(" - Launched at:", format_epoch_timestamp_as_utc(m.start_time))
+    print(" - Entered run() at:", format_epoch_timestamp_as_utc(m.run_time))
+    print(" - ARTIQ version:", m.artiq_version)
+    print()
 
 
 def get_argparser():
@@ -98,13 +124,20 @@ def load_h5(args):
                 f"No ndscan result datasets found in file: '{args.path}'")
             sys.exit(1)
 
+    expid = pyon.decode(file["expid"][()])
     try:
-        schema = extract_param_schema(pyon.decode(file["expid"][()])["arguments"])
+        schema = extract_param_schema(expid["arguments"])
     except Exception as e:
         print("No ndscan parameter arguments found:", e)
+        print()
         schema = None
 
-    return path, datasets, prefixes, schema
+    artiq_metadata = ArtiqMetadata(rid=file["rid"][()],
+                                   start_time=file["start_time"][()],
+                                   run_time=file["run_time"][()],
+                                   artiq_version=file["artiq_version"][()].decode())
+
+    return path, datasets, prefixes, schema, artiq_metadata
 
 
 def main():
@@ -114,10 +147,12 @@ def main():
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
 
-    _, datasets, prefixes, schema = load_h5(args)
+    _, datasets, prefixes, schema, artiq_metadata = load_h5(args)
 
     if schema is not None:
         print(summarise(schema))
+
+    print_metadata(artiq_metadata)
 
     try:
         context = Context()
