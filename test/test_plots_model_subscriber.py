@@ -13,6 +13,7 @@ class SinglePointTest(unittest.TestCase):
         self.context = Context()
         self.root = SubscriberRoot("ndscan.", self.context)
         self.datasets = Notifier({
+            "ndscan.source_id": (False, "rid_0", {}),
             "ndscan.axes": (False, "[]", {}),
             "ndscan.channels": (False,
                                 json.dumps({

@@ -171,6 +171,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(self._update_points)
         self.model.annotations_changed.connect(self._update_annotations)
+        # FIXME: Just re-set values instead of throwing away everything.
         self.model.points_rewritten.connect(self._rewrite)
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
