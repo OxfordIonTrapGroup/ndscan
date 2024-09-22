@@ -1110,7 +1110,7 @@ class BoolScanOption(ScanOption):
         dummy_box = QtWidgets.QCheckBox()
         dummy_box.setTristate()
         dummy_box.setEnabled(False)
-        dummy_box.setCheckState(1)
+        dummy_box.setChecked(True)
         layout.addWidget(dummy_box)
         layout.setStretchFactor(dummy_box, 0)
         layout.addWidget(make_divider())
