@@ -68,6 +68,9 @@ class CrosshairLabel:
         text = "{0:.{n}f}{1}".format(value * self.data_to_display_scale,
                                      self.unit_suffix,
                                      n=precision)
+        self.set_text(text)
+
+    def set_text(self, text):
         for label in self.text_items:
             label.setText(text)
 
