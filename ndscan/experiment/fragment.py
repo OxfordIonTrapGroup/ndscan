@@ -536,18 +536,18 @@ class Fragment(HasEnvironment):
         :param param_name: The name of the parameter to find the target for.
         :return: The ParamHandle for the parameter in the fragment that
             has this parameter as a free parameter.
-        :raises KeyError: If the parameter is not free or rebound (e.g. it was
+        :raises AssertError: If the parameter is not free or rebound (e.g. it was
             overridden).
         """
         if param_name in self._free_params:
             return getattr(self, param_name)
-        elif param_name in self._rebound_own_params:
-            p = self._rebound_own_params[param_name]
-            return p.owner._find_param_source(p.name)
         else:
             # Do not support binding to parameters that are overridden
-            raise KeyError(
+            assert param_name in self._rebound_own_params, (
                 f"Parameter '{param_name}' is not free or rebound. Was it overridden?")
+
+            p = self._rebound_own_params[param_name]
+            return p.owner._find_param_source(p.name)
 
     def bind_param(self, param_name: str, source: ParamHandle) -> Any:
         """Override the fragment parameter with the given name such that its value
