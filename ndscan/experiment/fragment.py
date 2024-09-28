@@ -586,7 +586,7 @@ class Fragment(HasEnvironment):
 
         del self._free_params[param_name]
 
-        self._rebound_own_params[param_name] = toplevel_source
+        self._rebound_own_params[param_name] = source
 
         toplevel_source.owner._rebound_subfragment_params.setdefault(
             toplevel_source.name,

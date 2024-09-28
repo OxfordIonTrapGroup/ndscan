@@ -57,6 +57,24 @@ class TestParamDefaults(HasEnvironmentCase):
         self.assertEqual(ddf.bar.get(), 5)
 
 
+class TransitiveReboundAddOneFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("first", AddOneFragment)
+        self.setattr_fragment("second", AddOneFragment)
+        self.setattr_fragment("third", AddOneFragment)
+
+        self.setattr_param_like("value", self.first, default=2)
+
+        self.first.bind_param("value", self.value)
+        self.second.bind_param("value", self.first.value)
+        self.third.bind_param("value", self.second.value)
+
+    def run_once(self):
+        self.first.run_once()
+        self.second.run_once()
+        self.third.run_once()
+
+
 class TestRebinding(HasEnvironmentCase):
     def test_recursive_rebind_default(self):
         rrf = self.create(ReboundReboundAddOneFragment, [])
@@ -77,27 +95,22 @@ class TestRebinding(HasEnvironmentCase):
         self.assertEqual(result[mrf.second.result], 3)
 
     def test_transitive_rebind(self):
-        class TransitiveReboundAddOneFragment(ExpFragment):
-            def build_fragment(self):
-                self.setattr_fragment("first", AddOneFragment)
-                self.setattr_fragment("second", AddOneFragment)
-
-                self.setattr_param_like("value", self.first)
-
-                self.first.bind_param("value", self.value)
-                self.second.bind_param("value", self.first.value)
-
-            def run_once(self):
-                self.first.run_once()
-                self.second.run_once()
-
         trf = self.create(TransitiveReboundAddOneFragment, [])
-        trf.override_param("value", 2)
+
         result = run_fragment_once(trf)
         self.assertEqual(result[trf.first.result], 3)
         self.assertEqual(result[trf.second.result], 3)
+        self.assertEqual(result[trf.second.result], 3)
 
-    def test_transitive_rebind_with_override_fails(self):
+    def test_transitive_rebind_with_final_override(self):
+        trf = self.create(TransitiveReboundAddOneFragment, [])
+        trf.override_param("value", 3)
+        result = run_fragment_once(trf)
+        self.assertEqual(result[trf.first.result], 4)
+        self.assertEqual(result[trf.second.result], 4)
+        self.assertEqual(result[trf.second.result], 4)
+
+    def test_transitive_rebind_with_initial_override_fails(self):
         class OverriddenTransitiveReboundAddOneFragment(ExpFragment):
             def build_fragment(self):
                 self.setattr_fragment("first", AddOneFragment)
