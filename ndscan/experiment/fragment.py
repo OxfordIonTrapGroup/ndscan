@@ -541,17 +541,13 @@ class Fragment(HasEnvironment):
         """
         if param_name in self._free_params:
             return getattr(self, param_name)
+        elif param_name in self._rebound_own_params:
+            p = self._rebound_own_params[param_name]
+            return p.owner._find_param_source(p.name)
         else:
-            try:
-                rebound_param = self._rebound_own_params[param_name]
-
             # Do not support binding to parameters that are overridden
-            except KeyError:
-                raise KeyError(
-                    f"Parameter '{param_name}' is not free or rebound. Was it overridden?"
-                )
-
-            return rebound_param.owner._find_param_source(rebound_param.name)
+            raise KeyError(
+                f"Parameter '{param_name}' is not free or rebound. Was it overridden?")
 
     def bind_param(self, param_name: str, source: ParamHandle) -> Any:
         """Override the fragment parameter with the given name such that its value
