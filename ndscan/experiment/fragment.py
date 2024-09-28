@@ -560,6 +560,9 @@ class Fragment(HasEnvironment):
         ``Fluoresce``, binding its intensity and detuning parameters to values and
         defaults appropriate for those particular tasks.
 
+        Transitive binding is supported: if the source parameter is itself bound to
+        another parameter, this parameter will be bound to the ultimate source.
+
         See :meth:`override_param`, which sets the parameter to a fixed value/store.
 
         :param param_name: The name of the parameter to be bound (i.e.
