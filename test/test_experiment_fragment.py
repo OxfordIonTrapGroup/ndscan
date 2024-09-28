@@ -97,6 +97,22 @@ class TestRebinding(HasEnvironmentCase):
         self.assertEqual(result[trf.first.result], 3)
         self.assertEqual(result[trf.second.result], 3)
 
+    def test_transitive_rebind_with_override_fails(self):
+        class OverriddenTransitiveReboundAddOneFragment(ExpFragment):
+            def build_fragment(self):
+                self.setattr_fragment("first", AddOneFragment)
+                self.setattr_fragment("second", AddOneFragment)
+
+                self.first.override_param("value", 2)
+                self.second.bind_param("value", self.first.value)
+
+            def run_once(self):
+                self.first.run_once()
+                self.second.run_once()
+
+        with self.assertRaises(AssertionError):
+            self.create(OverriddenTransitiveReboundAddOneFragment, [])
+
     def test_invalid_bind(self):
         class InvalidBindFragment(ExpFragment):
             def build_fragment(self):
