@@ -61,8 +61,13 @@ class Fragment(HasEnvironment):
         self._free_params = OrderedDict()
 
         #: Maps own attribute name to the ParamHandles of the rebound parameters in
-        #: their original subfragment.
-        self._rebound_subfragment_params = dict()
+        #: their original subfragment, for parameters of this Fragment which are
+        #: rebind targets.
+        self._rebound_subfragment_params :dict[str, list[ParamHandle]] = dict()
+
+        #: Maps own attribute name to the Fragment and attribute name that this parameter was
+        #: rebound to, for parameters of this Fragment which have been rebound.
+        self._rebound_own_params : dict[str, tuple[Fragment, str]] = dict()
 
         #: List of (param, store) tuples of parameters set to their defaults after
         #: init_params().
@@ -547,6 +552,8 @@ class Fragment(HasEnvironment):
             f"to source of type {source_type.__name__}")
 
         del self._free_params[param_name]
+
+        self._rebound_own_params[param_name] = (source.owner, source.name)
 
         source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
             self._get_all_handles_for_param(param_name))
