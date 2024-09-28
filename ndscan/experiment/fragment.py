@@ -65,9 +65,9 @@ class Fragment(HasEnvironment):
         #: rebind targets.
         self._rebound_subfragment_params: dict[str, list[ParamHandle]] = dict()
 
-        #: Maps own attribute name to the Fragment and attribute name that this parameter was
+        #: Maps own attribute name to the ParamHandle that this parameter was
         #: rebound to, for parameters of this Fragment which have been rebound.
-        self._rebound_own_params: dict[str, tuple[Fragment, str]] = dict()
+        self._rebound_own_params: dict[str, ParamHandle] = dict()
 
         #: List of (param, store) tuples of parameters set to their defaults after
         #: init_params().
@@ -519,32 +519,31 @@ class Fragment(HasEnvironment):
             handle.set_store(store)
         return param, store
 
-    def _find_param_owner(self, param_name: str) -> tuple["Fragment", str]:
-        """Find the owner of the parameter with the given name.
+    def _find_param_source(self, param_name: str) -> ParamHandle:
+        """Find the top-level source of the parameter with the given name.
 
-        Follows the chain of rebindings to find the Fragment which currently has
-        this parameter as a free parameter.
+        Follow the chain of rebindings to find the Fragment which currently has
+        this parameter as a free parameter, and return the ParamHandle for this
+        parameter within it. 
 
         This is used to support "transitive" binding of parameters, where a
         parameter is bound to another parameter that is itself bound to another
         parameter, etc. 
         
-        Note that binding to parameters that are *overridden*
-        instead of rebound is not supported. 
+        Note that binding to parameters that are *overridden* instead of rebound
+        is not supported. 
 
         :param param_name: The name of the parameter to find the target for.
-        :return: A tuple ``(final_source, final_param_name)`` of the final
-            source fragment and parameter name that the given parameter is bound
-            to.
+        :return: The ParamHandle for the parameter in the fragment that
+            has this parameter as a free parameter.
         :raises KeyError: If the parameter is not free or rebound (e.g. it was
             overridden).
         """
         if param_name in self._free_params:
-            return self, param_name
+            return getattr(self, param_name)
         else:
             try:
-                rebind_target_frag, rebind_param_name = self._rebound_own_params[
-                    param_name]
+                rebound_param = self._rebound_own_params[param_name]
 
             # Do not support binding to parameters that are overridden
             except KeyError:
@@ -552,7 +551,7 @@ class Fragment(HasEnvironment):
                     f"Parameter '{param_name}' is not free or rebound. Was it overridden?"
                 )
 
-            return rebind_target_frag._find_param_owner(rebind_param_name)
+            return rebound_param.owner._find_param_source(rebound_param.name)
 
     def bind_param(self, param_name: str, source: ParamHandle) -> Any:
         """Override the fragment parameter with the given name such that its value
@@ -578,7 +577,7 @@ class Fragment(HasEnvironment):
 
         # To support "transitive" binding of parameters, follow the chaining of
         # rebindings until a free parameter is reached.
-        owner, owner_param_name = source.owner._find_param_owner(source.name)
+        toplevel_source = source.owner._find_param_source(source.name)
 
         # We don't support "transitive" binding for parameters that are already bound.
         assert source.name in source.owner._free_params, \
@@ -592,7 +591,7 @@ class Fragment(HasEnvironment):
 
         del self._free_params[param_name]
 
-        self._rebound_own_params[param_name] = (source.owner, source.name)
+        self._rebound_own_params[param_name] = source
 
         source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
             self._get_all_handles_for_param(param_name))
