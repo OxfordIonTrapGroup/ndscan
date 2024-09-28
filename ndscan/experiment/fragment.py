@@ -569,7 +569,7 @@ class Fragment(HasEnvironment):
             ``self.<param_name>``). Must be a free parameter of this fragment (not
             already bound or overridden).
         :param source: The parameter to bind to. Must not be overridden in the
-            source fragment (but can be bound).
+            owner fragment (but can be bound).
         """
         param = self._free_params.get(param_name, None)
         assert param is not None, f"Not a free parameter: '{param_name}'"
