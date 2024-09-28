@@ -61,8 +61,7 @@ class Fragment(HasEnvironment):
         self._free_params = OrderedDict()
 
         #: Maps own attribute name to the ParamHandles of the rebound parameters in
-        #: their original subfragment (currently always only one, as there is only a
-        #: rebinding API that targets single paths).
+        #: their original subfragment.
         self._rebound_subfragment_params = dict()
 
         #: List of (param, store) tuples of parameters set to their defaults after
