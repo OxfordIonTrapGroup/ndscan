@@ -589,8 +589,9 @@ class Fragment(HasEnvironment):
 
         self._rebound_own_params[param_name] = toplevel_source
 
-        toplevel_source.owner._rebound_subfragment_params.setdefault(toplevel_source.name, []).extend(
-            self._get_all_handles_for_param(param_name))
+        toplevel_source.owner._rebound_subfragment_params.setdefault(
+            toplevel_source.name,
+            []).extend(self._get_all_handles_for_param(param_name))
 
         return param
 

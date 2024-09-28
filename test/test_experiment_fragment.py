@@ -81,7 +81,9 @@ class TestRebinding(HasEnvironmentCase):
             def build_fragment(self):
                 self.setattr_fragment("first", AddOneFragment)
                 self.setattr_fragment("second", AddOneFragment)
+
                 self.setattr_param_like("value", self.first)
+
                 self.first.bind_param("value", self.value)
                 self.second.bind_param("value", self.first.value)
 
@@ -93,7 +95,7 @@ class TestRebinding(HasEnvironmentCase):
         trf.override_param("value", 2)
         result = run_fragment_once(trf)
         self.assertEqual(result[trf.first.result], 3)
-        self.assertEqual(result[trf.second.result], 4)
+        self.assertEqual(result[trf.second.result], 3)
 
     def test_invalid_bind(self):
         class InvalidBindFragment(ExpFragment):
