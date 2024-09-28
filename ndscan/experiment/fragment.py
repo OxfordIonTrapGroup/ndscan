@@ -579,21 +579,17 @@ class Fragment(HasEnvironment):
         # rebindings until a free parameter is reached.
         toplevel_source = source.owner._find_param_source(source.name)
 
-        # We don't support "transitive" binding for parameters that are already bound.
-        assert source.name in source.owner._free_params, \
-            "Source parameter is not a free parameter; already bound/overridden?"
-
         own_type = type(self._free_params[param_name])
-        source_type = type(source.owner._free_params[source.name])
+        source_type = type(toplevel_source.owner._free_params[toplevel_source.name])
         assert own_type == source_type, (
             f"Cannot bind {own_type.__name__} '{param_name}' " +
             f"to source of type {source_type.__name__}")
 
         del self._free_params[param_name]
 
-        self._rebound_own_params[param_name] = source
+        self._rebound_own_params[param_name] = toplevel_source
 
-        source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
+        toplevel_source.owner._rebound_subfragment_params.setdefault(toplevel_source.name, []).extend(
             self._get_all_handles_for_param(param_name))
 
         return param
