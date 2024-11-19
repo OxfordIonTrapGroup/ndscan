@@ -328,17 +328,18 @@ class TopLevelRunner(HasEnvironment):
 
     def run(self):
         """Run the (possibly trivial) scan."""
-        self._broadcast_metadata()
-
         if not self.spec.axes and not self._is_time_series:
+            self._broadcast_metadata()
             self._run_continuous()
             return None, {c: s.get_last() for c, s in self._scan_result_sinks.items()}
 
         if self._is_time_series:
             self._timestamp_sink = AppendingDatasetSink(
                 self, self.dataset_prefix + "points.axis_0")
+            self._timestamp_sink.clear()
             self._coordinate_sinks = [self._timestamp_sink]
             self._time_series_start = time.monotonic()
+            self._broadcast_metadata()
             self._run_continuous()
         else:
             runner = select_runner_class(self.fragment)(
@@ -351,6 +352,9 @@ class TopLevelRunner(HasEnvironment):
                 AppendingDatasetSink(self, self.dataset_prefix + f"points.axis_{i}")
                 for i in range(len(self.spec.axes))
             ]
+            for sink in self._coordinate_sinks:
+                sink.clear()
+            self._broadcast_metadata()
             runner.run(self.fragment, self.spec, self._coordinate_sinks)
             self._set_completed()
 
@@ -507,6 +511,9 @@ class TopLevelRunner(HasEnvironment):
                 push(name, dump_json(value))
             else:
                 push(name, ds_value)
+
+        for sink in self._scan_result_sinks.values():
+            sink.clear()
 
     def create_applet(self, title: str, group: str = "ndscan"):
         cmd = [
