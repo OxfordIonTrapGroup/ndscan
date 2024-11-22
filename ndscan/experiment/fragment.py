@@ -524,14 +524,14 @@ class Fragment(HasEnvironment):
 
         Follow the chain of rebindings to find the Fragment which currently has
         this parameter as a free parameter, and return the ParamHandle for this
-        parameter within it. 
+        parameter within it.
 
         This is used to support "transitive" binding of parameters, where a
         parameter is bound to another parameter that is itself bound to another
-        parameter, etc. 
-        
+        parameter, etc.
+
         Note that binding to parameters that are *overridden* instead of rebound
-        is not supported. 
+        is not supported.
 
         :param param_name: The name of the parameter to find the target for.
         :return: The ParamHandle for the parameter in the fragment that
