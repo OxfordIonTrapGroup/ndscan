@@ -61,8 +61,13 @@ class Fragment(HasEnvironment):
         self._free_params = OrderedDict()
 
         #: Maps own attribute name to the ParamHandles of the rebound parameters in
-        #: their original subfragment.
-        self._rebound_subfragment_params = dict()
+        #: their original subfragment, for parameters of this Fragment which are
+        #: rebind targets.
+        self._rebound_subfragment_params: dict[str, list[ParamHandle]] = dict()
+
+        #: Maps own attribute name to the ParamHandle that this parameter was
+        #: rebound to, for parameters of this Fragment which have been rebound.
+        self._rebound_own_params: dict[str, ParamHandle] = dict()
 
         #: List of (param, store) tuples of parameters set to their defaults after
         #: init_params().
@@ -514,6 +519,36 @@ class Fragment(HasEnvironment):
             handle.set_store(store)
         return param, store
 
+    def _find_param_source(self, param_name: str) -> ParamHandle:
+        """Find the top-level source of the parameter with the given name.
+
+        Follow the chain of rebindings to find the Fragment which currently has
+        this parameter as a free parameter, and return the ParamHandle for this
+        parameter within it.
+
+        This is used to support "transitive" binding of parameters, where a
+        parameter is bound to another parameter that is itself bound to another
+        parameter, etc.
+
+        Note that binding to parameters that are *overridden* instead of rebound
+        is not supported.
+
+        :param param_name: The name of the parameter to find the target for.
+        :return: The ParamHandle for the parameter in the fragment that
+            has this parameter as a free parameter.
+        :raises AssertError: If the parameter is not free or rebound (e.g. it was
+            overridden).
+        """
+        if param_name in self._free_params:
+            return getattr(self, param_name)
+        else:
+            # Do not support binding to parameters that are overridden
+            assert param_name in self._rebound_own_params, (
+                f"Parameter '{param_name}' is not free or rebound. Was it overridden?")
+
+            p = self._rebound_own_params[param_name]
+            return p.owner._find_param_source(p.name)
+
     def bind_param(self, param_name: str, source: ParamHandle) -> Any:
         """Override the fragment parameter with the given name such that its value
         follows that of another parameter.
@@ -525,31 +560,37 @@ class Fragment(HasEnvironment):
         ``Fluoresce``, binding its intensity and detuning parameters to values and
         defaults appropriate for those particular tasks.
 
+        Transitive binding is supported: if the source parameter is itself bound to
+        another parameter, this parameter will be bound to the ultimate source.
+
         See :meth:`override_param`, which sets the parameter to a fixed value/store.
 
         :param param_name: The name of the parameter to be bound (i.e.
             ``self.<param_name>``). Must be a free parameter of this fragment (not
             already bound or overridden).
-        :param source: The parameter to bind to. Must be a free parameter of its
-            respective owner.
+        :param source: The parameter to bind to. Must not be overridden in the
+            owner fragment (but can be bound).
         """
         param = self._free_params.get(param_name, None)
         assert param is not None, f"Not a free parameter: '{param_name}'"
 
-        # We don't support "transitive" binding for parameters that are already bound.
-        assert source.name in source.owner._free_params, \
-            "Source parameter is not a free parameter; already bound/overridden?"
+        # To support "transitive" binding of parameters, follow the chaining of
+        # rebindings until a free parameter is reached.
+        toplevel_source = source.owner._find_param_source(source.name)
 
         own_type = type(self._free_params[param_name])
-        source_type = type(source.owner._free_params[source.name])
+        source_type = type(toplevel_source.owner._free_params[toplevel_source.name])
         assert own_type == source_type, (
             f"Cannot bind {own_type.__name__} '{param_name}' " +
             f"to source of type {source_type.__name__}")
 
         del self._free_params[param_name]
 
-        source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
-            self._get_all_handles_for_param(param_name))
+        self._rebound_own_params[param_name] = source
+
+        toplevel_source.owner._rebound_subfragment_params.setdefault(
+            toplevel_source.name,
+            []).extend(self._get_all_handles_for_param(param_name))
 
         return param
 
