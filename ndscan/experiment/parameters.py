@@ -49,12 +49,14 @@ class ParamStore:
         self._value = self.coerce(value)
 
     @host_only
-    def register_handle(self, handle):
+    def _register_handle(self, handle):
+        # Private to this module (part of the handle change_after_used tracking).
         self._handles.append(handle)
         self._notify = self._notify_handles
 
     @host_only
-    def unregister_handle(self, handle):
+    def _unregister_handle(self, handle):
+        # Private to this module (part of the handle change_after_used tracking).
         self._handles.remove(handle)
 
         if not self._handles:
@@ -262,8 +264,8 @@ class ParamHandle:
         """
         """
         if self._store:
-            self._store.unregister_handle(self)
-        store.register_handle(self)
+            self._store._unregister_handle(self)
+        store._register_handle(self)
         self._store = store
         self._changed_after_use = True
 
