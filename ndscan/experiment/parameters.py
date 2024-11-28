@@ -10,10 +10,13 @@
 from artiq.language import host_only, portable, units
 from enum import Enum
 from numpy import int32
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from ..utils import eval_param_default, GetDataset
 
 __all__ = ["FloatParam", "IntParam", "StringParam", "BoolParam", "EnumParam"]
+
+if TYPE_CHECKING:
+    from .fragment import Fragment
 
 
 class InvalidDefaultError(ValueError):
