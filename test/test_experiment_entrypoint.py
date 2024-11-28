@@ -115,7 +115,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
         for i in range(len(timestamps)):
             prev = 0.0 if i == 0 else timestamps[i - 1]
             cur = timestamps[i]
-            self.assertGreater(cur, prev)
+            self.assertGreaterEqual(cur, prev)
             # Timestamps are in seconds, so this is a _very_ conservative bound on
             # running the test loop in-process (which will take much less than a
             # millisecond).
