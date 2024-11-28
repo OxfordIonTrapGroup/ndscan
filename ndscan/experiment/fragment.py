@@ -370,7 +370,7 @@ class Fragment(HasEnvironment):
         param = param_class(fqn, description, *args, **kwargs)
         self._free_params[name] = param
 
-        handle = param.HandleType(self, name)
+        handle = param.HandleType(self, name, param)
         setattr(self, name, handle)
         return handle
 
@@ -419,7 +419,7 @@ class Fragment(HasEnvironment):
         init_params["fqn"] = self.fqn + "." + name
         new_param = template_param.__class__(**init_params)
         self._free_params[name] = new_param
-        new_handle = new_param.HandleType(self, name)
+        new_handle = new_param.HandleType(self, name, new_param)
         setattr(self, name, new_handle)
         return new_handle
 
@@ -548,8 +548,13 @@ class Fragment(HasEnvironment):
 
         del self._free_params[param_name]
 
-        source.owner._rebound_subfragment_params.setdefault(source.name, []).extend(
-            self._get_all_handles_for_param(param_name))
+        handles = self._get_all_handles_for_param(param_name)
+
+        for handle in handles:
+            handle.parameter = source.parameter
+
+        source.owner._rebound_subfragment_params.setdefault(source.name,
+                                                            []).extend(handles)
 
         return param
 

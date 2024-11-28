@@ -6,9 +6,10 @@ from ndscan.experiment import parameters
 
 class CustomAnalysisTestCase(unittest.TestCase):
     def test_axis_matching(self):
-        foo = parameters.FloatParamHandle(None, "foo")
+        param = parameters.FloatParam("", "", 0.)
+        foo = parameters.FloatParamHandle(None, "foo", param)
         foo.set_store(parameters.FloatParamStore(("Fragment.foo", "*"), 0.0))
-        bar = parameters.FloatParamHandle(None, "bar")
+        bar = parameters.FloatParamHandle(None, "bar", param)
         bar.set_store(parameters.FloatParamStore(("Fragment.bar", "*"), 1.0))
 
         def make_axes(*axes):
