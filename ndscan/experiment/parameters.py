@@ -7,7 +7,6 @@
 # but to hang our heads in shame and manually instantiate the parameter handling
 # machinery for all supported value types, in particular to handle cases where e.g.
 # both an int and a float parameter is scanned at the same time.
-
 from artiq.language import host_only, portable, units
 from enum import Enum
 from numpy import int32
@@ -213,12 +212,15 @@ class ParamHandle:
     :param owner: The owning fragment.
     :param name: The name of the attribute in the owning fragment bound to this
         object.
+    :param parameter: The parameter associated with this handle. The
+        :attr:`~.ParamHandle.parameter` attribute points to the parameter currently
+        associated with this handle, tracking binding of the parameter.
     """
-    def __init__(self, owner: Any, name: str):
-        # `owner` will typically be a Fragment instance; no type hint to avoid circular
-        # dependency.
+    def __init__(self, owner: "Fragment", name: str, parameter):
         self.owner = owner
         self.name = name
+        self.parameter = parameter
+
         assert name.isidentifier(), ("ParamHandle name should be the identifier it is "
                                      "referred to as in the owning fragment.")
 

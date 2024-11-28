@@ -62,6 +62,7 @@ class GenericBase:
             fqn = next(iter(schemata.keys()))
             self.assertTrue(fqn.endswith("Foo.baz"))
             self.assertEqual(schemata[fqn], self.EXPECTED_DESCRIPTION | {"fqn": fqn})
+            self.assertEqual(foo.bar.parameter, foo.baz.parameter)
 
 
 class FloatParamCase(GenericBase.Cases):
