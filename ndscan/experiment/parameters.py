@@ -238,11 +238,6 @@ class ParamHandle:
         self._changed_after_use = True
 
     @portable
-    def _change_cb(self):
-        # Once transform lambdas are supported, handle them here.
-        self._changed_after_use = True
-
-    @portable
     def changed_after_use(self) -> bool:
         return self._changed_after_use
 
