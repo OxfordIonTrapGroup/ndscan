@@ -291,6 +291,7 @@ class NumericChannel(ResultChannel):
     def push(self, raw_value) -> None:
         """
         """
+        self._value_pushed = True
         self._last_value = raw_value
         self._push(raw_value)
 
