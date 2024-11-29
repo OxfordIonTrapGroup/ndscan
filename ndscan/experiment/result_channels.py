@@ -2,7 +2,7 @@
 Result handling building blocks.
 """
 
-from artiq.language import HasEnvironment, rpc
+from artiq.language import HasEnvironment, portable, rpc
 import artiq.language.units
 from typing import Any
 from .utils import dump_json
@@ -276,6 +276,29 @@ class NumericChannel(ResultChannel):
                                    "the scale manually".format(unit))
         self.scale = scale
         self.unit = unit
+
+        self._value_pushed: bool = False
+        self._last_value = self._coerce_to_type(0)
+
+    @portable
+    def get_last(self):
+        if not self._value_pushed:
+            raise RuntimeError("No value pushed to channel")
+
+        return self._last_value
+
+    @portable
+    def push(self, raw_value) -> None:
+        """
+        """
+        self._last_value = raw_value
+        self._push(raw_value)
+
+    @rpc(flags={"async"})
+    def _push(self, raw_value) -> None:
+        """
+        """
+        super().push(raw_value)
 
     def describe(self) -> dict[str, Any]:
         """"""
