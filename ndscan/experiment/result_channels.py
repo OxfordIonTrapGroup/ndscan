@@ -2,7 +2,7 @@
 Result handling building blocks.
 """
 
-from artiq.language import HasEnvironment, portable, rpc
+from artiq.language import HasEnvironment, kernel, portable, rpc
 import artiq.language.units
 from typing import Any
 from .utils import dump_json
@@ -280,8 +280,13 @@ class NumericChannel(ResultChannel):
         self._value_pushed: bool = False
         self._last_value = self._coerce_to_type(0)
 
-    @portable
+    @kernel
     def get_last(self):
+        """ Returns the last value pushed to this result channel.
+
+        This method is a workaround for limitations of ARTIQ python, which make it
+        impractical to extract values from the sinks without going through RPCs.
+        """
         if not self._value_pushed:
             raise RuntimeError("No value pushed to channel")
 
