@@ -66,6 +66,7 @@ requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks]
+docs = "make -C $POE_ROOT/docs html"
 fmt = "yapf -i -r examples ndscan test"
 fmt-test = "yapf -d -r examples ndscan test"
 lint = "flake8 examples ndscan test"
