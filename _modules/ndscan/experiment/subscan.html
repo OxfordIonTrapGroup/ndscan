@@ -312,8 +312,15 @@
                     <span class="n">expose_analysis_results</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Subscan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up a scan for the given subfragment.</span>
 
-<span class="sd">    Result channels are set up to expose the scan data in the owning fragment for</span>
-<span class="sd">    introspectability.</span>
+<span class="sd">    Result channels are set up in the owning fragment to expose the scan data, such that</span>
+<span class="sd">    scan results can be inspected after the fact.</span>
+
+<span class="sd">    This is the legacy subscan interface, and is geared primarily towards executing the</span>
+<span class="sd">    scan loop on the host by calling :meth:`Subscan.run` on the returned handle, which</span>
+<span class="sd">    takes care of setup/results management/etc. all at once. To be able to execute scans</span>
+<span class="sd">    on-kernel, :class:`.SubscanExpFragment` is preferred, as it directly integrates the</span>
+<span class="sd">    lifecycle management with the usual setup/cleanup methods, which is more convenient</span>
+<span class="sd">    in that case.</span>
 
 <span class="sd">    :param owner: The fragment to add the subscan to.</span>
 <span class="sd">    :param scan_name: Name of the scan; appears in result channel names, and the</span>
@@ -450,6 +457,94 @@
 <div class="viewcode-block" id="SubscanExpFragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment">[docs]</a>
 <span class="k">class</span> <span class="nc">SubscanExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An :class:`.ExpFragment` that scans another :class:`.ExpFragment` when it</span>
+<span class="sd">    executes (&quot;subscan&quot;).</span>
+
+<span class="sd">    Compared to the legacy way of creating subscans, :func:`setattr_subscan`, this</span>
+<span class="sd">    seamlessly supports the execution of ``@kernel`` subscans: not only can the scanned</span>
+<span class="sd">    fragment be run on the core device (which the legacy interface supported as well),</span>
+<span class="sd">    but the :meth:`run_once` method driving the scan itself can also be ``@kernel``.</span>
+<span class="sd">    This means that :class:`SubscanExpFragment` can be used as part of bigger on-device</span>
+<span class="sd">    experiments, and that frequent recompilation overhead for repeated subscans can be</span>
+<span class="sd">    avoided.</span>
+
+<span class="sd">    The API of this fragment supports use through composition, which is the natural and</span>
+<span class="sd">    more flexible way (compared to inheritance). However, when using such a fragment as</span>
+<span class="sd">    part of a larger code base, be aware of the general restrictions of the ARTIQ</span>
+<span class="sd">    Python compiler, in particular the fact that all instances of a class must share</span>
+<span class="sd">    the same type (including attributes, etc.). For this reason, you might want to</span>
+<span class="sd">    create a separate subtype of this class for each use, such that multiple pieces of</span>
+<span class="sd">    client code remain composable (can be combined into yet another bigger on-kernel</span>
+<span class="sd">    program). One way to achieve this is by just creating an &quot;empty&quot; subclass:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        class Foo(ExpFragment):</span>
+<span class="sd">            &quot;The fragment to be scanned.&quot;</span>
+<span class="sd">            def build_fragment(self) -&gt; None:</span>
+<span class="sd">                self.setattr_param(&quot;param_a&quot;, FloatParam, &quot;a value&quot;, default=0.0)</span>
+<span class="sd">                # […]</span>
+
+<span class="sd">            @kernel</span>
+<span class="sd">            def run_once(self):</span>
+<span class="sd">                # […]</span>
+
+<span class="sd">        class FooSubscan(SubscanExpFragment):</span>
+<span class="sd">            pass</span>
+
+<span class="sd">        class Parent(ExpFragment):</span>
+<span class="sd">            def build_fragment(self) -&gt; None:</span>
+<span class="sd">                self.setattr_fragment(&quot;foo&quot;, Foo)</span>
+<span class="sd">                self.setattr_fragment(&quot;scan&quot;, FooSubscan, self, &quot;foo&quot;,</span>
+<span class="sd">                    [(self.foo, &quot;param_a&quot;)])</span>
+<span class="sd">                self.setattr_param(&quot;num_scan_points&quot;,</span>
+<span class="sd">                                   IntParam,</span>
+<span class="sd">                                   &quot;Number of scan points&quot;,</span>
+<span class="sd">                                   default=21,</span>
+<span class="sd">                                   min=2)</span>
+
+<span class="sd">            @rpc(flags={&quot;async&quot;})</span>
+<span class="sd">            def configure_scan(self):</span>
+<span class="sd">                if self.num_scan_points.changed_after_use():</span>
+<span class="sd">                    self.scan.configure([(self.foo.param_a,</span>
+<span class="sd">                        LinearGenerator(0.0, 0.1, self.num_scan_points.use()))])</span>
+
+<span class="sd">            def host_setup(self):</span>
+<span class="sd">                # Run at least once before kernel starts such that all the fields</span>
+<span class="sd">                # are initialised (required for the ARTIQ compiler).</span>
+<span class="sd">                self.configure_scan()</span>
+<span class="sd">                super().host_setup()</span>
+
+<span class="sd">            @kernel</span>
+<span class="sd">            def device_setup(self):</span>
+<span class="sd">                # Update scan if num_scan_points was changed (can be left out if</span>
+<span class="sd">                # there are no scannable parameters influencing the scan settings).</span>
+<span class="sd">                self.configure_scan()</span>
+<span class="sd">                self.device_setup_subfragments()</span>
+
+<span class="sd">            @kernel</span>
+<span class="sd">            def run_once(self):</span>
+<span class="sd">                # Execute the subscan (and anything else that the fragment might</span>
+<span class="sd">                # need to do).</span>
+<span class="sd">                self.scan.run_once()</span>
+
+<span class="sd">    Another way is to just make the :class:`.ExpFragment` performing the subscan a</span>
+<span class="sd">    subclass of :class:`SubscanExpFragment`:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        class Parent(SubscanExpFragment):</span>
+<span class="sd">            def build_fragment(self) -&gt; None:</span>
+<span class="sd">                self.setattr_fragment(&quot;foo&quot;, Foo)</span>
+<span class="sd">                super().build_fragment(self, &quot;foo&quot;, [(self.foo, &quot;param_a&quot;)])</span>
+<span class="sd">                self.setattr_param(&quot;num_scan_points&quot;,</span>
+<span class="sd">                                   IntParam,</span>
+<span class="sd">                                   &quot;Number of scan points&quot;,</span>
+<span class="sd">                                   default=21,</span>
+<span class="sd">                                   min=2)</span>
+
+<span class="sd">            # configure_scan(), host_setup() and device_setup() as above.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="SubscanExpFragment.build_fragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.build_fragment">[docs]</a>
     <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -458,6 +553,20 @@
                        <span class="n">axis_params</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Fragment</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
                        <span class="n">save_results_by_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                        <span class="n">expose_analysis_results</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param scanned_fragment_parent: The fragment that owns the scanned fragment.</span>
+<span class="sd">        :param scanned_fragment: The fragment to scan. Can either be passed as a string</span>
+<span class="sd">            (the name of the fragment in the parent) or directly as the</span>
+<span class="sd">            :class:`.ExpFragment` reference.</span>
+<span class="sd">        :param axis_params: List of `(fragment, param_name)` tuples defining the axes</span>
+<span class="sd">            to be scanned.</span>
+<span class="sd">        :param save_results_by_default: Passed on to all derived result channels.</span>
+<span class="sd">        :param expose_analysis_results: Whether to add result channels to this fragment</span>
+<span class="sd">            that contain the results of default analyses set for the fragment. Note that</span>
+<span class="sd">            for this to work, all results must be known when this function is called</span>
+<span class="sd">            (that is, all ``axis_params`` should actually be scanned, and any analyses</span>
+<span class="sd">            must not fail to produce results).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">scanned_fragment</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">scanned_fragment_parent</span><span class="p">,</span> <span class="n">scanned_fragment</span><span class="p">)</span>
         <span class="n">scanned_fragment_parent</span><span class="o">.</span><span class="n">detach_fragment</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="p">)</span>
@@ -479,14 +588,18 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure point generators for each scan axis, and scan options.</span>
 
 <span class="sd">        This only needs to be called once (but can be called multiple times to change</span>
-<span class="sd">        settings between `run_once()` invocations, e.g. from a parent fragment</span>
-<span class="sd">        `{host, device}_setup()`).</span>
+<span class="sd">        settings between ``run_once()`` invocations, e.g. from a parent fragment</span>
+<span class="sd">        ``{host, device}_setup()``).</span>
+
+<span class="sd">        For on-core-device scans, this has to be called at least once before the kernel</span>
+<span class="sd">        is first entered (e.g. from ``host_setup()``) such that the types of all the</span>
+<span class="sd">        fields can be known.</span>
 
 <span class="sd">        :param axis_generators: The list of scan axes (dimensions). Each element is a</span>
-<span class="sd">            tuple of parameter to scan (handle must have been passed to</span>
-<span class="sd">            :func:`setattr_subscan` to set up), and the :class:`ScanGenerator` to use</span>
-<span class="sd">            to generate the points.</span>
-<span class="sd">        :param options: :class:`ScanOptions` to control scan execution.</span>
+<span class="sd">            tuple of parameter to scan (must correspond to one of the axes specified</span>
+<span class="sd">            in the constructor; see :meth:`build_fragment`), and the</span>
+<span class="sd">            :class:`.ScanGenerator` to use to generate the points.</span>
+<span class="sd">        :param options: :class:`.ScanOptions` to control scan execution.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">set_scan_spec</span><span class="p">(</span><span class="n">axis_generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
@@ -494,23 +607,27 @@
     <span class="c1"># We don&#39;t forward prepare(), as there will be a top-level ExpFragment to own the</span>
     <span class="c1"># scanned fragment anyway, which can then take care of this directly.</span>
 
-<div class="viewcode-block" id="SubscanExpFragment.host_setup">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.host_setup">[docs]</a>
     <span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
 
-
-<div class="viewcode-block" id="SubscanExpFragment.host_cleanup">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.host_cleanup">[docs]</a>
     <span class="k">def</span> <span class="nf">host_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span></div>
-
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
 
 <div class="viewcode-block" id="SubscanExpFragment.run_once">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.run_once">[docs]</a>
-    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the subscan as previously configured.</span>
+
+<span class="sd">        This has the usual semantics of a fragment ``run_once()`` method, i.e. calling</span>
+<span class="sd">        it will acquire one set of results for the fragment (here, a complete scan) and</span>
+<span class="sd">        write them to the result channels. If the scanned fragment has an ``@kernel``</span>
+<span class="sd">        ``run_once()`` method, this will automatically be made a ``@kernel`` method as</span>
+<span class="sd">        well.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span></div>
 
 

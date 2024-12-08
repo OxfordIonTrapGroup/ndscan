@@ -667,7 +667,7 @@ created in <a class="reference internal" href="#ndscan.experiment.fragment.Fragm
 <dd><p>Prepare this instance for execution
 (see <code class="docutils literal notranslate"><span class="pre">artiq.language.environment.Experiment.prepare</span></code>).</p>
 <p>This is invoked only once per (sub)scan, after <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.build_fragment" title="ndscan.experiment.fragment.Fragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Fragment.build_fragment()</span></code></a>
-but before <a class="reference internal" href="#ndscan.experiment.fragment.Fragment.host_setup" title="ndscan.experiment.fragment.Fragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a>. At this point, parameters, datasets and devices
+but before <code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code>. At this point, parameters, datasets and devices
 can be accessed, but devices must not yet be.</p>
 <p>For top-level scans, this can (and will) be executed in the <cite>prepare</cite> scheduler
 pipeline stage.</p>
@@ -1475,8 +1475,14 @@ another child fragment as part of its execution.</p>
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.setattr_subscan">
 <span class="sig-prename descclassname"><span class="pre">ndscan.experiment.subscan.</span></span><span class="sig-name descname"><span class="pre">setattr_subscan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">owner</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment"><span class="pre">Fragment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fragment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><span class="pre">ExpFragment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment"><span class="pre">Fragment</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_results_by_default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expose_analysis_results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ndscan.experiment.subscan.Subscan" title="ndscan.experiment.subscan.Subscan"><span class="pre">Subscan</span></a></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#setattr_subscan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.setattr_subscan" title="Link to this definition"></a></dt>
 <dd><p>Set up a scan for the given subfragment.</p>
-<p>Result channels are set up to expose the scan data in the owning fragment for
-introspectability.</p>
+<p>Result channels are set up in the owning fragment to expose the scan data, such that
+scan results can be inspected after the fact.</p>
+<p>This is the legacy subscan interface, and is geared primarily towards executing the
+scan loop on the host by calling <a class="reference internal" href="#ndscan.experiment.subscan.Subscan.run" title="ndscan.experiment.subscan.Subscan.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Subscan.run()</span></code></a> on the returned handle, which
+takes care of setup/results management/etc. all at once. To be able to execute scans
+on-kernel, <a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment" title="ndscan.experiment.subscan.SubscanExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubscanExpFragment</span></code></a> is preferred, as it directly integrates the
+lifecycle management with the usual setup/cleanup methods, which is more convenient
+in that case.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1509,7 +1515,7 @@ produce results).</p></li>
 executed.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.Subscan.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanOptions" title="ndscan.experiment.scan_generator.ScanOptions"><span class="pre">ScanOptions</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=298330576)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execute_default_analyses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel"><span class="pre">ResultChannel</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan.run" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanOptions" title="ndscan.experiment.scan_generator.ScanOptions"><span class="pre">ScanOptions</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=2041986697)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execute_default_analyses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel"><span class="pre">ResultChannel</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan.run" title="Link to this definition"></a></dt>
 <dd><p>Run the subscan with the given axis iteration specifications, and return the
 data point coordinates/result channel values.</p>
 <dl class="field-list simple">
@@ -1538,22 +1544,106 @@ lists of their values.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.SubscanExpFragment">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ndscan.experiment.subscan.</span></span><span class="sig-name descname"><span class="pre">SubscanExpFragment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">managers_or_parent</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment" title="Link to this definition"></a></dt>
-<dd><dl class="py method">
+<dd><p>An <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> that scans another <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> when it
+executes (“subscan”).</p>
+<p>Compared to the legacy way of creating subscans, <a class="reference internal" href="#ndscan.experiment.subscan.setattr_subscan" title="ndscan.experiment.subscan.setattr_subscan"><code class="xref py py-func docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a>, this
+seamlessly supports the execution of <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code> subscans: not only can the scanned
+fragment be run on the core device (which the legacy interface supported as well),
+but the <a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment.run_once" title="ndscan.experiment.subscan.SubscanExpFragment.run_once"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run_once()</span></code></a> method driving the scan itself can also be <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code>.
+This means that <a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment" title="ndscan.experiment.subscan.SubscanExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubscanExpFragment</span></code></a> can be used as part of bigger on-device
+experiments, and that frequent recompilation overhead for repeated subscans can be
+avoided.</p>
+<p>The API of this fragment supports use through composition, which is the natural and
+more flexible way (compared to inheritance). However, when using such a fragment as
+part of a larger code base, be aware of the general restrictions of the ARTIQ
+Python compiler, in particular the fact that all instances of a class must share
+the same type (including attributes, etc.). For this reason, you might want to
+create a separate subtype of this class for each use, such that multiple pieces of
+client code remain composable (can be combined into yet another bigger on-kernel
+program). One way to achieve this is by just creating an “empty” subclass:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+    <span class="s2">&quot;The fragment to be scanned.&quot;</span>
+    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;param_a&quot;</span><span class="p">,</span> <span class="n">FloatParam</span><span class="p">,</span> <span class="s2">&quot;a value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="c1"># […]</span>
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># […]</span>
+
+<span class="k">class</span> <span class="nc">FooSubscan</span><span class="p">(</span><span class="n">SubscanExpFragment</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">Parent</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">Foo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">FooSubscan</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+            <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">foo</span><span class="p">,</span> <span class="s2">&quot;param_a&quot;</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;num_scan_points&quot;</span><span class="p">,</span>
+                           <span class="n">IntParam</span><span class="p">,</span>
+                           <span class="s2">&quot;Number of scan points&quot;</span><span class="p">,</span>
+                           <span class="n">default</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span>
+                           <span class="nb">min</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="k">def</span> <span class="nf">configure_scan</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_scan_points</span><span class="o">.</span><span class="n">changed_after_use</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scan</span><span class="o">.</span><span class="n">configure</span><span class="p">([(</span><span class="bp">self</span><span class="o">.</span><span class="n">foo</span><span class="o">.</span><span class="n">param_a</span><span class="p">,</span>
+                <span class="n">LinearGenerator</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_scan_points</span><span class="o">.</span><span class="n">use</span><span class="p">()))])</span>
+
+    <span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Run at least once before kernel starts such that all the fields</span>
+        <span class="c1"># are initialised (required for the ARTIQ compiler).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configure_scan</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span> <span class="nf">device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Update scan if num_scan_points was changed (can be left out if</span>
+        <span class="c1"># there are no scannable parameters influencing the scan settings).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configure_scan</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_setup_subfragments</span><span class="p">()</span>
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Execute the subscan (and anything else that the fragment might</span>
+        <span class="c1"># need to do).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Another way is to just make the <a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> performing the subscan a
+subclass of <a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment" title="ndscan.experiment.subscan.SubscanExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubscanExpFragment</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Parent</span><span class="p">(</span><span class="n">SubscanExpFragment</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_fragment</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">Foo</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">foo</span><span class="p">,</span> <span class="s2">&quot;param_a&quot;</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_param</span><span class="p">(</span><span class="s2">&quot;num_scan_points&quot;</span><span class="p">,</span>
+                           <span class="n">IntParam</span><span class="p">,</span>
+                           <span class="s2">&quot;Number of scan points&quot;</span><span class="p">,</span>
+                           <span class="n">default</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span>
+                           <span class="nb">min</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># configure_scan(), host_setup() and device_setup() as above.</span>
+</pre></div>
+</div>
+<dl class="py method">
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.SubscanExpFragment.build_fragment">
 <span class="sig-name descname"><span class="pre">build_fragment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scanned_fragment_parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment"><span class="pre">Fragment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">scanned_fragment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><span class="pre">ExpFragment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.fragment.Fragment" title="ndscan.experiment.fragment.Fragment"><span class="pre">Fragment</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_results_by_default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expose_analysis_results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.build_fragment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.build_fragment" title="Link to this definition"></a></dt>
-<dd><p>Initialise this fragment, building up the hierarchy of subfragments,
-parameters and result channels.</p>
-<p>This is where any constructor-type initialisation should take place, similar to
-the role <code class="docutils literal notranslate"><span class="pre">build()</span></code> has for a bare <code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code>.</p>
-<p>While this method executes, the various <code class="docutils literal notranslate"><span class="pre">setattr_*()</span></code> functions can be used
-to create subfragments, parameters, and result channels.</p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>args</strong> – Any extra arguments that were passed to the <code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code>
-constructor.</p></li>
-<li><p><strong>kwargs</strong> – Any extra keyword arguments that were passed to the
-<code class="docutils literal notranslate"><span class="pre">HasEnvironment</span></code> constructor.</p></li>
+<li><p><strong>scanned_fragment_parent</strong> – The fragment that owns the scanned fragment.</p></li>
+<li><p><strong>scanned_fragment</strong> – The fragment to scan. Can either be passed as a string
+(the name of the fragment in the parent) or directly as the
+<a class="reference internal" href="#ndscan.experiment.fragment.ExpFragment" title="ndscan.experiment.fragment.ExpFragment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpFragment</span></code></a> reference.</p></li>
+<li><p><strong>axis_params</strong> – List of <cite>(fragment, param_name)</cite> tuples defining the axes
+to be scanned.</p></li>
+<li><p><strong>save_results_by_default</strong> – Passed on to all derived result channels.</p></li>
+<li><p><strong>expose_analysis_results</strong> – Whether to add result channels to this fragment
+that contain the results of default analyses set for the fragment. Note that
+for this to work, all results must be known when this function is called
+(that is, all <code class="docutils literal notranslate"><span class="pre">axis_params</span></code> should actually be scanned, and any analyses
+must not fail to produce results).</p></li>
 </ul>
 </dd>
 </dl>
@@ -1561,79 +1651,36 @@ constructor.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.SubscanExpFragment.configure">
-<span class="sig-name descname"><span class="pre">configure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanOptions" title="ndscan.experiment.scan_generator.ScanOptions"><span class="pre">ScanOptions</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=2185670270)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.configure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.configure" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">configure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanOptions" title="ndscan.experiment.scan_generator.ScanOptions"><span class="pre">ScanOptions</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=2071411011)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.configure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.configure" title="Link to this definition"></a></dt>
 <dd><p>Configure point generators for each scan axis, and scan options.</p>
 <p>This only needs to be called once (but can be called multiple times to change
-settings between <cite>run_once()</cite> invocations, e.g. from a parent fragment
-<cite>{host, device}_setup()</cite>).</p>
+settings between <code class="docutils literal notranslate"><span class="pre">run_once()</span></code> invocations, e.g. from a parent fragment
+<code class="docutils literal notranslate"><span class="pre">{host,</span> <span class="pre">device}_setup()</span></code>).</p>
+<p>For on-core-device scans, this has to be called at least once before the kernel
+is first entered (e.g. from <code class="docutils literal notranslate"><span class="pre">host_setup()</span></code>) such that the types of all the
+fields can be known.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>axis_generators</strong> – The list of scan axes (dimensions). Each element is a
-tuple of parameter to scan (handle must have been passed to
-<a class="reference internal" href="#ndscan.experiment.subscan.setattr_subscan" title="ndscan.experiment.subscan.setattr_subscan"><code class="xref py py-func docutils literal notranslate"><span class="pre">setattr_subscan()</span></code></a> to set up), and the <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanGenerator</span></code> to use
-to generate the points.</p></li>
-<li><p><strong>options</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">ScanOptions</span></code> to control scan execution.</p></li>
+tuple of parameter to scan (must correspond to one of the axes specified
+in the constructor; see <a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment.build_fragment" title="ndscan.experiment.subscan.SubscanExpFragment.build_fragment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_fragment()</span></code></a>), and the
+<a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScanGenerator</span></code></a> to use to generate the points.</p></li>
+<li><p><strong>options</strong> – <a class="reference internal" href="#ndscan.experiment.scan_generator.ScanOptions" title="ndscan.experiment.scan_generator.ScanOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScanOptions</span></code></a> to control scan execution.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="ndscan.experiment.subscan.SubscanExpFragment.host_setup">
-<span class="sig-name descname"><span class="pre">host_setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.host_setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.host_setup" title="Link to this definition"></a></dt>
-<dd><p>Perform host-side initialisation.</p>
-<p>For fragments used as part of an on-core-device scan (i.e. with an <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code>
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">device_setup()</span></code>/<a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment.run_once" title="ndscan.experiment.subscan.SubscanExpFragment.run_once"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run_once()</span></code></a>), this will be called on the host,
-immediately before the top-level kernel function is entered.</p>
-<p>Typical uses include initialising member variables for latter use in <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code>
-functions, and setting parameters not modifiable from kernels (e.g. because
-modifying a parameter requires launching another experiment to effect the
-change).</p>
-<p>The default implementation calls <a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment.host_setup" title="ndscan.experiment.subscan.SubscanExpFragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a> recursively on all
-subfragments. When overriding it in a fragment with subfragments, consider
-forwarding to the default implementation (see example).</p>
-<p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="n">initialise_some_things</span><span class="p">()</span>
-
-    <span class="c1"># To continue to initialise all subfragments, invoke the parent</span>
-    <span class="c1"># implementation:</span>
-    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="ndscan.experiment.subscan.SubscanExpFragment.host_cleanup">
-<span class="sig-name descname"><span class="pre">host_cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.host_cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.host_cleanup" title="Link to this definition"></a></dt>
-<dd><p>Perform host-side cleanup after an experiment has been run.</p>
-<p>This is the equivalent of <a class="reference internal" href="#ndscan.experiment.subscan.SubscanExpFragment.host_setup" title="ndscan.experiment.subscan.SubscanExpFragment.host_setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">host_setup()</span></code></a> to be run <em>after</em> the main
-experiment. It is executed on the host after the top-level kernel function, if
-any, has been left, as control is about to leave the experiment (whether because
-a scan has been finished, or the experiment is about to be paused for a
-higher-priority run to be scheduled in.</p>
-<p>Typically, fragments should strive to completely initialise the state of all
-their dependencies for robustness. As such, manual cleanup should almost never
-be necessary.</p>
-<p>By default, calls <cite>host_cleanup()</cite> on all subfragments, in reverse
-initialisation order. The default implementation catches all exceptions thrown
-from cleanups and converts them into log messages to ensure no cleanups are
-skipped. As there will be no exception propagating to the caller to mark the
-experiment as failed, failing cleanups should be avoided.</p>
-<p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">host_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="n">tear_down_some_things</span><span class="p">()</span>
-    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.SubscanExpFragment.run_once">
-<span class="sig-name descname"><span class="pre">run_once</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.run_once"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.run_once" title="Link to this definition"></a></dt>
-<dd><p>Execute the experiment described by the fragment once with the current
-parameters, producing one set of results (if any).</p>
+<span class="sig-name descname"><span class="pre">run_once</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.run_once"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.run_once" title="Link to this definition"></a></dt>
+<dd><p>Execute the subscan as previously configured.</p>
+<p>This has the usual semantics of a fragment <code class="docutils literal notranslate"><span class="pre">run_once()</span></code> method, i.e. calling
+it will acquire one set of results for the fragment (here, a complete scan) and
+write them to the result channels. If the scanned fragment has an <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code>
+<code class="docutils literal notranslate"><span class="pre">run_once()</span></code> method, this will automatically be made a <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code> method as
+well.</p>
 </dd></dl>
 
 </dd></dl>
