@@ -757,7 +757,7 @@ class ExpFragment(Fragment):
         (see ``artiq.language.environment.Experiment.prepare``).
 
         This is invoked only once per (sub)scan, after :meth:`Fragment.build_fragment`
-        but before :meth:`.host_setup`. At this point, parameters, datasets and devices
+        but before :meth:`host_setup`. At this point, parameters, datasets and devices
         can be accessed, but devices must not yet be.
 
         For top-level scans, this can (and will) be executed in the `prepare` scheduler

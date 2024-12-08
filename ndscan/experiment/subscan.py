@@ -228,8 +228,15 @@ def setattr_subscan(owner: Fragment,
                     expose_analysis_results: bool = True) -> Subscan:
     """Set up a scan for the given subfragment.
 
-    Result channels are set up to expose the scan data in the owning fragment for
-    introspectability.
+    Result channels are set up in the owning fragment to expose the scan data, such that
+    scan results can be inspected after the fact.
+
+    This is the legacy subscan interface, and is geared primarily towards executing the
+    scan loop on the host by calling :meth:`Subscan.run` on the returned handle, which
+    takes care of setup/results management/etc. all at once. To be able to execute scans
+    on-kernel, :class:`.SubscanExpFragment` is preferred, as it directly integrates the
+    lifecycle management with the usual setup/cleanup methods, which is more convenient
+    in that case.
 
     :param owner: The fragment to add the subscan to.
     :param scan_name: Name of the scan; appears in result channel names, and the
@@ -363,12 +370,114 @@ def setup_subscan(result_target: Fragment,
 
 
 class SubscanExpFragment(ExpFragment):
+    """An :class:`.ExpFragment` that scans another :class:`.ExpFragment` when it
+    executes ("subscan").
+
+    Compared to the legacy way of creating subscans, :func:`setattr_subscan`, this
+    seamlessly supports the execution of ``@kernel`` subscans: not only can the scanned
+    fragment be run on the core device (which the legacy interface supported as well),
+    but the :meth:`run_once` method driving the scan itself can also be ``@kernel``.
+    This means that :class:`SubscanExpFragment` can be used as part of bigger on-device
+    experiments, and that frequent recompilation overhead for repeated subscans can be
+    avoided.
+
+    The API of this fragment supports use through composition, which is the natural and
+    more flexible way (compared to inheritance). However, when using such a fragment as
+    part of a larger code base, be aware of the general restrictions of the ARTIQ
+    Python compiler, in particular the fact that all instances of a class must share
+    the same type (including attributes, etc.). For this reason, you might want to
+    create a separate subtype of this class for each use, such that multiple pieces of
+    client code remain composable (can be combined into yet another bigger on-kernel
+    program). One way to achieve this is by just creating an "empty" subclass:
+
+    .. code-block:: python
+
+        class Foo(ExpFragment):
+            "The fragment to be scanned."
+            def build_fragment(self) -> None:
+                self.setattr_param("param_a", FloatParam, "a value", default=0.0)
+                # […]
+
+            @kernel
+            def run_once(self):
+                # […]
+
+        class FooSubscan(SubscanExpFragment):
+            pass
+
+        class Parent(ExpFragment):
+            def build_fragment(self) -> None:
+                self.setattr_fragment("foo", Foo)
+                self.setattr_fragment("scan", FooSubscan, self, "foo",
+                    [(self.foo, "param_a")])
+                self.setattr_param("num_scan_points",
+                                   IntParam,
+                                   "Number of scan points",
+                                   default=21,
+                                   min=2)
+
+            @rpc(flags={"async"})
+            def configure_scan(self):
+                if self.num_scan_points.changed_after_use():
+                    self.scan.configure([(self.foo.param_a,
+                        LinearGenerator(0.0, 0.1, self.num_scan_points.use()))])
+
+            def host_setup(self):
+                # Run at least once before kernel starts such that all the fields
+                # are initialised (required for the ARTIQ compiler).
+                self.configure_scan()
+                super().host_setup()
+
+            @kernel
+            def device_setup(self):
+                # Update scan if num_scan_points was changed (can be left out if
+                # there are no scannable parameters influencing the scan settings).
+                self.configure_scan()
+                self.device_setup_subfragments()
+
+            @kernel
+            def run_once(self):
+                # Execute the subscan (and anything else that the fragment might
+                # need to do).
+                self.scan.run_once()
+
+    Another way is to just make the :class:`.ExpFragment` performing the subscan a
+    subclass of :class:`SubscanExpFragment`:
+
+    .. code-block:: python
+
+        class Parent(SubscanExpFragment):
+            def build_fragment(self) -> None:
+                self.setattr_fragment("foo", Foo)
+                super().build_fragment(self, "foo", [(self.foo, "param_a")])
+                self.setattr_param("num_scan_points",
+                                   IntParam,
+                                   "Number of scan points",
+                                   default=21,
+                                   min=2)
+
+            # configure_scan(), host_setup() and device_setup() as above.
+    """
     def build_fragment(self,
                        scanned_fragment_parent: Fragment,
                        scanned_fragment: ExpFragment | str,
                        axis_params: list[tuple[Fragment, str]],
                        save_results_by_default: bool = True,
                        expose_analysis_results: bool = True) -> None:
+        """
+        :param scanned_fragment_parent: The fragment that owns the scanned fragment.
+        :param scanned_fragment: The fragment to scan. Can either be passed as a string
+            (the name of the fragment in the parent) or directly as the
+            :class:`.ExpFragment` reference.
+        :param axis_params: List of `(fragment, param_name)` tuples defining the axes
+            to be scanned.
+        :param save_results_by_default: Passed on to all derived result channels.
+        :param expose_analysis_results: Whether to add result channels to this fragment
+            that contain the results of default analyses set for the fragment. Note that
+            for this to work, all results must be known when this function is called
+            (that is, all ``axis_params`` should actually be scanned, and any analyses
+            must not fail to produce results).
+        """
         if isinstance(scanned_fragment, str):
             scanned_fragment = getattr(scanned_fragment_parent, scanned_fragment)
         scanned_fragment_parent.detach_fragment(scanned_fragment)
@@ -387,14 +496,18 @@ class SubscanExpFragment(ExpFragment):
         """Configure point generators for each scan axis, and scan options.
 
         This only needs to be called once (but can be called multiple times to change
-        settings between `run_once()` invocations, e.g. from a parent fragment
-        `{host, device}_setup()`).
+        settings between ``run_once()`` invocations, e.g. from a parent fragment
+        ``{host, device}_setup()``).
+
+        For on-core-device scans, this has to be called at least once before the kernel
+        is first entered (e.g. from ``host_setup()``) such that the types of all the
+        fields can be known.
 
         :param axis_generators: The list of scan axes (dimensions). Each element is a
-            tuple of parameter to scan (handle must have been passed to
-            :func:`setattr_subscan` to set up), and the :class:`ScanGenerator` to use
-            to generate the points.
-        :param options: :class:`ScanOptions` to control scan execution.
+            tuple of parameter to scan (must correspond to one of the axes specified
+            in the constructor; see :meth:`build_fragment`), and the
+            :class:`.ScanGenerator` to use to generate the points.
+        :param options: :class:`.ScanOptions` to control scan execution.
         """
         self._subscan.set_scan_spec(axis_generators, options)
 
@@ -402,14 +515,24 @@ class SubscanExpFragment(ExpFragment):
     # scanned fragment anyway, which can then take care of this directly.
 
     def host_setup(self):
+        """"""
         super().host_setup()
         self._scanned_fragment.host_setup()
 
     def host_cleanup(self):
+        """"""
         self._scanned_fragment.host_cleanup()
         super().host_cleanup()
 
-    def run_once(self):
+    def run_once(self) -> None:
+        """Execute the subscan as previously configured.
+
+        This has the usual semantics of a fragment ``run_once()`` method, i.e. calling
+        it will acquire one set of results for the fragment (here, a complete scan) and
+        write them to the result channels. If the scanned fragment has an ``@kernel``
+        ``run_once()`` method, this will automatically be made a ``@kernel`` method as
+        well.
+        """
         self._subscan.acquire()
 
     @kernel
