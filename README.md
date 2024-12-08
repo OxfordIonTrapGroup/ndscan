@@ -29,11 +29,12 @@ Quickstart guide
 
 To get started with `ndscan`, first prepare a Python 3.10+ environment with
 ARTIQ as usual (Nix, Poetry or some form of virtualenv is recommended).
-**This development version (`master` branch) depends on a recent ARTIQ 8
-version (yet unreleased) due to backwards-incompatible changes in the latter.
-If you still need to use an older ARTIQ version, please see the
+**This development version (`master` branch) depends on ARTIQ 8+ due to
+backwards-incompatible changes in ARTIQ's APIs. If you still need to use an
+older ARTIQ version, please see the
 [release-0.3](https://github.com/OxfordIonTrapGroup/ndscan/tree/release-0.3)
-branch instead.**
+branch instead** (or be prepared to resolve some issues yourself by
+selectively reverting a few changes).
 
 Once your environment is set up, install this package. For example, to use
 `ndscan` directly from the Git checkout without directly using the
