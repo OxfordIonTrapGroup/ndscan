@@ -202,7 +202,13 @@ class AddOneAggregate(AggregateExpFragment):
     def build_fragment(self) -> None:
         self.setattr_fragment("a", AddOneFragment)
         self.setattr_fragment("b", AddOneFragment)
-        return super().build_fragment([self.a, self.b])
+
+        self.setattr_result("sum", FloatChannel)
+
+        def push_sum():
+            self.sum.push(self.a.value.get() + 1 + self.b.value.get() + 1)
+
+        return super().build_fragment([self.a, self.b, push_sum])
 
 
 class TrivialKernelAggregate(AggregateExpFragment):
