@@ -3,7 +3,7 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from copy import deepcopy
 import logging
-from typing import Any
+from typing import Any, Callable
 
 from .default_analysis import DefaultAnalysis, ResultPrefixAnalysisWrapper
 from .parameters import ParamHandle, ParamStore, ParamBase
@@ -793,8 +793,8 @@ def _skip_common_prefix(target: list, reference: list) -> list:
 
 
 class AggregateExpFragment(ExpFragment):
-    r"""Combines multiple :class:`ExpFragment`\ s by executing them one after each other
-    each time :meth:`run_once` is called.
+    r"""Combines multiple :class:`ExpFragment`\ s and callables by executing them one
+    after each other each time :meth:`run_once` is called.
 
     To use, derive from the class and, in the subclass ``build_fragment()`` method
     forward to the parent implementation after constructing all the relevant fragments::
@@ -810,45 +810,67 @@ class AggregateExpFragment(ExpFragment):
                 self.setattr_param_rebind("freq", self.foo)
                 self.bar.bind_param("freq", self.freq)
 
-                # Let AggregateExpFragment default implementations
+                _, bar_store = self.bar.override_param("param")
+
+                @kernel
+                def forward() -> None:
+                    # Set the value of one of bar's parameters based on
+                    # one of foo's results
+                    bar_store.set_value(self.foo.result.get_last())
+
+                # Let AggregateExpFragment's default implementations
                 # take care of the rest, e.g. have self.run_once()
-                # call self.foo.run_once(), then self.bar.run_once().
-                super().build_fragment([self.foo, self.bar])
+                # call self.foo.run_once(), then forward() and, finally,
+                # self.bar.run_once()
+                super().build_fragment([self.foo, forward, self.bar])
 
         ScanFooBarAggregate = make_fragment_scan_exp(FooBarAggregate)
+
+
+    Each aggregated experiment should be independent, i.e. do its own setup and clean
+    up.
     """
-    def build_fragment(self, exp_fragments: list[ExpFragment]) -> None:
+    def build_fragment(self, operands: list[Callable[[], None] | ExpFragment]) -> None:
         """
-        :param exp_fragments: The "child" fragments to execute. The fragments will be
-            run in the given order. No special treatment is given to the
-            ``{host,device}_{setup,cleanup}()`` methods, which will just be executed
-            through the recursive default implementations unless overridden by the user.
+        :param operands: The list of objects to be aggregated. Each item may either be
+            a "child" fragment or a callable. The operands will be run in the given
+            order, calling ``run_once`` on child fragments. No special treatment is
+            given to the ``{host,device}_{setup,cleanup}()`` methods, which will be
+            executed through the recursive default implementations unless overridden by
+            the user.
         """
-        if not exp_fragments:
-            raise ValueError("At least one child ExpFragment should be given")
-        self._exp_fragments = exp_fragments
+        if not operands:
+            raise ValueError("At least one operand must be given")
+
+        operand_funcs = [
+            operand.run_once if isinstance(operand, ExpFragment) else operand
+            for operand in operands
+        ]
+        self._exp_fragments = [
+            operand for operand in operands if isinstance(operand, ExpFragment)
+        ]
 
         # Since polymorphism is not supported by the ARTIQ compiler, make named
-        # attributes for the exp fragments and make a _run_once_impl() helper function
+        # attributes for each operand and make a _run_once_impl() helper function
         # that calls them one after each other.
-        for i, exp in enumerate(exp_fragments):
-            setattr(self, f"_exp_fragment_{i}", exp)
-        self._run_once_impl = kernel_from_string(["self"], "\n".join(
-            [f"self._exp_fragment_{i}.run_once()" for i in range(len(exp_fragments))]),
-                                                 portable)
+        for i, func in enumerate(operand_funcs):
+            setattr(self, f"_operand_func_{i}", func)
 
-        # If the child fragment run_once() methods are @kernel, then make our run_once()
+        self._run_once_impl = kernel_from_string(["self"], "\n".join(
+            [f"self._operand_func_{i}()" for i in range(len(operand_funcs))]), portable)
+
+        # If all operand functions are @kernel, then make our run_once()
         # run on the kernel too. Reassigning the member function is a bit janky, but so
         # would it be to update the decorator, as `artiq_embedded` is an immutable tuple
         # and the type is not public.
-        is_kernels = [is_kernel(e.run_once) for e in exp_fragments]
+        is_kernels = [is_kernel(func) for func in operand_funcs]
         if all(is_kernels):
             self.run_once = self._kernel_run_once
         else:
             if any(is_kernels):
-                logger.warning("Mixed host/@kernel run_once() methods among passed " +
-                               "ExpFragments; execution will be slow as the " +
-                               "kernel(s) will be recompiled for each scan point.")
+                logger.warning("Mixed host/@kernel functions among passed callables; " +
+                               "execution will be slow as the kernel(s) will be "
+                               "recompiled for each scan point.")
 
     def prepare(self) -> None:
         ""
@@ -856,13 +878,12 @@ class AggregateExpFragment(ExpFragment):
             exp.prepare()
 
     def run_once(self) -> None:
-        """Execute the experiment by forwarding to each child fragment.
+        """Execute the experiment by calling all operands.
 
-        Invokes all child fragments in the order they are passed to
-        :meth:`build_fragment`. This method can be overridden if more complex behaviour
-        is desired.
+        Invokes all operands in the order they are passed to :meth:`build_fragment`.
+        This method can be overridden if more complex behaviour is desired.
 
-        If all child fragments have a ``@kernel`` ``run_once()``, this is implemented on
+        If all operands have a ``@kernel`` ``run_once()``, this is implemented on
         the core device as well to avoid costly kernel recompilations in a scan.
         """
         return self._run_once_impl(self)
