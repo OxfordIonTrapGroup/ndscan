@@ -32,6 +32,7 @@ class TestAggregateExpFragment(HasEnvironmentCase):
         self.assertEqual(parent.b.num_prepare_calls, 1)
         self.assertEqual(result[parent.a.result], 1.0)
         self.assertEqual(result[parent.b.result], 1.0)
+        self.assertEqual(result[parent.sum], 2.0)
 
     def test_kernel(self):
         parent = self.create(TrivialKernelAggregate, [])
