@@ -14,7 +14,7 @@ with the appropriate type argument (:class:`FloatParam`, :class:`IntParam`,
 from artiq.language import host_only, portable, units
 from enum import Enum
 from numpy import int32
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Optional
 from ..utils import eval_param_default, GetDataset
 
 __all__ = [
@@ -260,6 +260,14 @@ class ParamHandle:
         self._store = None
         self._changed_after_use = True
 
+        self._parent_handle: ParamHandle | None = None
+        self._children_handles: list[ParamHandle] = []
+
+    def get_store(self) -> Optional[ParamStore]:
+        """
+        """
+        return self._store
+
     def set_store(self, store: ParamStore) -> None:
         """
         """
@@ -274,6 +282,39 @@ class ParamHandle:
         """
         """
         return self._changed_after_use
+
+    @host_only
+    def _get_toplevel_handle(self) -> "ParamHandle":
+        """
+        Get the highest level ParamHandle in the chain of bound parameters
+
+        Walks the DAG of bound parameters to find the highest level handle.
+        That may be this ParamHandle if this parameter is not rebound.
+        """
+        if self._parent_handle is None:
+            return self
+        else:
+            return self._parent_handle._get_toplevel_handle()
+
+    @host_only
+    def _get_all_handles_for_param(self) -> list["ParamHandle"]:
+        """
+        Get all handles that are bound to this handle (including this one)
+
+        Walks the DAG of bound parameters to find all child handles.
+        """
+        result = [self]
+        for child in self._children_handles:
+            result.extend(child._get_all_handles_for_param())
+        return result
+
+    @host_only
+    def _add_child_handle(self, rebound_handle: "ParamHandle"):
+        """
+        Mark a new parameter handle as being rebound to this one
+        """
+        rebound_handle._parent_handle = self
+        self._children_handles.append(rebound_handle)
 
 
 class FloatParamHandle(ParamHandle):
