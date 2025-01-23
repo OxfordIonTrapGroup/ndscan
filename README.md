@@ -24,6 +24,15 @@ extensions to the library, but detailed design ideas for them might already
 exist.
 
 
+Release notes
+-------------
+
+### Latest Git (unreleased)
+
+ - Plots: Nonsensically large error bars (e.g. from bad fits) are now ignored
+   for auto-scaling.
+
+
 Quickstart guide
 ----------------
 
