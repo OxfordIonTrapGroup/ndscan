@@ -64,6 +64,7 @@ class _XYSeries(QtCore.QObject):
         self.error_bar_item = error_bar_item
         self.error_bar_name = error_bar_name
         self.num_current_points = 0
+        self.error_bar_bounds_ignored = False
         self.series_idx = series_idx
         self.pane_idx = pane_idx
 
@@ -106,19 +107,37 @@ class _XYSeries(QtCore.QObject):
 
         # source_idxs can be queried later via spot.data().
         self.data_item.setData(x_data, y_data, data=source_idxs)
-
         if y_err is not None:
             self.error_bar_item.setData(x=x_data, y=y_data, height=2 * y_err)
 
-        if self.num_current_points == 0:
+        # If we get here, we have at least one point (TODO: check if this is true; this
+        # was the logic previously), so make sure the main data item has been added.
+        if not self.data_item.parentItem():
             self.view_box.addItem(self.data_item)
-            if y_err is not None:
-                self.view_box.addItem(self.error_bar_item)
-        elif averaging_enabled != self.averaging_enabled:
-            if y_err is None:
+
+        # Add ErrorBarItem if it is to be shown, and remove it otherwise. This can
+        # change in either direction over the lifetime of a plot depending on whether
+        # averaging is enabled.
+        if y_err is None:
+            if self.error_bar_item.parentItem():
                 self.view_box.removeItem(self.error_bar_item)
-            elif not self.error_bar_name:
-                self.view_box.addItem(self.error_bar_item)
+        else:
+            # We are showing error bars. To deal with a common data issue where fit
+            # failures give rise to nonsensically large error bars, we exclude them from
+            # auto-scaling if they exceed the data by 10σ to avoid the spread in the
+            # data being collapsed into a flat line at zero. (The precise cutoff might
+            # require UX tuning.)
+            error_bars_huge = np.nanmax(y_err) > 20 * np.nanstd(y_data)
+
+            # The only point at which ignoreBounds can be specified in current pyqtgraph
+            # seems to be when adding the item, so remove it if we need to toggle it.
+            if (error_bars_huge != self.error_bar_bounds_ignored
+                    and self.error_bar_item.parentItem()):
+                self.view_box.removeItem(self.error_bar_item)
+
+            if not self.error_bar_item.parentItem():
+                self.view_box.addItem(self.error_bar_item, ignoreBounds=error_bars_huge)
+            self.error_bar_bounds_ignored = error_bars_huge
 
         self.averaging_enabled = averaging_enabled
         self.num_current_points = num_to_show
