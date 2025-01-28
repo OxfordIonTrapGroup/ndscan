@@ -641,6 +641,18 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 options["List"] = ListScanOption
         return OverrideEntry(options, schema, path, self._randomise_scan_icon)
 
+    def apply_color(self, palette, color):
+        self.setPalette(palette)
+        for child in self.findChildren(QtWidgets.QWidget):
+            child.setPalette(palette)
+            child.setAutoFillBackground(True)
+            items = self.findItems(
+                "*", QtCore.Qt.MatchFlag.MatchWildcard
+                | QtCore.Qt.MatchFlag.MatchRecursive)
+        for item in items:
+            for column in range(item.columnCount()):
+                item.setBackground(column, QtGui.QColor(color))
+
 
 def make_divider():
     f = QtWidgets.QFrame()
