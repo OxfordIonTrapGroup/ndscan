@@ -6,10 +6,13 @@
 # instead, as there might be other, similar functionality that plot widgets want to mix
 # in.
 
+import logging
 import pyqtgraph
 from .._qt import QtCore, QtGui, QtWidgets
-from .model import Context
+from .model import Context, Root
 from typing import Callable
+
+logger = logging.getLogger(__name__)
 
 
 class MultiYAxisPlotItem(pyqtgraph.PlotItem):
@@ -82,6 +85,11 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     For the sake of clarity, the concept of one such subplot is consistently referred to
     as a "pane" throughout the code.
     """
+
+    #: (VerticalPanesWidget to show, dock title)
+    new_dock_requested = QtCore.pyqtSignal(object, str)
+    was_closed = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.layout: QtGui.QGraphicsGridLayout = self.ci.layout
@@ -191,7 +199,7 @@ class ContextMenuBuilder:
 
 
 class ContextMenuPanesWidget(VerticalPanesWidget):
-    """PlotWidget with support for dynamically populated context menus."""
+    """VerticalPanesWidget with support for dynamically populated context menus."""
     def add_pane(self) -> MultiYAxisPlotItem:
         pane = super().add_pane()
 
@@ -227,74 +235,65 @@ class ContextMenuPanesWidget(VerticalPanesWidget):
         pass
 
 
-class AlternateMenuPanesWidget(ContextMenuPanesWidget):
-    """PlotWidget with context menu for integration with the
-    .container_widget.PlotContainerWidget alternate plot switching functionality.
-
-    Alternate plots are shown *instead* of the main plot (as compared to subplots, which
-    are shown separately).
+class SubplotMenuPanesWidget(ContextMenuPanesWidget):
+    """PlotWidget with a context menu to open new windows for subplots.
     """
-
-    alternate_plot_requested = QtCore.pyqtSignal(str)
-
-    def __init__(self, get_alternate_plot_names):
+    def __init__(self):
         super().__init__()
-        self._get_alternate_plot_names = get_alternate_plot_names
 
-    def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
-        alternate_plot_names = self._get_alternate_plot_names()
-        if len(alternate_plot_names) > 1:
-            for name in alternate_plot_names:
-                action = builder.append_action("Show " + name)
-                action.triggered.connect(
-                    lambda *args, name=name: self.alternate_plot_requested.emit(name))
-        builder.ensure_separator()
-
-
-class SubplotMenuPanesWidget(AlternateMenuPanesWidget):
-    """PlotWidget with a context menu to open new windows for subplots (in addition to
-    AlternateMenuPanesWidget functionality).
-    """
-    def __init__(self, context: Context, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
-        self._context = context
-
-        #: Maps subscan names to model Root instances.
-        self.subscan_roots = {}
+        #: Maps subscan names to model Root instances. Populated once we have the
+        #: channel schemata; also keeps the Root objects alive.
+        self.subscan_roots: dict[str, Root] = {}
 
         #: Maps subplot names to active plot widgets.
-        self.subplot_widgets = {}
+        self.subscan_plots: dict[str, VerticalPanesWidget] = {}
 
-    def hideEvent(self, *args):
-        # Hide subplots as well when hiding the parent plot (i.e. self). This in
-        # particular also handles the case where the main window is closed. Arguably,
-        # closeEvent() would be the better place to do this, but that only works for
-        # top-level windows.
-        for w in self.subplot_widgets.values():
-            w.hide()
-        super().hideEvent(*args)
+    def closeEvent(self, ev):
+        # Hide subplots as well when hiding the parent plot (i.e. self).
+        for w in self.subscan_plots.values():
+            w.close()
+        super().closeEvent(ev)
 
     def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
-        for name in self.subscan_roots.keys():
-            action = builder.append_action(f"Open subscan '{name}'")
-            action.triggered.connect(lambda *args, name=name: self.open_subplot(name))
-        builder.ensure_separator()
+        if len(self.subscan_roots) > 0:
+            builder.ensure_separator()
+            for name, root in self.subscan_roots.items():
+                action = builder.append_action(f"Subscan '{name}'")
+                action.setCheckable(True)
+                action.setChecked(name in self.subscan_plots)
+                action.triggered.connect(
+                    lambda *a, name=name: self._toggle_subscan_plot(name))
         super().build_context_menu(pane_idx, builder)
 
     def open_subplot(self, name: str):
-        widget = self.subplot_widgets.get(name, None)
+        widget = self.subscan_plots.get(name, None)
         if widget is not None:
             widget.show()
             widget.activateWindow()
             return
 
         import ndscan.plots.container_widgets as containers
-        widget = containers.RootWidget(self.subscan_roots[name], self._context)
-        self.subplot_widgets[name] = widget
-        # TODO: Save window geometry.
-        widget.resize(600, 400)
-        widget.setWindowFlag(QtCore.Qt.WindowType.WindowStaysOnTopHint)
-        widget.show()
+        widget = containers.RootWidget(self.subscan_roots[name])
+        self.subscan_plots[name] = widget
+        self.new_dock_requested.emit(widget, name)
+
+    def _toggle_subscan_plot(self, name):
+        if name in self.subscan_plots:
+            # This triggers the plot widget's closeEvent, which in turn emits, which in
+            # turn and causes the dock to be removed.
+            self.subscan_plots[name].close()
+        else:
+            label = f"subscan '{name}'"
+            try:
+                from .container_widgets import RootWidget
+                plot = RootWidget(self.subscan_roots[name])
+            except NotImplementedError as err:
+                logger.info("Ignoring subscan '%s': %s", name, str(err))
+                return
+            self.subscan_plots[name] = plot
+            plot.new_dock_requested.connect(self.new_dock_requested)
+            plot.was_closed.connect(lambda: self.subscan_plots.pop(name))
+            self.new_dock_requested.emit(plot, label)
 
 
 def add_source_id_label(view_box: pyqtgraph.ViewBox,

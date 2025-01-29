@@ -11,14 +11,14 @@ from collections.abc import Iterable
 from sipyco import common_args
 from typing import Any
 
-from .plots.container_widgets import RootWidget
+from .plots.container_widgets import PlotAreaWidget
 from .plots.model import Context
 from .plots.model.subscriber import SubscriberRoot
 
 logger = logging.getLogger(__name__)
 
 
-class _MainWidget(RootWidget):
+class _MainWidget(PlotAreaWidget):
     def __init__(self, args, ctl):
         self.args = args
 
