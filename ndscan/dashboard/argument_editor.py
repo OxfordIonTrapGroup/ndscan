@@ -49,6 +49,7 @@ class ScanOptions:
     def __init__(self, current_scan: dict[str, Any]):
         self.num_repeats_container = QtWidgets.QWidget()
         num_repeats_layout = QtWidgets.QHBoxLayout()
+        num_repeats_layout.setContentsMargins(5, 5, 5, 5)
         self.num_repeats_container.setLayout(num_repeats_layout)
 
         num_repeats_label = QtWidgets.QLabel("Number of repeats: ")
@@ -75,6 +76,7 @@ class ScanOptions:
 
         self.no_axis_container = QtWidgets.QWidget()
         no_axis_layout = QtWidgets.QHBoxLayout()
+        no_axis_layout.setContentsMargins(5, 5, 5, 5)
         self.no_axis_container.setLayout(no_axis_layout)
 
         no_axis_label = QtWidgets.QLabel("No-axis mode: ")
@@ -94,6 +96,7 @@ class ScanOptions:
 
         self.randomise_globally_container = QtWidgets.QWidget()
         randomise_globally_layout = QtWidgets.QHBoxLayout()
+        randomise_globally_layout.setContentsMargins(5, 5, 5, 5)
         self.randomise_globally_container.setLayout(randomise_globally_layout)
 
         randomise_globally_label = QtWidgets.QLabel(
@@ -111,6 +114,7 @@ class ScanOptions:
 
         self.skip_persistently_failing_container = QtWidgets.QWidget()
         skip_persistently_failing_layout = QtWidgets.QHBoxLayout()
+        skip_persistently_failing_layout.setContentsMargins(5, 5, 5, 5)
         self.skip_persistently_failing_container.setLayout(
             skip_persistently_failing_layout)
 
@@ -277,6 +281,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         buttons.layout.setColumnStretch(2, 0)
         buttons.layout.setColumnStretch(3, 0)
         buttons.layout.setColumnStretch(4, 1)
+        buttons.layout.setContentsMargins(3, 6, 3, 6)
         self.setItemWidget(buttons_item, 0, buttons)
 
     def save_state(self):
@@ -324,8 +329,11 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             else:
                 self._ensure_group_widget(group).addChild(widget_item)
 
-        id_string = self._param_display_name(fqn, path)
+        #
+        # First line: fqn@path.
+        #
 
+        id_string = self._param_display_name(fqn, path)
         id_item = QtWidgets.QTreeWidgetItem([id_string])
         add_item(id_item)
         for col in range(3):
@@ -333,23 +341,46 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         id_item.setFirstColumnSpanned(True)
         id_item.setForeground(0, self.palette().mid())
 
-        main_item = QtWidgets.QTreeWidgetItem([schema["description"]])
+        #
+        # Second line: Description, override entry widgets, reset/remove buttons.
+        #
+
+        main_item = QtWidgets.QTreeWidgetItem()
         add_item(main_item)
 
         # Render description in bold.
-        font = main_item.font(0)
+        label_container = LayoutWidget()
+        label_container.layout.setContentsMargins(3, 1, 6, 6)
+
+        label = QtWidgets.QLabel(schema["description"])
+        font = label.font()
         font.setBold(True)
-        main_item.setFont(0, font)
+        label.setFont(font)
+        label_container.addWidget(label)
+
+        # For whatever reason, the auto-sized column is not wide enough to display the
+        # whole label if displayed through a widget – whether through an extra
+        # LayoutWidget or the QLabel directly. This does not occur when passing a string
+        # directly to the QTreeWidgetItem constructor, but we cannot do that here, as
+        # we need to apply an extra bottom margin here to keep the baseline assignment
+        # with the other widgets. This only happens for the first column, and appears
+        # to be a Qt bug (incorrect handling of the group expand arrows?). The fixed
+        # extra horizontal margin was just determined visually and might be brittle
+        # across platforms/…; a proper fix would be desirable.
+        label_container.setMinimumSize(label.sizeHint() + QtCore.QSize(28, 0))
+
+        self.setItemWidget(main_item, 0, label_container)
 
         entry = self._make_override_entry(fqn, path)
         entry.read_from_params(self._ndscan_params, self.manager.datasets)
+        entry.layout.setContentsMargins(3, 1, 3, 6)
 
         entry.value_changed.connect(self._set_save_timer)
         self._param_entries[(fqn, path)] = entry
         self.setItemWidget(main_item, 1, entry)
 
         buttons = LayoutWidget()
-        buttons.layout.setContentsMargins(3, 0, 3, 0)
+        buttons.layout.setContentsMargins(3, 1, 3, 6)
 
         reset_default = QtWidgets.QToolButton()
         reset_default.setToolTip("Reset parameter to default value")
@@ -382,6 +413,11 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._arg_to_widgets[name] = widgets
 
         entry = procdesc_to_entry(argument["desc"])(argument)
+        if entry.layout():
+            # KLUDGE: For EnumerationEntry, avoid extra margins that misalign the
+            # dropdown box with the ndscan variant.
+            entry.layout().setContentsMargins(0, 0, 0, 0)
+        entry.setContentsMargins(0, 3, 0, 3)
         widget_item = QtWidgets.QTreeWidgetItem([name])
 
         if argument["tooltip"]:
@@ -400,11 +436,13 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         else:
             self._ensure_group_widget(argument["group"]).addChild(widget_item)
         fix_layout = LayoutWidget()
+        fix_layout.layout.setContentsMargins(3, 3, 3, 3)
         widgets["fix_layout"] = fix_layout
         fix_layout.addWidget(entry)
         self.setItemWidget(widget_item, 1, fix_layout)
 
         buttons = LayoutWidget()
+        buttons.layout.setContentsMargins(3, 3, 3, 3)
 
         recompute_argument = QtWidgets.QToolButton()
         recompute_argument.setToolTip("Re-run the experiment's build "
@@ -414,6 +452,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             partial(self._recompute_vanilla_argument_clicked, name))
         buttons.addWidget(recompute_argument)
 
+        # Even though there isn't actually a widget in the second column, this makes it
+        # take up the slack, such that the recompute button lines up with the ndscan
+        # override ones.
         buttons.layout.setColumnStretch(0, 0)
         buttons.layout.setColumnStretch(1, 1)
 
@@ -451,6 +492,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
         # Layout to display button/prompt label, depending on which one is active.
         left = LayoutWidget()
+        left.layout.setContentsMargins(3, 3, 3, 3)
 
         self._add_override_button = QtWidgets.QToolButton()
         self._add_override_button.setIcon(self._add_override_icon)
@@ -676,8 +718,6 @@ class OverrideEntry(LayoutWidget):
     def __init__(self, option_classes, schema, path, randomise_icon, *args):
         super().__init__(*args)
 
-        self.layout.setContentsMargins(3, 0, 3, 0)
-
         self.schema = schema
         self.path = path
         self.randomise_icon = randomise_icon
@@ -700,6 +740,8 @@ class OverrideEntry(LayoutWidget):
             option = option_cls(self)
             container = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout()
+            # For tight spacing, let other parts of entry line dominate margins.
+            layout.setContentsMargins(0, 0, 0, 0)
             option.build_ui(layout)
             container.setLayout(layout)
 
