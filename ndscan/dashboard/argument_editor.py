@@ -901,7 +901,7 @@ class NumericScanOption(ScanOption):
         super().__init__(entry)
         self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
 
-    def _make_spin_box(self):
+    def _make_spin_box(self, set_limits_from_spec=True):
         box = ScientificSpinBox()
         disable_scroll_wheel(box)
         box.valueChanged.connect(self.entry.value_changed)
@@ -918,8 +918,9 @@ class NumericScanOption(ScanOption):
         box.setSingleStep(step / self.scale)
         box.setRelativeStep()
 
-        box.setMinimum(spec.get("min", float("-inf")) / self.scale)
-        box.setMaximum(spec.get("max", float("inf")) / self.scale)
+        if set_limits_from_spec:
+            box.setMinimum(spec.get("min", float("-inf")) / self.scale)
+            box.setMaximum(spec.get("max", float("inf")) / self.scale)
 
         unit = spec.get("unit", "")
         if unit:
@@ -1059,7 +1060,7 @@ class CentreSpanScanOption(RangeScanOption):
         layout.addWidget(self.plusminus)
         layout.setStretchFactor(self.plusminus, 0)
 
-        self.box_half_span = self._make_spin_box()
+        self.box_half_span = self._make_spin_box(set_limits_from_spec=False)
         layout.addWidget(self.box_half_span)
         layout.setStretchFactor(self.box_half_span, 1)
 
