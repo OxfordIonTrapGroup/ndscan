@@ -89,6 +89,12 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         self.layout.setVerticalSpacing(3)
         self.panes = list[MultiYAxisPlotItem]()
 
+        # We don't need any scroll gestures, etc., and this avoids "qt.pointer.dispatch:
+        # skipping QEventPoint(…) : no target window" stderr spam on macOS from within
+        # Qt itself.
+        self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents,
+                                     False)
+
     def add_pane(self) -> MultiYAxisPlotItem:
         """Extend layout vertically by one :class:`.MultiYAxisPlotItem`."""
         plot = MultiYAxisPlotItem()
