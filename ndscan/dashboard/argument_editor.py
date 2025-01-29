@@ -49,6 +49,7 @@ class ScanOptions:
     def __init__(self, current_scan: dict[str, Any]):
         self.num_repeats_container = QtWidgets.QWidget()
         num_repeats_layout = QtWidgets.QHBoxLayout()
+        num_repeats_layout.setContentsMargins(5, 5, 5, 5)
         self.num_repeats_container.setLayout(num_repeats_layout)
 
         num_repeats_label = QtWidgets.QLabel("Number of repeats: ")
@@ -75,6 +76,7 @@ class ScanOptions:
 
         self.no_axis_container = QtWidgets.QWidget()
         no_axis_layout = QtWidgets.QHBoxLayout()
+        no_axis_layout.setContentsMargins(5, 5, 5, 5)
         self.no_axis_container.setLayout(no_axis_layout)
 
         no_axis_label = QtWidgets.QLabel("No-axis mode: ")
@@ -94,6 +96,7 @@ class ScanOptions:
 
         self.randomise_globally_container = QtWidgets.QWidget()
         randomise_globally_layout = QtWidgets.QHBoxLayout()
+        randomise_globally_layout.setContentsMargins(5, 5, 5, 5)
         self.randomise_globally_container.setLayout(randomise_globally_layout)
 
         randomise_globally_label = QtWidgets.QLabel(
@@ -111,6 +114,7 @@ class ScanOptions:
 
         self.skip_persistently_failing_container = QtWidgets.QWidget()
         skip_persistently_failing_layout = QtWidgets.QHBoxLayout()
+        skip_persistently_failing_layout.setContentsMargins(5, 5, 5, 5)
         self.skip_persistently_failing_container.setLayout(
             skip_persistently_failing_layout)
 
@@ -156,6 +160,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         super().__init__()
 
         self.manager = manager
+        self.dock = expurl
         self.expurl = expurl
 
         self.setColumnCount(3)
@@ -681,6 +686,7 @@ class OverrideEntry(LayoutWidget):
             option = option_cls(self)
             container = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout()
+            layout.setContentsMargins(0, 0, 0, 0)
             option.build_ui(layout)
             container.setLayout(layout)
 
