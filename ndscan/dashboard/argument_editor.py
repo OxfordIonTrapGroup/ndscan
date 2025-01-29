@@ -156,6 +156,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         super().__init__()
 
         self.manager = manager
+        self.dock = expurl
         self.expurl = expurl
 
         self.setColumnCount(3)
@@ -542,6 +543,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         widgets["fix_layout"].addWidget(widgets["entry"])
         self.setItemWidget(widgets["widget_item"], 1, widgets["fix_layout"])
         self.updateGeometries()
+
+        # apply_colors() was introduced in m-labs/artiq@52c07a2b145b (during ARTIQ 9
+        # development); so while the rest of ndscan is generally backwards-compatible,
+        # only call it if present.
+        if hasattr(self.dock, "apply_colors"):
+            self.dock.apply_colors()
 
     def _reset_entry_to_default(self, fqn, path):
         self._param_entries[(fqn, path)].read_from_params({}, self.manager.datasets)
