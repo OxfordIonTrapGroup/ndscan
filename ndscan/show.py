@@ -12,7 +12,7 @@ from oitg import results
 from sipyco import pyon
 from qasync import QEventLoop, QtWidgets
 
-from .plots.container_widgets import MultiRootWidget, PlotContainerWidget
+from .plots.container_widgets import PlotAreaWidget, PlotAreaTabWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
 from .results.arguments import extract_param_schema, summarise
@@ -166,11 +166,11 @@ def main():
         sys.exit(2)
 
     if len(roots) == 1:
-        widget = PlotContainerWidget(roots[0].get_model())
+        widget = PlotAreaWidget(roots[0], context)
     else:
         label_map = shorten_to_unambiguous_suffixes(
             prefixes, lambda fqn, n: ".".join(fqn.split(".")[-(n + 1):]))
-        widget = MultiRootWidget(
+        widget = PlotAreaTabWidget(
             OrderedDict(zip((strip_suffix(label_map[p], ".") for p in prefixes),
                             roots)), context)
     widget.setWindowTitle(f"{context.get_title()} – ndscan.show")

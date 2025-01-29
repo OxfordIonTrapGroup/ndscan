@@ -14,7 +14,7 @@ from .model import AnnotationDataSource
 logger = logging.getLogger(__name__)
 
 
-class AnnotationItem:
+class AnnotationItem(QtCore.QObject):
     def remove(self) -> None:
         """Remove any pyqtgraph graphics items from target plot and stop listening to
         changes."""
@@ -43,6 +43,7 @@ class ComputedCurveItem(AnnotationItem):
     def __init__(self, function_name: str, data_sources: dict[str,
                                                               AnnotationDataSource],
                  view_box, curve_item, x_limits: tuple[float | None, float | None]):
+        super().__init__(view_box)  # Automatically disconnect when view_box is deleted.
         self._function = FIT_OBJECTS[function_name].fitting_function
         self._data_sources = data_sources
         self._view_box = view_box
@@ -103,6 +104,7 @@ class CurveItem(AnnotationItem):
     """Shows a curve between the given x/y coordinate pairs."""
     def __init__(self, x_source: AnnotationDataSource, y_source: AnnotationDataSource,
                  view_box, curve_item):
+        super().__init__(view_box)  # Automatically disconnect when view_box is deleted.
         self._x_source = x_source
         self._y_source = y_source
         self._view_box = view_box
@@ -146,6 +148,7 @@ class VLineItem(AnnotationItem):
     def __init__(self, position_source: AnnotationDataSource,
                  uncertainty_source: AnnotationDataSource | None, view_box, base_color,
                  x_data_to_display_scale, x_unit_suffix, show_label):
+        super().__init__(view_box)  # Automatically disconnect when view_box is deleted.
         self._position_source = position_source
         self._uncertainty_source = uncertainty_source
         self._view_box = view_box

@@ -1,14 +1,18 @@
+import logging
 import numpy as np
 import pyqtgraph
 from collections import deque
 
 from .._qt import QtCore, QtWidgets
 from .model import SinglePointModel
-from .plot_widgets import (AlternateMenuPanesWidget,
-                           build_channel_selection_context_menu, add_source_id_label)
+from .model.subscan import create_subscan_roots
+from .plot_widgets import (SubplotMenuPanesWidget, build_channel_selection_context_menu,
+                           add_source_id_label)
 from .utils import (extract_scalar_channels, get_default_hidden_channels,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, setup_axis_item, SERIES_COLORS)
+
+logger = logging.getLogger(__name__)
 
 
 class _Series:
@@ -66,12 +70,13 @@ class _Series:
             self.values = self.values[-n:, :]
 
 
-class Rolling1DPlotWidget(AlternateMenuPanesWidget):
+class Rolling1DPlotWidget(SubplotMenuPanesWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
-    def __init__(self, model: SinglePointModel, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
+    def __init__(self, model: SinglePointModel):
+        super().__init__()
+
         self.series = []
         self._history_length = 1024
         self._points = deque(maxlen=self._history_length)
@@ -139,6 +144,8 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
             self.link_x_axes()
             add_source_id_label(self.panes[-1].getViewBox(), self.model.context)
 
+        self.subscan_roots = create_subscan_roots(self.model)
+
         self.ready.emit()
 
     def _append_point(self, point):
@@ -190,6 +197,5 @@ class Rolling1DPlotWidget(AlternateMenuPanesWidget):
         if len(self.data_names) > 1:
             build_channel_selection_context_menu(builder, self._rewrite,
                                                  self.data_names, self.hidden_channels)
-            builder.ensure_separator()
 
         super().build_context_menu(pane_idx, builder)

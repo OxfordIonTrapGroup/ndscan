@@ -131,13 +131,14 @@ class Annotation:
 
 
 class Root(QtCore.QObject):
-    """The root of a plot data tree, i.e. all the data making up a plot displayed in a
-    given window.
+    """The root of a plot data tree, i.e. all the data making up a given (sub)plot.
 
-    This is a reference to (at most) one :class:`Model`, but makes it possible to
-    represent situations where the model is not yet known (e.g. because we are still
-    waiting for the experiment to set the top-level metadata datasets), or might change
-    (because we are showing a subscan for a user-selected point).
+    This is a reference to (at most) one :class:`Model`, but the value can be ``None``,
+    and a signal is raised when the model changes.
+
+    This makes it possible to handle situations where we are still waiting for the
+    experiment to set the top-level metadata datasets, or the user has not yet selected
+    a point for which to show a subscan.
     """
 
     model_changed = QtCore.pyqtSignal(object)

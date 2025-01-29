@@ -9,7 +9,7 @@ from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
-from .plot_widgets import AlternateMenuPanesWidget, add_source_id_label
+from .plot_widgets import ContextMenuPanesWidget, add_source_id_label
 from .utils import (extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, get_axis_scaling_info, setup_axis_item,
                     enum_to_numeric)
@@ -259,12 +259,12 @@ class _ImagePlot:
         self.averaging_enabled = averaging_enabled
 
 
-class Image2DPlotWidget(AlternateMenuPanesWidget):
+class Image2DPlotWidget(ContextMenuPanesWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
-    def __init__(self, model: ScanModel, get_alternate_plot_names):
-        super().__init__(get_alternate_plot_names)
+    def __init__(self, model: ScanModel):
+        super().__init__()
 
         self.model = model
         self.model.channel_schemata_changed.connect(self._initialise_series)

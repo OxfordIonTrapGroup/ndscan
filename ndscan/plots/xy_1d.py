@@ -184,13 +184,19 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
     error = QtCore.pyqtSignal(str)
     ready = QtCore.pyqtSignal()
 
-    def __init__(self, model: ScanModel, get_alternate_plot_names):
-        super().__init__(model.context, get_alternate_plot_names)
+    def __init__(self, model: ScanModel):
+        super().__init__()
         self.model = model
-        self.model.channel_schemata_changed.connect(self._initialise_series)
-        self.model.points_appended.connect(self._update_points)
-        self.model.annotations_changed.connect(self._update_annotations)
-        self.model.points_rewritten.connect(self._rewrite)
+
+        # Since we are a QObject ourselves that will get QWidget.close()d, so destroyed
+        # on the C++ side, once we are removed from the UI, we can just connect to the
+        # model without worrying about what happens after the C++ part of the object is
+        # destructed, as the signals are automatically disconnected.
+        # TODO: Verify that this is actually true.
+        self.model.channel_schemata_changed.connect(self._initialise_series),
+        self.model.points_appended.connect(self._update_points),
+        self.model.annotations_changed.connect(self._update_annotations),
+        self.model.points_rewritten.connect(self._rewrite),
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
 
@@ -212,6 +218,10 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.data_names = None
         # Set of channel names that are currently hidden.
         self.hidden_channels = None
+
+    def closeEvent(self, event):
+        self.was_closed.emit()
+        super().closeEvent(event)
 
     def _rewrite(self, points):
         self._initialise_series(self.model.get_channel_schemata())
