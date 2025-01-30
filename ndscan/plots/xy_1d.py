@@ -152,7 +152,7 @@ class _XYSeries(QtCore.QObject):
                 self.view_box.removeItem(self.highlight_item)
         else:
             xs, ys = self.data_item.getData()
-            self.highlight_item.setData([xs[index]], [ys[index]])
+            self.highlight_item.setData([xs[index]], [ys[index]], data=[index])
             if not self.highlight_item.parentItem():
                 # Add with ignoreBounds=True to avoid highlighting an edge point causing
                 # the entire plot to shift in auto-range mode.
@@ -197,6 +197,17 @@ class _XYSeries(QtCore.QObject):
             self.view_box.removeItem(self.highlight_item)
         self.source_points_by_x.clear()
         self.num_current_points = 0
+
+    def get_highlight_x_neighbour_index(self, step: int) -> int | None:
+        if not self.highlight_item.parentItem():
+            return None
+        (current_idx, ) = self.highlight_item.data["data"]
+        xs, _ = self.data_item.getData()
+        x_order = np.argsort(xs)
+        # Add step to the current index (NumPy doesn't have a sensible list.index()
+        # equivalent?!).
+        new_idx = (x_order == current_idx).argmax() + step
+        return min(max(new_idx, 0), len(xs) - 1)
 
 
 class XY1DPlotWidget(SubplotMenuPanesWidget):
@@ -506,14 +517,30 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             # way (e.g. a text plot item; a QMessageBox would be distracting/annoying).
             pass
         else:
-            for series in self.series:
-                series.highlight_index(source_index)
-            self.selected_point_model.set_source_index(spot.data())
+            self._set_highlighted_index(source_index)
+
+    def _set_highlighted_index(self, index):
+        for series in self.series:
+            series.highlight_index(index)
+        self.selected_point_model.set_source_index(index)
 
     def _background_clicked(self):
         for series in self.series:
             series.highlight_index(None)
         self.selected_point_model.set_source_index(None)
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        is_left = key == QtCore.Qt.Key.Key_Left
+        is_right = key == QtCore.Qt.Key.Key_Right
+        # For any actual plot, we'll have series, but don't crash on an empty plot.
+        if (is_left or is_right) and self.series:
+            idx = self.series[0].get_highlight_x_neighbour_index(-1 if is_left else 1)
+            if idx is not None:
+                self._set_highlighted_index(idx)
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def _handle_scene_click(self, event):
         if not event.isAccepted():
