@@ -16,7 +16,7 @@ from .utils import (extract_linked_datasets, extract_scalar_channels,
                     get_default_hidden_channels, format_param_identity,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, get_axis_scaling_info, setup_axis_item,
-                    FIT_COLORS, SERIES_COLORS, enum_to_numeric)
+                    FIT_COLORS, SERIES_COLORS, HIGHLIGHT_PEN, enum_to_numeric)
 
 logger = logging.getLogger(__name__)
 
@@ -55,14 +55,15 @@ def combined_uncertainty(points: list[SourcePoint], num_samples_per_point=1):
 
 class _XYSeries(QtCore.QObject):
     def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item,
-                 series_idx, pane_idx):
+                 highlight_item, series_idx, pane_idx):
         super().__init__(view_box)
 
         self.view_box = view_box
-        self.data_item = data_item
         self.data_name = data_name
-        self.error_bar_item = error_bar_item
+        self.data_item = data_item
         self.error_bar_name = error_bar_name
+        self.error_bar_item = error_bar_item
+        self.highlight_item = highlight_item
         self.num_current_points = 0
         self.error_bar_bounds_ignored = False
         self.series_idx = series_idx
@@ -142,6 +143,21 @@ class _XYSeries(QtCore.QObject):
         self.averaging_enabled = averaging_enabled
         self.num_current_points = num_to_show
 
+    def highlight_index(self, index):
+        """
+        :param index: Index of the point in the data to highlight; ``None`` to disable.
+        """
+        if index is None:
+            if self.highlight_item.parentItem():
+                self.view_box.removeItem(self.highlight_item)
+        else:
+            xs, ys = self.data_item.getData()
+            self.highlight_item.setData([xs[index]], [ys[index]])
+            if not self.highlight_item.parentItem():
+                # Add with ignoreBounds=True to avoid highlighting an edge point causing
+                # the entire plot to shift in auto-range mode.
+                self.view_box.addItem(self.highlight_item, ignoreBounds=True)
+
     def _average_add_points(self, num_to_show, x_data, y_data, y_err):
         # Append new data to collection.
         start_idx = sum(len(v) for v in self.source_points_by_x.values())
@@ -175,7 +191,10 @@ class _XYSeries(QtCore.QObject):
         if self.num_current_points == 0:
             return
         self.view_box.removeItem(self.data_item)
-        self.view_box.removeItem(self.error_bar_item)
+        if self.error_bar_item.parentItem():
+            self.view_box.removeItem(self.error_bar_item)
+        if self.highlight_item.parentItem():
+            self.view_box.removeItem(self.highlight_item)
         self.source_points_by_x.clear()
         self.num_current_points = 0
 
@@ -254,6 +273,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 channels, self.data_names)
         panes_axes_shown = hide_series_from_groups(panes_axes, self.hidden_channels)
 
+        highlight_pen = pyqtgraph.mkPen(**HIGHLIGHT_PEN)
         for axes_series in panes_axes_shown:
             pane = self.add_pane()
             pane.showGrid(x=True, y=True)
@@ -265,8 +285,13 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 info = []
                 for (series_idx, name) in series:
                     color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
-                    data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
+                    data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
                     data_item.sigClicked.connect(self._point_clicked)
+
+                    highlight_item = pyqtgraph.ScatterPlotItem(pen=highlight_pen,
+                                                               brush=None,
+                                                               size=8)
+                    highlight_item.setZValue(2)  # Show above all other points.
 
                     error_bar_name = error_bar_names.get(name, None)
 
@@ -275,7 +300,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
                     self.series.append(
                         _XYSeries(view_box, name, data_item, error_bar_name,
-                                  error_bar_item, series_idx,
+                                  error_bar_item, highlight_item, series_idx,
                                   len(self.panes) - 1))
 
                     channel = channels[name]
@@ -463,24 +488,17 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.model.context.set_dataset(dataset_key,
                                        self.crosshairs[pane_idx].labels[0].last_value)
 
-    def _highlight_spot(self, spot):
-        if self._highlighted_spot is not None:
-            self._highlighted_spot.resetPen()
-            self._highlighted_spot = None
-        if spot is not None:
-            spot.setPen("y", width=2)
-            self._highlighted_spot = spot
-
-    def _point_clicked(self, scatter_plot_item, spot_items: np.ndarray):
+    def _point_clicked(self, scatter_plot_item, spot_items: np.ndarray, ev):
         if len(spot_items) == 0:
             # No points clicked. Nota bene: pyqtgraph does not actually seem to emit
             # events in this case anyway, but this is not well-documented.
             self._background_clicked()
             return
 
-        # Arbitrarily choose the first element in the list if multiple spots
-        # overlap; the user can always zoom in if that is undesired.
-        spot = spot_items[0]
+        # Choose the spot closest to the click if multiple spots are in pyqtgraph's
+        # default range; the user can always zoom in to disambiguate.
+        distances = np.array([(s.pos() - ev.pos()).length() for s in spot_items])
+        spot = spot_items[distances.argmin()]
         source_index = spot.data()
         if source_index is None:
             # This came from a point for which there was averaging.
@@ -488,11 +506,13 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             # way (e.g. a text plot item; a QMessageBox would be distracting/annoying).
             pass
         else:
-            self._highlight_spot(spot)
+            for series in self.series:
+                series.highlight_index(source_index)
             self.selected_point_model.set_source_index(spot.data())
 
     def _background_clicked(self):
-        self._highlight_spot(None)
+        for series in self.series:
+            series.highlight_index(None)
         self.selected_point_model.set_source_index(None)
 
     def _handle_scene_click(self, event):
