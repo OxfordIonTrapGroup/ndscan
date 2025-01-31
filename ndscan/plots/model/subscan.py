@@ -46,7 +46,7 @@ class SubscanRoot(Root):
 
 
 class SubscanModel(ScanModel):
-    """A scan seleced out of a single point with a subscan channel.
+    """A scan selected out of a single point with a subscan channel.
 
     Point content changes are forwarded, but the schema is static; changes to the latter
     necessitate a new model instance.

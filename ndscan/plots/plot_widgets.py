@@ -333,7 +333,7 @@ def build_channel_selection_context_menu(builder: ContextMenuBuilder,
 
     :param builder: Instance of ``ContextMenuBuilder``.
     :param state_changed_callback: Method to call when ``hidden_channels`` has been
-        changged.
+        changed.
     :param data_names: List of channel names to select from.
     :param hidden_channels: The set of hidden channels, modified in-place depending
         on the state of the checkboxes created here.
