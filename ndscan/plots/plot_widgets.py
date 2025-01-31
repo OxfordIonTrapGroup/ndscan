@@ -8,6 +8,7 @@
 
 import logging
 import pyqtgraph
+import pyqtgraph.exporters
 from .._qt import QtCore, QtGui, QtWidgets
 from .model import Context, Root
 from typing import Callable
@@ -111,6 +112,10 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         self.layout.setVerticalSpacing(3)
         self.panes = list[MultiYAxisPlotItem]()
 
+        self.copy_shortcut = QtGui.QShortcut(QtGui.QKeySequence.StandardKey.Copy, self)
+        self.copy_shortcut.activated.connect(self.copy_to_clipboard)
+        self._flash_overlay = None
+
         # We don't need any scroll gestures, etc., and this avoids "qt.pointer.dispatch:
         # skipping QEventPoint(…) : no target window" stderr spam on macOS from within
         # Qt itself.
@@ -171,6 +176,44 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         for pane in self.panes:
             pane.reset_y_axes()
         self.panes.clear()
+
+    def copy_to_clipboard(self):
+        if self._flash_overlay is not None:
+            # Don't allow multiple clipboard copies extremely quickly after each other;
+            # writing robust animation overlap logic is not worth the effort.
+            return
+
+        pyqtgraph.exporters.ImageExporter(self.scene()).export(copy=True)
+
+        # Create a semi-transparent white overlay covering the entire plot, fading it
+        # in and out to create a smooth flashing effect.
+        self._flash_overlay = QtWidgets.QGraphicsRectItem(self.scene().sceneRect())
+        self._flash_overlay.setBrush(QtGui.QColor(255, 255, 255, 200))
+        self.scene().addItem(self._flash_overlay)
+        self.scene().update()
+
+        # I tried using a QtWidgets.QGraphicsOpacityEffect() and a
+        # QtCore.QPropertyAnimation, which works for simple (?) cases (e.g. one
+        # image_2d plot), but for more complex (?) plots (e.g. three panes), the
+        # underlying graphics engine seems to be swapped, causing inactive QPainter
+        # error. Just use a generic animation and set the opacity manually.
+        self._flash_animation = QtCore.QVariantAnimation(self)
+        self._flash_animation.setDuration(200)
+        self._flash_animation.setStartValue(0.0)
+        self._flash_animation.setKeyValueAt(0.08, 1.0)
+        self._flash_animation.setEndValue(0.0)
+        self._flash_animation.setLoopCount(1)
+        self._flash_animation.valueChanged.connect(self._fade_flash_overlay)
+        self._flash_animation.finished.connect(self._remove_flash_overlay)
+        self._flash_animation.start()
+
+    def _fade_flash_overlay(self, opacity):
+        self._flash_overlay.setOpacity(opacity)
+        self.scene().update()
+
+    def _remove_flash_overlay(self):
+        self.scene().removeItem(self._flash_overlay)
+        self._flash_overlay = None
 
 
 class ContextMenuBuilder:
