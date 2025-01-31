@@ -3,7 +3,7 @@ import numpy as np
 import pyqtgraph
 from collections import deque
 
-from .._qt import QtCore, QtWidgets
+from .._qt import QtWidgets
 from .model import SinglePointModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import (SubplotMenuPanesWidget, build_channel_selection_context_menu,
@@ -71,9 +71,6 @@ class _Series:
 
 
 class Rolling1DPlotWidget(SubplotMenuPanesWidget):
-    error = QtCore.pyqtSignal(str)
-    ready = QtCore.pyqtSignal()
-
     def __init__(self, model: SinglePointModel):
         super().__init__()
 

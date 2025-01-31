@@ -21,7 +21,7 @@ class HDF5Root(Root):
         try:
             schema_revision = datasets[prefix + SCHEMA_REVISION_KEY][()]
         except KeyError:
-            # Backwards-compatbility with old files without SCHEMA_REVISION_KEY.
+            # Backwards-compatibility with old files without SCHEMA_REVISION_KEY.
             schema_revision = 1
 
         axes = json.loads(datasets[prefix + "axes"][()])

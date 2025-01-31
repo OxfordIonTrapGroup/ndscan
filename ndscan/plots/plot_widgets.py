@@ -86,8 +86,22 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     as a "pane" throughout the code.
     """
 
-    #: (VerticalPanesWidget to show, dock title)
+    #: Emitted when the plot is fully constructed and ready to be displayed to the user.
+    #: Implementations must emit this *after the object was initially constructed* (e.g.
+    #: using call_later() if the channel schemata were already available).
+    ready = QtCore.pyqtSignal()
+
+    #: Emitted when erroneous model data was encountered and the error message from the
+    #: argument should be displayed to the user instead of this widget.
+    error = QtCore.pyqtSignal(str)
+
+    #: Emitted when the user opened a subplot/… and the containing widget should show
+    #: the given widget in a new dock. Arguments are (VerticalPanesWidget to show,
+    #: dock title).
     new_dock_requested = QtCore.pyqtSignal(object, str)
+
+    #: Emitted after the dock containing this widget was closed by the user (if a
+    #: subplot/…), whether through a context menu or the docking area UI.
     was_closed = QtCore.pyqtSignal()
 
     def __init__(self):
