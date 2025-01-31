@@ -211,9 +211,6 @@ class _XYSeries(QtCore.QObject):
 
 
 class XY1DPlotWidget(SubplotMenuPanesWidget):
-    error = QtCore.pyqtSignal(str)
-    ready = QtCore.pyqtSignal()
-
     def __init__(self, model: ScanModel):
         super().__init__()
         self.model = model

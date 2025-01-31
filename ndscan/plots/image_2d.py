@@ -260,9 +260,6 @@ class _ImagePlot:
 
 
 class Image2DPlotWidget(ContextMenuPanesWidget):
-    error = QtCore.pyqtSignal(str)
-    ready = QtCore.pyqtSignal()
-
     def __init__(self, model: ScanModel):
         super().__init__()
 
