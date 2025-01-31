@@ -13,6 +13,6 @@ __all__ = ["QtCore", "QtGui", "QtWidgets"]
 # This appears to be the only non-backwards-compatible change we came across during the
 # migration; if more are discovered in the future, appropriate shims should be inserted
 # here.
-for name in ("QAction", "QActionGroup"):
+for name in ("QAction", "QActionGroup", "QShortcut"):
     if not hasattr(QtGui, name):
         setattr(QtGui, name, getattr(QtWidgets, name))
