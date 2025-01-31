@@ -2,6 +2,7 @@ import html
 import logging
 from typing import Any
 from ..utils import eval_param_default
+from .._qt import QtCore
 
 logger = logging.getLogger(__name__)
 
@@ -396,3 +397,7 @@ def enum_to_numeric(categories, values: list[Any]):
         return [to_idx[x] for x in values]
     except KeyError:
         raise KeyError("Unexpected enum value found.")
+
+
+def call_later(func):
+    QtCore.QTimer.singleShot(0, func)

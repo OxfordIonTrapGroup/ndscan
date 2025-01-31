@@ -3,7 +3,6 @@ import logging
 from typing import Any
 from ...utils import strip_suffix
 from . import (FixedDataSource, Model, Root, ScanModel, SinglePointModel)
-from .utils import call_later, emit_later
 
 logger = logging.getLogger(__name__)
 
@@ -73,10 +72,9 @@ class SubscanModel(ScanModel):
                     self._analysis_results[result_name] = source
                     self._analysis_result_mappings.append((result_name, channel_name))
 
-        emit_later(self.channel_schemata_changed, self._channel_schemata)
-        call_later(lambda: self._set_online_analyses(schema.get("online_analyses", {})))
-        call_later(lambda: self._set_annotation_schemata(schema.get("annotations", [])))
-        call_later(lambda: self._update(parent.get_point()))
+        self._set_online_analyses(schema.get("online_analyses", {}))
+        self._set_annotation_schemata(schema.get("annotations", []))
+        self._update(parent.get_point())
 
     def quit(self) -> None:
         self._parent.point_changed.disconnect(self._update)

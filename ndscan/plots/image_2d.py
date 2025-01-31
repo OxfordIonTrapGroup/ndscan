@@ -10,7 +10,7 @@ from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .plot_widgets import ContextMenuPanesWidget, add_source_id_label
-from .utils import (extract_linked_datasets, extract_scalar_channels,
+from .utils import (call_later, extract_linked_datasets, extract_scalar_channels,
                     format_param_identity, get_axis_scaling_info, setup_axis_item,
                     enum_to_numeric)
 
@@ -283,9 +283,15 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
         self.found_duplicate_coords = False
         self.unique_coords = set[tuple[float, float]]()
 
+        if (channels := self.model.get_channel_schemata()) is not None:
+            call_later(lambda: self._initialise_series(channels))
+            if (points := self.model.get_point_data()) is not None:
+                call_later(lambda: self._update_points(points, False))
+
     def _initialise_series(self, channels):
         if self.plot is not None:
             self.plot_item.removeItem(self.plot.image_item)
+            self.plot.image_item.destroyLater()
             self.plot = None
 
         try:

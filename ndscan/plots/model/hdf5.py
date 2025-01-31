@@ -3,7 +3,6 @@ import logging
 from typing import Any
 import h5py
 from . import (Context, FixedDataSource, Model, Root, ScanModel, SinglePointModel)
-from .utils import call_later, emit_later
 from ...utils import SCHEMA_REVISION_KEY
 
 logger = logging.getLogger(__name__)
@@ -28,10 +27,6 @@ class HDF5Root(Root):
         axes = json.loads(datasets[prefix + "axes"][()])
         dim = len(axes)
 
-        # KLUDGE: Queue up this change event before constructing models, so that signals
-        # are emitted in order.
-        call_later(lambda: self.model_changed.emit(self._model))
-
         if dim == 0:
             self._model = HDF5SingleShotModel(datasets, prefix, schema_revision,
                                               context)
@@ -49,12 +44,10 @@ class HDF5SingleShotModel(SinglePointModel):
         super().__init__(schema_revision, context)
 
         self._channel_schemata = json.loads(datasets[prefix + "channels"][()])
-        emit_later(self.channel_schemata_changed, self._channel_schemata)
 
         self._point = {}
         for key in self._channel_schemata:
             self._point[key] = datasets[prefix + "point." + key][()]
-        emit_later(self.point_changed, self._point)
 
     def get_channel_schemata(self) -> dict[str, Any]:
         return self._channel_schemata
@@ -69,12 +62,9 @@ class HDF5ScanModel(ScanModel):
         super().__init__(axes, schema_revision, context)
 
         self._channel_schemata = json.loads(datasets[prefix + "channels"][()])
-        emit_later(self.channel_schemata_changed, self._channel_schemata)
 
-        call_later(lambda: self._set_online_analyses(
-            json.loads(datasets[prefix + "online_analyses"][()])))
-        call_later(lambda: self._set_annotation_schemata(
-            json.loads(datasets[prefix + "annotations"][()])))
+        self._set_online_analyses(json.loads(datasets[prefix + "online_analyses"][()]))
+        self._set_annotation_schemata(json.loads(datasets[prefix + "annotations"][()]))
 
         self._analysis_result_sources = {}
         ark = prefix + "analysis_results"
@@ -91,7 +81,6 @@ class HDF5ScanModel(ScanModel):
         for name in ([f"axis_{i}" for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
             self._point_data[name] = datasets[prefix + "points." + name][:]
-        emit_later(self.points_appended, self._point_data)
 
     def get_channel_schemata(self) -> dict[str, Any]:
         return self._channel_schemata

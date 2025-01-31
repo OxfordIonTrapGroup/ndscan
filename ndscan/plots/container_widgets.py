@@ -111,7 +111,9 @@ class RootWidget(QtWidgets.QWidget):
             # Ensure that the C++ object is deleted, which will also disconnect any of
             # the signals the plot used to track the model. Without this, we would
             # accumulate e.g. ever more invisible background updates when switching
-            # between subplot points.
+            # between subplot points. (For subplots, this is slightly suboptimal still,
+            # as the old model will still catch the rewrite; could optimise by
+            # explicitly disconnecting all the signals here and now.)
             self.plot_widget.deleteLater()
 
             self.plot_widget = None
