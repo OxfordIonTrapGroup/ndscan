@@ -8,7 +8,7 @@ from .model import SinglePointModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import (SubplotMenuPanesWidget, build_channel_selection_context_menu,
                            add_source_id_label)
-from .utils import (extract_scalar_channels, get_default_hidden_channels,
+from .utils import (call_later, extract_scalar_channels, get_default_hidden_channels,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, setup_axis_item, SERIES_COLORS)
 
@@ -89,6 +89,9 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
         self.data_names = None
         # Set of channel names that are currently hidden.
         self.hidden_channels = None
+
+        if self.model.get_channel_schemata() is not None:
+            call_later(self._initialise_series)
 
     def _initialise_series(self):
         self.clear_panes()

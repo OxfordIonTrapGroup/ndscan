@@ -81,9 +81,7 @@ class SubscriberSinglePointModel(SinglePointModel):
         self._current_point = None
         self._next_point = {}
 
-    def get_channel_schemata(self) -> dict[str, Any]:
-        if self._channel_schemata is None:
-            raise ValueError("No complete point yet")
+    def get_channel_schemata(self) -> dict[str, Any] | None:
         return self._channel_schemata
 
     def get_point(self) -> dict[str, Any] | None:
@@ -213,7 +211,7 @@ class SubscriberScanModel(ScanModel):
     def get_annotations(self) -> list[Annotation]:
         return self._annotations
 
-    def get_channel_schemata(self) -> dict[str, Any]:
+    def get_channel_schemata(self) -> dict[str, Any] | None:
         return self._channel_schemata
 
     def get_point_data(self) -> dict[str, Any]:
