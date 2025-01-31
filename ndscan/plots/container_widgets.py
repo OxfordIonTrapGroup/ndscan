@@ -104,10 +104,18 @@ class RootWidget(QtWidgets.QWidget):
         super().closeEvent(ev)
 
     def _change_model(self):
-        if self.plot_widget:
+        if self.plot_widget is not None:
             self._show_message("No data.")
             self.widget_stack.removeWidget(self.plot_widget)
+
+            # Ensure that the C++ object is deleted, which will also disconnect any of
+            # the signals the plot used to track the model. Without this, we would
+            # accumulate e.g. ever more invisible background updates when switching
+            # between subplot points.
+            self.plot_widget.deleteLater()
+
             self.plot_widget = None
+
         model = self.root.get_model()
         if model is not None:
             self._show_message("Waiting for channel metadata for scan…")
