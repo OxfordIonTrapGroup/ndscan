@@ -16,7 +16,7 @@ FIT_COLORS = [
 ]
 
 #: pyqtgraph mkPen spec for highlighting selected points.
-HIGHLIGHT_PEN = {"color": "#ff0", "width": 6}
+HIGHLIGHT_PEN = {"color": "#ff0", "width": 5}
 
 
 def _get_priority(channel_metadata: dict[str, Any]):
