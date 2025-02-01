@@ -14,6 +14,7 @@ from typing import Any
 from .plots.container_widgets import PlotAreaWidget
 from .plots.model import Context
 from .plots.model.subscriber import SubscriberRoot
+from ._qt import QtWidgets
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,14 @@ class _MainWidget(PlotAreaWidget):
         # call_later() works around that, or whether this needs to be fixed in ARTIQ.
         self.resize(600, 600)
         self.setWindowTitle("ndscan plot")
+
+    def close(self):
+        # KLUDGE: Work around https://github.com/pyqtgraph/pyqtgraph/issues/3234:
+        # pyqtgraph's DockArea accidentally overrides QWidget.close(), breaking the
+        # SimpleApplet close_cb that is invoked when an applet embedded into the
+        # dashboard is closed. Just call the proper QWidget implementation directly;
+        # if DockArea is fixed in the future, the override can be removed.
+        QtWidgets.QWidget.close(self)
 
     def data_changed(self, values: dict[str, Any], metadata: dict[str, Any],
                      persist: dict[str, bool], mods: Iterable[dict[str, Any]]):
