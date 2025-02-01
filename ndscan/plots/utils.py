@@ -1,5 +1,6 @@
 import html
 import logging
+import numpy as np
 from typing import Any
 from ..utils import eval_param_default
 from .._qt import QtCore
@@ -401,3 +402,11 @@ def enum_to_numeric(categories, values: list[Any]):
 
 def call_later(func):
     QtCore.QTimer.singleShot(0, func)
+
+
+def find_neighbour_index(values, current_idx, step):
+    x_order = np.argsort(values)
+    # Add step to the current index (NumPy doesn't have a sensible list.index()
+    # equivalent?!).
+    new_idx = (x_order == current_idx).argmax() + step
+    return x_order[min(max(new_idx, 0), len(values) - 1)]
