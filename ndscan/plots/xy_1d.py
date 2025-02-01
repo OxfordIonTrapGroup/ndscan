@@ -16,7 +16,8 @@ from .utils import (call_later, extract_linked_datasets, extract_scalar_channels
                     get_default_hidden_channels, format_param_identity,
                     group_channels_into_axes, group_axes_into_panes,
                     hide_series_from_groups, get_axis_scaling_info, setup_axis_item,
-                    FIT_COLORS, SERIES_COLORS, HIGHLIGHT_PEN, enum_to_numeric)
+                    FIT_COLORS, SERIES_COLORS, HIGHLIGHT_PEN, enum_to_numeric,
+                    find_neighbour_index)
 
 logger = logging.getLogger(__name__)
 
@@ -201,13 +202,10 @@ class _XYSeries(QtCore.QObject):
     def get_highlight_x_neighbour_index(self, step: int) -> int | None:
         if not self.highlight_item.parentItem():
             return None
-        (current_idx, ) = self.highlight_item.data["data"]
-        xs, _ = self.data_item.getData()
-        x_order = np.argsort(xs)
-        # Add step to the current index (NumPy doesn't have a sensible list.index()
-        # equivalent?!).
-        new_idx = (x_order == current_idx).argmax() + step
-        return min(max(new_idx, 0), len(xs) - 1)
+
+        return find_neighbour_index(values=self.data_item.getData()[0],
+                                    current_idx=self.highlight_item.data["data"][0],
+                                    step=step)
 
 
 class XY1DPlotWidget(SubplotMenuPanesWidget):
