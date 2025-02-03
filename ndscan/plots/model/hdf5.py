@@ -63,9 +63,6 @@ class HDF5ScanModel(ScanModel):
 
         self._channel_schemata = json.loads(datasets[prefix + "channels"][()])
 
-        self._set_online_analyses(json.loads(datasets[prefix + "online_analyses"][()]))
-        self._set_annotation_schemata(json.loads(datasets[prefix + "annotations"][()]))
-
         self._analysis_result_sources = {}
         ark = prefix + "analysis_results"
         if ark in datasets:
@@ -81,6 +78,9 @@ class HDF5ScanModel(ScanModel):
         for name in ([f"axis_{i}" for i in range(len(self.axes))] +
                      ["channel_" + c for c in self._channel_schemata.keys()]):
             self._point_data[name] = datasets[prefix + "points." + name][:]
+
+        self._set_online_analyses(json.loads(datasets[prefix + "online_analyses"][()]))
+        self._set_annotation_schemata(json.loads(datasets[prefix + "annotations"][()]))
 
     def get_channel_schemata(self) -> dict[str, Any]:
         return self._channel_schemata
