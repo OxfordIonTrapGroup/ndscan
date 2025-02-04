@@ -188,7 +188,7 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         # Create a semi-transparent white overlay covering the entire plot, fading it
         # in and out to create a smooth flashing effect.
         self._flash_overlay = QtWidgets.QGraphicsRectItem(self.scene().sceneRect())
-        self._flash_overlay.setBrush(QtGui.QColor(255, 255, 255, 200))
+        self._flash_overlay.setBrush(QtGui.QColor(230, 230, 255, 160))
         self.scene().addItem(self._flash_overlay)
         self.scene().update()
 
@@ -198,7 +198,8 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         # underlying graphics engine seems to be swapped, causing inactive QPainter
         # error. Just use a generic animation and set the opacity manually.
         self._flash_animation = QtCore.QVariantAnimation(self)
-        self._flash_animation.setDuration(200)
+        self._flash_animation.setDuration(180)
+        self._flash_animation.setEasingCurve(QtCore.QEasingCurve.Type.OutQuad)
         self._flash_animation.setStartValue(0.0)
         self._flash_animation.setKeyValueAt(0.08, 1.0)
         self._flash_animation.setEndValue(0.0)
