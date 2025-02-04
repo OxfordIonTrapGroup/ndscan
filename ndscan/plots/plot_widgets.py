@@ -314,7 +314,7 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
     def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
         if len(self.subscan_roots) > 0:
             builder.ensure_separator()
-            for name, root in self.subscan_roots.items():
+            for name in self.subscan_roots.keys():
                 action = builder.append_action(f"Subscan '{name}'")
                 action.setCheckable(True)
                 action.setChecked(name in self.subscan_plots)
@@ -335,22 +335,42 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
         self.new_dock_requested.emit(widget, name)
 
     def _toggle_subscan_plot(self, name):
+        toggle_all = (QtWidgets.QApplication.keyboardModifiers()
+                      & QtCore.Qt.KeyboardModifier.ShiftModifier)
         if name in self.subscan_plots:
-            # This triggers the plot widget's closeEvent, which in turn emits, which in
-            # turn and causes the dock to be removed.
-            self.subscan_plots[name].close()
+            if toggle_all:
+                # This will also end up removing the plots from self.subscan_plots; take
+                # list() to not depend on the details of the signal dispatch timing.
+                for key in list(self.subscan_plots.keys()):
+                    self.close_subscan_plot(key)
+            else:
+                # Just close the one plot.
+                self.close_subscan_plot(name)
         else:
-            label = f"subscan '{name}'"
-            try:
-                from .container_widgets import RootWidget
-                plot = RootWidget(self.subscan_roots[name])
-            except NotImplementedError as err:
-                logger.info("Ignoring subscan '%s': %s", name, str(err))
-                return
-            self.subscan_plots[name] = plot
-            plot.new_dock_requested.connect(self.new_dock_requested)
-            plot.was_closed.connect(lambda: self.subscan_plots.pop(name))
-            self.new_dock_requested.emit(plot, label)
+            if toggle_all:
+                for name in self.subscan_roots.keys():
+                    if name not in self.subscan_plots:
+                        self.open_subscan_plot(name)
+            else:
+                self.open_subscan_plot(name)
+
+    def open_subscan_plot(self, name):
+        assert name not in self.subscan_plots
+        try:
+            from .container_widgets import RootWidget
+            plot = RootWidget(self.subscan_roots[name])
+        except NotImplementedError as err:
+            logger.info("Ignoring subscan '%s': %s", name, str(err))
+            return
+        self.subscan_plots[name] = plot
+        plot.new_dock_requested.connect(self.new_dock_requested)
+        plot.was_closed.connect(lambda: self.subscan_plots.pop(name))
+        self.new_dock_requested.emit(plot, f"subscan '{name}'")
+
+    def close_subscan_plot(self, name):
+        # This triggers the plot widget's closeEvent, which in turn emits was_closed(),
+        # which in causes the dock to be removed.
+        self.subscan_plots[name].close()
 
 
 def add_source_id_label(view_box: pyqtgraph.ViewBox,
