@@ -418,7 +418,7 @@ def build_channel_selection_context_menu(builder: ContextMenuBuilder,
     container = QtWidgets.QWidget()
     layout = QtWidgets.QVBoxLayout()
     container.setLayout(layout)
-    submenu = builder.append_menu("Select channels to show")
+    submenu = builder.append_menu("Channels")
     action = QtWidgets.QWidgetAction(submenu)
     action.setDefaultWidget(container)
     submenu.addAction(action)
