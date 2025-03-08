@@ -222,6 +222,7 @@ class ArgumentInterface(HasEnvironment):
             axes.append(ScanAxis(self._schemata[fqn], pathspec, store))
 
         options = ScanOptions(scan.get("num_repeats", 1),
+                              scan.get("repeat_each_point", 1),
                               scan.get("randomise_order_globally", False))
         spec = ScanSpec(axes, generators, options)
         no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
