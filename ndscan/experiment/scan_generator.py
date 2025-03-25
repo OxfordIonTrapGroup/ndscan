@@ -242,7 +242,7 @@ class ScanOptions:
     #: How many times to repeat each point consecutively in a scan (i.e. without
     #: changing parameters). This is useful for scans where there is some settling time
     #: after moving to a new point.
-    repeat_each_point: int = 1
+    num_repeats_per_point: int = 1
 
     #: Whether to randomise the acquisition order of data points across all axes
     #: (within a refinement level).
@@ -294,7 +294,7 @@ def generate_points(axis_generators: list[ScanGenerator],
                 rng.shuffle(points)
 
             for p in points:
-                for _ in range(options.repeat_each_point):
+                for _ in range(options.num_repeats_per_point):
                     yield p[::-1]
 
         max_level += 1
