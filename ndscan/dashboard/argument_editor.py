@@ -74,24 +74,24 @@ class ScanOptions:
 
         #
 
-        self.repeat_each_point_container = QtWidgets.QWidget()
-        repeat_each_point_layout = QtWidgets.QHBoxLayout()
-        repeat_each_point_layout.setContentsMargins(5, 5, 5, 5)
-        self.repeat_each_point_container.setLayout(repeat_each_point_layout)
+        self.num_repeats_per_point_container = QtWidgets.QWidget()
+        num_repeats_per_point_layout = QtWidgets.QHBoxLayout()
+        num_repeats_per_point_layout.setContentsMargins(5, 5, 5, 5)
+        self.num_repeats_per_point_container.setLayout(num_repeats_per_point_layout)
 
-        repeat_each_point_label = QtWidgets.QLabel(
+        num_repeats_per_point_label = QtWidgets.QLabel(
             "Number of consecutive repeats of each point: ")
-        repeat_each_point_layout.addWidget(repeat_each_point_label)
-        repeat_each_point_layout.setStretchFactor(repeat_each_point_label, 0)
+        num_repeats_per_point_layout.addWidget(num_repeats_per_point_label)
+        num_repeats_per_point_layout.setStretchFactor(num_repeats_per_point_label, 0)
 
-        self.repeat_each_point_box = QtWidgets.QSpinBox()
-        self.repeat_each_point_box.setMinimum(1)
+        self.num_repeats_per_point_box = QtWidgets.QSpinBox()
+        self.num_repeats_per_point_box.setMinimum(1)
         # A gratuitous, but hopefully generous restriction
-        self.repeat_each_point_box.setMaximum(2**16)
-        self.repeat_each_point_box.setValue(current_scan.get("repeat_point", 1))
-        repeat_each_point_layout.addWidget(self.repeat_each_point_box)
-        repeat_each_point_layout.setStretchFactor(self.repeat_each_point_box, 0)
-        repeat_each_point_layout.addStretch()
+        self.num_repeats_per_point_box.setMaximum(2**16)
+        self.num_repeats_per_point_box.setValue(current_scan.get("repeat_point", 1))
+        num_repeats_per_point_layout.addWidget(self.num_repeats_per_point_box)
+        num_repeats_per_point_layout.setStretchFactor(self.num_repeats_per_point_box, 0)
+        num_repeats_per_point_layout.addStretch()
 
         #
 
@@ -158,7 +158,7 @@ class ScanOptions:
 
     def get_widgets(self) -> list[QtWidgets.QWidget]:
         return [
-            self.num_repeats_container, self.repeat_each_point_container,
+            self.num_repeats_container, self.num_repeats_per_point_container,
             self.no_axis_container, self.randomise_globally_container,
             self.skip_persistently_failing_container
         ]
@@ -171,7 +171,7 @@ class ScanOptions:
         # multiple experiments if for whatever reason more repeats were required.
         scan["num_repeats"] = (2**31 - 1 if self.infinite_repeat_box.isChecked() else
                                self.num_repeats_box.value())
-        scan["repeat_each_point"] = self.repeat_each_point_box.value()
+        scan["num_repeats_per_point"] = self.num_repeats_per_point_box.value()
         scan["no_axes_mode"] = NoAxesMode(self.no_axes_box.currentText()).name
         scan["randomise_order_globally"] = self.randomise_globally_box.isChecked()
         scan["skip_on_persistent_transitory_error"] = (

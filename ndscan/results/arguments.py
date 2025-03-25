@@ -84,7 +84,7 @@ def dump_scan(schema: dict[str, Any]) -> Iterable[str]:
         yield f"   - {ps['description']} ({fqn}@{path}):"
         yield f"     {format_scan_range(ax['type'], ax['range'], ps)}"
     yield f" - Number of repeats of scan: {scan['num_repeats']}"
-    yield f" - Number of consecutive repeats of each point: {scan['repeat_each_point']}"
+    yield f" - Number of repeats per point: {scan['num_repeats_per_point']}"
     yield f" - Randomise order globally: {scan['randomise_order_globally']}"
 
 
