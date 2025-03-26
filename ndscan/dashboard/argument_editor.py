@@ -88,7 +88,8 @@ class ScanOptions:
         self.num_repeats_per_point_box.setMinimum(1)
         # A gratuitous, but hopefully generous restriction
         self.num_repeats_per_point_box.setMaximum(2**16)
-        self.num_repeats_per_point_box.setValue(current_scan.get("repeat_point", 1))
+        self.num_repeats_per_point_box.setValue(
+            current_scan.get("num_repeats_per_point", 1))
         num_repeats_per_point_layout.addWidget(self.num_repeats_per_point_box)
         num_repeats_per_point_layout.setStretchFactor(self.num_repeats_per_point_box, 0)
         num_repeats_per_point_layout.addStretch()
