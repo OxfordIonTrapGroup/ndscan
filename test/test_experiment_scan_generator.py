@@ -1,6 +1,11 @@
 import numpy as np
 import unittest
-from ndscan.experiment.scan_generator import CentreSpanGenerator, ExpandingGenerator
+from ndscan.experiment.scan_generator import (
+    CentreSpanGenerator,
+    ExpandingGenerator,
+    generate_points,
+    ScanOptions,
+)
 
 
 class ScanGeneratorCase(unittest.TestCase):
@@ -117,3 +122,56 @@ class ScanGeneratorCase(unittest.TestCase):
         self.assertTrue(gen.has_level(0))
         self.assertEqual(gen.points_for_level(0), [-1.0, 0.0])
         self.assertFalse(gen.has_level(1))
+
+
+class GeneratePointsCase(unittest.TestCase):
+    def test_no_repeats(self):
+        opt = ScanOptions()
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=2,
+                                  randomise_order=False)
+        points = list(generate_points([gen], opt))
+        self.assertEqual(points, [(-1.0, ), (1.0, )])
+
+    def test_repeat_scan(self):
+        opt = ScanOptions(num_repeats=2)
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=2,
+                                  randomise_order=False)
+        points = list(generate_points([gen], opt))
+        self.assertEqual(points, [(-1.0, ), (1.0, ), (-1.0, ), (1.0, )])
+
+    def test_repeat_each_point(self):
+        opt = ScanOptions(num_repeats=1, num_repeats_per_point=2)
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=2,
+                                  randomise_order=False)
+        points = list(generate_points([gen], opt))
+        self.assertEqual(points, [(-1.0, ), (-1.0, ), (1.0, ), (1.0, )])
+
+    def test_repeat_scan_and_each_point(self):
+        opt = ScanOptions(num_repeats=2, num_repeats_per_point=2)
+        gen = CentreSpanGenerator(centre=0.0,
+                                  half_span=1.0,
+                                  num_points=2,
+                                  randomise_order=False)
+        points = list(generate_points([gen], opt))
+        self.assertEqual(points, [(-1.0, ), (-1.0, ), (1.0, ), (1.0, ), (-1.0, ),
+                                  (-1.0, ), (1.0, ), (1.0, )])
+
+    def test_2d_scan(self):
+        opt = ScanOptions(num_repeats=1, num_repeats_per_point=1)
+        gen1 = CentreSpanGenerator(centre=0.0,
+                                   half_span=1.0,
+                                   num_points=2,
+                                   randomise_order=False)
+        gen2 = CentreSpanGenerator(centre=0.0,
+                                   half_span=20.0,
+                                   num_points=2,
+                                   randomise_order=False)
+        points = list(generate_points([gen1, gen2], opt))
+        self.assertEqual(points, [(-1.0, -20.0), (1.0, -20.0), (-1.0, 20.0),
+                                  (1.0, 20.0)])
