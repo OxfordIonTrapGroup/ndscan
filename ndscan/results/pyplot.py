@@ -33,7 +33,7 @@ def make_default_1d_plot(datasets: dict[str, Any],
         x_label += " / " + x_unit
 
     channel_schemata = ds("channels", is_json=True)
-    data_names, _ = extract_scalar_channels(channel_schemata)
+    data_names, error_bar_names = extract_scalar_channels(channel_schemata)
     y_axis_names = list(filter(channel_filter, data_names))
     plt_axes = figure.subplots(nrows=len(y_axis_names), sharex=True)
     plt_axes = np.atleast_1d(plt_axes)
@@ -51,7 +51,27 @@ def make_default_1d_plot(datasets: dict[str, Any],
         if y_unit:
             y_label += " / " + y_unit
         y_vals = np.array(ds("points.channel_" + name)) / y_schema["scale"]
-        plt_axis.plot(x_vals[ascending], y_vals[ascending])
+
+        y_errs = None
+        if err_name := error_bar_names.get(name):
+            y_errs = np.array(ds(f"points.channel_{err_name}")) / y_schema["scale"]
+
+        if y_errs is None:
+            plt_axis.plot(x_vals[ascending], y_vals[ascending])
+        else:
+            # Plot error bars, except where they are huge.
+            sensible_errs = np.abs(y_errs[ascending]) < 5 * np.median(y_errs)
+            plt_axis.errorbar(x_vals[ascending][sensible_errs],
+                              y_vals[ascending][sensible_errs],
+                              yerr=y_errs[ascending][sensible_errs],
+                              fmt="o",
+                              markersize=2)
+            plt_axis.plot(x_vals[ascending][~sensible_errs],
+                          y_vals[ascending][~sensible_errs],
+                          "o",
+                          markersize=2,
+                          color="r")
+
         plt_axis.set_ylabel(y_label)
 
     title = ds("source_id")
