@@ -79,8 +79,6 @@ def make_default_1d_plot(datasets: dict[str, Any],
         title += ": " + root[:-1]
     plt_axes[0].set_title(title)
 
-    figure.tight_layout()
-
 
 def make_default_plot(datasets: dict[str, Any],
                       root: str,
@@ -109,7 +107,7 @@ def auto_plot(datasets: dict[str, Any], *, channel_filter=lambda name: True):
     """
     roots = find_ndscan_roots(datasets)
     for root in roots:
-        fig = plt.figure(figsize=(10, 8))
+        fig = plt.figure(figsize=(10, 8), constrained_layout=True)
         try:
             make_default_plot(datasets, root, fig, channel_filter=channel_filter)
         except NotImplementedError as e:
