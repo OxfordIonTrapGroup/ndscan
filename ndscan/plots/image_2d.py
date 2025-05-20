@@ -357,7 +357,7 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
                     self.y_schema["param"]["spec"]["members"].keys(), points["axis_1"])
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
-    def build_context_menu(self, pane_idx: int, builder):
+    def build_context_menu(self, pane_idx: int | None, builder):
         if self.model.context.is_online_master():
             x_datasets = extract_linked_datasets(self.x_schema["param"])
             y_datasets = extract_linked_datasets(self.y_schema["param"])
