@@ -6,8 +6,12 @@ import random
 from typing import Any
 
 __all__ = [
-    "ScanGenerator", "RefiningGenerator", "LinearGenerator", "ListGenerator",
-    "ScanOptions"
+    "ScanGenerator",
+    "RefiningGenerator",
+    "LinearGenerator",
+    "ListGenerator",
+    "CentreSpanRefiningGenerator",
+    "ScanOptions",
 ]
 
 
@@ -37,6 +41,8 @@ class RefiningGenerator(ScanGenerator):
         self.lower = float(min(lower, upper))
         self.upper = float(max(lower, upper))
         self.randomise_order = randomise_order
+        self.limit_lower = float("-inf")
+        self.limit_upper = float("inf")
 
     def has_level(self, level: int) -> bool:
         ""
@@ -47,21 +53,55 @@ class RefiningGenerator(ScanGenerator):
     def points_for_level(self, level: int, rng=None) -> list[Any]:
         ""
         if level == 0:
-            return [self.lower, self.upper]
+            points = np.array([self.lower, self.upper])
+        else:
+            d = self.upper - self.lower
+            num = 2**(level - 1)
+            points = np.arange(num) * d / num + d / (2 * num) + self.lower
 
-        d = self.upper - self.lower
-        num = 2**(level - 1)
-        points = np.arange(num) * d / num + d / (2 * num) + self.lower
-
+        # Silently drop points outside of the limits
+        points = points[(points >= self.limit_lower) & (points <= self.limit_upper)]
         if self.randomise_order:
             rng.shuffle(points)
 
-        return points
+        return points.tolist()
 
     def describe_limits(self, target: dict[str, Any]) -> None:
         ""
         target["min"] = self.lower
         target["max"] = self.upper
+
+
+class CentreSpanRefiningGenerator(RefiningGenerator):
+    """Generates progressively finer grid in span around centre by halving distance
+    between points each level. Scan is always centred on the given centre, even if the
+    span exceeds the limits.
+    :param limit_lower: Optional lower limit (inclusive) to the range of generated
+            points. Useful for representing scans on parameters the range of which is
+            limited (e.g. to be non-negative).
+    :param limit_upper: See `limit_lower`.
+    """
+    def __init__(
+        self,
+        centre,
+        half_span,
+        randomise_order,
+        limit_lower=-np.Inf,
+        limit_upper=np.Inf,
+    ):
+        self.centre = centre
+        self.half_span = half_span
+        self.lower = centre - half_span
+        self.upper = centre + half_span
+        if self.lower < limit_lower and self.upper > limit_upper:
+            # If both extents of the span exceed the limits, change the span to fit
+            #   the larger of the two. This way we still don't move the scan centre.
+            self.half_span = max(abs(centre - limit_lower), abs(limit_upper - centre))
+            self.lower = centre - self.half_span
+            self.upper = centre + self.half_span
+        self.limit_lower = limit_lower
+        self.limit_upper = limit_upper
+        self.randomise_order = randomise_order
 
 
 class ExpandingGenerator(ScanGenerator):
@@ -222,7 +262,8 @@ GENERATORS = {
     "expanding": ExpandingGenerator,
     "linear": LinearGenerator,
     "centre_span": CentreSpanGenerator,
-    "list": ListGenerator
+    "centre_span_refining": CentreSpanRefiningGenerator,
+    "list": ListGenerator,
 }
 
 
