@@ -28,11 +28,9 @@ class _Series:
         self.set_history_length(history_length)
 
     def append(self, data):
-        new_data = data[self.data_name]
+        p = [data[self.data_name]]
         if self.error_bar_item:
-            new_error_bar = data[self.error_bar_name]
-
-        p = [new_data, 2 * new_error_bar] if self.error_bar_item else [new_data]
+            p.append(2 * data[self.error_bar_name])
 
         is_first = (self.values.shape[0] == 0)
         if is_first:
