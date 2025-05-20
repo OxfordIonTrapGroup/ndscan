@@ -323,18 +323,6 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
                     lambda *a, name=name: self._toggle_subscan_plot(name))
         super().build_context_menu(pane_idx, builder)
 
-    def open_subplot(self, name: str):
-        widget = self.subscan_plots.get(name, None)
-        if widget is not None:
-            widget.show()
-            widget.activateWindow()
-            return
-
-        import ndscan.plots.container_widgets as containers
-        widget = containers.RootWidget(self.subscan_roots[name])
-        self.subscan_plots[name] = widget
-        self.new_dock_requested.emit(widget, name)
-
     def _toggle_subscan_plot(self, name):
         toggle_all = (QtWidgets.QApplication.keyboardModifiers()
                       & QtCore.Qt.KeyboardModifier.ShiftModifier)
