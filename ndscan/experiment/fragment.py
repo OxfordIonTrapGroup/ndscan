@@ -340,6 +340,7 @@ class Fragment(HasEnvironment):
                                 "during build_fragment()")
         assert name.isidentifier(), "Subfragment name must be valid Python identifier"
         assert not hasattr(self, name), f"Field '{name}' already exists"
+        assert issubclass(fragment_class, Fragment), "Type must be a Fragment subclass"
 
         frag = fragment_class(self, self._fragment_path + [name], *args, **kwargs)
         self._subfragments.append(frag)
@@ -347,8 +348,8 @@ class Fragment(HasEnvironment):
 
         return frag
 
-    def setattr_param(self, name: str, param_class: type, description: str, *args,
-                      **kwargs) -> ParamHandle:
+    def setattr_param(self, name: str, param_class: type[ParamBase], description: str,
+                      *args, **kwargs) -> ParamHandle:
         """Create a parameter of the given name and type.
 
         Can only be called during :meth:`build_fragment`.
@@ -365,6 +366,7 @@ class Fragment(HasEnvironment):
         assert self._building, "Can only call setattr_param() during build_fragment()"
         assert name.isidentifier(), "Parameter name must be valid Python identifier"
         assert not hasattr(self, name), f"Field '{name}' already exists"
+        assert issubclass(param_class, ParamBase), "Type must be a ParamBase subclass"
 
         fqn = self.fqn + "." + name
         param = param_class(fqn, description, *args, **kwargs)
@@ -474,6 +476,8 @@ class Fragment(HasEnvironment):
         :return: The newly created result channel instance.
         """
         assert self._building, "Can only call setattr_result() during build_fragment()"
+        assert issubclass(channel_class, ResultChannel), \
+            "Type must be a ResultChannel subclass"
         path = "/".join(self._fragment_path + [name])
         channel = channel_class(path, *args, **kwargs)
         self._register_result_channel(name, path, channel)
