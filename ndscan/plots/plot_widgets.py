@@ -258,6 +258,32 @@ class ContextMenuBuilder:
 
 class ContextMenuPanesWidget(VerticalPanesWidget):
     """VerticalPanesWidget with support for dynamically populated context menus."""
+    def __init__(self):
+        super().__init__()
+
+        # Monkey-patch pyqtgraph.GraphicsScene.sendClickEvent() to be able to handle
+        # context menu requests outside any items.
+        orig_sendClickEvent = self.scene().sendClickEvent
+
+        def sendClickEvent(ev: "pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent"):
+            if orig_sendClickEvent(ev):
+                return True
+
+            # If the event wasn't handled by any of the items in the scene, the user
+            # clicked outside any panes (or there weren't any). In this case, call
+            # build_context_menu() with a None pane_idx.
+            if ev.button() == QtCore.Qt.MouseButton.RightButton:
+                menu = QtWidgets.QMenu(self)
+                builder = ContextMenuBuilder(menu)
+                self.build_context_menu(None, builder)
+                menu.addActions(builder.finish())
+                menu.popup(ev.screenPos().toPoint())
+                return True
+
+            return False
+
+        self.scene().sendClickEvent = sendClickEvent
+
     def add_pane(self) -> MultiYAxisPlotItem:
         pane = super().add_pane()
 
@@ -289,7 +315,8 @@ class ContextMenuPanesWidget(VerticalPanesWidget):
 
         return pane
 
-    def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
+    def build_context_menu(self, pane_idx: int | None,
+                           builder: ContextMenuBuilder) -> None:
         pass
 
 
@@ -312,7 +339,8 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
             w.close()
         super().closeEvent(ev)
 
-    def build_context_menu(self, pane_idx: int, builder: ContextMenuBuilder) -> None:
+    def build_context_menu(self, pane_idx: int | None,
+                           builder: ContextMenuBuilder) -> None:
         if len(self.subscan_roots) > 0:
             builder.ensure_separator()
             for name in self.subscan_roots.keys():

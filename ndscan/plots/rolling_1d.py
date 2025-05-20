@@ -183,7 +183,7 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
         points.extend(self._points)
         self._points = points
 
-    def build_context_menu(self, pane_idx: int, builder):
+    def build_context_menu(self, pane_idx: int | None, builder):
         if self.model.context.is_online_master():
             # If no new data points are coming in, setting the history size wouldn't do
             # anything.

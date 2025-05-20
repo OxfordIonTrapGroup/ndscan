@@ -461,10 +461,10 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 logger.info("Ignoring annotation of kind '%s' with coordinates %s",
                             a.kind, list(a.coordinates.keys()))
 
-    def build_context_menu(self, pane_idx, builder):
+    def build_context_menu(self, pane_idx: int | None, builder):
         x_schema = self.model.axes[0]
 
-        if self.model.context.is_online_master():
+        if self.model.context.is_online_master() and pane_idx is not None:
             for d in extract_linked_datasets(x_schema["param"]):
                 action = builder.append_action(f"Set '{d}' from crosshair")
                 action.triggered.connect(
