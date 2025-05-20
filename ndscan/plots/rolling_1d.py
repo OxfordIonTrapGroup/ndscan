@@ -146,6 +146,22 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
 
         self.subscan_roots = create_subscan_roots(self.model)
 
+        if not self.panes and self.subscan_roots:
+            # If there aren't any panes, but there are subscans, show the subscans by
+            # default. This is useful in cases such as calibrations of vectorial
+            # quantities implemented using TopLevelRunners, where the useful plot shows
+            # the data acquisition subscan(s), but the top-level fragment does not have
+            # any non-opaque channels besides that.
+            for name in self.subscan_roots:
+                self.open_subscan_plot(name)
+
+            # KLUDGE: Reach into dock area to hide the useless empty plot widget where
+            # the top-level series (if any) would show up.
+            dock = self
+            while not isinstance(dock, pyqtgraph.dockarea.Dock):
+                dock = dock.parent()
+            dock.setStretch(0, 0)
+
         self.ready.emit()
 
     def _append_point(self, point):
