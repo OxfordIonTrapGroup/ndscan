@@ -58,9 +58,8 @@ class SinglePointTest(unittest.TestCase):
         self.datasets["ndscan.point.foo"] = (False, 42, {})
         self.init()
 
-        with self.assertRaises(ValueError):
-            # No complete point yet.
-            self.root.get_model().get_point()
+        # No complete point yet.
+        self.assertIsNone(self.root.get_model().get_point())
 
         self.datasets["ndscan.point.bar"] = (False, 23, {})
         self.datasets["ndscan.point_phase"] = (False, True, {})
@@ -71,9 +70,8 @@ class SinglePointTest(unittest.TestCase):
         self.datasets["ndscan.point.foo"] = (False, 42, {})
         self.init()
 
-        with self.assertRaises(ValueError):
-            # No complete point yet.
-            self.root.get_model().get_point()
+        # No complete point yet.
+        self.assertIsNone(self.root.get_model().get_point())
 
         self.datasets["ndscan.point.bar"] = (False, 23, {})
         self.datasets["ndscan.point_phase"] = (False, True, {})
@@ -92,9 +90,8 @@ class SinglePointTest(unittest.TestCase):
         self.datasets["ndscan.point.foo"] = (False, 0, {})
         self.init()
 
-        with self.assertRaises(ValueError):
-            # Can't know whether point is complete (it indeed isn't).
-            self.root.get_model().get_point()
+        # Can't know whether point is complete (it indeed isn't).
+        self.assertIsNone(self.root.get_model().get_point())
 
         self.datasets["ndscan.point.bar"] = (False, 1, {})
         self.datasets["ndscan.point_phase"] = (False, False, {})
