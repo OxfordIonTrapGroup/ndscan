@@ -85,8 +85,6 @@ class SubscriberSinglePointModel(SinglePointModel):
         return self._channel_schemata
 
     def get_point(self) -> dict[str, Any] | None:
-        if self._current_point is None:
-            raise ValueError("No complete point yet")
         return self._current_point
 
     def data_changed(self, values: dict[str, Any], mods: Iterable[dict[str,
