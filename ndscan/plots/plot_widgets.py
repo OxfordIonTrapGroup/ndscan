@@ -248,10 +248,10 @@ class ContextMenuBuilder:
 
     def append_menu(self, title) -> QtWidgets.QMenu:
         menu = QtWidgets.QMenu(title, parent=self._target_menu)
-        self._append(menu)
+        self._append(menu.menuAction())
         return menu
 
-    def _append(self, action):
+    def _append(self, action: QtGui.QAction):
         self._last_was_no_separator = True
         self._entries.append(action)
 
