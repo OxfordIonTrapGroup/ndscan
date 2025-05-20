@@ -213,10 +213,11 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         super().__init__()
         self.model = model
 
-        # Since we are a QObject ourselves that will get QWidget.close()d, so destroyed
-        # on the C++ side, once we are removed from the UI, we can just connect to the
-        # model without worrying about what happens after the C++ part of the object is
-        # destructed, as the signals are automatically disconnected.
+        # Since we are a QObject ourselves, and the parents will make sure the widget is
+        # deleteLater()d on the on the C++ side once it is removed from the UI, we can
+        # just connect to the model without worrying about what happens after the C++
+        # part of the object is destructed, as the signals are automatically
+        # disconnected.
         self.model.channel_schemata_changed.connect(self._initialise_series),
         self.model.points_appended.connect(self._update_points),
         self.model.annotations_changed.connect(self._update_annotations),
