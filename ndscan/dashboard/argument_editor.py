@@ -714,17 +714,12 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 options["List"] = ListScanOption
         return OverrideEntry(options, schema, path, self._randomise_scan_icon)
 
-    def apply_color(self, palette, color):
-        self.setPalette(palette)
-        for child in self.findChildren(QtWidgets.QWidget):
-            child.setPalette(palette)
-            child.setAutoFillBackground(True)
-            items = self.findItems(
-                "*", QtCore.Qt.MatchFlag.MatchWildcard
-                | QtCore.Qt.MatchFlag.MatchRecursive)
-        for item in items:
-            for column in range(item.columnCount()):
-                item.setBackground(column, QtGui.QColor(color))
+    def apply_color(self, *args, **kwargs):
+        # TODO: In ARTIQ 9, the ability to colour-code entire argument editor windows
+        # was introduced. At the time of writing, this is unreleased and still
+        # undergoing API changes; once it stabilises, should implement this (e.g. on top
+        # of the newly factored-out artiq.gui.entries.EntryTreeWidget).
+        pass
 
 
 def make_divider():
