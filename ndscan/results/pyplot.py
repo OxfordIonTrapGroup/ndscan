@@ -75,7 +75,7 @@ def make_default_1d_plot(datasets: dict[str, Any],
         plt_axis.set_ylabel(y_label)
 
     title = ds("source_id")
-    if root != "ndscan.":
+    if not root.startswith("ndscan.rid_"):
         title += ": " + root[:-1]
     plt_axes[0].set_title(title)
 
