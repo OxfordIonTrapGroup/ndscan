@@ -365,7 +365,7 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
             return
         self.subscan_plots[name] = plot
         plot.new_dock_requested.connect(self.new_dock_requested)
-        plot.was_closed.connect(lambda: self.subscan_plots.pop(name))
+        plot.was_closed.connect(lambda: self.subscan_plots.pop(name).deleteLater())
         self.new_dock_requested.emit(plot, f"subscan '{name}'")
 
     def close_subscan_plot(self, name):
