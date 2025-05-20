@@ -84,7 +84,7 @@ def make_default_plot(datasets: dict[str, Any],
                       root: str,
                       figure,
                       *,
-                      channel_filter=lambda name: True):
+                      channel_filter=lambda name: True) -> None:
     """Render a plot for the specified ndscan root to the given PyPlot figure.
 
     :param channel_filter: Called with the name for each result channel; if False, the
@@ -99,16 +99,21 @@ def make_default_plot(datasets: dict[str, Any],
                 num_axes))
 
 
-def auto_plot(datasets: dict[str, Any], *, channel_filter=lambda name: True):
+def auto_plot(datasets: dict[str, Any],
+              *,
+              channel_filter=lambda name: True) -> list[plt.Figure]:
     """Display PyPlot figures for all the ndscan roots found among the passed datasets.
 
     :param channel_filter: Called with the name for each result channel; if False, the
         channel is not displayed.
     """
     roots = find_ndscan_roots(datasets)
+    figures = []
     for root in roots:
         fig = plt.figure(figsize=(10, 8), constrained_layout=True)
         try:
             make_default_plot(datasets, root, fig, channel_filter=channel_filter)
+            figures.append(fig)
         except NotImplementedError as e:
             print(f"Skipping root '{root}': {e}")
+    return figures
