@@ -22,13 +22,16 @@ class SubscanRoot(Root):
             raise ValueError("Unexpected scan schema channel name: {}".format(
                 self._schema_key))
 
+        self._update(parent.get_point())
+
     def _update(self, data: dict[str, Any]) -> None:
         if data is None:
-            self._model.quit()
+            if self._model:
+                self._model.quit()
+                self.model_changed.emit(None)
             self._model = None
             self._schema = None
             self._schema_str = None
-            self.model_changed.emit(self._model)
             return
 
         schema_str = data[self._schema_key]
