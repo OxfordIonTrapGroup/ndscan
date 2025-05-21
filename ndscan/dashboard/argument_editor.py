@@ -775,6 +775,18 @@ class OverrideEntry(LayoutWidget):
         return self.schema["fqn"] + "@" + (self.path or "/")
 
     def read_from_params(self, params: dict, manager_datasets) -> None:
+        # Check if this parameter is part of the scan axes
+        for axis in params.get("scan", {}).get("axes", []):
+            if axis["fqn"] == self.schema["fqn"] and axis["path"] == self.path:
+                for idx, option in enumerate(self.options):
+                    if option.attempt_read_from_axis(axis):
+                        self.current_option_idx = idx
+                        self._current_index_changed(idx)
+                        self.scan_type.setCurrentIndex(idx)
+                        return
+                logger.warning(
+                    f"Failed to read scan params for {self.user_readable_name()}")
+
         for o in params.get("overrides", {}).get(self.schema["fqn"], []):
             if o["path"] == self.path:
                 self._set_fixed_value(o["value"])
@@ -862,6 +874,9 @@ class ScanOption:
 
     def write_sync_values(self, sync_values: dict) -> None:
         pass
+
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        return False
 
 
 class StringFixedScanOption(ScanOption):
@@ -1011,6 +1026,9 @@ class RangeScanOption(NumericScanOption):
     def get_bounds(self) -> tuple[float, float]:
         raise NotImplementedError
 
+    def is_centred(self) -> bool:
+        return False
+
     def write_to_params(self, params: dict) -> None:
         start, stop = self.get_bounds()
         spec = {
@@ -1033,6 +1051,10 @@ class RangeScanOption(NumericScanOption):
                 "stop": stop * self.scale,
                 "num_points": self.box_points.value()
             }
+        if self.is_centred():
+            spec["style"] = "centred"
+        else:
+            spec["style"] = "minmax"
         params["scan"].setdefault("axes", []).append(spec)
 
 
@@ -1068,6 +1090,25 @@ class MinMaxScanOption(RangeScanOption):
         sync_values[SyncValue.upper] = self.box_stop.value()
         sync_values[SyncValue.num_points] = self.box_points.value()
 
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        # if there is no scan style, default to minmax
+        if axis.get("style", "minmax") == "centred":
+            return False
+        if axis["type"] == "refining":
+            self.check_infinite.setChecked(True)
+            self.box_start.setValue(axis["range"].get("lower", 0.0) / self.scale)
+            self.box_stop.setValue(axis["range"].get("upper", 0.0) / self.scale)
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        if axis["type"] == "linear":
+            self.check_infinite.setChecked(False)
+            self.box_start.setValue(axis["range"].get("start", 0.0) / self.scale)
+            self.box_stop.setValue(axis["range"].get("stop", 0.0) / self.scale)
+            self.box_points.setValue(axis["range"].get("num_points", 21))
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        return False
+
 
 class CentreSpanScanOption(RangeScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -1092,6 +1133,9 @@ class CentreSpanScanOption(RangeScanOption):
         h = self.box_half_span.value()
         return c - h, c + h
 
+    def is_centred(self) -> bool:
+        return True
+
     def read_sync_values(self, sync_values: dict) -> None:
         if SyncValue.centre in sync_values:
             self.box_centre.setValue(sync_values[SyncValue.centre])
@@ -1101,6 +1145,32 @@ class CentreSpanScanOption(RangeScanOption):
     def write_sync_values(self, sync_values: dict) -> None:
         sync_values[SyncValue.centre] = self.box_centre.value()
         sync_values[SyncValue.num_points] = self.box_points.value()
+
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis.get("style", "minmax") != "centred":
+            return False
+        if axis["type"] == "refining":
+            self.check_infinite.setChecked(True)
+            self.box_half_span.setValue(
+                (axis["range"].get("upper", 0.0) - axis["range"].get("lower", 0.0)) /
+                (2 * self.scale))
+            self.box_centre.setValue(
+                (axis["range"].get("upper", 0.0) + axis["range"].get("lower", 0.0)) /
+                (2 * self.scale))
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        if axis["type"] == "linear":
+            self.check_infinite.setChecked(False)
+            self.box_half_span.setValue(
+                (axis["range"].get("stop", 0.0) - axis["range"].get("start", 0.0)) /
+                (2 * self.scale))
+            self.box_centre.setValue(
+                (axis["range"].get("stop", 0.0) + axis["range"].get("start", 0.0)) /
+                (2 * self.scale))
+            self.box_points.setValue(axis["range"].get("num_points", 21))
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        return False
 
 
 class ExpandingScanOption(NumericScanOption):
@@ -1147,6 +1217,14 @@ class ExpandingScanOption(NumericScanOption):
     def write_sync_values(self, sync_values: dict) -> None:
         sync_values[SyncValue.centre] = self.box_centre.value()
 
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "expanding":
+            return False
+        self.box_centre.setValue(axis["range"].get("centre", 0.0) / self.scale)
+        self.box_spacing.setValue(axis["range"].get("spacing", 0.0) / self.scale)
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
+
 
 class ListScanOption(NumericScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -1185,6 +1263,18 @@ class ListScanOption(NumericScanOption):
         }
         params["scan"].setdefault("axes", []).append(spec)
 
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "list":
+            return False
+        values = axis["range"].get("values", [])
+        # a 'list' could also be a bool or enum param, so we need to check the type
+        if all(isinstance(v, (int, float)) for v in values):
+            list_str = ", ".join([str(v / self.scale) for v in values])
+            self.box_pyon.insert(list_str)
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        return False
+
 
 class BoolScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -1211,6 +1301,14 @@ class BoolScanOption(ScanOption):
         }
         params["scan"].setdefault("axes", []).append(spec)
 
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "list":
+            return False
+        if axis["range"].get("values", []) == [False, True]:
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        return False
+
 
 class EnumScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -1229,3 +1327,12 @@ class EnumScanOption(ScanOption):
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
+
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "list":
+            return False
+        values = axis["range"].get("values", [])
+        if all(isinstance(v, str) for v in values):
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        return False
