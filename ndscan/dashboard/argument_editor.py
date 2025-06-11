@@ -933,7 +933,10 @@ class EnumFixedScanOption(ScanOption):
 class NumericScanOption(ScanOption):
     def __init__(self, entry: OverrideEntry):
         super().__init__(entry)
-        self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
+        spec = entry.schema.get("spec", {})
+        self.scale = spec.get("scale", 1.0)
+        self.min = spec.get("min", float("-inf"))
+        self.max = spec.get("max", float("inf"))
 
     def _make_spin_box(self, set_limits_from_spec=True):
         box = ScientificSpinBox()
@@ -953,8 +956,8 @@ class NumericScanOption(ScanOption):
         box.setRelativeStep()
 
         if set_limits_from_spec:
-            box.setMinimum(spec.get("min", float("-inf")) / self.scale)
-            box.setMaximum(spec.get("max", float("inf")) / self.scale)
+            box.setMinimum(self.min / self.scale)
+            box.setMaximum(self.max / self.scale)
 
         unit = spec.get("unit", "")
         if unit:
@@ -1204,10 +1207,8 @@ class ExpandingScanOption(NumericScanOption):
                 "randomise_order": self.check_randomise.isChecked()
             }
         }
-        if (lower := schema["spec"].get("min", None)) is not None:
-            spec["range"]["limit_lower"] = lower
-        if (upper := schema["spec"].get("max", None)) is not None:
-            spec["range"]["limit_upper"] = upper
+        spec["range"]["limit_lower"] = self.min / self.scale
+        spec["range"]["limit_upper"] = self.max / self.scale
         params["scan"].setdefault("axes", []).append(spec)
 
     def read_sync_values(self, sync_values: dict) -> None:
