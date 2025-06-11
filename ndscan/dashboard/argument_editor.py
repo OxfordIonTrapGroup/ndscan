@@ -1029,9 +1029,6 @@ class RangeScanOption(NumericScanOption):
     def get_bounds(self) -> tuple[float, float]:
         raise NotImplementedError
 
-    def is_centred(self) -> bool:
-        return False
-
     def write_to_params(self, params: dict) -> None:
         start, stop = self.get_bounds()
         spec = {
@@ -1054,10 +1051,7 @@ class RangeScanOption(NumericScanOption):
                 "stop": stop * self.scale,
                 "num_points": self.box_points.value()
             }
-        if self.is_centred():
-            spec["style"] = "centred"
-        else:
-            spec["style"] = "minmax"
+
         params["scan"].setdefault("axes", []).append(spec)
 
 
@@ -1095,8 +1089,6 @@ class MinMaxScanOption(RangeScanOption):
 
     def attempt_read_from_axis(self, axis: dict) -> bool:
         # if there is no scan style, default to minmax
-        if axis.get("style", "minmax") == "centred":
-            return False
         if axis["type"] == "refining":
             self.check_infinite.setChecked(True)
             self.box_start.setValue(axis["range"].get("lower", 0.0) / self.scale)
@@ -1111,6 +1103,30 @@ class MinMaxScanOption(RangeScanOption):
             self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
             return True
         return False
+
+    def write_to_params(self, params: dict) -> None:
+        start, stop = self.get_bounds()
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "range": {
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        if self.check_infinite.isChecked():
+            spec["type"] = "refining"
+            spec["range"] |= {
+                "lower": start * self.scale,
+                "upper": stop * self.scale,
+            }
+        else:
+            spec["type"] = "linear"
+            spec["range"] |= {
+                "start": start * self.scale,
+                "stop": stop * self.scale,
+                "num_points": self.box_points.value()
+            }
+        params["scan"].setdefault("axes", []).append(spec)
 
 
 class CentreSpanScanOption(RangeScanOption):
@@ -1134,10 +1150,7 @@ class CentreSpanScanOption(RangeScanOption):
     def get_bounds(self) -> tuple[float, float]:
         c = self.box_centre.value()
         h = self.box_half_span.value()
-        return c - h, c + h
-
-    def is_centred(self) -> bool:
-        return True
+        return c, h
 
     def read_sync_values(self, sync_values: dict) -> None:
         if SyncValue.centre in sync_values:
@@ -1150,30 +1163,51 @@ class CentreSpanScanOption(RangeScanOption):
         sync_values[SyncValue.num_points] = self.box_points.value()
 
     def attempt_read_from_axis(self, axis: dict) -> bool:
-        if axis.get("style", "minmax") != "centred":
-            return False
-        if axis["type"] == "refining":
+        if axis["type"] == "centre_refining":
             self.check_infinite.setChecked(True)
             self.box_half_span.setValue(
-                (axis["range"].get("upper", 0.0) - axis["range"].get("lower", 0.0)) /
-                (2 * self.scale))
+                (axis["range"].get("half_span", 0.0) / self.scale))
             self.box_centre.setValue(
-                (axis["range"].get("upper", 0.0) + axis["range"].get("lower", 0.0)) /
-                (2 * self.scale))
+                (axis["range"].get("centre", 0.0) / self.scale))
             self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
             return True
-        if axis["type"] == "linear":
+        if axis["type"] == "centre_span":
             self.check_infinite.setChecked(False)
             self.box_half_span.setValue(
-                (axis["range"].get("stop", 0.0) - axis["range"].get("start", 0.0)) /
-                (2 * self.scale))
+                (axis["range"].get("half_span", 0.0) / self.scale))
             self.box_centre.setValue(
-                (axis["range"].get("stop", 0.0) + axis["range"].get("start", 0.0)) /
-                (2 * self.scale))
-            self.box_points.setValue(axis["range"].get("num_points", 21))
+                (axis["range"].get("centre", 0.0) / self.scale))
             self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
             return True
         return False
+    
+    def write_to_params(self, params: dict) -> None:
+        centre, half_span = self.get_bounds()
+        spec = {
+            "fqn": self.entry.schema["fqn"],
+            "path": self.entry.path,
+            "range": {
+                "randomise_order": self.check_randomise.isChecked(),
+            }
+        }
+        if self.check_infinite.isChecked():
+            spec["type"] = "centre_refining"
+            spec["range"] |= {
+                "centre": centre * self.scale,
+                "half_span": half_span * self.scale,
+                "limit_lower": self.min,
+                "limit_upper": self.max,
+            }
+        else:
+            spec["type"] = "centre_span"
+            spec["range"] |= {
+                "centre": centre * self.scale,
+                "half_span": half_span * self.scale,
+                "num_points": self.box_points.value(),
+                "limit_lower": self.min ,
+                "limit_upper": self.max,
+            }
+        params["scan"].setdefault("axes", []).append(spec)
 
 
 class ExpandingScanOption(NumericScanOption):
