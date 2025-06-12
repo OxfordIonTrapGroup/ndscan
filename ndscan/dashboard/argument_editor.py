@@ -1305,7 +1305,7 @@ class ListScanOption(NumericScanOption):
         # a 'list' could also be a bool or enum param, so we need to check the type
         if all(isinstance(v, (int, float)) for v in values):
             list_str = ", ".join([str(v / self.scale) for v in values])
-            self.box_pyon.insert(list_str)
+            self.box_pyon.setText(list_str)
             self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
             return True
         return False
