@@ -64,7 +64,7 @@ class RefiningGenerator(ScanGenerator):
         if self.randomise_order:
             rng.shuffle(points)
 
-        return points
+        return points.tolist()
 
     def describe_limits(self, target: dict[str, Any]) -> None:
         ""
