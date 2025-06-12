@@ -60,7 +60,7 @@ class RefiningGenerator(ScanGenerator):
             points = np.arange(num) * d / num + d / (2 * num) + self.lower
 
         # Silently drop points outside of the limits
-        points = points[(points >= self.limit_lower) & (points <= self.limit_upper)] 
+        points = points[(points >= self.limit_lower) & (points <= self.limit_upper)]
         if self.randomise_order:
             rng.shuffle(points)
 
@@ -102,6 +102,7 @@ class CentreRefiningGenerator(RefiningGenerator):
         self.limit_lower = limit_lower
         self.limit_upper = limit_upper
         self.randomise_order = randomise_order
+
 
 class ExpandingGenerator(ScanGenerator):
     """Generates points with given, constant spacing in progressively growing range

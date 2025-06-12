@@ -155,7 +155,9 @@ class ScanGeneratorCase(unittest.TestCase):
         self.assertEqual(gen.points_for_level(3), [0.25, 0.75, 1.25, 1.75])
 
     def test_centrerefininggenerator(self):
-        gen = CentreRefiningGenerator(centre=200.0, half_span=100.0, randomise_order=False)
+        gen = CentreRefiningGenerator(centre=200.0,
+                                      half_span=100.0,
+                                      randomise_order=False)
         self.assertTrue(gen.has_level(0))
         self.assertEqual(gen.points_for_level(0), [100.0, 300.0])
         self.assertTrue(gen.has_level(1))
@@ -166,7 +168,10 @@ class ScanGeneratorCase(unittest.TestCase):
         self.assertEqual(gen.points_for_level(3), [125.0, 175.0, 225.0, 275.0])
 
     def test_centrerefininggenerator_lower_lim(self):
-        gen = CentreRefiningGenerator(centre=200.0, half_span=100.0, randomise_order=False, limit_lower=120.0)
+        gen = CentreRefiningGenerator(centre=200.0,
+                                      half_span=100.0,
+                                      randomise_order=False,
+                                      limit_lower=120.0)
         self.assertTrue(gen.has_level(0))
         self.assertEqual(gen.points_for_level(0), [300.0])
         self.assertTrue(gen.has_level(1))
@@ -177,7 +182,11 @@ class ScanGeneratorCase(unittest.TestCase):
         self.assertEqual(gen.points_for_level(3), [125.0, 175.0, 225.0, 275.0])
 
     def test_centrerefininggenerator_span_outside_limit(self):
-        gen = CentreRefiningGenerator(centre=200.0, half_span=100.0, randomise_order=False, limit_lower=120.0, limit_upper=250.0)
+        gen = CentreRefiningGenerator(centre=200.0,
+                                      half_span=100.0,
+                                      randomise_order=False,
+                                      limit_lower=120.0,
+                                      limit_upper=250.0)
         self.assertTrue(gen.has_level(0))
         self.assertEqual(gen.points_for_level(0), [120.0])
         self.assertTrue(gen.has_level(1))

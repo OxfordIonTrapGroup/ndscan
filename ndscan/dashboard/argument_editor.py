@@ -1167,20 +1167,18 @@ class CentreSpanScanOption(RangeScanOption):
             self.check_infinite.setChecked(True)
             self.box_half_span.setValue(
                 (axis["range"].get("half_span", 0.0) / self.scale))
-            self.box_centre.setValue(
-                (axis["range"].get("centre", 0.0) / self.scale))
+            self.box_centre.setValue((axis["range"].get("centre", 0.0) / self.scale))
             self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
             return True
         if axis["type"] == "centre_span":
             self.check_infinite.setChecked(False)
             self.box_half_span.setValue(
                 (axis["range"].get("half_span", 0.0) / self.scale))
-            self.box_centre.setValue(
-                (axis["range"].get("centre", 0.0) / self.scale))
+            self.box_centre.setValue((axis["range"].get("centre", 0.0) / self.scale))
             self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
             return True
         return False
-    
+
     def write_to_params(self, params: dict) -> None:
         centre, half_span = self.get_bounds()
         spec = {
@@ -1204,7 +1202,7 @@ class CentreSpanScanOption(RangeScanOption):
                 "centre": centre * self.scale,
                 "half_span": half_span * self.scale,
                 "num_points": self.box_points.value(),
-                "limit_lower": self.min ,
+                "limit_lower": self.min,
                 "limit_upper": self.max,
             }
         params["scan"].setdefault("axes", []).append(spec)
