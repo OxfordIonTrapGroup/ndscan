@@ -775,6 +775,18 @@ class OverrideEntry(LayoutWidget):
         return self.schema["fqn"] + "@" + (self.path or "/")
 
     def read_from_params(self, params: dict, manager_datasets) -> None:
+        # Check if this parameter is part of the scan axes
+        for axis in params.get("scan", {}).get("axes", []):
+            if axis["fqn"] == self.schema["fqn"] and axis["path"] == self.path:
+                for idx, option in enumerate(self.options):
+                    if option.attempt_read_from_axis(axis):
+                        self.current_option_idx = idx
+                        self._current_index_changed(idx)
+                        self.scan_type.setCurrentIndex(idx)
+                        return
+                logger.warning(
+                    f"Failed to read scan params for {self.user_readable_name()}")
+
         for o in params.get("overrides", {}).get(self.schema["fqn"], []):
             if o["path"] == self.path:
                 self._set_fixed_value(o["value"])
@@ -863,6 +875,9 @@ class ScanOption:
     def write_sync_values(self, sync_values: dict) -> None:
         pass
 
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        return False
+
 
 class StringFixedScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -918,7 +933,10 @@ class EnumFixedScanOption(ScanOption):
 class NumericScanOption(ScanOption):
     def __init__(self, entry: OverrideEntry):
         super().__init__(entry)
-        self.scale = self.entry.schema.get("spec", {}).get("scale", 1.0)
+        spec = entry.schema.get("spec", {})
+        self.scale = spec.get("scale", 1.0)
+        self.min = spec.get("min", float("-inf"))
+        self.max = spec.get("max", float("inf"))
 
     def _make_spin_box(self, set_limits_from_spec=True):
         box = ScientificSpinBox()
@@ -938,8 +956,8 @@ class NumericScanOption(ScanOption):
         box.setRelativeStep()
 
         if set_limits_from_spec:
-            box.setMinimum(spec.get("min", float("-inf")) / self.scale)
-            box.setMaximum(spec.get("max", float("inf")) / self.scale)
+            box.setMinimum(self.min / self.scale)
+            box.setMaximum(self.max / self.scale)
 
         unit = spec.get("unit", "")
         if unit:
@@ -1008,11 +1026,7 @@ class RangeScanOption(NumericScanOption):
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
-    def get_bounds(self) -> tuple[float, float]:
-        raise NotImplementedError
-
     def write_to_params(self, params: dict) -> None:
-        start, stop = self.get_bounds()
         spec = {
             "fqn": self.entry.schema["fqn"],
             "path": self.entry.path,
@@ -1020,19 +1034,7 @@ class RangeScanOption(NumericScanOption):
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }
-        if self.check_infinite.isChecked():
-            spec["type"] = "refining"
-            spec["range"] |= {
-                "lower": start * self.scale,
-                "upper": stop * self.scale,
-            }
-        else:
-            spec["type"] = "linear"
-            spec["range"] |= {
-                "start": start * self.scale,
-                "stop": stop * self.scale,
-                "num_points": self.box_points.value()
-            }
+        self.write_type_and_range(spec)
         params["scan"].setdefault("axes", []).append(spec)
 
 
@@ -1052,9 +1054,6 @@ class MinMaxScanOption(RangeScanOption):
         layout.addWidget(self.box_stop)
         layout.setStretchFactor(self.box_stop, 1)
 
-    def get_bounds(self) -> tuple[float, float]:
-        return self.box_start.value(), self.box_stop.value()
-
     def read_sync_values(self, sync_values: dict) -> None:
         if SyncValue.lower in sync_values:
             self.box_start.setValue(sync_values[SyncValue.lower])
@@ -1067,6 +1066,39 @@ class MinMaxScanOption(RangeScanOption):
         sync_values[SyncValue.lower] = self.box_start.value()
         sync_values[SyncValue.upper] = self.box_stop.value()
         sync_values[SyncValue.num_points] = self.box_points.value()
+
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] == "refining":
+            self.check_infinite.setChecked(True)
+            self.box_start.setValue(axis["range"].get("lower", 0.0) / self.scale)
+            self.box_stop.setValue(axis["range"].get("upper", 0.0) / self.scale)
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        if axis["type"] == "linear":
+            self.check_infinite.setChecked(False)
+            self.box_start.setValue(axis["range"].get("start", 0.0) / self.scale)
+            self.box_stop.setValue(axis["range"].get("stop", 0.0) / self.scale)
+            self.box_points.setValue(axis["range"].get("num_points", 21))
+            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+            return True
+        return False
+
+    def write_type_and_range(self, spec: dict) -> None:
+        start = self.box_start.value()
+        stop = self.box_stop.value()
+        if self.check_infinite.isChecked():
+            spec["type"] = "refining"
+            spec["range"] |= {
+                "lower": start * self.scale,
+                "upper": stop * self.scale,
+            }
+        else:
+            spec["type"] = "linear"
+            spec["range"] |= {
+                "start": start * self.scale,
+                "stop": stop * self.scale,
+                "num_points": self.box_points.value()
+            }
 
 
 class CentreSpanScanOption(RangeScanOption):
@@ -1087,11 +1119,6 @@ class CentreSpanScanOption(RangeScanOption):
 
         self._build_points_ui(layout)
 
-    def get_bounds(self) -> tuple[float, float]:
-        c = self.box_centre.value()
-        h = self.box_half_span.value()
-        return c - h, c + h
-
     def read_sync_values(self, sync_values: dict) -> None:
         if SyncValue.centre in sync_values:
             self.box_centre.setValue(sync_values[SyncValue.centre])
@@ -1101,6 +1128,35 @@ class CentreSpanScanOption(RangeScanOption):
     def write_sync_values(self, sync_values: dict) -> None:
         sync_values[SyncValue.centre] = self.box_centre.value()
         sync_values[SyncValue.num_points] = self.box_points.value()
+
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] == "centre_span_refining":
+            self.check_infinite.setChecked(True)
+        elif axis["type"] == "centre_span":
+            self.check_infinite.setChecked(False)
+        else:
+            return False
+
+        # Common to both finite/refining:
+        self.box_half_span.setValue((axis["range"].get("half_span", 0.0) / self.scale))
+        self.box_centre.setValue((axis["range"].get("centre", 0.0) / self.scale))
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
+
+    def write_type_and_range(self, spec: dict) -> None:
+        centre = self.box_centre.value()
+        half_span = self.box_half_span.value()
+        spec["range"] |= {
+            "centre": centre * self.scale,
+            "half_span": half_span * self.scale,
+            "limit_lower": self.min,
+            "limit_upper": self.max,
+        }
+        if self.check_infinite.isChecked():
+            spec["type"] = "centre_span_refining"
+        else:
+            spec["type"] = "centre_span"
+            spec["range"]["num_points"] = self.box_points.value()
 
 
 class ExpandingScanOption(NumericScanOption):
@@ -1134,10 +1190,8 @@ class ExpandingScanOption(NumericScanOption):
                 "randomise_order": self.check_randomise.isChecked()
             }
         }
-        if (lower := schema["spec"].get("min", None)) is not None:
-            spec["range"]["limit_lower"] = lower
-        if (upper := schema["spec"].get("max", None)) is not None:
-            spec["range"]["limit_upper"] = upper
+        spec["range"]["limit_lower"] = self.min
+        spec["range"]["limit_upper"] = self.max
         params["scan"].setdefault("axes", []).append(spec)
 
     def read_sync_values(self, sync_values: dict) -> None:
@@ -1146,6 +1200,14 @@ class ExpandingScanOption(NumericScanOption):
 
     def write_sync_values(self, sync_values: dict) -> None:
         sync_values[SyncValue.centre] = self.box_centre.value()
+
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "expanding":
+            return False
+        self.box_centre.setValue(axis["range"].get("centre", 0.0) / self.scale)
+        self.box_spacing.setValue(axis["range"].get("spacing", 0.0) / self.scale)
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
 
 
 class ListScanOption(NumericScanOption):
@@ -1185,6 +1247,15 @@ class ListScanOption(NumericScanOption):
         }
         params["scan"].setdefault("axes", []).append(spec)
 
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "list":
+            return False
+        values = axis["range"].get("values", [])
+        list_str = ", ".join([str(v / self.scale) for v in values])
+        self.box_pyon.setText(list_str)
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
+
 
 class BoolScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -1211,6 +1282,12 @@ class BoolScanOption(ScanOption):
         }
         params["scan"].setdefault("axes", []).append(spec)
 
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "list":
+            return False
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
+
 
 class EnumScanOption(ScanOption):
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
@@ -1229,3 +1306,9 @@ class EnumScanOption(ScanOption):
             }
         }
         params["scan"].setdefault("axes", []).append(spec)
+
+    def attempt_read_from_axis(self, axis: dict) -> bool:
+        if axis["type"] != "list":
+            return False
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
