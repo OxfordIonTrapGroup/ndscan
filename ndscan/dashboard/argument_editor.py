@@ -1132,19 +1132,16 @@ class CentreSpanScanOption(RangeScanOption):
     def attempt_read_from_axis(self, axis: dict) -> bool:
         if axis["type"] == "centre_span_refining":
             self.check_infinite.setChecked(True)
-            self.box_half_span.setValue(
-                (axis["range"].get("half_span", 0.0) / self.scale))
-            self.box_centre.setValue((axis["range"].get("centre", 0.0) / self.scale))
-            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
-            return True
-        if axis["type"] == "centre_span":
+        elif axis["type"] == "centre_span":
             self.check_infinite.setChecked(False)
-            self.box_half_span.setValue(
-                (axis["range"].get("half_span", 0.0) / self.scale))
-            self.box_centre.setValue((axis["range"].get("centre", 0.0) / self.scale))
-            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
-            return True
-        return False
+        else:
+            return False
+
+        # Common to both finite/refining:
+        self.box_half_span.setValue((axis["range"].get("half_span", 0.0) / self.scale))
+        self.box_centre.setValue((axis["range"].get("centre", 0.0) / self.scale))
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
 
     def write_type_and_range(self, spec: dict) -> None:
         centre = self.box_centre.value()
