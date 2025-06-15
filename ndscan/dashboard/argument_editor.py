@@ -1251,13 +1251,10 @@ class ListScanOption(NumericScanOption):
         if axis["type"] != "list":
             return False
         values = axis["range"].get("values", [])
-        # a 'list' could also be a bool or enum param, so we need to check the type
-        if all(isinstance(v, (int, float)) for v in values):
-            list_str = ", ".join([str(v / self.scale) for v in values])
-            self.box_pyon.setText(list_str)
-            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
-            return True
-        return False
+        list_str = ", ".join([str(v / self.scale) for v in values])
+        self.box_pyon.setText(list_str)
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
 
 
 class BoolScanOption(ScanOption):
@@ -1288,10 +1285,8 @@ class BoolScanOption(ScanOption):
     def attempt_read_from_axis(self, axis: dict) -> bool:
         if axis["type"] != "list":
             return False
-        if axis["range"].get("values", []) == [False, True]:
-            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
-            return True
-        return False
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
 
 
 class EnumScanOption(ScanOption):
@@ -1315,8 +1310,5 @@ class EnumScanOption(ScanOption):
     def attempt_read_from_axis(self, axis: dict) -> bool:
         if axis["type"] != "list":
             return False
-        values = axis["range"].get("values", [])
-        if all(isinstance(v, str) for v in values):
-            self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
-            return True
-        return False
+        self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
+        return True
