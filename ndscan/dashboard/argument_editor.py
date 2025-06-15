@@ -1026,11 +1026,7 @@ class RangeScanOption(NumericScanOption):
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
 
-    def get_bounds(self) -> tuple[float, float]:
-        raise NotImplementedError
-
     def write_to_params(self, params: dict) -> None:
-        start, stop = self.get_bounds()
         spec = {
             "fqn": self.entry.schema["fqn"],
             "path": self.entry.path,
@@ -1038,20 +1034,7 @@ class RangeScanOption(NumericScanOption):
                 "randomise_order": self.check_randomise.isChecked(),
             }
         }
-        if self.check_infinite.isChecked():
-            spec["type"] = "refining"
-            spec["range"] |= {
-                "lower": start * self.scale,
-                "upper": stop * self.scale,
-            }
-        else:
-            spec["type"] = "linear"
-            spec["range"] |= {
-                "start": start * self.scale,
-                "stop": stop * self.scale,
-                "num_points": self.box_points.value()
-            }
-
+        self.write_type_and_range(spec)
         params["scan"].setdefault("axes", []).append(spec)
 
 
@@ -1070,9 +1053,6 @@ class MinMaxScanOption(RangeScanOption):
         self.box_stop = self._make_spin_box()
         layout.addWidget(self.box_stop)
         layout.setStretchFactor(self.box_stop, 1)
-
-    def get_bounds(self) -> tuple[float, float]:
-        return self.box_start.value(), self.box_stop.value()
 
     def read_sync_values(self, sync_values: dict) -> None:
         if SyncValue.lower in sync_values:
@@ -1103,15 +1083,9 @@ class MinMaxScanOption(RangeScanOption):
             return True
         return False
 
-    def write_to_params(self, params: dict) -> None:
-        start, stop = self.get_bounds()
-        spec = {
-            "fqn": self.entry.schema["fqn"],
-            "path": self.entry.path,
-            "range": {
-                "randomise_order": self.check_randomise.isChecked(),
-            }
-        }
+    def write_type_and_range(self, spec: dict) -> None:
+        start = self.box_start.value()
+        stop = self.box_stop.value()
         if self.check_infinite.isChecked():
             spec["type"] = "refining"
             spec["range"] |= {
@@ -1125,7 +1099,6 @@ class MinMaxScanOption(RangeScanOption):
                 "stop": stop * self.scale,
                 "num_points": self.box_points.value()
             }
-        params["scan"].setdefault("axes", []).append(spec)
 
 
 class CentreSpanScanOption(RangeScanOption):
@@ -1145,11 +1118,6 @@ class CentreSpanScanOption(RangeScanOption):
         layout.addWidget(make_divider())
 
         self._build_points_ui(layout)
-
-    def get_bounds(self) -> tuple[float, float]:
-        c = self.box_centre.value()
-        h = self.box_half_span.value()
-        return c, h
 
     def read_sync_values(self, sync_values: dict) -> None:
         if SyncValue.centre in sync_values:
@@ -1178,33 +1146,20 @@ class CentreSpanScanOption(RangeScanOption):
             return True
         return False
 
-    def write_to_params(self, params: dict) -> None:
-        centre, half_span = self.get_bounds()
-        spec = {
-            "fqn": self.entry.schema["fqn"],
-            "path": self.entry.path,
-            "range": {
-                "randomise_order": self.check_randomise.isChecked(),
-            }
+    def write_type_and_range(self, spec: dict) -> None:
+        centre = self.box_centre.value()
+        half_span = self.box_half_span.value()
+        spec["range"] |= {
+            "centre": centre * self.scale,
+            "half_span": half_span * self.scale,
+            "limit_lower": self.min,
+            "limit_upper": self.max,
         }
         if self.check_infinite.isChecked():
             spec["type"] = "centre_span_refining"
-            spec["range"] |= {
-                "centre": centre * self.scale,
-                "half_span": half_span * self.scale,
-                "limit_lower": self.min,
-                "limit_upper": self.max,
-            }
         else:
             spec["type"] = "centre_span"
-            spec["range"] |= {
-                "centre": centre * self.scale,
-                "half_span": half_span * self.scale,
-                "num_points": self.box_points.value(),
-                "limit_lower": self.min,
-                "limit_upper": self.max,
-            }
-        params["scan"].setdefault("axes", []).append(spec)
+            spec["range"]["num_points"] = self.box_points.value()
 
 
 class ExpandingScanOption(NumericScanOption):
