@@ -82,8 +82,12 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;ScanGenerator&quot;</span><span class="p">,</span> <span class="s2">&quot;RefiningGenerator&quot;</span><span class="p">,</span> <span class="s2">&quot;LinearGenerator&quot;</span><span class="p">,</span> <span class="s2">&quot;ListGenerator&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ScanOptions&quot;</span>
+    <span class="s2">&quot;ScanGenerator&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RefiningGenerator&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LinearGenerator&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ListGenerator&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CentreSpanRefiningGenerator&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ScanOptions&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -127,6 +131,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">randomise_order</span> <span class="o">=</span> <span class="n">randomise_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_lower</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_upper</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">has_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="s2">&quot;&quot;</span>
@@ -137,21 +143,58 @@
     <span class="k">def</span> <span class="nf">points_for_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="n">level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="p">]</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="n">level</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span> <span class="o">/</span> <span class="n">num</span> <span class="o">+</span> <span class="n">d</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">num</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower</span>
 
-        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower</span>
-        <span class="n">num</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="n">level</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span> <span class="o">/</span> <span class="n">num</span> <span class="o">+</span> <span class="n">d</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">num</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower</span>
-
+        <span class="c1"># Silently drop points outside of the limits</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="p">[(</span><span class="n">points</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_lower</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">points</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_upper</span><span class="p">)]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">randomise_order</span><span class="p">:</span>
             <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">points</span>
+        <span class="k">return</span> <span class="n">points</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">describe_limits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="n">target</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower</span>
         <span class="n">target</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span></div>
+
+
+
+<div class="viewcode-block" id="CentreSpanRefiningGenerator">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_generator.CentreSpanRefiningGenerator">[docs]</a>
+<span class="k">class</span> <span class="nc">CentreSpanRefiningGenerator</span><span class="p">(</span><span class="n">RefiningGenerator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates progressively finer grid in span around centre by halving distance</span>
+<span class="sd">    between points each level. Scan is always centred on the given centre, even if the</span>
+<span class="sd">    span exceeds the limits.</span>
+<span class="sd">    :param limit_lower: Optional lower limit (inclusive) to the range of generated</span>
+<span class="sd">            points. Useful for representing scans on parameters the range of which is</span>
+<span class="sd">            limited (e.g. to be non-negative).</span>
+<span class="sd">    :param limit_upper: See `limit_lower`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">centre</span><span class="p">,</span>
+        <span class="n">half_span</span><span class="p">,</span>
+        <span class="n">randomise_order</span><span class="p">,</span>
+        <span class="n">limit_lower</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="p">,</span>
+        <span class="n">limit_upper</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centre</span> <span class="o">=</span> <span class="n">centre</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">half_span</span> <span class="o">=</span> <span class="n">half_span</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="n">centre</span> <span class="o">-</span> <span class="n">half_span</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">=</span> <span class="n">centre</span> <span class="o">+</span> <span class="n">half_span</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">&lt;</span> <span class="n">limit_lower</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">&gt;</span> <span class="n">limit_upper</span><span class="p">:</span>
+            <span class="c1"># If both extents of the span exceed the limits, change the span to fit</span>
+            <span class="c1">#   the larger of the two. This way we still don&#39;t move the scan centre.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">half_span</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">centre</span> <span class="o">-</span> <span class="n">limit_lower</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">limit_upper</span> <span class="o">-</span> <span class="n">centre</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="n">centre</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">half_span</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">=</span> <span class="n">centre</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">half_span</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_lower</span> <span class="o">=</span> <span class="n">limit_lower</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_upper</span> <span class="o">=</span> <span class="n">limit_upper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">randomise_order</span> <span class="o">=</span> <span class="n">randomise_order</span></div>
 
 
 
@@ -319,7 +362,8 @@
     <span class="s2">&quot;expanding&quot;</span><span class="p">:</span> <span class="n">ExpandingGenerator</span><span class="p">,</span>
     <span class="s2">&quot;linear&quot;</span><span class="p">:</span> <span class="n">LinearGenerator</span><span class="p">,</span>
     <span class="s2">&quot;centre_span&quot;</span><span class="p">:</span> <span class="n">CentreSpanGenerator</span><span class="p">,</span>
-    <span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="n">ListGenerator</span>
+    <span class="s2">&quot;centre_span_refining&quot;</span><span class="p">:</span> <span class="n">CentreSpanRefiningGenerator</span><span class="p">,</span>
+    <span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="n">ListGenerator</span><span class="p">,</span>
 <span class="p">}</span>
 
 
