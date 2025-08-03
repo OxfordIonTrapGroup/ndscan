@@ -26,7 +26,7 @@ class ArtiqMetadata:
     start_time: float
     run_time: float
     artiq_version: str
-    exp_class: str
+    class_name: str
 
 
 def format_epoch_timestamp_as_utc(timestamp: float) -> str:
@@ -39,7 +39,7 @@ def print_metadata(m: ArtiqMetadata):
     print("========")
     print()
     print(" - RID:", m.rid)
-    print(" - Experiment class:", m.exp_class)
+    print(" - Experiment class:", m.class_name)
     print(" - Launched at:", format_epoch_timestamp_as_utc(m.start_time))
     print(" - Entered run() at:", format_epoch_timestamp_as_utc(m.run_time))
     print(" - ARTIQ version:", m.artiq_version)
@@ -138,7 +138,7 @@ def load_h5(args):
                                    start_time=file["start_time"][()],
                                    run_time=file["run_time"][()],
                                    artiq_version=file["artiq_version"][()].decode(),
-                                   exp_class=expid["class_name"])
+                                   class_name=expid["class_name"])
 
     return path, datasets, prefixes, schema, artiq_metadata
 
