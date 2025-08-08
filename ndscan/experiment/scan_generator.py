@@ -86,8 +86,8 @@ class CentreSpanRefiningGenerator(RefiningGenerator):
         centre,
         half_span,
         randomise_order,
-        limit_lower=-np.Inf,
-        limit_upper=np.Inf,
+        limit_lower=-np.inf,
+        limit_upper=np.inf,
     ):
         self.centre = centre
         self.half_span = half_span
