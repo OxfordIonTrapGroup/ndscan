@@ -1,22 +1,22 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ndscan.experiment.default_analysis &mdash; ndscan  documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
-    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/default_analysis.html"/>
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/theme_overrides.css?v=48d00273" />
+
   
-        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
-        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/default_analysis.html"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -92,15 +92,15 @@
 <span class="sd">Both can produce :class:`Annotation`\ s; particular values or plot locations highlighted</span>
 <span class="sd">in the user interface.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
-<span class="kn">from</span> <span class="nn">.annotations</span> <span class="kn">import</span> <span class="p">(</span><span class="n">AnnotationValueRef</span><span class="p">,</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">Annotation</span><span class="p">,</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.annotations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">AnnotationValueRef</span><span class="p">,</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">Annotation</span><span class="p">,</span>
                           <span class="n">computed_curve</span><span class="p">,</span> <span class="n">axis_location</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span>
-<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamHandle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultChannel</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;Annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;DefaultAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;CustomAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;OnlineFit&quot;</span><span class="p">,</span>
@@ -118,13 +118,13 @@
 
 <div class="viewcode-block" id="DefaultAnalysis">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis">[docs]</a>
-<span class="k">class</span> <span class="nc">DefaultAnalysis</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DefaultAnalysis</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis functionality associated with an `ExpFragment` to be executed when that</span>
 <span class="sd">    fragment is scanned in a particular way.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="DefaultAnalysis.required_axes">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.required_axes">[docs]</a>
-    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the scan axes necessary for the analysis to apply, in form of the</span>
 <span class="sd">        parameter handles.&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
@@ -132,7 +132,7 @@
 
 <div class="viewcode-block" id="DefaultAnalysis.describe_online_analyses">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.describe_online_analyses">[docs]</a>
-    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exceute analysis and serialise information about resulting annotations and</span>
@@ -149,7 +149,7 @@
 
 <div class="viewcode-block" id="DefaultAnalysis.get_analysis_results">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.get_analysis_results">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return :class:`ResultChannel`\ s for the results produced by the analysis,</span>
 <span class="sd">        as a dictionary indexed by name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -158,7 +158,7 @@
 
 <div class="viewcode-block" id="DefaultAnalysis.execute">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.execute">[docs]</a>
-    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">axis_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">result_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
@@ -180,7 +180,7 @@
 
 <div class="viewcode-block" id="CustomAnalysis">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.CustomAnalysis">[docs]</a>
-<span class="k">class</span> <span class="nc">CustomAnalysis</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomAnalysis</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:class:`DefaultAnalysis` that executes a user-defined analysis function in the</span>
 <span class="sd">    :meth:`execute` step.</span>
 
@@ -205,7 +205,7 @@
 <span class="sd">    :param analysis_results: Optionally, a number of result channels for analysis</span>
 <span class="sd">        results. They are later passed to ``analyze_fn``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">],</span>
         <span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span>
@@ -226,21 +226,21 @@
                                  <span class="sa">f</span><span class="s2">&quot;in analysis for axes [</span><span class="si">{</span><span class="n">axes</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
 
-    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span>
 
-    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[],</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span>
 
-    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">axis_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">result_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
@@ -261,7 +261,7 @@
             <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
                 <span class="c1"># KLUDGE: If that also fails (e.g. there is a TypeError in the actual</span>
                 <span class="c1"># implementation), let the original exception bubble up.</span>
-                <span class="k">raise</span> <span class="n">orignal_exception</span> <span class="kn">from</span> <span class="kc">None</span>
+                <span class="k">raise</span> <span class="n">orignal_exception</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">annotations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Tolerate the user forgetting the return statement.</span>
@@ -323,7 +323,7 @@
 
 <div class="viewcode-block" id="OnlineFit">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.OnlineFit">[docs]</a>
-<span class="k">class</span> <span class="nc">OnlineFit</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OnlineFit</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Describes an automatically executed fit for a given combination of scan axes</span>
 <span class="sd">    and result channels.</span>
 
@@ -344,7 +344,7 @@
 <span class="sd">        a dictionary mapping fit parameter names to the respective values, forwarded to</span>
 <span class="sd">        :meth:`oitg.fitting.FitBase.FitBase.fit`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">fit_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">],</span>
                  <span class="n">annotations</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -362,11 +362,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">constants</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">constants</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">constants</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initial_values</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">initial_values</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial_values</span>
 
-    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ParamHandle</span><span class="p">)}</span>
 
-    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
         <span class="s2">&quot;&quot;</span>
@@ -383,7 +383,7 @@
             <span class="c1"># creates needlessly duplicate analyses).</span>
             <span class="n">analysis_identifier</span> <span class="o">=</span> <span class="s2">&quot;fit_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">analysis_ref</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">analysis_ref</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;online_result&quot;</span><span class="p">,</span>
                                       <span class="n">analysis_name</span><span class="o">=</span><span class="n">analysis_identifier</span><span class="p">,</span>
                                       <span class="n">result_key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
@@ -418,12 +418,12 @@
             <span class="p">}</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="c1"># Could return annotation locations in the future.</span>
         <span class="k">return</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">axis_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">result_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
@@ -437,14 +437,14 @@
 
 <div class="viewcode-block" id="ResultPrefixAnalysisWrapper">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper">[docs]</a>
-<span class="k">class</span> <span class="nc">ResultPrefixAnalysisWrapper</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResultPrefixAnalysisWrapper</span><span class="p">(</span><span class="n">DefaultAnalysis</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Wraps another default analysis, prepending the given string to the name of each</span>
 <span class="sd">    analysis result.</span>
 
 <span class="sd">    This can be used to disambiguate potential conflicts between result names when</span>
 <span class="sd">    programmatically collecting analyses from multiple sources.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">:</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">:</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param wrapped: The :class:`.DefaultAnalysis` instance to forward to.</span>
 <span class="sd">        :param prefix: The string to prepend to the name of each analysis result.</span>
@@ -454,13 +454,13 @@
 
 <div class="viewcode-block" id="ResultPrefixAnalysisWrapper.required_axes">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.required_axes">[docs]</a>
-    <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">required_axes</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ResultPrefixAnalysisWrapper.describe_online_analyses">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.describe_online_analyses">[docs]</a>
-    <span class="k">def</span> <span class="nf">describe_online_analyses</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_online_analyses</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">describe_online_analyses</span><span class="p">(</span><span class="n">context</span><span class="p">)</span></div>
@@ -468,7 +468,7 @@
 
 <div class="viewcode-block" id="ResultPrefixAnalysisWrapper.get_analysis_results">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.get_analysis_results">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_analysis_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]:</span>
         <span class="c1"># TODO: Prepend to ResultChannel.path as well? For now, nothing relies on the</span>
         <span class="c1"># path schema entry for analysis results, so it&#39;s a wash.</span>
         <span class="k">return</span> <span class="p">{</span>
@@ -479,7 +479,7 @@
 
 <div class="viewcode-block" id="ResultPrefixAnalysisWrapper.execute">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.ResultPrefixAnalysisWrapper.execute">[docs]</a>
-    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">axis_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">AxisIdentity</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
         <span class="n">result_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>

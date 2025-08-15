@@ -1,22 +1,22 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ndscan.experiment.fragment &mdash; ndscan  documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
-    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/fragment.html"/>
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/theme_overrides.css?v=48d00273" />
+
   
-        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
-        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/fragment.html"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -74,18 +74,18 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ndscan.experiment.fragment</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">artiq.language</span> <span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_from_string</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">rpc</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
-<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">artiq.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_from_string</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">rpc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
 
-<span class="kn">from</span> <span class="nn">.default_analysis</span> <span class="kn">import</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">ResultPrefixAnalysisWrapper</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">ParamBase</span>
-<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">FloatChannel</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">is_kernel</span><span class="p">,</span> <span class="n">path_matches_spec</span>
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">strip_prefix</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.default_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">ResultPrefixAnalysisWrapper</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamHandle</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">,</span> <span class="n">ParamBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">FloatChannel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_kernel</span><span class="p">,</span> <span class="n">path_matches_spec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">strip_prefix</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span> <span class="s2">&quot;ExpFragment&quot;</span><span class="p">,</span> <span class="s2">&quot;AggregateExpFragment&quot;</span><span class="p">,</span> <span class="s2">&quot;TransitoryError&quot;</span><span class="p">,</span>
@@ -96,12 +96,12 @@
 
 
 <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
-<span class="k">def</span> <span class="nf">_log_failed_cleanup_host</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_log_failed_cleanup_host</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;device_cleanup() failed for &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
 
 
 <span class="nd">@portable</span>
-<span class="k">def</span> <span class="nf">_log_failed_cleanup</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_log_failed_cleanup</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Log error message for failed subfragment ``device_cleanup``.</span>
 
 <span class="sd">    Single kernel (well, portable) function, rather than directly an RPC call, to</span>
@@ -114,11 +114,11 @@
 
 <div class="viewcode-block" id="Fragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment">[docs]</a>
-<span class="k">class</span> <span class="nc">Fragment</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Fragment</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Main building block.&quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Fragment.build">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.build">[docs]</a>
-    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise this fragment instance; called from the ``HasEnvironment``</span>
 <span class="sd">        constructor.</span>
 
@@ -219,19 +219,19 @@
                 <span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">,</span> <span class="s2">&quot;log_failed_cleanup&quot;</span><span class="p">],</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="n">portable</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_has_trivial_device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_has_trivial_device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span>
         <span class="n">empty_setup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_setup</span><span class="o">.</span><span class="vm">__func__</span> <span class="ow">is</span> <span class="n">Fragment</span><span class="o">.</span><span class="n">device_setup</span>
         <span class="k">return</span> <span class="n">empty_setup</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_setup_trivial</span>
 
-    <span class="k">def</span> <span class="nf">_has_trivial_device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_has_trivial_device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_building</span>
         <span class="n">empty_cleanup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_cleanup</span><span class="o">.</span><span class="vm">__func__</span> <span class="ow">is</span> <span class="n">Fragment</span><span class="o">.</span><span class="n">device_cleanup</span>
         <span class="k">return</span> <span class="n">empty_cleanup</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_subfragment_cleanup_trivial</span>
 
 <div class="viewcode-block" id="Fragment.host_setup">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.host_setup">[docs]</a>
-    <span class="k">def</span> <span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">host_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform host-side initialisation.</span>
 
 <span class="sd">        For fragments used as part of an on-core-device scan (i.e. with an ``@kernel``</span>
@@ -265,7 +265,7 @@
 <div class="viewcode-block" id="Fragment.device_setup">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_setup">[docs]</a>
     <span class="nd">@portable</span>
-    <span class="k">def</span> <span class="nf">device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform core-device-side initialisation.</span>
 
 <span class="sd">        A typical implementation will make sure that any hardware state represented by</span>
@@ -297,7 +297,7 @@
 <div class="viewcode-block" id="Fragment.device_setup_subfragments">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_setup_subfragments">[docs]</a>
     <span class="nd">@portable</span>
-    <span class="k">def</span> <span class="nf">device_setup_subfragments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_setup_subfragments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Call :meth:`device_setup` on all subfragments.</span>
 
 <span class="sd">        This is the default implementation for :meth:`device_setup`, but is kept</span>
@@ -314,7 +314,7 @@
 
 <div class="viewcode-block" id="Fragment.host_cleanup">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.host_cleanup">[docs]</a>
-    <span class="k">def</span> <span class="nf">host_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">host_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform host-side cleanup after an experiment has been run.</span>
 
 <span class="sd">        This is the equivalent of :meth:`host_setup` to be run *after* the main</span>
@@ -351,7 +351,7 @@
 <div class="viewcode-block" id="Fragment.device_cleanup">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_cleanup">[docs]</a>
     <span class="nd">@portable</span>
-    <span class="k">def</span> <span class="nf">device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform core-device-side teardown.</span>
 
 <span class="sd">        This is the equivalent of :meth:`device_setup`, run after the main experiment.</span>
@@ -379,7 +379,7 @@
 <div class="viewcode-block" id="Fragment.device_cleanup_subfragments">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.device_cleanup_subfragments">[docs]</a>
     <span class="nd">@portable</span>
-    <span class="k">def</span> <span class="nf">device_cleanup_subfragments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_cleanup_subfragments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Call :meth:`device_cleanup` on all subfragments.</span>
 
 <span class="sd">        This is the default implementation for :meth:`device_cleanup`, but is kept</span>
@@ -404,7 +404,7 @@
 
 <div class="viewcode-block" id="Fragment.build_fragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.build_fragment">[docs]</a>
-    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise this fragment, building up the hierarchy of subfragments,</span>
 <span class="sd">        parameters and result channels.</span>
 
@@ -425,7 +425,7 @@
 
 <div class="viewcode-block" id="Fragment.setattr_fragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_fragment">[docs]</a>
-    <span class="k">def</span> <span class="nf">setattr_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setattr_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fragment_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="s2">&quot;Fragment&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                          <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a subfragment of the given name and type.</span>
 
@@ -455,7 +455,7 @@
 
 <div class="viewcode-block" id="Fragment.setattr_param">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_param">[docs]</a>
-    <span class="k">def</span> <span class="nf">setattr_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">param_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">ParamBase</span><span class="p">],</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setattr_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">param_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">ParamBase</span><span class="p">],</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                       <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamHandle</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a parameter of the given name and type.</span>
 
@@ -486,7 +486,7 @@
 
 <div class="viewcode-block" id="Fragment.setattr_param_like">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_param_like">[docs]</a>
-    <span class="k">def</span> <span class="nf">setattr_param_like</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setattr_param_like</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                            <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                            <span class="n">original_owner</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span>
                            <span class="n">original_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -538,7 +538,7 @@
 
 <div class="viewcode-block" id="Fragment.setattr_param_rebind">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_param_rebind">[docs]</a>
-    <span class="k">def</span> <span class="nf">setattr_param_rebind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setattr_param_rebind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                              <span class="n">original_owner</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span>
                              <span class="n">original_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -573,7 +573,7 @@
 
 <div class="viewcode-block" id="Fragment.setattr_result">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.setattr_result">[docs]</a>
-    <span class="k">def</span> <span class="nf">setattr_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setattr_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                        <span class="n">channel_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">]</span> <span class="o">=</span> <span class="n">FloatChannel</span><span class="p">,</span>
                        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
@@ -600,7 +600,7 @@
         <span class="k">return</span> <span class="n">channel</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_register_result_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_register_result_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                                  <span class="n">channel</span><span class="p">:</span> <span class="n">ResultChannel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="p">(</span><span class="s2">&quot;Result channel name must be a valid &quot;</span>
                                      <span class="s2">&quot;Python identifier&quot;</span><span class="p">)</span>
@@ -610,7 +610,7 @@
 
 <div class="viewcode-block" id="Fragment.override_param">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.override_param">[docs]</a>
-    <span class="k">def</span> <span class="nf">override_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">override_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                        <span class="n">param_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                        <span class="n">initial_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Override the parameter with the given name and set it to the provided value.</span>
@@ -640,7 +640,7 @@
 
 <div class="viewcode-block" id="Fragment.bind_param">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.bind_param">[docs]</a>
-    <span class="k">def</span> <span class="nf">bind_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">ParamHandle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">ParamHandle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Override the fragment parameter with the given name such that its value</span>
 <span class="sd">        follows that of another parameter.</span>
 
@@ -685,7 +685,7 @@
         <span class="k">return</span> <span class="n">param</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_collect_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">schemata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_collect_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">schemata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span>
                         <span class="n">sample_instances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamBase</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Collect free parameters of this fragment and all its subfragments.</span>
 
@@ -721,7 +721,7 @@
 
 <div class="viewcode-block" id="Fragment.detach_fragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.detach_fragment">[docs]</a>
-    <span class="k">def</span> <span class="nf">detach_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">detach_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Detach a subfragment from the execution machinery, causing its setup and</span>
 <span class="sd">        cleanup methods not to be invoked and its result channels not to be collected.</span>
 
@@ -743,7 +743,7 @@
 
 <div class="viewcode-block" id="Fragment.init_params">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.init_params">[docs]</a>
-    <span class="k">def</span> <span class="nf">init_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                     <span class="n">overrides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise free parameters of this fragment and all its subfragments.</span>
 
@@ -791,7 +791,7 @@
 
 <div class="viewcode-block" id="Fragment.recompute_param_defaults">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.recompute_param_defaults">[docs]</a>
-    <span class="k">def</span> <span class="nf">recompute_param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">recompute_param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Recompute default values of the parameters of this fragment and all its</span>
 <span class="sd">        subfragments.</span>
 
@@ -813,7 +813,7 @@
 
 <div class="viewcode-block" id="Fragment.make_namespaced_identifier">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.make_namespaced_identifier">[docs]</a>
-    <span class="k">def</span> <span class="nf">make_namespaced_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_namespaced_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Mangle passed name and path to this fragment into a string, such that calls</span>
 <span class="sd">        from different fragments give different results for the same name.</span>
 
@@ -829,7 +829,7 @@
 
 <div class="viewcode-block" id="Fragment.get_always_shown_params">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.Fragment.get_always_shown_params">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return handles of parameters to always show in user interfaces when this</span>
 <span class="sd">        fragment is the root of the fragment tree (vs. other parameters for which</span>
 <span class="sd">        overrides need to be explicitly added).</span>
@@ -862,26 +862,26 @@
         <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_params</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_get_all_handles_for_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_all_handles_for_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebound_subfragment_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span>
 
-    <span class="k">def</span> <span class="nf">_stringize_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stringize_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment_path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_collect_result_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_collect_result_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">channels</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subfragments</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_subfragments</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">s</span><span class="o">.</span><span class="n">_collect_result_channels</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_dataset_or_set_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_dataset_or_set_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; does not exist, but no &quot;</span> <span class="o">+</span>
-                               <span class="s2">&quot;fallback default value specified&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                               <span class="s2">&quot;fallback default value specified&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">persist</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Set dataset &#39;</span><span class="si">%s</span><span class="s2">&#39; to default value (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
@@ -895,11 +895,11 @@
 
 <div class="viewcode-block" id="ExpFragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment">[docs]</a>
-<span class="k">class</span> <span class="nc">ExpFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExpFragment</span><span class="p">(</span><span class="n">Fragment</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Fragment that supports the notion of being run to produce results.&quot;&quot;&quot;</span>
 <div class="viewcode-block" id="ExpFragment.prepare">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment.prepare">[docs]</a>
-    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare this instance for execution</span>
 <span class="sd">        (see ``artiq.language.environment.Experiment.prepare``).</span>
 
@@ -919,14 +919,14 @@
 
 <div class="viewcode-block" id="ExpFragment.run_once">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment.run_once">[docs]</a>
-    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the experiment described by the fragment once with the current</span>
 <span class="sd">        parameters, producing one set of results (if any).&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="ExpFragment.get_default_analyses">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.ExpFragment.get_default_analyses">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return list of :class:`.DefaultAnalysis` instances describing analyses</span>
 <span class="sd">        (fits, etc.) for this fragment.</span>
 
@@ -940,7 +940,7 @@
 
 
 
-<span class="k">def</span> <span class="nf">_skip_common_prefix</span><span class="p">(</span><span class="n">target</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">reference</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_skip_common_prefix</span><span class="p">(</span><span class="n">target</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">reference</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
     <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">reference</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
         <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -949,7 +949,7 @@
 
 <div class="viewcode-block" id="AggregateExpFragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment">[docs]</a>
-<span class="k">class</span> <span class="nc">AggregateExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AggregateExpFragment</span><span class="p">(</span><span class="n">ExpFragment</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Combines multiple :class:`ExpFragment`\ s and callables by executing them one</span>
 <span class="sd">    after each other each time :meth:`run_once` is called.</span>
 
@@ -989,7 +989,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="AggregateExpFragment.build_fragment">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.build_fragment">[docs]</a>
-    <span class="k">def</span> <span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="n">ExpFragment</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_fragment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="n">ExpFragment</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param operands: The list of objects to be aggregated. Each item may either be</span>
 <span class="sd">            a &quot;child&quot; fragment or a callable. The operands will be run in the given</span>
@@ -1032,14 +1032,14 @@
                                <span class="s2">&quot;recompiled for each scan point.&quot;</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="s2">&quot;&quot;</span>
         <span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exp_fragments</span><span class="p">:</span>
             <span class="n">exp</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
 
 <div class="viewcode-block" id="AggregateExpFragment.run_once">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.run_once">[docs]</a>
-    <span class="k">def</span> <span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the experiment by calling all operands.</span>
 
 <span class="sd">        Invokes all operands in the order they are passed to :meth:`build_fragment`.</span>
@@ -1052,12 +1052,12 @@
 
 
     <span class="nd">@kernel</span>
-    <span class="k">def</span> <span class="nf">_kernel_run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_kernel_run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_once_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
 <div class="viewcode-block" id="AggregateExpFragment.get_always_shown_params">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.get_always_shown_params">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_always_shown_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Collect always-shown params from each child fragment, plus any parameters</span>
 <span class="sd">        directly defined in this fragment as usual.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1069,7 +1069,7 @@
 
 <div class="viewcode-block" id="AggregateExpFragment.get_default_analyses">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.AggregateExpFragment.get_default_analyses">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Collect default analyses from each child fragment.</span>
 
 <span class="sd">        The analyses are wrapped in a proxy that prepends any result channel names with</span>
@@ -1091,7 +1091,7 @@
 
 <div class="viewcode-block" id="TransitoryError">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.TransitoryError">[docs]</a>
-<span class="k">class</span> <span class="nc">TransitoryError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TransitoryError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Transitory error encountered while executing a fragment, which is expected to</span>
 <span class="sd">    clear itself up if it is attempted again without any further changes.</span>
 
@@ -1109,7 +1109,7 @@
 
 <div class="viewcode-block" id="RestartKernelTransitoryError">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.fragment.RestartKernelTransitoryError">[docs]</a>
-<span class="k">class</span> <span class="nc">RestartKernelTransitoryError</span><span class="p">(</span><span class="n">TransitoryError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RestartKernelTransitoryError</span><span class="p">(</span><span class="n">TransitoryError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`.TransitoryError` where, as part of recovering from it, the kernel should</span>
 <span class="sd">    be restarted before retrying.</span>
 

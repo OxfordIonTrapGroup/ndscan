@@ -1,22 +1,22 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ndscan.experiment.annotations &mdash; ndscan  documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
-    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/annotations.html"/>
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/theme_overrides.css?v=48d00273" />
+
   
-        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
-        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://oxfordiontrapgroup.github.io/ndscan/_modules/ndscan/experiment/annotations.html"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -86,26 +86,26 @@
 <span class="sd">analysis result channels (see</span>
 <span class="sd">:meth:`.DefaultAnalysis.get_analysis_results`) should be used instead.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ParamHandle</span>
-<span class="kn">from</span> <span class="nn">.result_channels</span> <span class="kn">import</span> <span class="n">ResultChannel</span>
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamHandle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultChannel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;curve_1d&quot;</span><span class="p">,</span> <span class="s2">&quot;curve&quot;</span><span class="p">,</span> <span class="s2">&quot;computed_curve&quot;</span><span class="p">,</span> <span class="s2">&quot;axis_location&quot;</span><span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">AnnotationValueRef</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AnnotationValueRef</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Marker type to distinguish an already-serialised annotation value source</span>
 <span class="sd">    specification from an user-supplied value of dictionary type.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spec</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
 
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">AxisAssociatedKeyRef</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AxisAssociatedKeyRef</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Kludge to allow referring to an axis in annotation data before the actual index</span>
 <span class="sd">    is known (from the AnnotationContext when describe()ing the annotation).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -113,7 +113,7 @@
     <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
 
 
-<span class="k">class</span> <span class="nc">AnnotationContext</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AnnotationContext</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves entities in user-specified annotation schemata to stringly-typed</span>
 <span class="sd">    dictionary form.</span>
 
@@ -139,14 +139,14 @@
 <span class="sd">        return whether it is actually accessible in the datasets (e.g. subscan result</span>
 <span class="sd">        channels might not be exposed).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_axis_index</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ParamHandle</span><span class="p">],</span> <span class="nb">int</span><span class="p">],</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_axis_index</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ParamHandle</span><span class="p">],</span> <span class="nb">int</span><span class="p">],</span>
                  <span class="n">name_channel</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ResultChannel</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
                  <span class="n">analysis_result_is_exported</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ResultChannel</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_axis_index</span> <span class="o">=</span> <span class="n">get_axis_index</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name_channel</span> <span class="o">=</span> <span class="n">name_channel</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_result_is_exported</span> <span class="o">=</span> <span class="n">analysis_result_is_exported</span>
 
-    <span class="k">def</span> <span class="nf">describe_coordinate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_coordinate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ParamHandle</span><span class="p">):</span>
             <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;axis_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_axis_index</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">):</span>
@@ -155,7 +155,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">key</span>
         <span class="k">return</span> <span class="n">obj</span>
 
-    <span class="k">def</span> <span class="nf">describe_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AnnotationValueRef</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AnnotationValueRef</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">AnnotationValueRef</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">obj</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">):</span>
@@ -169,13 +169,13 @@
 
 <div class="viewcode-block" id="Annotation">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.Annotation">[docs]</a>
-<span class="k">class</span> <span class="nc">Annotation</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Annotation</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An annotation to be displayed alongside scan result data, recording derived</span>
 <span class="sd">    quantities (e.g. a fit minimizer).</span>
 
 <span class="sd">    See :func:`curve`, :func:`curve_1d`, :func:`computed_curve`, :func:`axis_location`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">coordinates</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -185,8 +185,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="k">def</span> <span class="nf">to_spec_map</span><span class="p">(</span><span class="n">dictionary</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">to_spec_map</span><span class="p">(</span><span class="n">dictionary</span><span class="p">):</span>
             <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">keyspec</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -205,7 +205,7 @@
 
 <div class="viewcode-block" id="curve">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.curve">[docs]</a>
-<span class="k">def</span> <span class="nf">curve</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">curve</span><span class="p">(</span>
     <span class="n">coordinates</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">,</span>
                       <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a curve annotation from a dictionary of coordinate lists.</span>
@@ -229,7 +229,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">num_points</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">normalise</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">normalise</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
             <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="k">nonlocal</span> <span class="n">num_points</span>
@@ -248,7 +248,7 @@
 
 <div class="viewcode-block" id="curve_1d">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.curve_1d">[docs]</a>
-<span class="k">def</span> <span class="nf">curve_1d</span><span class="p">(</span><span class="n">x_axis</span><span class="p">:</span> <span class="n">ParamHandle</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">curve_1d</span><span class="p">(</span><span class="n">x_axis</span><span class="p">:</span> <span class="n">ParamHandle</span><span class="p">,</span>
              <span class="n">x_values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">,</span>
              <span class="n">y_axis</span><span class="p">:</span> <span class="n">ResultChannel</span><span class="p">,</span>
              <span class="n">y_values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
@@ -277,7 +277,7 @@
 
 <div class="viewcode-block" id="computed_curve">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.computed_curve">[docs]</a>
-<span class="k">def</span> <span class="nf">computed_curve</span><span class="p">(</span><span class="n">function_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">computed_curve</span><span class="p">(</span><span class="n">function_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                    <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">],</span>
                    <span class="n">associated_channels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a curve annotation that is computed from a well-known fit function</span>
@@ -320,7 +320,7 @@
 
 <div class="viewcode-block" id="axis_location">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.axis_location">[docs]</a>
-<span class="k">def</span> <span class="nf">axis_location</span><span class="p">(</span><span class="n">axis</span><span class="p">:</span> <span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">axis_location</span><span class="p">(</span><span class="n">axis</span><span class="p">:</span> <span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">,</span>
                   <span class="n">position</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">,</span>
                   <span class="n">position_error</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">associated_channels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
