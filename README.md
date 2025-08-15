@@ -89,22 +89,28 @@ and
 sections.
 
 `ndscan` comes with a standard development environment, managed through
-[Poetry](https://python-poetry.org/), and using the
-[poe](https://poethepoet.natn.io/) task runner. To get started, first install
-Poetry as described on its website, if you have not already. Then, all the
-commands are readily available:
+[uv](https://docs.astral.sh/uv/), and using the
+[poe](https://poethepoet.natn.io/) task runner. To get started, install
+_uv_ as described on its website, if you have not already. All the other
+dependencies will be set up automatically once you create a virtual
+environment:
 
-    # Activate an isolated virtualenv for ndscan
-    $ poetry shell
+    # Create an isolated virtualenv in .venv
+    $ uv venv
 
-    # First time only: install all dependencies (including developer tooling)
-    (ndscan-py3.10) $ poetry install --with dev
+    # Install all dependencies
+    $ uv sync
+
+    # Activate the venv as usual
+    # . .venv/bin/activate
+
+You can also use `uv run` to avoid having to manually create/update the venv:
 
     # Before committing, ensure that the code follows the standard format and
     # lint checks (flake8) and unit tests are passing
-    (ndscan-py3.10) $ poe fmt
-    (ndscan-py3.10) $ poe lint
-    (ndscan-py3.10) $ poe test
+    $ uv run poe fmt
+    $ uv run poe lint
+    $ uv run poe test
 
 
 Contact
