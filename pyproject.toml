@@ -1,69 +1,54 @@
-[tool.poetry]
+[project]
 name = "ndscan"
 version = "v0.4.0"
 description = "Composable experiment fragments and multi-dimensional scans for ARTIQ"
-authors = ["David Nadlinger <code@klickverbot.at>"]
-license = "LGPLv3+"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-numpy = "^1.24.2"
-h5py = "^3.8.0"
-pyqtgraph = "^0.13.3"
+authors = [{ name = "David Nadlinger", email = "code@klickverbot.at" }]
+requires-python = ">=3.10"
+license = "LGPL-3.0-or-later"
 
 # Earlier versions of qasync had horrendous threading issues on Windows, which (for not
-# entirely obvious reasons) mostly show up on Python 3.10 and up.
-qasync = { version = ">=0.27.1" }
+# entirely obvious reasons) mostly show up on Python 3.10 and up. Thus far, ndscan still
+# works against both Qt 5 and Qt 6, but since early ARTIQ 9, upstream ARTIQ has switched
+# to Qt 6. If working against older versions of ARTIQ is of interest, we can revisit the
+# way the dependencies are specified here.
+dependencies = [
+    "artiq>=8.0.dev0",
+    "h5py>=3.8.0",
+    "numpy>=1.24",
+    "oitg",
+    "pyqt6>=6.5.2",
+    "pyqtgraph>=0.13.3",
+    "qasync>=0.27.1",
+    "sipyco",
+]
 
-sipyco = { git = "https://github.com/m-labs/sipyco.git" }
-oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
-
-# For ARTIQ, we are running into an annoying Poetry limitation (?): We would like to be
-# able to specify a Git repository source, as ARTIQ is not on PyPI, and additionally we
-# tend to depend on unreleased versions. Additionally, however, we want to be able to
-# use ndscan as a dependency, e.g. from downstream metapackages, where we might also
-# want to depend on a particular version of ARTIQ (for instance, an Oxford-internal
-# development branch for things that have not made it upstream yet). Currently, there
-# does not seem a way for us to just specify a "fallback" Git source; Poetry appears to
-# always consider two differing Git dependencies to be in conflict with each other.
-#
-# Thus, for the time being, we leave it up to the user to provide a suitable version of
-# ARTIQ and only specify the Qt dependency. Thus far, ndscan still works against both
-# Qt 5 and Qt 6, but since early ARTIQ 9, upstream ARTIQ has switched to Qt 6. If
-# working against older versions of ARTIQ is of interest, we can revisit the way the
-# dependencies are specified here.
-artiq = { version = ">=8.0.dev0" }
-pyqt6 = { version = "^6.5.2" }
-
-[tool.poetry.group.dev.dependencies]
-poethepoet = "^0.22.1"
-toml = "^0.10.2"
-
-# Pin exact versions of linters to avoid inconsistencies between CI environments.
-# YAPF 0.33–0.40 split before comparison operators, rather than after, not matching the
-# default behaviour for arithmetic operators, so stay on 0.32 for now – though at some
-# point we might just update and not care.
-yapf = "0.32.0"
-flake8 = "6.1.0"
-
-# To generate documentation.
-sphinx = "^7.2.6"
-sphinx-rtd-theme = "^1.3.0"
-matplotlib = "^3.8.0"
-
-[tool.poetry.scripts]
+[project.scripts]
 ndscan_dataset_janitor = "ndscan.dataset_janitor:main"
-ndscan_to_txt = "ndscan.to_txt:main"
 ndscan_show = "ndscan.show:main"
+ndscan_to_txt = "ndscan.to_txt:main"
 
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-style = "pep440"
+[dependency-groups]
+dev = [
+    "flake8==6.1.0",
+    "matplotlib>=3.8.0",
+    "poethepoet>=0.22.1",
+    "sphinx-rtd-theme>=1.3.0",
+    "sphinx>=7.2.6",
+    "toml>=0.10.2",
+    "yapf==0.32.0",
+]
+
+[tool.uv.sources]
+artiq = { git = "https://github.com/m-labs/artiq.git", branch = "release-8" }
+oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
+sipyco = { git = "https://github.com/m-labs/sipyco.git" }
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.7.19,<0.8.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
 
 [tool.poe.tasks]
 docs = "make -C $POE_ROOT/docs html"
