@@ -923,7 +923,7 @@ requires-dist = [
     { name = "pyqt6", specifier = ">=6.5.2" },
     { name = "pyqtgraph", specifier = ">=0.13.3" },
     { name = "qasync", specifier = ">=0.27.1" },
-    { name = "sipyco", git = "https://github.com/m-labs/sipyco.git" },
+    { name = "sipyco", git = "https://github.com/m-labs/sipyco.git?tag=v1.9" },
 ]
 
 [package.metadata.requires-dev]
@@ -1863,7 +1863,7 @@ wheels = [
 [[package]]
 name = "sipyco"
 version = "1.9"
-source = { git = "https://github.com/m-labs/sipyco.git#8781f35879855aba29038f0b32ecfa2c398b5ac9" }
+source = { git = "https://github.com/m-labs/sipyco.git?tag=v1.9#72dd23a358b72b2a73dc02780137750630071d98" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
