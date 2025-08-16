@@ -45,6 +45,10 @@ oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
 #.Pin SiPyCo to v1.9 for now to avoid PYON v2 fiasco (silent, breaking format change).
 sipyco = { git = "https://github.com/m-labs/sipyco.git", tag = "v1.9" }
 
+# Avoid frequent crashes due to QMutexLocker memory corruption/race condition; see
+# CabbageDevelopment/qasync#128. Can be removed once there is a released version.
+qasync = { git = "https://github.com/dnadlinger/qasync.git", branch = "windows-qmutexlocker-fix" }
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
