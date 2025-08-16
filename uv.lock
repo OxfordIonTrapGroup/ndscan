@@ -1090,7 +1090,7 @@ wheels = [
 [[package]]
 name = "oitg"
 version = "0.1"
-source = { git = "https://github.com/oxfordiontrapgroup/oitg.git#ac799987f40c7b89c7c2f5c6d12a79248f1321cc" }
+source = { git = "https://github.com/oxfordiontrapgroup/oitg.git#fb5547799818f1b2c9082c996f7b60192a67929d" }
 dependencies = [
     { name = "h5py" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
