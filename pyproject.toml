@@ -41,7 +41,9 @@ dev = [
 [tool.uv.sources]
 artiq = { git = "https://github.com/m-labs/artiq.git", branch = "release-8" }
 oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
-sipyco = { git = "https://github.com/m-labs/sipyco.git" }
+
+#.Pin SiPyCo to v1.9 for now to avoid PYON v2 fiasco (silent, breaking format change).
+sipyco = { git = "https://github.com/m-labs/sipyco.git", tag = "v1.9" }
 
 [build-system]
 requires = ["hatchling"]
