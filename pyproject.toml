@@ -44,11 +44,8 @@ oitg = { git = "https://github.com/oxfordiontrapgroup/oitg.git" }
 sipyco = { git = "https://github.com/m-labs/sipyco.git" }
 
 [build-system]
-requires = ["uv_build"]
-build-backend = "uv_build"
-
-[tool.uv.build-backend]
-module-root = ""
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.poe.tasks]
 docs = "make -C $POE_ROOT/docs html"
