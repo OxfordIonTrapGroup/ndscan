@@ -2,9 +2,10 @@ import logging
 import numpy as np
 import pyqtgraph
 from collections import defaultdict
-from typing import NamedTuple
+from typing import List, NamedTuple
 
-from .._qt import QtCore
+from .._qt import QtCore, QtWidgets, QtGui
+from ..plots.model.online_analysis import OnlineNamedFitAnalysis
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
@@ -18,6 +19,8 @@ from .utils import (call_later, extract_linked_datasets, extract_scalar_channels
                     hide_series_from_groups, get_axis_scaling_info, setup_axis_item,
                     FIT_COLORS, SERIES_COLORS, HIGHLIGHT_PEN, enum_to_numeric,
                     find_neighbour_index)
+
+from ..utils import FIT_OBJECTS
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +225,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.model.points_appended.connect(self._update_points),
         self.model.annotations_changed.connect(self._update_annotations),
         self.model.points_rewritten.connect(self._rewrite),
+        self.fits: List[LiveFit] = []
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
 
@@ -287,6 +291,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         highlight_pen = pyqtgraph.mkPen(**HIGHLIGHT_PEN)
         for axes_series in panes_axes_shown:
             pane = self.add_pane()
+
             pane.showGrid(x=True, y=True)
             crosshair_labels = []
             for series in axes_series:
@@ -332,6 +337,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             crosshair_labels = [x_label] + crosshair_labels
             crosshair = LabeledCrosshairCursor(self, pane, crosshair_labels)
             self.crosshairs.append(crosshair)
+
+        self.fits = [LiveFit(i, self, self.model) for i in range(len(self.series))]
 
         if len(self.panes) > 1:
             self.link_x_axes()
@@ -485,6 +492,11 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 self.data_names, self.hidden_channels)
             builder.ensure_separator()
 
+        # live fits aren't yet supported for multiple Y axes in a pane
+        if len(self.data_names) == len(self.panes) + len(self.hidden_channels):
+            self.fit_menu = FitMenu(builder, pane_idx, self)
+            builder.ensure_separator()
+
         super().build_context_menu(pane_idx, builder)
 
     def enable_averaging(self, enabled: bool):
@@ -546,3 +558,163 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         if not event.isAccepted():
             # Event not handled yet, so background/… was clicked instead of a point.
             self._background_clicked()
+
+
+class LiveFit:
+    """
+    - Class to handle the live fit of a series in the XY1DPlotWidget. One is created per series on a _initialise_series call.
+    - For now only one fit per pane is supported - if there are multiple series in a pane, the option to select a fit type will
+    not be given.
+    - This class is initialised with a PlotCurveItem and creates a new OnelineNamedFitAnalysis
+    when the user selects a fit type from the context menu.
+    - Updates to the online analysis are trigger by the usual signals from the model.
+    - These updates trigger a plot_fit_result call, which will update the data in the PlotCurveItem.
+    - It will then plot the fit result in the same pane as the series along with a TextItem showing fit parameters.
+    """
+    def __init__(self, series_idx: int, xyplot: XY1DPlotWidget, model: ScanModel):
+        # self.pane_idx = pane_idx
+        self.xyplot = xyplot
+        self.series_idx = series_idx
+        self.series: _XYSeries = xyplot.series[series_idx]
+        self.pane_idx: int = self.series.pane_idx
+        self.pane = self.xyplot.panes[self.pane_idx]
+        self.fit_type = "None"
+        self.schema = None
+        self.model = model
+        self.x_schema = self.model.axes[0]
+        self.x_param_spec = self.x_schema["param"]["spec"]
+        self.analysis = None
+
+        self.fit_plot_item = pyqtgraph.PlotCurveItem()
+        self.fit_plot_item.setPen(FIT_COLORS[series_idx % len(FIT_COLORS)], width=3)
+        self.pane.getViewBox().addItem(self.fit_plot_item, ignoreBounds=True)
+
+    def set_fit_type(self, fit_type):
+        self.fit_type = fit_type
+
+        self.init_params_box()
+        if fit_type != 'None':
+            self.schema = {"kind": "named_fit", "fit_type": fit_type, "data": {"x": "axis_0", "y": "channel_" + self.series.data_name}}
+            self.analysis = OnlineNamedFitAnalysis(self.schema, self.model)
+            self.analysis.updated.connect(self.plot_fit_result)
+        else:
+            self.analysis.stop()
+            self.analysis = None
+            self.plot_fit_result()
+
+    def init_params_box(self):
+        # Display the fit results
+        vb: pyqtgraph.ViewBox = self.xyplot.panes[self.pane_idx].getViewBox()
+        try:
+            vb.removeItem(self.params_text_item)
+        except AttributeError:
+            pass
+
+        text_item = pyqtgraph.TextItem(self.fit_type, color="blue", anchor=(0, 0))
+        text_item.setFont(QtGui.QFont("Arial", 12, QtGui.QFont.Bold))
+        vb.addItem(text_item, ignoreBounds=True)
+        # Position them in the top-left corner
+        text_item.setPos(vb.viewRange()[0][0], vb.viewRange()[1][1])  # Top-left of the view
+        self.params_text_item = text_item
+
+    def update_params_box(self):
+        if self.ready_to_plot():
+            text = [self.fit_type]
+            for k, v in self.analysis._last_fit_params.items():
+                text.append(f"{k}: {v:.4f}")
+            text = "\n".join(text)
+            self.params_text_item.setText(text)
+        else:
+            self.params_text_item.setText("")
+
+    def ready_to_plot(self):
+        if self.analysis and (self.analysis._last_fit_params is not None):
+            return True
+        return False
+
+    def plot_fit_result(self):
+        vb = self.fit_plot_item.getViewBox()
+        x_limits = [
+                    self.x_param_spec.get(n, None) for n in ("min", "max")
+                ]
+        x_range, _ = vb.state["viewRange"]
+        ext = (x_range[1] - x_range[0]) / 10
+        x_lims = [x_range[0] - ext, x_range[1] + ext]
+
+        if x_limits[0] is not None:
+            x_lims[0] = max(x_lims[0], x_limits[0])
+        if x_limits[1] is not None:
+            x_lims[1] = min(x_lims[1], x_limits[1])
+        self.x_lims = x_lims
+        # Choose number of points based on width of plot on screen (in pixels).
+        fn_xs = np.linspace(*x_lims, int(vb.width()))
+
+        if self.fit_type != 'None':
+            fn_ys = self.analysis._fit_obj.fitting_function(fn_xs, self.analysis._last_fit_params)
+            self.x_data = fn_xs
+            self.y_data = fn_ys
+        else:
+            fn_xs = []
+            fn_ys = []
+        self.fit_plot_item.setData(fn_xs, fn_ys)
+        self.update_params_box()
+
+    def stop(self):
+        if self.analysis is not None:
+            self.analysis.stop()
+        self.fit_plot_item.setData([], [])
+
+
+class FitMenu(QtWidgets.QWidget):
+    """
+    Sub-menu for selecting LiveFit type
+    """
+    def __init__(self, builder, pane_idx, xyplot: XY1DPlotWidget, parent=None):
+        super().__init__(parent=parent)
+        for fit in xyplot.fits:
+            if fit.pane_idx == pane_idx:
+                self.current_fit = fit.fit_type
+                break
+        self.radio_buttons = []
+        self.pane_idx = pane_idx
+        self.xyplot = xyplot
+
+        self.items = list(FIT_OBJECTS.keys())
+        self.items.insert(0, "None")
+
+        fit_list = self.init_list()
+
+        layout = QtWidgets.QVBoxLayout()
+        fit_menu = builder.append_menu("Select live fit")
+        action = QtWidgets.QWidgetAction(fit_menu)
+        action.setDefaultWidget(fit_list)
+        fit_menu.addAction(action)
+
+        self.setLayout(layout)
+        builder.ensure_separator()
+
+    def init_list(self):
+        list_widget = QtWidgets.QListWidget()
+
+        for index, item_text in enumerate(self.items):
+            item = QtWidgets.QListWidgetItem(list_widget)  # Create a list widget item
+            radio_button = QtWidgets.QRadioButton(item_text)  # Create a radio button
+            list_widget.setItemWidget(item, radio_button)  # Embed the button in the list item
+            self.radio_buttons.append(radio_button)
+
+            # Connect each radio button to a function to uncheck others
+            self.curent_row = self.items.index(self.current_fit)
+        self.radio_buttons[self.curent_row].setChecked(True)
+        for rb in self.radio_buttons:
+            rb.toggled.connect(self.update_selection)
+
+        return list_widget
+
+    def update_selection(self):
+        """Ensure only one radio button is checked at a time."""
+        for rb in self.radio_buttons:
+            if rb is not self.sender():
+                rb.setChecked(False)
+            if rb is self.sender() and rb.isChecked():
+                fit = self.xyplot.fits[self.pane_idx]
+                fit.set_fit_type(rb.text())
