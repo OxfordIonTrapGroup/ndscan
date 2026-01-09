@@ -112,6 +112,12 @@ You can also use `uv run` to avoid having to manually create/update the venv:
     $ uv run poe lint
     $ uv run poe test
 
+For now, using Python 3.12 is recommended. This is because wheels (binary
+builds) for the specific versions of some dependencies from the lock file are
+currently not available for newer versions (at least not on macOS). In
+principle, newer versions ought to work, however, and upgrading the
+dependencies may be all that is required.
+
 
 Contact
 -------
