@@ -8,7 +8,7 @@ from typing import Any, Protocol, TypeVar
 import oitg.fitting
 
 #: Registry of well-known fit procedure names.
-FIT_OBJECTS = {
+FIT_OBJECTS: dict[str, oitg.fitting.FitBase.FitBase] = {
     n: getattr(oitg.fitting, n)
     for n in [
         "cos",
