@@ -21,6 +21,9 @@ import logging
 from collections.abc import Callable, Iterable
 from typing import Any
 
+import numpy as np
+from oitg.fitting.FitBase import FitBase, FitError
+
 from ..utils import FIT_OBJECTS
 from .annotations import (
     Annotation,
@@ -30,7 +33,7 @@ from .annotations import (
     computed_curve,
 )
 from .parameters import ParamHandle
-from .result_channels import ResultChannel
+from .result_channels import OpaqueChannel, ResultChannel
 
 __all__ = [
     "Annotation",
@@ -241,10 +244,49 @@ class OnlineFit(DefaultAnalysis):
         analysis_identifier: str = None,
         constants: dict[str, Any] | None = None,
         initial_values: dict[str, Any] | None = None,
+        save_fit_results: bool | None = None,
     ):
         self.fit_type = fit_type
+
         if fit_type not in FIT_OBJECTS:
-            logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
+            raise ValueError(f"Unrecognised fit type: '{fit_type}'")
+
+        params = []
+        try:
+            params = FIT_OBJECTS[fit_type].all_parameter_names
+        except AttributeError:
+            # For backwards-compatibility with older oitg versions
+            # If explicitly requested to save fit results, then get all non-derived params
+            if save_fit_results is True:
+                logger.warning(
+                    "Derived parameters not accessible in installed version of oitg. "
+                    "Consider upgrading.",
+                    fit_type,
+                    exc_info=True,
+                )
+                params = FIT_OBJECTS[fit_type].parameter_names
+            else:
+                # If none specified and oitg version does not support derived_parameter_names,
+                # do not save results
+                save_fit_results = False
+        self._save_fit_results = (save_fit_results is None) or save_fit_results
+
+        self._result_channels = {}
+        self._channel_prefix = f"{fit_type}_fit_"
+
+        if self._save_fit_results:
+            for param in params:
+                self._result_channels[f"{self._channel_prefix}{param}"] = OpaqueChannel(
+                    f"{fit_type}_{param}"
+                )
+                self._result_channels[f"{self._channel_prefix}{param}_err"] = (
+                    OpaqueChannel(f"{fit_type}_{param}_err")
+                )
+
+            self._result_channels[f"{self._channel_prefix}reduced_chi_squared"] = (
+                OpaqueChannel(f"{self._channel_prefix}reduced_chi_squared")
+            )
+
         self.data = data
         if annotations is None:
             annotations = DEFAULT_FIT_ANNOTATIONS.get(fit_type, {})
@@ -317,8 +359,7 @@ class OnlineFit(DefaultAnalysis):
 
     def get_analysis_results(self) -> dict[str, ResultChannel]:
         ""
-        # Could return annotation locations in the future.
-        return {}
+        return self._result_channels
 
     def execute(
         self,
@@ -327,7 +368,57 @@ class OnlineFit(DefaultAnalysis):
         context: AnnotationContext,
     ) -> list[dict[str, Any]]:
         ""
-        # Nothing to do off-line for online fits.
+        if not self._save_fit_results:
+            return []
+
+        def _extract_data(data: ParamHandle | ResultChannel | None):
+            if data is None:
+                return None
+            elif isinstance(data, ParamHandle):
+                return axis_data[data._store.identity]
+            elif isinstance(data, ResultChannel):
+                return result_data[data]
+            else:
+                raise ValueError(f"Invalid data source: {data}")
+
+        x = _extract_data(self.data["x"])
+        y = _extract_data(self.data["y"])
+        y_err = _extract_data(self.data.get("y_err", None))
+
+        fitter: FitBase = FIT_OBJECTS[self.fit_type]
+
+        try:
+            p_dict, p_error_dict, residuals = fitter.fit(
+                x,
+                y,
+                y_err,
+                calculate_residuals=True,
+                constants=self.constants,
+                initialise=self.initial_values,
+            )
+        except FitError:
+            logger.warning("Fit failed for fit type '%s'", self.fit_type, exc_info=True)
+            return []
+
+        weights = 1 / (np.asarray(y_err) ** 2) if y_err is not None else np.ones_like(y)
+        num_free_fit_params = len(fitter.parameter_names) - len(self.constants)
+
+        reduced_chi_squared = np.sum(residuals**2 * weights) / (
+            len(y) - num_free_fit_params
+        )
+
+        for param, value in p_dict.items():
+            param_name = self._channel_prefix + param
+            if param_name not in self._result_channels:
+                continue
+            self._result_channels[param_name].push(value)
+            if param_name + "_err" in self._result_channels:
+                self._result_channels[param_name + "_err"].push(p_error_dict[param])
+
+        self._result_channels[f"{self._channel_prefix}reduced_chi_squared"].push(
+            reduced_chi_squared
+        )
+
         return []
 
 
