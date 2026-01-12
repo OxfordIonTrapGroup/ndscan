@@ -1,5 +1,8 @@
 line-length=88
 
+[format]
+line-ending = "lf"
+
 [lint]
 ignore =[
     # Star imports are common in idiomatic ARTIQ code
