@@ -29,13 +29,12 @@ ndscan_to_txt = "ndscan.to_txt:main"
 
 [dependency-groups]
 dev = [
-    "flake8==6.1.0",
     "matplotlib>=3.8.0",
     "poethepoet>=0.22.1",
+    "ruff>=0.14.11",
     "sphinx-rtd-theme>=1.3.0",
     "sphinx>=7.2.6",
     "toml>=0.10.2",
-    "yapf==0.32.0",
 ]
 
 [tool.uv.sources]
@@ -55,7 +54,11 @@ build-backend = "hatchling.build"
 
 [tool.poe.tasks]
 docs = "make -C $POE_ROOT/docs html"
-fmt = "yapf -i -r examples ndscan test"
-fmt-test = "yapf -d -r examples ndscan test"
-lint = "flake8 examples ndscan test"
+
+fmt-imports = "ruff check --select I --fix examples ndscan test -q"
+_fmt = "ruff format examples ndscan test"
+fmt.sequence = ["fmt-imports", "_fmt"]
+
+fmt-test = "ruff format --check examples ndscan test"
+lint = "ruff check examples ndscan test"
 test = "python -m unittest discover -v test"
