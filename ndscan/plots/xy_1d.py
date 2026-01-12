@@ -255,10 +255,10 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         # just connect to the model without worrying about what happens after the C++
         # part of the object is destructed, as the signals are automatically
         # disconnected.
-        (self.model.channel_schemata_changed.connect(self._initialise_series),)
-        (self.model.points_appended.connect(self._update_points),)
-        (self.model.annotations_changed.connect(self._update_annotations),)
-        (self.model.points_rewritten.connect(self._rewrite),)
+        self.model.channel_schemata_changed.connect(self._initialise_series)
+        self.model.points_appended.connect(self._update_points)
+        self.model.annotations_changed.connect(self._update_annotations)
+        self.model.points_rewritten.connect(self._rewrite)
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
 
