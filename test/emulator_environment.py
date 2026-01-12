@@ -11,10 +11,10 @@ from mock_environment import MockDatasetDB, MockScheduler
 artiq_root = os.getenv("ARTIQ_ROOT")
 
 try:
+    from artiq.coredevice.core import CompileError
     from artiq.language.environment import ProcessArgumentManager
     from artiq.master.databases import DeviceDB
-    from artiq.master.worker_db import DeviceManager, DatasetManager, DeviceError
-    from artiq.coredevice.core import CompileError
+    from artiq.master.worker_db import DatasetManager, DeviceError, DeviceManager
 except ImportError:
     if artiq_root:
         raise
@@ -29,11 +29,10 @@ class KernelEmulatorCase(unittest.TestCase):
     def setUp(self):
         self.device_db = DeviceDB(os.path.join(artiq_root, "device_db.py"))
         self.dataset_db = MockDatasetDB()
-        self.device_mgr = DeviceManager(self.device_db,
-                                        virtual_devices={
-                                            "ccb": unittest.mock.Mock(),
-                                            "scheduler": MockScheduler()
-                                        })
+        self.device_mgr = DeviceManager(
+            self.device_db,
+            virtual_devices={"ccb": unittest.mock.Mock(), "scheduler": MockScheduler()},
+        )
         self.dataset_mgr = DatasetManager(self.dataset_db)
 
     def tearDown(self):
@@ -53,7 +52,7 @@ class KernelEmulatorCase(unittest.TestCase):
         expid = {
             "file": sys.modules[cls.__module__].__file__,
             "class_name": cls.__name__,
-            "arguments": dict()
+            "arguments": dict(),
         }
         self.device_mgr.virtual_devices["scheduler"].expid = expid
         try:
@@ -67,5 +66,5 @@ class KernelEmulatorCase(unittest.TestCase):
             raise error from None
         except Exception as exn:
             if hasattr(exn, "artiq_core_exception"):
-                exn.args = "{}\n{}".format(exn.args[0], exn.artiq_core_exception),
+                exn.args = ("{}\n{}".format(exn.args[0], exn.artiq_core_exception),)
             raise exn

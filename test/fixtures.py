@@ -3,6 +3,7 @@ Common fragments/… for unit tests.
 """
 
 import numpy
+
 from ndscan.experiment import *
 
 
@@ -40,10 +41,7 @@ class AddOneFragment(ExpFragment):
         return [
             OnlineFit(
                 "lorentzian",
-                {
-                    "x": self.value,
-                    "y": self.result
-                },
+                {"x": self.value, "y": self.result},
                 constants={"y0": 1.0},
                 initial_values={"fwhm": 2.0},
             )
@@ -88,8 +86,9 @@ class AddOneCustomAnalysisFragment(AddOneFragment):
     def _analyze(self, axis_values, result_values):
         return [
             Annotation("location", {self.value: numpy.mean(axis_values[self.value])}),
-            Annotation("location",
-                       {self.result: numpy.mean(result_values[self.result])})
+            Annotation(
+                "location", {self.result: numpy.mean(result_values[self.result])}
+            ),
         ]
 
 
@@ -110,6 +109,7 @@ class TransitoryErrorFragment(ExpFragment):
     """Fails device_setup() and run_once() a configurable number of times with a
     transitory error before succeeding.
     """
+
     def build_fragment(self):
         self.num_device_setup_to_fail = 0
         self.num_device_setup_to_restart_fail = 0
@@ -139,11 +139,14 @@ class MultiPointTransitoryErrorFragment(TransitoryErrorFragment):
     """TransitoryErrorFragment that resets counters after run_once() has completed
     successfully (for testing scan behaviour).
     """
-    def build_fragment(self,
-                       num_device_setup_to_fail=0,
-                       num_device_setup_to_restart_fail=0,
-                       num_run_once_to_fail=0,
-                       num_run_once_to_restart_fail=0):
+
+    def build_fragment(
+        self,
+        num_device_setup_to_fail=0,
+        num_device_setup_to_restart_fail=0,
+        num_run_once_to_fail=0,
+        num_run_once_to_restart_fail=0,
+    ):
         super().build_fragment()
         self.orig_num_device_setup_to_fail = num_device_setup_to_fail
         self.orig_num_device_setup_to_restart_fail = num_device_setup_to_restart_fail
@@ -153,8 +156,9 @@ class MultiPointTransitoryErrorFragment(TransitoryErrorFragment):
 
     def reset_counters(self):
         self.num_device_setup_to_fail = self.orig_num_device_setup_to_fail
-        self.num_device_setup_to_restart_fail = \
+        self.num_device_setup_to_restart_fail = (
             self.orig_num_device_setup_to_restart_fail
+        )
         self.num_run_once_to_fail = self.orig_num_run_once_to_fail
         self.num_run_once_to_restart_fail = self.orig_num_run_once_to_restart_fail
 
@@ -168,6 +172,7 @@ class RequestTerminationFragment(ExpFragment):
     actual termination requests in a mock scheduler, raises TerminationRequested as
     soon as it is run.
     """
+
     def build_fragment(self):
         pass
 
@@ -191,10 +196,12 @@ class TwoAnalysisFragment(ExpFragment):
             return analyse
 
         return [
-            CustomAnalysis([self.a], make_analyse("result_a"),
-                           [FloatChannel("result_a")]),
-            CustomAnalysis([self.b], make_analyse("result_b"),
-                           [FloatChannel("result_b")])
+            CustomAnalysis(
+                [self.a], make_analyse("result_a"), [FloatChannel("result_a")]
+            ),
+            CustomAnalysis(
+                [self.b], make_analyse("result_b"), [FloatChannel("result_b")]
+            ),
         ]
 
 

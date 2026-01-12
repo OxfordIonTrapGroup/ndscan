@@ -1,5 +1,6 @@
 import numpy as np
 import pyqtgraph
+
 from .._qt import QtCore, QtGui, QtWidgets
 from .utils import SERIES_COLORS
 
@@ -16,11 +17,14 @@ class CrosshairLabel:
     ``QGraphicsSimpleTextItem.paint()`` to render the item twice with different pen
     settings performs badly for some reason).
     """
-    def __init__(self,
-                 view_box: pyqtgraph.ViewBox,
-                 unit_suffix: str = "",
-                 data_to_display_scale: float = 1.0,
-                 color: str = SERIES_COLORS[0]) -> None:
+
+    def __init__(
+        self,
+        view_box: pyqtgraph.ViewBox,
+        unit_suffix: str = "",
+        data_to_display_scale: float = 1.0,
+        color: str = SERIES_COLORS[0],
+    ) -> None:
         bg, fg = self.text_items = [
             QtWidgets.QGraphicsSimpleTextItem(),
             QtWidgets.QGraphicsSimpleTextItem(),
@@ -32,7 +36,8 @@ class CrosshairLabel:
                 QtCore.Qt.PenStyle.SolidLine,
                 QtCore.Qt.PenCapStyle.RoundCap,
                 QtCore.Qt.PenJoinStyle.RoundJoin,
-            ))
+            )
+        )
         fg.setBrush(pyqtgraph.mkBrush(color))
 
         self.view_box = view_box
@@ -58,16 +63,16 @@ class CrosshairLabel:
         span = self.data_to_display_scale
         if limits[1] > limits[0]:
             # Preferred case: we want to resolve >1000 points in the displayed range.
-            span *= (limits[1] - limits[0])
+            span *= limits[1] - limits[0]
         elif np.abs(value) > 0:
             # Fallback case: we want to resolve >3 significant figures of the value.
             span *= value
         smallest_digit = np.floor(np.log10(span)) - 3
         precision = int(-smallest_digit) if smallest_digit < 0 else 0
 
-        text = "{0:.{n}f}{1}".format(value * self.data_to_display_scale,
-                                     self.unit_suffix,
-                                     n=precision)
+        text = "{0:.{n}f}{1}".format(
+            value * self.data_to_display_scale, self.unit_suffix, n=precision
+        )
         for label in self.text_items:
             label.setText(text)
 
@@ -77,14 +82,16 @@ class CrosshairLabel:
 
 
 class CrosshairAxisLabel(CrosshairLabel):
-    """Crosshair label for axis coordinates
-    """
-    def __init__(self,
-                 view_box: pyqtgraph.ViewBox,
-                 unit_suffix: str = "",
-                 data_to_display_scale: float = 1.0,
-                 color: str = SERIES_COLORS[0],
-                 is_x: bool = False):
+    """Crosshair label for axis coordinates"""
+
+    def __init__(
+        self,
+        view_box: pyqtgraph.ViewBox,
+        unit_suffix: str = "",
+        data_to_display_scale: float = 1.0,
+        color: str = SERIES_COLORS[0],
+        is_x: bool = False,
+    ):
         super().__init__(view_box, unit_suffix, data_to_display_scale, color)
         self.is_x = is_x
         self.last_value = None
@@ -104,8 +111,13 @@ class LabeledCrosshairCursor(QtCore.QObject):
     The TextItems for displaying the coordinates are updated on a timer to avoid a lag
     trail of buffered redraws when there are a lot of points.
     """
-    def __init__(self, cursor_target_widget: QtWidgets.QWidget,
-                 plot_item: pyqtgraph.PlotItem, labels: list[CrosshairLabel]):
+
+    def __init__(
+        self,
+        cursor_target_widget: QtWidgets.QWidget,
+        plot_item: pyqtgraph.PlotItem,
+        labels: list[CrosshairLabel],
+    ):
         """
         :param cursor_target_widget: Widget to apply the cursor icon to.
         :param plot_item: Linked pyqtgraph plot.
@@ -135,7 +147,7 @@ class LabeledCrosshairCursor(QtCore.QObject):
         self.timer.start(0)
 
     def _update_text(self):
-        for (i, item) in enumerate(self.labels):
+        for i, item in enumerate(self.labels):
             scene_pos = self.last_hover_event.scenePos()
             item.update(scene_pos, i)
             item.set_visible(True)

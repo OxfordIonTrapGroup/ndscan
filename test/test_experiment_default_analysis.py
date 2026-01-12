@@ -1,12 +1,13 @@
 import unittest
+
+from ndscan.experiment import parameters
 from ndscan.experiment.default_analysis import CustomAnalysis
 from ndscan.experiment.scan_runner import ScanAxis, match_default_analysis
-from ndscan.experiment import parameters
 
 
 class CustomAnalysisTestCase(unittest.TestCase):
     def test_axis_matching(self):
-        param = parameters.FloatParam("", "", 0.)
+        param = parameters.FloatParam("", "", 0.0)
         foo = parameters.FloatParamHandle(None, "foo", param)
         foo.set_store(parameters.FloatParamStore(("Fragment.foo", "*"), 0.0))
         bar = parameters.FloatParamHandle(None, "bar", param)

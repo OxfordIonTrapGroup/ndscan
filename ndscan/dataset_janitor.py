@@ -17,6 +17,7 @@ import argparse
 import asyncio
 import logging
 import time
+
 from sipyco import common_args, pc_rpc, sync_struct
 
 logger = logging.getLogger(__name__)
@@ -26,27 +27,37 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
 
     mg = parser.add_argument_group("ARTIQ master connection details")
-    mg.add_argument("--server",
-                    default="::1",
-                    help="hostname or IP to connect to (default: '%(default)s')")
-    mg.add_argument("--port-notify",
-                    default=3250,
-                    type=int,
-                    help="master notify port (dataset subscriptions)")
-    mg.add_argument("--port-control",
-                    default=3251,
-                    type=int,
-                    help="master control port (dataset modification RPCs)")
+    mg.add_argument(
+        "--server",
+        default="::1",
+        help="hostname or IP to connect to (default: '%(default)s')",
+    )
+    mg.add_argument(
+        "--port-notify",
+        default=3250,
+        type=int,
+        help="master notify port (dataset subscriptions)",
+    )
+    mg.add_argument(
+        "--port-control",
+        default=3251,
+        type=int,
+        help="master control port (dataset modification RPCs)",
+    )
 
     dg = parser.add_argument_group("Dataset cleanup settings")
-    dg.add_argument("--key-prefix",
-                    default="ndscan.rid_",
-                    help="prefix of the dataset tree to clean up")
-    dg.add_argument("--timeout",
-                    default=600,
-                    type=float,
-                    help="amount of time after experiment termination after which " +
-                    "datasets are removed (in seconds, default: %(default)s)")
+    dg.add_argument(
+        "--key-prefix",
+        default="ndscan.rid_",
+        help="prefix of the dataset tree to clean up",
+    )
+    dg.add_argument(
+        "--timeout",
+        default=600,
+        type=float,
+        help="amount of time after experiment termination after which "
+        + "datasets are removed (in seconds, default: %(default)s)",
+    )
 
     common_args.verbosity_args(parser)
 
@@ -57,6 +68,7 @@ class _NullSyncStruct:
     """sipyco.sync_struct target that ignores all changes to avoid memory usage in cases
     where only mods are important.
     """
+
     def append(self, x):
         pass
 
@@ -118,16 +130,17 @@ async def run(args):
                 initial_data.set_result(data)
             return data if track_contents else _NullSyncStruct()
 
-        sub = sync_struct.Subscriber(name, init,
-                                     lambda mod: update_cb(initial_data.result(), mod),
-                                     disconnect_cb)
+        sub = sync_struct.Subscriber(
+            name, init, lambda mod: update_cb(initial_data.result(), mod), disconnect_cb
+        )
         while True:
             try:
                 await sub.connect(args.server, args.port_notify)
                 break
             except ConnectionRefusedError as e:
-                logger.error(f"Connection refused for {name} publisher, retrying: %s",
-                             e)
+                logger.error(
+                    f"Connection refused for {name} publisher, retrying: %s", e
+                )
                 await asyncio.sleep(5)
         logger.info(f"Connected to {name} publisher.")
         return sub, await initial_data
@@ -147,17 +160,19 @@ async def run(args):
             while True:
                 try:
                     try:
-                        await dataset_db.connect_rpc(args.server, args.port_control,
-                                                     "dataset_db")
+                        await dataset_db.connect_rpc(
+                            args.server, args.port_control, "dataset_db"
+                        )
                         break
                     except pc_rpc.IncompatibleServer:
-                        await dataset_db.connect_rpc(args.server, args.port_control,
-                                                     "master_dataset_db")
+                        await dataset_db.connect_rpc(
+                            args.server, args.port_control, "master_dataset_db"
+                        )
                         break
                 except ConnectionRefusedError as e:
                     logger.error(
-                        "Connection refused for dataset_db RPC service, retrying: %s",
-                        e)
+                        "Connection refused for dataset_db RPC service, retrying: %s", e
+                    )
                     await asyncio.sleep(5)
             logger.info("Connected to dataset_db RPC service.")
 
@@ -175,18 +190,22 @@ async def run(args):
                     return
                 if mod["path"]:
                     logger.warning(
-                        "Non-empty path in {set,del}item sync_struct mod not " +
-                        "expected for datasets: %s", mod)
+                        "Non-empty path in {set,del}item sync_struct mod not "
+                        + "expected for datasets: %s",
+                        mod,
+                    )
                     return
                 if is_set:
                     dataset_keys.add(mod["key"])
                 else:
                     dataset_keys.remove(mod["key"])
 
-            dataset_sub, initial_datasets = await connect_sub("datasets",
-                                                              datasets_updated,
-                                                              datasets_disconnected,
-                                                              track_contents=False)
+            dataset_sub, initial_datasets = await connect_sub(
+                "datasets",
+                datasets_updated,
+                datasets_disconnected,
+                track_contents=False,
+            )
             dataset_keys.clear()
             dataset_keys |= initial_datasets.keys()
 
@@ -204,10 +223,9 @@ async def run(args):
                         deletions[rid] = time.monotonic() + args.timeout
                         wake_loop.set()
 
-            schedule_sub, initial_schedule = await connect_sub("schedule",
-                                                               schedule_updated,
-                                                               schedule_disconnected,
-                                                               track_contents=True)
+            schedule_sub, initial_schedule = await connect_sub(
+                "schedule", schedule_updated, schedule_disconnected, track_contents=True
+            )
             schedule_updated(initial_schedule, None)
 
         # Take into account current state after reconnecting, where some experiments
@@ -215,8 +233,8 @@ async def run(args):
         preexisting_data_rids = set()
         for key in dataset_keys:
             if key.startswith(args.key_prefix):
-                rest = key[len(args.key_prefix):]
-                rid = rest[:rest.index(".")]
+                rest = key[len(args.key_prefix) :]
+                rid = rest[: rest.index(".")]
                 preexisting_data_rids.add(rid)
         for rid in preexisting_data_rids:
             try:
@@ -224,16 +242,21 @@ async def run(args):
             except ValueError:
                 # Old ndscan/…? Shouldn't usually happen.
                 logger.warning(
-                    "Key fragment '%s' in pre-existing datasets under '%s' " +
-                    "does not look like a rid; ignoring.", rid, args.key_prefix)
+                    "Key fragment '%s' in pre-existing datasets under '%s' "
+                    + "does not look like a rid; ignoring.",
+                    rid,
+                    args.key_prefix,
+                )
                 continue
             if rid not in deletions:
                 # Execute cleanup immediately so restarting the janitor process provides
                 # a quick way for the user to get rid of all stale results (e.g. if a
                 # huge amount of data mistakenly accumulated).
                 logger.info(
-                    "Found datasets for RID %s which is no longer known, will " +
-                    "immediately clean up", rid)
+                    "Found datasets for RID %s which is no longer known, will "
+                    + "immediately clean up",
+                    rid,
+                )
                 deletions[rid] = time.monotonic()
                 wake_loop.set()
 
@@ -254,11 +277,14 @@ async def run(args):
                         # This shouldn't happen, but there could be some race condition
                         # between the subscriber tracking the datasets and this routine
                         # if they are manually deleted.
-                        logger.exception(f"Failed to delete dataset '{key}', as it " +
-                                         "does not exist anymore.")
+                        logger.exception(
+                            f"Failed to delete dataset '{key}', as it "
+                            + "does not exist anymore."
+                        )
                     except Exception:
                         logger.exception(
-                            f"Failed to delete dataset '{key}', reconnecting.")
+                            f"Failed to delete dataset '{key}', reconnecting."
+                        )
                         dataset_db.close_rpc()
                         dataset_db = None
                         break

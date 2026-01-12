@@ -4,9 +4,11 @@ This includes, for instance, fit curves and lines indicating fit results.
 """
 
 import logging
+
 import numpy
-from oitg import uncertainty_to_string
 import pyqtgraph
+from oitg import uncertainty_to_string
+
 from .._qt import QtCore
 from ..utils import FIT_OBJECTS
 from .model import AnnotationDataSource
@@ -36,13 +38,19 @@ class ComputedCurveItem(AnnotationItem):
     :param x_limits: Limits to restrict the drawn horizontal range to even if the
         viewport extends beyond them.
     """
+
     @staticmethod
     def is_function_supported(function_name: str) -> bool:
         return function_name in FIT_OBJECTS
 
-    def __init__(self, function_name: str, data_sources: dict[str,
-                                                              AnnotationDataSource],
-                 view_box, curve_item, x_limits: tuple[float | None, float | None]):
+    def __init__(
+        self,
+        function_name: str,
+        data_sources: dict[str, AnnotationDataSource],
+        view_box,
+        curve_item,
+        x_limits: tuple[float | None, float | None],
+    ):
         super().__init__(view_box)  # Automatically disconnect when view_box is deleted.
         self._function = FIT_OBJECTS[function_name].fitting_function
         self._data_sources = data_sources
@@ -51,9 +59,9 @@ class ComputedCurveItem(AnnotationItem):
         self._x_limits = x_limits
         self._curve_item_added = False
 
-        self.redraw_limiter = pyqtgraph.SignalProxy(self._view_box.sigXRangeChanged,
-                                                    slot=self._redraw,
-                                                    rateLimit=30)
+        self.redraw_limiter = pyqtgraph.SignalProxy(
+            self._view_box.sigXRangeChanged, slot=self._redraw, rateLimit=30
+        )
 
         for source in self._data_sources.values():
             source.changed.connect(self.redraw_limiter.signalReceived)
@@ -102,8 +110,14 @@ class ComputedCurveItem(AnnotationItem):
 
 class CurveItem(AnnotationItem):
     """Shows a curve between the given x/y coordinate pairs."""
-    def __init__(self, x_source: AnnotationDataSource, y_source: AnnotationDataSource,
-                 view_box, curve_item):
+
+    def __init__(
+        self,
+        x_source: AnnotationDataSource,
+        y_source: AnnotationDataSource,
+        view_box,
+        curve_item,
+    ):
         super().__init__(view_box)  # Automatically disconnect when view_box is deleted.
         self._x_source = x_source
         self._y_source = y_source
@@ -133,8 +147,11 @@ class CurveItem(AnnotationItem):
 
         if len(xs) != len(ys):
             logger.warning(
-                "Mismatching data for 'curve' annotation, ignoring " +
-                "(len(xs) = %s vs. len(ys) = %s).", len(xs), len(ys))
+                "Mismatching data for 'curve' annotation, ignoring "
+                + "(len(xs) = %s vs. len(ys) = %s).",
+                len(xs),
+                len(ys),
+            )
             return
 
         if not self._curve_item_added:
@@ -145,9 +162,17 @@ class CurveItem(AnnotationItem):
 
 class VLineItem(AnnotationItem):
     """Vertical line marking a given x coordinate, with optional confidence interval."""
-    def __init__(self, position_source: AnnotationDataSource,
-                 uncertainty_source: AnnotationDataSource | None, view_box, base_color,
-                 x_data_to_display_scale, x_unit_suffix, show_label):
+
+    def __init__(
+        self,
+        position_source: AnnotationDataSource,
+        uncertainty_source: AnnotationDataSource | None,
+        view_box,
+        base_color,
+        x_data_to_display_scale,
+        x_unit_suffix,
+        show_label,
+    ):
         super().__init__(view_box)  # Automatically disconnect when view_box is deleted.
         self._position_source = position_source
         self._uncertainty_source = uncertainty_source
@@ -160,32 +185,23 @@ class VLineItem(AnnotationItem):
         # Position label within initial view range.
         ypos_label = (view_box.height() - 7) / view_box.height()
 
-        self._left_line = pyqtgraph.InfiniteLine(movable=False,
-                                                 angle=90,
-                                                 pen={
-                                                     "color": base_color,
-                                                     "style": QtCore.Qt.PenStyle.DotLine
-                                                 })
-        self._center_line = pyqtgraph.InfiniteLine(movable=False,
-                                                   angle=90,
-                                                   label="",
-                                                   labelOpts={
-                                                       "position": ypos_label,
-                                                       "color": base_color,
-                                                       "movable": True
-                                                   },
-                                                   pen={
-                                                       "color": base_color,
-                                                       "style":
-                                                       QtCore.Qt.PenStyle.SolidLine
-                                                   })
-        self._right_line = pyqtgraph.InfiniteLine(movable=False,
-                                                  angle=90,
-                                                  pen={
-                                                      "color": base_color,
-                                                      "style":
-                                                      QtCore.Qt.PenStyle.DotLine
-                                                  })
+        self._left_line = pyqtgraph.InfiniteLine(
+            movable=False,
+            angle=90,
+            pen={"color": base_color, "style": QtCore.Qt.PenStyle.DotLine},
+        )
+        self._center_line = pyqtgraph.InfiniteLine(
+            movable=False,
+            angle=90,
+            label="",
+            labelOpts={"position": ypos_label, "color": base_color, "movable": True},
+            pen={"color": base_color, "style": QtCore.Qt.PenStyle.SolidLine},
+        )
+        self._right_line = pyqtgraph.InfiniteLine(
+            movable=False,
+            angle=90,
+            pen={"color": base_color, "style": QtCore.Qt.PenStyle.DotLine},
+        )
 
         self._position_source.changed.connect(self._redraw)
         if self._uncertainty_source:
@@ -222,8 +238,10 @@ class VLineItem(AnnotationItem):
             delta_x = 0.0
             label = str(x * self._x_data_to_display_scale)
         else:
-            label = uncertainty_to_string(x * self._x_data_to_display_scale,
-                                          delta_x * self._x_data_to_display_scale)
+            label = uncertainty_to_string(
+                x * self._x_data_to_display_scale,
+                delta_x * self._x_data_to_display_scale,
+            )
 
         if self._show_label:
             self._center_line.label.setFormat(label + self._x_unit_suffix)

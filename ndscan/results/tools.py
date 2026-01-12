@@ -1,4 +1,5 @@
 from typing import Any
+
 from ..utils import SCHEMA_REVISION_KEY, strip_suffix
 
 

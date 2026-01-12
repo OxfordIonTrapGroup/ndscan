@@ -1,8 +1,9 @@
 import json
 import logging
 from typing import Any
+
 from ...utils import strip_suffix
-from . import (FixedDataSource, Model, Root, ScanModel, SinglePointModel)
+from . import FixedDataSource, Model, Root, ScanModel, SinglePointModel
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,9 @@ class SubscanRoot(Root):
 
         self.name = strip_suffix(self._schema_key, "_spec")
         if self.name == self._schema_key:
-            raise ValueError("Unexpected scan schema channel name: {}".format(
-                self._schema_key))
+            raise ValueError(
+                "Unexpected scan schema channel name: {}".format(self._schema_key)
+            )
 
         self._update(parent.get_point())
 
@@ -53,8 +55,10 @@ class SubscanModel(ScanModel):
     Point content changes are forwarded, but the schema is static; changes to the latter
     necessitate a new model instance.
     """
-    def __init__(self, schema: dict[str, Any], parent: SinglePointModel,
-                 result_prefix: str):
+
+    def __init__(
+        self, schema: dict[str, Any], parent: SinglePointModel, result_prefix: str
+    ):
         super().__init__(schema["axes"], parent.schema_revision, parent.context)
 
         self._channel_schemata = schema["channels"]
@@ -68,8 +72,10 @@ class SubscanModel(ScanModel):
         self._analysis_results = {}
         self._analysis_result_mappings = []
         for result_name, path in schema.get("analysis_results", {}).items():
-            for (channel_name,
-                 channel_schema) in self._parent.get_channel_schemata().items():
+            for (
+                channel_name,
+                channel_schema,
+            ) in self._parent.get_channel_schemata().items():
                 if channel_schema["path"] == path:
                     source = FixedDataSource(None)
                     self._analysis_results[result_name] = source
@@ -87,8 +93,9 @@ class SubscanModel(ScanModel):
             logger.debug("Ignoring update")
             return
 
-        for name in ([f"axis_{i}" for i in range(len(self.axes))] +
-                     ["channel_" + c for c in self._channel_schemata.keys()]):
+        for name in [f"axis_{i}" for i in range(len(self.axes))] + [
+            "channel_" + c for c in self._channel_schemata.keys()
+        ]:
             self._point_data[name] = parent_data[self._result_prefix + name]
         self.points_rewritten.emit(self._point_data)
 

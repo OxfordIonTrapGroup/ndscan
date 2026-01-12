@@ -3,42 +3,48 @@ import unittest
 
 from sipyco.sync_struct import Notifier
 
-from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
 from ndscan.plots.model import Context
 from ndscan.plots.model.subscriber import SubscriberRoot
+from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
 
 
 class SinglePointTest(unittest.TestCase):
     def setUp(self):
         self.context = Context()
         self.root = SubscriberRoot("ndscan.", self.context)
-        self.datasets = Notifier({
-            "ndscan.axes": (False, "[]", {}),
-            "ndscan.channels": (False,
-                                json.dumps({
-                                    "foo": {
-                                        "description": "Foo",
-                                        "path": "foo",
-                                        "type": "int",
-                                        "unit": ""
-                                    },
-                                    "bar": {
-                                        "description": "Bar",
-                                        "path": "foo",
-                                        "type": "int",
-                                        "unit": ""
-                                    }
-                                }), {}),
-            ("ndscan." + SCHEMA_REVISION_KEY): (False, SCHEMA_REVISION, {}),
-        })
+        self.datasets = Notifier(
+            {
+                "ndscan.axes": (False, "[]", {}),
+                "ndscan.channels": (
+                    False,
+                    json.dumps(
+                        {
+                            "foo": {
+                                "description": "Foo",
+                                "path": "foo",
+                                "type": "int",
+                                "unit": "",
+                            },
+                            "bar": {
+                                "description": "Bar",
+                                "path": "foo",
+                                "type": "int",
+                                "unit": "",
+                            },
+                        }
+                    ),
+                    {},
+                ),
+                ("ndscan." + SCHEMA_REVISION_KEY): (False, SCHEMA_REVISION, {}),
+            }
+        )
         self.pending_mods = []
         self.datasets.publish = lambda a: self.pending_mods.append(a)
 
     def init(self):
-        self.pending_mods = [{
-            "action": "init",
-            "struct": self.datasets.raw_view.copy()
-        }]
+        self.pending_mods = [
+            {"action": "init", "struct": self.datasets.raw_view.copy()}
+        ]
         self.sync()
 
     def sync(self):

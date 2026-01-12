@@ -2,11 +2,15 @@
 Tests for general fragment tree behaviour.
 """
 
+from fixtures import (
+    AddOneFragment,
+    MultiReboundAddOneFragment,
+    ReboundReboundAddOneFragment,
+)
+from mock_environment import HasEnvironmentCase
+
 from ndscan.experiment import *
 from ndscan.experiment.parameters import IntParamStore
-from fixtures import (AddOneFragment, MultiReboundAddOneFragment,
-                      ReboundReboundAddOneFragment)
-from mock_environment import HasEnvironmentCase
 
 
 class DatasetDefaultFragment(Fragment):

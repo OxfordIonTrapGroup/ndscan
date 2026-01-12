@@ -10,40 +10,73 @@ The two main entry points into the :class:`.ExpFragment` universe are
    :meth:`run_fragment_once` or :meth:`create_and_run_fragment_once`.
 """
 
-from artiq.language import (EnvExperiment, HasEnvironment, kernel, portable, PYONValue,
-                            rpc, TerminationRequested)
-from artiq.coredevice.exceptions import RTIOUnderflow
+import logging
+import random
+import time
 from collections import OrderedDict
 from collections.abc import Callable, Iterable
 from contextlib import suppress
 from functools import reduce
-import logging
-import random
-import time
 from typing import Any
 
+from artiq.coredevice.exceptions import RTIOUnderflow
+from artiq.language import (
+    EnvExperiment,
+    HasEnvironment,
+    PYONValue,
+    TerminationRequested,
+    kernel,
+    portable,
+    rpc,
+)
+
+from ..utils import (
+    PARAMS_ARG_KEY,
+    SCHEMA_REVISION,
+    SCHEMA_REVISION_KEY,
+    NoAxesMode,
+    merge_no_duplicates,
+    shorten_to_unambiguous_suffixes,
+    strip_suffix,
+)
 from .default_analysis import AnnotationContext
-from .fragment import (ExpFragment, Fragment, RestartKernelTransitoryError,
-                       TransitoryError)
+from .fragment import (
+    ExpFragment,
+    Fragment,
+    RestartKernelTransitoryError,
+    TransitoryError,
+)
 from .parameters import ParamBase, ParamStore
-from .result_channels import (AppendingDatasetSink, LastValueSink, ScalarDatasetSink,
-                              ResultChannel)
+from .result_channels import (
+    AppendingDatasetSink,
+    LastValueSink,
+    ResultChannel,
+    ScalarDatasetSink,
+)
 from .scan_generator import GENERATORS, ScanOptions
-from .scan_runner import (ScanAxis, ScanSpec, describe_scan, describe_analyses,
-                          filter_default_analyses, select_runner_class)
+from .scan_runner import (
+    ScanAxis,
+    ScanSpec,
+    describe_analyses,
+    describe_scan,
+    filter_default_analyses,
+    select_runner_class,
+)
 from .utils import dump_json, is_kernel, to_metadata_broadcast_type
-from ..utils import (merge_no_duplicates, NoAxesMode, PARAMS_ARG_KEY, SCHEMA_REVISION,
-                     SCHEMA_REVISION_KEY, shorten_to_unambiguous_suffixes, strip_suffix)
 
 __all__ = [
-    "ArgumentInterface", "TopLevelRunner", "make_fragment_scan_exp",
-    "run_fragment_once", "create_and_run_fragment_once"
+    "ArgumentInterface",
+    "TopLevelRunner",
+    "make_fragment_scan_exp",
+    "run_fragment_once",
+    "create_and_run_fragment_once",
 ]
 
 # Hack: Only export FragmentScanExperiment when imported from Sphinx autodoc, so
 # documentation is generated, but ARTIQ master doesn't try (and fail) to instantiate it
 # when building the experiment list for modules using ndscan.experiment star imports.
 import sys
+
 if "sphinx" in sys.modules:
     __all__.append("FragmentScanExperiment")
 
@@ -75,12 +108,15 @@ class FragmentScanExperiment(EnvExperiment):
     See :meth:`make_fragment_scan_exp` for a convenience method to create subclasses for
     a specific :class:`.ExpFragment`.
     """
+
     argument_ui = "ndscan"
 
-    def build(self,
-              fragment_init: Callable[[], ExpFragment],
-              max_rtio_underflow_retries: int = 3,
-              max_transitory_error_retries: int = 10):
+    def build(
+        self,
+        fragment_init: Callable[[], ExpFragment],
+        max_rtio_underflow_retries: int = 3,
+        max_transitory_error_retries: int = 10,
+    ):
         """
         :param fragment_init: Callable to create the top-level :meth:`ExpFragment`
             instance.
@@ -102,7 +138,8 @@ class FragmentScanExperiment(EnvExperiment):
         param_stores = self.args.make_override_stores()
 
         spec, no_axes_mode, skip_on_persistent_transitory_error = (
-            self.args.make_scan_spec())
+            self.args.make_scan_spec()
+        )
         for ax in spec.axes:
             fqn = ax.param_schema["fqn"]
             param_stores.setdefault(fqn, []).append((ax.path, ax.param_store))
@@ -118,10 +155,12 @@ class FragmentScanExperiment(EnvExperiment):
                     # first place, and failing loudly prevents any unnoticed issues if
                     # the experiment code is modified for an already scheduled servo/
                     # already open argument UI window/…
-                    raise ValueError(f"Override for '{fqn}' in path '{path}' did not " +
-                                     "match any parameters (likely due to changes " +
-                                     "since made to the experiment code; try " +
-                                     "Recompute All Arguments).")
+                    raise ValueError(
+                        f"Override for '{fqn}' in path '{path}' did not "
+                        + "match any parameters (likely due to changes "
+                        + "since made to the experiment code; try "
+                        + "Recompute All Arguments)."
+                    )
 
         self.tlr = TopLevelRunner(
             self,
@@ -130,7 +169,8 @@ class FragmentScanExperiment(EnvExperiment):
             no_axes_mode=no_axes_mode,
             max_rtio_underflow_retries=self.max_rtio_underflow_retries,
             max_transitory_error_retries=self.max_transitory_error_retries,
-            skip_on_persistent_transitory_error=skip_on_persistent_transitory_error)
+            skip_on_persistent_transitory_error=skip_on_persistent_transitory_error,
+        )
 
     def run(self):
         name = get_class_pretty_name(self.fragment.__class__)
@@ -161,20 +201,23 @@ class ArgumentInterface(HasEnvironment):
                 except KeyError:
                     logger.warning(
                         "Parameter '%s' specified in get_always_shown_params()"
-                        " is not a free parameter of fragment '%s'", handle.name, path)
+                        " is not a free parameter of fragment '%s'",
+                        handle.name,
+                        path,
+                    )
 
         desc = {
             "instances": instances,
             "schemata": self._schemata,
             "always_shown": always_shown_params,
-            "overrides": {}
+            "overrides": {},
         }
         if scannable:
             desc["scan"] = {
                 "axes": [],
                 "num_repeats": 1,
                 "no_axes_mode": "single",
-                "randomise_order_globally": False
+                "randomise_order_globally": False,
             }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
@@ -184,14 +227,21 @@ class ArgumentInterface(HasEnvironment):
             try:
                 store_type = self._sample_instances[fqn].StoreType
             except KeyError:
-                raise KeyError("Experiment does not have parameters matching "
-                               f"overrride for FQN '{fqn}' " +
-                               "(likely due to outdated argument editor after " +
-                               "changes to experiment; try Recompute All Arguments)")
-            stores[fqn] = [(s["path"],
-                            store_type((fqn, s["path"]),
-                                       store_type.value_from_pyon(s["value"])))
-                           for s in specs]
+                raise KeyError(
+                    "Experiment does not have parameters matching "
+                    f"overrride for FQN '{fqn}' "
+                    + "(likely due to outdated argument editor after "
+                    + "changes to experiment; try Recompute All Arguments)"
+                )
+            stores[fqn] = [
+                (
+                    s["path"],
+                    store_type(
+                        (fqn, s["path"]), store_type.value_from_pyon(s["value"])
+                    ),
+                )
+                for s in specs
+            ]
         return stores
 
     def make_scan_spec(self) -> tuple[ScanSpec, NoAxesMode, bool]:
@@ -202,8 +252,9 @@ class ArgumentInterface(HasEnvironment):
         for axspec in scan.get("axes", []):
             generator_class = GENERATORS.get(axspec["type"], None)
             if not generator_class:
-                raise ScanSpecError("Axis type '{}' not implemented".format(
-                    axspec["type"]))
+                raise ScanSpecError(
+                    "Axis type '{}' not implemented".format(axspec["type"])
+                )
             generator = generator_class(**axspec["range"])
             generators.append(generator)
 
@@ -213,33 +264,40 @@ class ArgumentInterface(HasEnvironment):
             try:
                 store_type = self._sample_instances[fqn].StoreType
             except KeyError:
-                raise KeyError("Experiment does not have parameters matching "
-                               f"scan axis with FQN '{fqn}' " +
-                               "(likely due to outdated argument editor after " +
-                               "changes to experiment; try Recompute All Arguments)")
+                raise KeyError(
+                    "Experiment does not have parameters matching "
+                    f"scan axis with FQN '{fqn}' "
+                    + "(likely due to outdated argument editor after "
+                    + "changes to experiment; try Recompute All Arguments)"
+                )
             first_value = generator.points_for_level(0, random)[0]
             store = store_type((fqn, pathspec), store_type.value_from_pyon(first_value))
             axes.append(ScanAxis(self._schemata[fqn], pathspec, store))
 
-        options = ScanOptions(scan.get("num_repeats", 1),
-                              scan.get("num_repeats_per_point", 1),
-                              scan.get("randomise_order_globally", False))
+        options = ScanOptions(
+            scan.get("num_repeats", 1),
+            scan.get("num_repeats_per_point", 1),
+            scan.get("randomise_order_globally", False),
+        )
         spec = ScanSpec(axes, generators, options)
         no_axes_mode = NoAxesMode[scan.get("no_axes_mode", "single")]
         skip_on_persistent_transitory_error = scan.get(
-            "skip_on_persistent_transitory_error", False)
+            "skip_on_persistent_transitory_error", False
+        )
         return spec, no_axes_mode, skip_on_persistent_transitory_error
 
 
 class TopLevelRunner(HasEnvironment):
-    def build(self,
-              fragment: ExpFragment,
-              spec: ScanSpec,
-              no_axes_mode: NoAxesMode = NoAxesMode.single,
-              max_rtio_underflow_retries: int = 3,
-              max_transitory_error_retries: int = 10,
-              dataset_prefix: str | None = None,
-              skip_on_persistent_transitory_error: bool = False):
+    def build(
+        self,
+        fragment: ExpFragment,
+        spec: ScanSpec,
+        no_axes_mode: NoAxesMode = NoAxesMode.single,
+        max_rtio_underflow_retries: int = 3,
+        max_transitory_error_retries: int = 10,
+        dataset_prefix: str | None = None,
+        skip_on_persistent_transitory_error: bool = False,
+    ):
         self.fragment = fragment
         self.spec = spec
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
@@ -272,11 +330,7 @@ class TopLevelRunner(HasEnvironment):
                     "fqn": "timestamp",
                     "description": "Elapsed time",
                     "default": "0.0",
-                    "spec": {
-                        "min": 0.0,
-                        "unit": "s",
-                        "scale": 1.0
-                    },
+                    "spec": {"min": 0.0, "unit": "s", "scale": 1.0},
                 }
                 self.spec.axes = [ScanAxis(param_schema, "*", None)]
 
@@ -296,7 +350,8 @@ class TopLevelRunner(HasEnvironment):
 
             if self.spec.axes:
                 sink = AppendingDatasetSink(
-                    self, self.dataset_prefix + "points.channel_" + name)
+                    self, self.dataset_prefix + "points.channel_" + name
+                )
             else:
                 sink = ScalarDatasetSink(self, self.dataset_prefix + "point." + name)
             channel.set_sink(sink)
@@ -304,16 +359,21 @@ class TopLevelRunner(HasEnvironment):
 
         # Filter analyses, set up analysis result channels, and keep track of all the
         # names in the annotation context.
-        self._analyses = [] if self._is_time_series else filter_default_analyses(
-            self.fragment, self.spec.axes)
+        self._analyses = (
+            []
+            if self._is_time_series
+            else filter_default_analyses(self.fragment, self.spec.axes)
+        )
 
         self._analysis_results = reduce(
             lambda x, y: merge_no_duplicates(x, y, kind="analysis result"),
-            (a.get_analysis_results() for a in self._analyses), {})
+            (a.get_analysis_results() for a in self._analyses),
+            {},
+        )
         for name, channel in self._analysis_results.items():
             channel.set_sink(
-                ScalarDatasetSink(self,
-                                  self.dataset_prefix + "analysis_result." + name))
+                ScalarDatasetSink(self, self.dataset_prefix + "analysis_result." + name)
+            )
 
         axis_indices = {}
         for i, axis in enumerate(self.spec.axes):
@@ -321,7 +381,8 @@ class TopLevelRunner(HasEnvironment):
         self._annotation_context = AnnotationContext(
             lambda handle: axis_indices[handle._store.identity],
             lambda channel: self._short_child_channel_names[channel],
-            lambda channel: True)
+            lambda channel: True,
+        )
 
         self._coordinate_sinks = None
 
@@ -337,7 +398,8 @@ class TopLevelRunner(HasEnvironment):
 
         if self._is_time_series:
             self._timestamp_sink = AppendingDatasetSink(
-                self, self.dataset_prefix + "points.axis_0")
+                self, self.dataset_prefix + "points.axis_0"
+            )
             self._coordinate_sinks = [self._timestamp_sink]
             self._time_series_start = time.monotonic()
             self._run_continuous()
@@ -346,8 +408,8 @@ class TopLevelRunner(HasEnvironment):
                 self,
                 max_rtio_underflow_retries=self.max_rtio_underflow_retries,
                 max_transitory_error_retries=self.max_transitory_error_retries,
-                skip_on_persistent_transitory_error=self.
-                skip_on_persistent_transitory_error)
+                skip_on_persistent_transitory_error=self.skip_on_persistent_transitory_error,
+            )
             self._coordinate_sinks = [
                 AppendingDatasetSink(self, self.dataset_prefix + f"points.axis_{i}")
                 for i in range(len(self.spec.axes))
@@ -358,8 +420,10 @@ class TopLevelRunner(HasEnvironment):
         return self._make_coordinate_dict(), self._make_value_dict()
 
     def _make_coordinate_dict(self):
-        return OrderedDict(((a.param_schema["fqn"], a.path), s.get_all())
-                           for a, s in zip(self.spec.axes, self._coordinate_sinks))
+        return OrderedDict(
+            ((a.param_schema["fqn"], a.path), s.get_all())
+            for a, s in zip(self.spec.axes, self._coordinate_sinks)
+        )
 
     def _make_value_dict(self):
         return {c: s.get_all() for c, s in self._scan_result_sinks.items()}
@@ -382,9 +446,11 @@ class TopLevelRunner(HasEnvironment):
         if annotations:
             # Replace existing (online-fit) annotations if any analysis produced custom
             # ones. This could be made configurable in the future.
-            self.set_dataset(self.dataset_prefix + "annotations",
-                             dump_json(annotations),
-                             broadcast=True)
+            self.set_dataset(
+                self.dataset_prefix + "annotations",
+                dump_json(annotations),
+                broadcast=True,
+            )
 
         return {
             name: channel.sink.get_last()
@@ -443,25 +509,42 @@ class TopLevelRunner(HasEnvironment):
                     self.num_current_underflows += 1
                     if self.num_current_underflows > self.max_rtio_underflow_retries:
                         raise
-                    print("Ignoring RTIOUnderflow (", self.num_current_underflows, "/",
-                          self.max_rtio_underflow_retries, ")")
+                    print(
+                        "Ignoring RTIOUnderflow (",
+                        self.num_current_underflows,
+                        "/",
+                        self.max_rtio_underflow_retries,
+                        ")",
+                    )
                 except RestartKernelTransitoryError:
                     self.num_current_transitory_errors += 1
-                    if (self.num_current_transitory_errors >
-                            self.max_transitory_error_retries):
+                    if (
+                        self.num_current_transitory_errors
+                        > self.max_transitory_error_retries
+                    ):
                         raise
-                    print("Caught transitory error (",
-                          self.num_current_transitory_errors, "/",
-                          self.max_transitory_error_retries, "), restarting kernel")
+                    print(
+                        "Caught transitory error (",
+                        self.num_current_transitory_errors,
+                        "/",
+                        self.max_transitory_error_retries,
+                        "), restarting kernel",
+                    )
                     return False
                 except TransitoryError:
                     self.num_current_transitory_errors += 1
-                    if (self.num_current_transitory_errors >
-                            self.max_transitory_error_retries):
+                    if (
+                        self.num_current_transitory_errors
+                        > self.max_transitory_error_retries
+                    ):
                         raise
-                    print("Caught transitory error (",
-                          self.num_current_transitory_errors, "/",
-                          self.max_transitory_error_retries, "), retrying")
+                    print(
+                        "Caught transitory error (",
+                        self.num_current_transitory_errors,
+                        "/",
+                        self.max_transitory_error_retries,
+                        "), retrying",
+                    )
             return False
         finally:
             self.fragment.device_cleanup()
@@ -474,9 +557,9 @@ class TopLevelRunner(HasEnvironment):
             self._timestamp_sink.push(time.monotonic() - self._time_series_start)
         else:
             self._point_phase = not self._point_phase
-            self.set_dataset(self.dataset_prefix + "point_phase",
-                             self._point_phase,
-                             broadcast=True)
+            self.set_dataset(
+                self.dataset_prefix + "point_phase", self._point_phase, broadcast=True
+            )
 
     def _set_completed(self):
         self.set_dataset(self.dataset_prefix + "completed", True, broadcast=True)
@@ -492,13 +575,14 @@ class TopLevelRunner(HasEnvironment):
 
         push("completed", False)
 
-        self._scan_desc = describe_scan(self.spec, self.fragment,
-                                        self._short_child_channel_names)
+        self._scan_desc = describe_scan(
+            self.spec, self.fragment, self._short_child_channel_names
+        )
         self._scan_desc.update(
-            describe_analyses(self._analyses, self._annotation_context))
+            describe_analyses(self._analyses, self._annotation_context)
+        )
         self._scan_desc["analysis_results"] = {
-            name: channel.describe()
-            for name, channel in self._analysis_results.items()
+            name: channel.describe() for name, channel in self._analysis_results.items()
         }
 
         for name, value in self._scan_desc.items():
@@ -511,23 +595,28 @@ class TopLevelRunner(HasEnvironment):
 
     def create_applet(self, title: str, group: str = "ndscan"):
         cmd = [
-            "${python}", "-m ndscan.applet", "--server=${server}",
-            "--port-notify=${port_notify}", "--port-control=${port_control}",
-            f"--prefix={self.dataset_prefix}"
+            "${python}",
+            "-m ndscan.applet",
+            "--server=${server}",
+            "--port-notify=${port_notify}",
+            "--port-control=${port_control}",
+            f"--prefix={self.dataset_prefix}",
         ]
         self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> dict[str, str]:
-    return shorten_to_unambiguous_suffixes(full_names,
-                                           lambda fqn, n: "/".join(fqn.split("/")[-n:]))
+    return shorten_to_unambiguous_suffixes(
+        full_names, lambda fqn, n: "/".join(fqn.split("/")[-n:])
+    )
 
 
 def make_fragment_scan_exp(
-        fragment_class: type[ExpFragment],
-        *args,
-        max_rtio_underflow_retries: int = 3,
-        max_transitory_error_retries: int = 10) -> type[FragmentScanExperiment]:
+    fragment_class: type[ExpFragment],
+    *args,
+    max_rtio_underflow_retries: int = 3,
+    max_transitory_error_retries: int = 10,
+) -> type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
 
@@ -542,11 +631,14 @@ def make_fragment_scan_exp(
 
         MyExpFragmentScan = make_fragment_scan_exp(MyExpFragment)
     """
+
     class FragmentScanShim(FragmentScanExperiment):
         def build(self):
-            super().build(lambda: fragment_class(self, [], *args),
-                          max_rtio_underflow_retries=max_rtio_underflow_retries,
-                          max_transitory_error_retries=max_transitory_error_retries)
+            super().build(
+                lambda: fragment_class(self, [], *args),
+                max_rtio_underflow_retries=max_rtio_underflow_retries,
+                max_transitory_error_retries=max_transitory_error_retries,
+            )
 
     # Take on the name of the fragment class to keep result file names informative.
     FragmentScanShim.__name__ = fragment_class.__name__
@@ -561,8 +653,13 @@ class _FragmentRunner(HasEnvironment):
     """Object wrapping fragment execution to be able to execute everything in one kernel
     invocation (no difference for non-kernel fragments).
     """
-    def build(self, fragment: ExpFragment, max_rtio_underflow_retries: int,
-              max_transitory_error_retries: int):
+
+    def build(
+        self,
+        fragment: ExpFragment,
+        max_rtio_underflow_retries: int,
+        max_transitory_error_retries: int,
+    ):
         self.fragment = fragment
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
@@ -599,23 +696,36 @@ class _FragmentRunner(HasEnvironment):
                     self.num_underflows_caught += 1
                     if self.num_underflows_caught > self.max_rtio_underflow_retries:
                         raise
-                    print("Ignoring RTIOUnderflow (", self.num_underflows_caught, "/",
-                          self.max_rtio_underflow_retries, ")")
+                    print(
+                        "Ignoring RTIOUnderflow (",
+                        self.num_underflows_caught,
+                        "/",
+                        self.max_rtio_underflow_retries,
+                        ")",
+                    )
                 except RestartKernelTransitoryError:
                     self.num_transitory_errors_caught += 1
-                    if (self.num_transitory_errors_caught >
-                            self.max_transitory_error_retries):
+                    if (
+                        self.num_transitory_errors_caught
+                        > self.max_transitory_error_retries
+                    ):
                         raise
                     print("Caught transitory error, restarting kernel")
                     return False
                 except TransitoryError:
                     self.num_transitory_errors_caught += 1
-                    if (self.num_transitory_errors_caught >
-                            self.max_transitory_error_retries):
+                    if (
+                        self.num_transitory_errors_caught
+                        > self.max_transitory_error_retries
+                    ):
                         raise
-                    print("Caught transitory error (",
-                          self.num_transitory_errors_caught, "/",
-                          self.max_transitory_error_retries, "), retrying")
+                    print(
+                        "Caught transitory error (",
+                        self.num_transitory_errors_caught,
+                        "/",
+                        self.max_transitory_error_retries,
+                        "), retrying",
+                    )
         finally:
             self.fragment.device_cleanup()
         assert False, "Execution never reaches here, return is just to pacify compiler."
@@ -644,8 +754,9 @@ def run_fragment_once(
     for channel, sink in sinks.items():
         channel.set_sink(sink)
 
-    runner = _FragmentRunner(fragment, fragment, max_rtio_underflow_retries,
-                             max_transitory_error_retries)
+    runner = _FragmentRunner(
+        fragment, fragment, max_rtio_underflow_retries, max_transitory_error_retries
+    )
     fragment.init_params()
     fragment.prepare()
     try:
@@ -659,12 +770,14 @@ def run_fragment_once(
     return {channel: sink.get_last() for channel, sink in sinks.items()}
 
 
-def create_and_run_fragment_once(env: HasEnvironment,
-                                 fragment_class: type[ExpFragment],
-                                 *args,
-                                 max_rtio_underflow_retries: int = 3,
-                                 max_transitory_error_retries: int = 10,
-                                 **kwargs) -> dict[str, Any]:
+def create_and_run_fragment_once(
+    env: HasEnvironment,
+    fragment_class: type[ExpFragment],
+    *args,
+    max_rtio_underflow_retries: int = 3,
+    max_transitory_error_retries: int = 10,
+    **kwargs,
+) -> dict[str, Any]:
     """Create an instance of the passed :class:`.ExpFragment` type and runs it once,
     returning the values pushed to any result channels.
 
@@ -693,7 +806,9 @@ def create_and_run_fragment_once(env: HasEnvironment,
     results = run_fragment_once(
         fragment_class(env, [], *args, **kwargs),
         max_rtio_underflow_retries=max_rtio_underflow_retries,
-        max_transitory_error_retries=max_transitory_error_retries)
-    shortened_names = _shorten_result_channel_names(channel.path
-                                                    for channel in results.keys())
+        max_transitory_error_retries=max_transitory_error_retries,
+    )
+    shortened_names = _shorten_result_channel_names(
+        channel.path for channel in results.keys()
+    )
     return {shortened_names[channel.path]: value for channel, value in results.items()}

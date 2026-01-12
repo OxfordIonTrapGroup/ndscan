@@ -3,11 +3,17 @@ Tests for subscan functionality.
 """
 
 import json
-from ndscan.experiment import *
-from fixtures import (AddOneFragment, ReboundAddOneFragment,
-                      AddOneCustomAnalysisFragment, TwoAnalysisFragment,
-                      TwoAnalysisAggregate)
+
+from fixtures import (
+    AddOneCustomAnalysisFragment,
+    AddOneFragment,
+    ReboundAddOneFragment,
+    TwoAnalysisAggregate,
+    TwoAnalysisFragment,
+)
 from mock_environment import ExpFragmentCase
+
+from ndscan.experiment import *
 
 
 class Scan1DFragment(ExpFragment):
@@ -17,8 +23,10 @@ class Scan1DFragment(ExpFragment):
         assert self.scan == scan
 
     def run_once(self):
-        return self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))],
-                             ScanOptions(seed=1234))[:2]
+        return self.scan.run(
+            [(self.child.value, LinearGenerator(0, 3, 4, False))],
+            ScanOptions(seed=1234),
+        )[:2]
 
 
 class SubscanCase(ExpFragmentCase):
@@ -55,123 +63,109 @@ class SubscanCase(ExpFragmentCase):
             "kind": "computed_curve",
             "parameters": {
                 "function_name": "lorentzian",
-                "associated_channels": ["channel_result"]
+                "associated_channels": ["channel_result"],
             },
             "coordinates": {},
             "data": {
                 "a": {
                     "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "online_result",
-                    "result_key": "a"
+                    "result_key": "a",
                 },
                 "fwhm": {
                     "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "online_result",
-                    "result_key": "fwhm"
+                    "result_key": "fwhm",
                 },
                 "x0": {
                     "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "online_result",
-                    "result_key": "x0"
+                    "result_key": "x0",
                 },
                 "y0": {
                     "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "online_result",
-                    "result_key": "y0"
-                }
-            }
+                    "result_key": "y0",
+                },
+            },
         }
         location_annotation = {
             "kind": "location",
-            "parameters": {
-                "associated_channels": ["channel_result"]
-            },
+            "parameters": {"associated_channels": ["channel_result"]},
             "coordinates": {
                 "axis_0": {
                     "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "online_result",
-                    "result_key": "x0"
+                    "result_key": "x0",
                 }
             },
             "data": {
                 "axis_0_error": {
                     "analysis_name": "fit_lorentzian_channel_result",
                     "kind": "online_result",
-                    "result_key": "x0_error"
+                    "result_key": "x0_error",
                 }
-            }
+            },
         }
         self.assertEqual(spec["annotations"], [curve_annotation, location_annotation])
         self.assertEqual(
-            spec["online_analyses"], {
+            spec["online_analyses"],
+            {
                 "fit_lorentzian_channel_result": {
-                    "constants": {
-                        "y0": 1.0
-                    },
-                    "data": {
-                        "y": "channel_result",
-                        "x": "axis_0"
-                    },
+                    "constants": {"y0": 1.0},
+                    "data": {"y": "channel_result", "x": "axis_0"},
                     "fit_type": "lorentzian",
-                    "initial_values": {
-                        "fwhm": 2.0
-                    },
-                    "kind": "named_fit"
+                    "initial_values": {"fwhm": 2.0},
+                    "kind": "named_fit",
                 }
-            })
+            },
+        )
         self.assertEqual(
-            spec["channels"], {
+            spec["channels"],
+            {
                 "result": {
                     "description": "",
                     "scale": 1.0,
                     "path": "child/result",
                     "type": "float",
-                    "unit": ""
+                    "unit": "",
                 }
-            })
-        self.assertEqual(spec["axes"], [{
-            "min": 0,
-            "max": 3,
-            "path": "child",
-            "param": {
-                "description": "Value to return",
-                "default": "0.0",
-                "fqn": "fixtures.AddOneFragment.value",
-                "spec": {
-                    "is_scannable": True,
-                    "scale": 1.0,
-                    "step": 0.1
-                },
-                "type": "float"
             },
-            "increment": 1.0
-        }])
+        )
+        self.assertEqual(
+            spec["axes"],
+            [
+                {
+                    "min": 0,
+                    "max": 3,
+                    "path": "child",
+                    "param": {
+                        "description": "Value to return",
+                        "default": "0.0",
+                        "fqn": "fixtures.AddOneFragment.value",
+                        "spec": {"is_scannable": True, "scale": 1.0, "step": 0.1},
+                        "type": "float",
+                    },
+                    "increment": 1.0,
+                }
+            ],
+        )
 
     def test_1d_custom_analysis(self):
         parent = self.create(Scan1DFragment, AddOneCustomAnalysisFragment)
         results = run_fragment_once(parent)
         annotations = json.loads(results[parent.scan_spec])["annotations"]
         x_location = {
-            'coordinates': {
-                'axis_0': {
-                    'kind': 'fixed',
-                    'value': 1.5
-                }
-            },
-            'data': {},
-            'kind': 'location',
-            'parameters': {}
+            "coordinates": {"axis_0": {"kind": "fixed", "value": 1.5}},
+            "data": {},
+            "kind": "location",
+            "parameters": {},
         }
         y_location = {
-            'coordinates': {
-                'channel_result': {
-                    'kind': 'fixed',
-                    'value': 2.5
-                }
-            },
-            'data': {},
-            'kind': 'location',
-            'parameters': {}
+            "coordinates": {"channel_result": {"kind": "fixed", "value": 2.5}},
+            "data": {},
+            "kind": "location",
+            "parameters": {},
         }
         # FIXME: This should probably use fuzzy comparison for the floating point
         # values.
@@ -192,10 +186,13 @@ class SubscanCase(ExpFragmentCase):
 class RunSubscanTwiceFragment(ExpFragment):
     def build_fragment(self):
         self.setattr_fragment("child", AddOneFragment)
-        setattr_subscan(self,
-                        "scan",
-                        self.child, [(self.child, "value")],
-                        expose_analysis_results=False)
+        setattr_subscan(
+            self,
+            "scan",
+            self.child,
+            [(self.child, "value")],
+            expose_analysis_results=False,
+        )
 
     def run_once(self):
         r0 = self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, False))])
@@ -216,9 +213,9 @@ class RunSubscanTwiceCase(ExpFragmentCase):
 
 
 class SubscanAnalysisFragment(ExpFragment):
-    def build_fragment(self,
-                       declare_both_scannable=False,
-                       always_execute_analyses=True):
+    def build_fragment(
+        self, declare_both_scannable=False, always_execute_analyses=True
+    ):
         self.always_execute_analyses = always_execute_analyses
         self.setattr_fragment("child", TwoAnalysisFragment)
         axes = [(self.child, "a")]
@@ -230,7 +227,8 @@ class SubscanAnalysisFragment(ExpFragment):
     def run_once(self):
         _, _, analysis_results = self.scan.run(
             [(self.child.a, LinearGenerator(0.0, 1.0, 3, True))],
-            execute_default_analyses=self.always_execute_analyses)
+            execute_default_analyses=self.always_execute_analyses,
+        )
         self.had_result = "result_a" in analysis_results
 
 
@@ -241,10 +239,12 @@ class AggregateSubscanAnalysisFragment(ExpFragment):
         self.had_all_results = False
 
     def run_once(self):
-        _, _, analysis_results = self.scan.run([(self.child.a,
-                                                 LinearGenerator(0.0, 1.0, 3, True))])
-        self.had_all_results = all(f"{n}_result_a" in analysis_results
-                                   for n in ("first", "second"))
+        _, _, analysis_results = self.scan.run(
+            [(self.child.a, LinearGenerator(0.0, 1.0, 3, True))]
+        )
+        self.had_all_results = all(
+            f"{n}_result_a" in analysis_results for n in ("first", "second")
+        )
 
 
 class SubscanAnalysisCase(ExpFragmentCase):
@@ -257,9 +257,11 @@ class SubscanAnalysisCase(ExpFragmentCase):
         self.assertTrue(parent.had_result)
 
     def _test_subset_filtering(self, always_execute_analyses):
-        parent = self.create(SubscanAnalysisFragment,
-                             declare_both_scannable=True,
-                             always_execute_analyses=always_execute_analyses)
+        parent = self.create(
+            SubscanAnalysisFragment,
+            declare_both_scannable=True,
+            always_execute_analyses=always_execute_analyses,
+        )
         results = run_fragment_once(parent)
         spec = json.loads(results[parent.scan_spec])
 

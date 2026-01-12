@@ -525,4 +525,5 @@ kovesi_c8_data = [
 
 kovesi_c8 = pyqtgraph.ColorMap(
     numpy.linspace(0.0, 1.0, len(kovesi_c8_data), endpoint=True),
-    numpy.vstack((numpy.array(kovesi_c8_data).T, [255] * len(kovesi_c8_data))).T)
+    numpy.vstack((numpy.array(kovesi_c8_data).T, [255] * len(kovesi_c8_data))).T,
+)

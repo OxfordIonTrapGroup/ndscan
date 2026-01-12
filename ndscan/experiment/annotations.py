@@ -10,12 +10,15 @@ analysis results programmatically accessible to other parts fo a complex experim
 analysis result channels (see
 :meth:`.DefaultAnalysis.get_analysis_results`) should be used instead.
 """
+
 from dataclasses import dataclass
-import numpy as np
 from typing import Any, Callable
+
+import numpy as np
+
+from ..utils import FIT_OBJECTS
 from .parameters import ParamHandle
 from .result_channels import ResultChannel
-from ..utils import FIT_OBJECTS
 
 __all__ = ["Annotation", "curve_1d", "curve", "computed_curve", "axis_location"]
 
@@ -24,6 +27,7 @@ class AnnotationValueRef:
     """Marker type to distinguish an already-serialised annotation value source
     specification from an user-supplied value of dictionary type.
     """
+
     def __init__(self, kind: str, **kwargs):
         self.spec = {"kind": kind, **kwargs}
 
@@ -33,6 +37,7 @@ class AxisAssociatedKeyRef:
     """Kludge to allow referring to an axis in annotation data before the actual index
     is known (from the AnnotationContext when describe()ing the annotation).
     """
+
     axis: ParamHandle
     key: str
 
@@ -63,9 +68,13 @@ class AnnotationContext:
         return whether it is actually accessible in the datasets (e.g. subscan result
         channels might not be exposed).
     """
-    def __init__(self, get_axis_index: Callable[[ParamHandle], int],
-                 name_channel: Callable[[ResultChannel], str],
-                 analysis_result_is_exported: Callable[[ResultChannel], bool]):
+
+    def __init__(
+        self,
+        get_axis_index: Callable[[ParamHandle], int],
+        name_channel: Callable[[ResultChannel], str],
+        analysis_result_is_exported: Callable[[ResultChannel], bool],
+    ):
         self._get_axis_index = get_axis_index
         self._name_channel = name_channel
         self._analysis_result_is_exported = analysis_result_is_exported
@@ -97,11 +106,14 @@ class Annotation:
 
     See :func:`curve`, :func:`curve_1d`, :func:`computed_curve`, :func:`axis_location`.
     """
-    def __init__(self,
-                 kind: str,
-                 coordinates: dict | None = None,
-                 parameters: dict | None = None,
-                 data: dict | None = None):
+
+    def __init__(
+        self,
+        kind: str,
+        coordinates: dict | None = None,
+        parameters: dict | None = None,
+        data: dict | None = None,
+    ):
         self.kind = kind
         self.coordinates = {} if coordinates is None else coordinates
         self.parameters = {} if parameters is None else parameters
@@ -125,8 +137,8 @@ class Annotation:
 
 
 def curve(
-    coordinates: dict[ParamHandle | ResultChannel,
-                      list[float] | np.ndarray]) -> Annotation:
+    coordinates: dict[ParamHandle | ResultChannel, list[float] | np.ndarray],
+) -> Annotation:
     """Create a curve annotation from a dictionary of coordinate lists.
 
     This will typically be shown as a connected line in the plot applet. See
@@ -156,18 +168,21 @@ def curve(
             num_points = len(values)
         elif len(values) != num_points:
             raise ValueError(
-                f"Got {len(values)} values for '{key}', previously had {num_points}")
+                f"Got {len(values)} values for '{key}', previously had {num_points}"
+            )
         return values
 
-    return Annotation("curve",
-                      coordinates={k: normalise(k, v)
-                                   for k, v in coordinates.items()})
+    return Annotation(
+        "curve", coordinates={k: normalise(k, v) for k, v in coordinates.items()}
+    )
 
 
-def curve_1d(x_axis: ParamHandle,
-             x_values: list[float] | np.ndarray | AnnotationValueRef,
-             y_axis: ResultChannel,
-             y_values: list[float] | np.ndarray | AnnotationValueRef) -> Annotation:
+def curve_1d(
+    x_axis: ParamHandle,
+    x_values: list[float] | np.ndarray | AnnotationValueRef,
+    y_axis: ResultChannel,
+    y_values: list[float] | np.ndarray | AnnotationValueRef,
+) -> Annotation:
     """Create a curve annotation from explicit lists of x and y coordinates.
 
     This will typically be shown as a connected line in the plot applet. See
@@ -190,9 +205,11 @@ def curve_1d(x_axis: ParamHandle,
     return curve({x_axis: x_values, y_axis: y_values})
 
 
-def computed_curve(function_name: str,
-                   parameters: dict[str, Any | AnnotationValueRef],
-                   associated_channels: list | None = None) -> Annotation:
+def computed_curve(
+    function_name: str,
+    parameters: dict[str, Any | AnnotationValueRef],
+    associated_channels: list | None = None,
+) -> Annotation:
     """Create a curve annotation that is computed from a well-known fit function
     (:data:`ndscan.util.FIT_OBJECTS`).
 
@@ -215,14 +232,18 @@ def computed_curve(function_name: str,
     """
     if function_name not in FIT_OBJECTS.keys():
         known_types = ", ".join(FIT_OBJECTS.keys())
-        raise ValueError(f"Computed curve type '{function_name}' is not among the " +
-                         f"known FIT_OBJECTS ({known_types})")
+        raise ValueError(
+            f"Computed curve type '{function_name}' is not among the "
+            + f"known FIT_OBJECTS ({known_types})"
+        )
 
     given_params = set(parameters.keys())
     expected_params = set(FIT_OBJECTS[function_name].parameter_names)
     if given_params != expected_params:
-        raise ValueError(f"Unexpected parameters for curve type '{function_name}' " +
-                         f"(expected {expected_params}, got {given_params})")
+        raise ValueError(
+            f"Unexpected parameters for curve type '{function_name}' "
+            + f"(expected {expected_params}, got {given_params})"
+        )
 
     params = {"function_name": function_name}
     if associated_channels:
@@ -230,10 +251,12 @@ def computed_curve(function_name: str,
     return Annotation("computed_curve", parameters=params, data=parameters)
 
 
-def axis_location(axis: ParamHandle | ResultChannel,
-                  position: Any | AnnotationValueRef,
-                  position_error: float | AnnotationValueRef | None = None,
-                  associated_channels: list | None = None) -> Annotation:
+def axis_location(
+    axis: ParamHandle | ResultChannel,
+    position: Any | AnnotationValueRef,
+    position_error: float | AnnotationValueRef | None = None,
+    associated_channels: list | None = None,
+) -> Annotation:
     """Create an annotation marking a specific location on the given axis.
 
     This will typically be shown as a vertical/horizontal line in the plot applet
@@ -261,7 +284,6 @@ def axis_location(axis: ParamHandle | ResultChannel,
     data = {}
     if position_error is not None:
         data[AxisAssociatedKeyRef(axis, "error")] = position_error
-    return Annotation("location",
-                      coordinates={axis: position},
-                      parameters=parameters,
-                      data=data)
+    return Annotation(
+        "location", coordinates={axis: position}, parameters=parameters, data=data
+    )

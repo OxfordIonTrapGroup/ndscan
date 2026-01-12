@@ -1,9 +1,16 @@
-from mock_environment import HasEnvironmentCase
-from enum import Enum, unique
 import unittest
+from enum import Enum, unique
+
+from mock_environment import HasEnvironmentCase
+
 from ndscan.experiment.fragment import Fragment
-from ndscan.experiment.parameters import (FloatParam, IntParam, StringParam, BoolParam,
-                                          EnumParam)
+from ndscan.experiment.parameters import (
+    BoolParam,
+    EnumParam,
+    FloatParam,
+    IntParam,
+    StringParam,
+)
 
 
 def eval_if_str(x):
@@ -31,29 +38,35 @@ class GenericBase:
 
         def test_describe(self):
             param = self.CLASS("foo", **(self.EXTRA_KWARGS | self.EXAMPLE_KWARGS))
-            self.assertEqual(param.describe(),
-                             self.EXPECTED_DESCRIPTION | {"fqn": "foo"})
+            self.assertEqual(
+                param.describe(), self.EXPECTED_DESCRIPTION | {"fqn": "foo"}
+            )
 
         def test_evaluate_default(self):
             def mock_get_dataset(key: str, default=None):
                 return {"baz": self.to_dataset_value(self.DEFAULT_1)}[key]
 
             param = self.CLASS("foo", "bar", self.DEFAULT_0, **self.EXTRA_KWARGS)
-            self.assertEqual(param.eval_default(mock_get_dataset),
-                             eval_if_str(self.DEFAULT_0))
+            self.assertEqual(
+                param.eval_default(mock_get_dataset), eval_if_str(self.DEFAULT_0)
+            )
 
             param = self.CLASS(
-                "foo", "bar",
+                "foo",
+                "bar",
                 f"dataset('baz', {self.to_dataset_fn_arg(self.DEFAULT_0)})",
-                **self.EXTRA_KWARGS)
-            self.assertEqual(param.eval_default(mock_get_dataset),
-                             eval_if_str(self.DEFAULT_1))
+                **self.EXTRA_KWARGS,
+            )
+            self.assertEqual(
+                param.eval_default(mock_get_dataset), eval_if_str(self.DEFAULT_1)
+            )
 
         def test_rebind(self):
             class Foo(Fragment):
                 def build_fragment(inner_self) -> None:
-                    inner_self.setattr_param("bar", self.CLASS, **self.EXAMPLE_KWARGS,
-                                             **self.EXTRA_KWARGS)
+                    inner_self.setattr_param(
+                        "bar", self.CLASS, **self.EXAMPLE_KWARGS, **self.EXTRA_KWARGS
+                    )
                     inner_self.setattr_param_rebind("baz", inner_self, "bar")
 
             foo = self.create(Foo, [])
@@ -75,7 +88,7 @@ class FloatParamCase(GenericBase.Cases):
         "min": 0.0,
         "max": 2.0,
         "unit": "baz",
-        "scale": 1.0
+        "scale": 1.0,
     }
     EXPECTED_DESCRIPTION = {
         "description": "bar",
@@ -87,8 +100,8 @@ class FloatParamCase(GenericBase.Cases):
             "unit": "baz",
             "scale": 1.0,
             "step": 0.1,
-            "is_scannable": True
-        }
+            "is_scannable": True,
+        },
     }
 
 
@@ -102,7 +115,7 @@ class IntParamCase(GenericBase.Cases):
         "min": -1,
         "max": 1,
         "unit": "baz",
-        "scale": 1
+        "scale": 1,
     }
     EXPECTED_DESCRIPTION = {
         "description": "bar",
@@ -182,11 +195,7 @@ class EnumParamElemCase(GenericBase.Cases):
         "description": "bar",
         "type": "enum",
         "default": "'first'",
-        "spec": {
-            "members": {o.name: o.value
-                        for o in Options},
-            "is_scannable": True
-        }
+        "spec": {"members": {o.name: o.value for o in Options}, "is_scannable": True},
     }
 
     def to_dataset_value(self, x):
@@ -210,11 +219,7 @@ class EnumParamStringCase(GenericBase.Cases):
         "description": "bar",
         "type": "enum",
         "default": "'first'",
-        "spec": {
-            "members": {o.name: o.value
-                        for o in Options},
-            "is_scannable": True
-        }
+        "spec": {"members": {o.name: o.value for o in Options}, "is_scannable": True},
     }
 
     def to_dataset_value(self, x):
