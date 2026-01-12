@@ -1,6 +1,7 @@
 import unittest
 from itertools import permutations
-from ndscan.utils import strip_prefix, strip_suffix, shorten_to_unambiguous_suffixes
+
+from ndscan.utils import shorten_to_unambiguous_suffixes, strip_prefix, strip_suffix
 
 
 class StripTest(unittest.TestCase):
@@ -17,7 +18,8 @@ class ShortenTest(unittest.TestCase):
     def test_shorten(self):
         def shorten_at_slash(fqns):
             return shorten_to_unambiguous_suffixes(
-                fqns, lambda fqn, n: "/".join(fqn.split("/")[-n:]))
+                fqns, lambda fqn, n: "/".join(fqn.split("/")[-n:])
+            )
 
         def test(expected):
             # Test all orderings.

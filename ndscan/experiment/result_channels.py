@@ -2,21 +2,30 @@
 Result handling building blocks.
 """
 
-from artiq.language import HasEnvironment, kernel, portable, rpc
-import artiq.language.units
 from typing import Any
+
+import artiq.language.units
+from artiq.language import HasEnvironment, kernel, portable, rpc
+
 from .utils import dump_json
 
 __all__ = [
-    "SingleUseSink", "LastValueSink", "ArraySink", "AppendingDatasetSink",
-    "ScalarDatasetSink", "ResultChannel", "NumericChannel", "FloatChannel",
-    "IntChannel", "OpaqueChannel"
+    "SingleUseSink",
+    "LastValueSink",
+    "ArraySink",
+    "AppendingDatasetSink",
+    "ScalarDatasetSink",
+    "ResultChannel",
+    "NumericChannel",
+    "FloatChannel",
+    "IntChannel",
+    "OpaqueChannel",
 ]
 
 
 class ResultSink:
-    """
-    """
+    """ """
+
     def push(self, value: Any) -> None:
         """Record a new value.
 
@@ -31,6 +40,7 @@ class ResultSink:
 
 class SingleUseSink(ResultSink):
     """Sink that allows only one value to be pushed (before being cleared)."""
+
     def __init__(self):
         self._is_set: bool = False
         self._value: Any = None
@@ -63,6 +73,7 @@ class SingleUseSink(ResultSink):
 class LastValueSink(ResultSink):
     """Sink that allows multiple values to be pushed, but retains only the last-pushed
     one."""
+
     def __init__(self):
         self.value = None
 
@@ -76,6 +87,7 @@ class LastValueSink(ResultSink):
 
 class ArraySink(ResultSink):
     """Sink that stores all pushed values in a list."""
+
     def __init__(self):
         self.data = []
 
@@ -126,6 +138,7 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
 class ScalarDatasetSink(ResultSink, HasEnvironment):
     """Sink that writes pushed results to a dataset, overwriting its previous value
     if any."""
+
     def build(self, key: str, broadcast: bool = True) -> None:
         """
         :param key: Dataset key to write the value to.
@@ -188,11 +201,14 @@ class ResultChannel:
               the behaviour of previous ``ndscan`` versions, where all axes used to be
               shown in a single plot pane.
     """
-    def __init__(self,
-                 path: str,
-                 description: str = "",
-                 display_hints: dict[str, Any] | None = None,
-                 save_by_default: bool = True):
+
+    def __init__(
+        self,
+        path: str,
+        description: str = "",
+        display_hints: dict[str, Any] | None = None,
+        save_by_default: bool = True,
+    ):
         self.path = path
         self.description = description
         self.display_hints = {} if display_hints is None else display_hints
@@ -203,12 +219,11 @@ class ResultChannel:
         return f"<{type(self).__name__}@{hex(id(self))}: {self.path}>"
 
     def describe(self) -> dict[str, Any]:
-        """
-        """
+        """ """
         desc = {
             "path": self.path,
             "description": self.description,
-            "type": self._get_type_string()
+            "type": self._get_type_string(),
         }
 
         if self.display_hints:
@@ -216,20 +231,17 @@ class ResultChannel:
         return desc
 
     def is_muted(self) -> bool:
-        """
-        """
+        """ """
         # TODO: Implement muting interface?
         return self.sink is not None
 
     def set_sink(self, sink: ResultSink) -> None:
-        """
-        """
+        """ """
         self.sink = sink
 
     @rpc(flags={"async"})
     def push(self, raw_value) -> None:
-        """
-        """
+        """ """
         value = self._coerce_to_type(raw_value)
         if self.sink:
             self.sink.push(value)
@@ -253,14 +265,17 @@ class NumericChannel(ResultChannel):
     :param scale: Unit scaling. If ``None``, the default scaling as per ARTIQ's unit
         handling machinery (``artiq.language.units``) is used.
     """
-    def __init__(self,
-                 path: str,
-                 description: str = "",
-                 display_hints: dict[str, Any] | None = None,
-                 min=None,
-                 max=None,
-                 unit: str = "",
-                 scale=None):
+
+    def __init__(
+        self,
+        path: str,
+        description: str = "",
+        display_hints: dict[str, Any] | None = None,
+        min=None,
+        max=None,
+        unit: str = "",
+        scale=None,
+    ):
         super().__init__(path, description, display_hints)
         self.min = min
         self.max = max
@@ -272,8 +287,10 @@ class NumericChannel(ResultChannel):
                 try:
                     scale = getattr(artiq.language.units, unit)
                 except AttributeError:
-                    raise KeyError("Unit {} is unknown, you must specify "
-                                   "the scale manually".format(unit))
+                    raise KeyError(
+                        "Unit {} is unknown, you must specify "
+                        "the scale manually".format(unit)
+                    )
         self.scale = scale
         self.unit = unit
 
@@ -282,7 +299,7 @@ class NumericChannel(ResultChannel):
 
     @kernel
     def get_last(self):
-        """ Returns the last value pushed to this result channel.
+        """Returns the last value pushed to this result channel.
 
         This method is a workaround for limitations of ARTIQ python, which make it
         impractical to extract values from the sinks without going through RPCs.
@@ -294,16 +311,14 @@ class NumericChannel(ResultChannel):
 
     @portable
     def push(self, raw_value) -> None:
-        """
-        """
+        """ """
         self._value_pushed = True
         self._last_value = raw_value
         self._push(raw_value)
 
     @rpc(flags={"async"})
     def _push(self, raw_value) -> None:
-        """
-        """
+        """ """
         super().push(raw_value)
 
     def describe(self) -> dict[str, Any]:
@@ -321,6 +336,7 @@ class NumericChannel(ResultChannel):
 
 class FloatChannel(NumericChannel):
     """:class:`NumericChannel` that accepts floating-point results."""
+
     def _get_type_string(self):
         return "float"
 
@@ -330,6 +346,7 @@ class FloatChannel(NumericChannel):
 
 class IntChannel(NumericChannel):
     """:class:`NumericChannel` that accepts integer results."""
+
     def _get_type_string(self):
         return "int"
 
@@ -349,6 +366,7 @@ class OpaqueChannel(ResultChannel):
     Any values pushed are just passed through to the ARTIQ dataset layer; it is up to
     the user to choose something compatibile with HDF5 and PYON.
     """
+
     def _get_type_string(self):
         return "opaque"
 
@@ -361,6 +379,7 @@ class SubscanChannel(ResultChannel):
 
     Serialised as a JSON string for HDF5 compatibility.
     """
+
     def _get_type_string(self):
         return "subscan"
 

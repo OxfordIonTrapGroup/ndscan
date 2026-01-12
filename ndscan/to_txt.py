@@ -1,13 +1,14 @@
 """Standalone tool to write scan data to text files"""
 
 import argparse
-import os
 import json
+import os
+
 import numpy as np
 
-from .show import load_h5
 from .results.tools import get_source_id
-from .utils import strip_suffix, shorten_to_unambiguous_suffixes
+from .show import load_h5
+from .utils import shorten_to_unambiguous_suffixes, strip_suffix
 
 
 def get_argparser():
@@ -16,15 +17,18 @@ def get_argparser():
         epilog=(
             "Instead of a file name, just a run id or 'magic' source string can be "
             "supplied, which is then resolved using oitg.results (e.g. 'alice_12345', "
-            "or just '12345' to infer the experiment name from the environment)."))
-    parser.add_argument("--prefix",
-                        default=None,
-                        type=str,
-                        help="Prefix of root in dataset tree (default: auto-detect)")
-    parser.add_argument("path",
-                        metavar="FILE",
-                        type=str,
-                        help="Path to HDF5 results file")
+            "or just '12345' to infer the experiment name from the environment)."
+        ),
+    )
+    parser.add_argument(
+        "--prefix",
+        default=None,
+        type=str,
+        help="Prefix of root in dataset tree (default: auto-detect)",
+    )
+    parser.add_argument(
+        "path", metavar="FILE", type=str, help="Path to HDF5 results file"
+    )
     return parser
 
 
@@ -33,8 +37,10 @@ def main():
 
     path, datasets, prefixes, schema = load_h5(args)
     if len(prefixes) > 1:
-        raise Exception("More than one ndscan prefix found. Please specify one. " +
-                        f"Prefixes: {prefixes}")
+        raise Exception(
+            "More than one ndscan prefix found. Please specify one. "
+            + f"Prefixes: {prefixes}"
+        )
     prefix = prefixes[0]
 
     # Use parameter names from last part of FQNs (maybe more if ambiguous) as column
@@ -43,7 +49,9 @@ def main():
     fqns = [ax["param"]["fqn"] for ax in json.loads(datasets[prefix + "axes"][()])]
     axes_names = list(
         shorten_to_unambiguous_suffixes(
-            fqns, lambda fqn, n: ".".join(fqn.split(".")[-n:])).values())
+            fqns, lambda fqn, n: ".".join(fqn.split(".")[-n:])
+        ).values()
+    )
 
     channel_names = []
     point_data = {}
@@ -85,13 +93,18 @@ def main():
     with open(target_path, "wb") as f:
         f.write(
             bytes(
-                f"# source id: {get_source_id(datasets, prefixes)}, " +
-                f"original file: {path}, dataset prefix: {prefix[:-1]}\n", "UTF-8"))
-        np.savetxt(f,
-                   np.transpose(ordered_data + [order]),
-                   comments="",
-                   header=" ".join(column_names + ["acquisition_order"]),
-                   fmt="%1.6e " * len(column_names) + "%1.0f")
+                f"# source id: {get_source_id(datasets, prefixes)}, "
+                + f"original file: {path}, dataset prefix: {prefix[:-1]}\n",
+                "UTF-8",
+            )
+        )
+        np.savetxt(
+            f,
+            np.transpose(ordered_data + [order]),
+            comments="",
+            header=" ".join(column_names + ["acquisition_order"]),
+            fmt="%1.6e " * len(column_names) + "%1.0f",
+        )
 
 
 if __name__ == "__main__":

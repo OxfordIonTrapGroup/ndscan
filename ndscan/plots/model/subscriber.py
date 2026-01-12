@@ -1,10 +1,19 @@
 import json
 from collections.abc import Iterable
 from typing import Any
+
 from sipyco.sync_struct import ModAction
+
 from ...utils import SCHEMA_REVISION_KEY, strip_prefix
-from . import (Annotation, Context, FixedDataSource, Model, Root, ScanModel,
-               SinglePointModel)
+from . import (
+    Annotation,
+    Context,
+    FixedDataSource,
+    Model,
+    Root,
+    ScanModel,
+    SinglePointModel,
+)
 
 
 class SubscriberRoot(Root):
@@ -14,6 +23,7 @@ class SubscriberRoot(Root):
     :param prefix: Prefix of the ndscan dataset tree to represent, e.g.
         ``"ndscan."`` for the default location.
     """
+
     def __init__(self, prefix: str, context: Context):
         super().__init__()
 
@@ -27,8 +37,9 @@ class SubscriberRoot(Root):
         self._source_id_set = False
         self._axes_initialised = False
 
-    def data_changed(self, values: dict[str, Any], mods: Iterable[dict[str,
-                                                                       Any]]) -> None:
+    def data_changed(
+        self, values: dict[str, Any], mods: Iterable[dict[str, Any]]
+    ) -> None:
         def d(name):
             return values.get(self._prefix + name)
 
@@ -57,11 +68,13 @@ class SubscriberRoot(Root):
 
             dim = len(axes)
             if dim == 0:
-                self._model = SubscriberSinglePointModel(self._prefix, schema_revision,
-                                                         self._context)
+                self._model = SubscriberSinglePointModel(
+                    self._prefix, schema_revision, self._context
+                )
             else:
-                self._model = SubscriberScanModel(axes, self._prefix, schema_revision,
-                                                  self._context)
+                self._model = SubscriberScanModel(
+                    axes, self._prefix, schema_revision, self._context
+                )
 
             self._axes_initialised = True
             self.model_changed.emit(self._model)
@@ -87,8 +100,9 @@ class SubscriberSinglePointModel(SinglePointModel):
     def get_point(self) -> dict[str, Any] | None:
         return self._current_point
 
-    def data_changed(self, values: dict[str, Any], mods: Iterable[dict[str,
-                                                                       Any]]) -> None:
+    def data_changed(
+        self, values: dict[str, Any], mods: Iterable[dict[str, Any]]
+    ) -> None:
         # For single-point scans, points are completed as soon as point_phase flips, at
         # which point we need to emit them. There are slight subtleties in the below, in
         # that the initial sync can happen at any point through the first point (before/
@@ -142,8 +156,13 @@ class SubscriberSinglePointModel(SinglePointModel):
 
 
 class SubscriberScanModel(ScanModel):
-    def __init__(self, axes: list[dict[str, Any]], prefix: str, schema_revision: int,
-                 context: Context):
+    def __init__(
+        self,
+        axes: list[dict[str, Any]],
+        prefix: str,
+        schema_revision: int,
+        context: Context,
+    ):
         super().__init__(axes, schema_revision, context)
         self._prefix = prefix
         self._series_initialised = False
@@ -155,8 +174,9 @@ class SubscriberScanModel(ScanModel):
         self._analysis_result_sources = {}
         self._point_data = {}
 
-    def data_changed(self, values: dict[str, Any], mods: Iterable[dict[str,
-                                                                       Any]]) -> None:
+    def data_changed(
+        self, values: dict[str, Any], mods: Iterable[dict[str, Any]]
+    ) -> None:
         if not self._series_initialised:
             channels_json = values.get(self._prefix + "channels")
             if not channels_json:
@@ -191,8 +211,9 @@ class SubscriberScanModel(ScanModel):
             source.set(values.get(self._prefix + "analysis_result." + name))
 
         point_data_changed = False
-        for name in ([f"axis_{i}" for i in range(len(self.axes))] +
-                     ["channel_" + c for c in self._channel_schemata.keys()]):
+        for name in [f"axis_{i}" for i in range(len(self.axes))] + [
+            "channel_" + c for c in self._channel_schemata.keys()
+        ]:
             point_values = values.get(self._prefix + "points." + name, [])
             if not point_data_changed:
                 # Check if points were appended or rewritten.

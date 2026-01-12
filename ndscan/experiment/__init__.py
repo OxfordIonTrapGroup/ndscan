@@ -17,8 +17,16 @@ from experiment client code, like ``artiq.experiment`` does for upstream ARTIQ::
 import artiq.experiment
 from artiq.experiment import *
 
-from . import (annotations, default_analysis, entry_point, fragment, parameters,
-               result_channels, scan_generator, subscan)
+from . import (
+    annotations,
+    default_analysis,
+    entry_point,
+    fragment,
+    parameters,
+    result_channels,
+    scan_generator,
+    subscan,
+)
 from .default_analysis import *
 from .entry_point import *
 from .fragment import *

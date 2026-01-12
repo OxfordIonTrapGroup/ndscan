@@ -47,8 +47,9 @@ class MockScheduler:
         if self.num_check_pause_calls_until_termination == 0:
             # Limit disabled
             return False
-        return (self.num_check_pause_calls >=
-                self.num_check_pause_calls_until_termination)
+        return (
+            self.num_check_pause_calls >= self.num_check_pause_calls_until_termination
+        )
 
     def check_pause(self) -> bool:
         self.num_check_pause_calls += 1
@@ -77,18 +78,23 @@ class HasEnvironmentCase(unittest.TestCase):
         self.ccb = unittest.mock.Mock()
         self.core = unittest.mock.Mock()
         self.scheduler = MockScheduler()
-        self.device_mgr = DeviceManager(self.device_db,
-                                        virtual_devices={
-                                            "ccb": self.ccb,
-                                            "core": self.core,
-                                            "scheduler": self.scheduler
-                                        })
+        self.device_mgr = DeviceManager(
+            self.device_db,
+            virtual_devices={
+                "ccb": self.ccb,
+                "core": self.core,
+                "scheduler": self.scheduler,
+            },
+        )
 
     def create(self, klass, *args, env_args=None, like_examine=False, **kwargs):
         dataset_mgr_cls = MockExamineDatasetMgr if like_examine else DatasetManager
         arg_mgr = ProcessArgumentManager(env_args or {})
-        return klass((self.device_mgr, dataset_mgr_cls(self.dataset_db), arg_mgr, None),
-                     *args, **kwargs)
+        return klass(
+            (self.device_mgr, dataset_mgr_cls(self.dataset_db), arg_mgr, None),
+            *args,
+            **kwargs,
+        )
 
 
 class ExpFragmentCase(HasEnvironmentCase):

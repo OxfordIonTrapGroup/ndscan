@@ -1,13 +1,14 @@
 import logging
-import pyqtgraph.dockarea as pgda
 from collections import OrderedDict
 
+import pyqtgraph.dockarea as pgda
+
+from .._qt import QtCore, QtWidgets
 from .image_2d import Image2DPlotWidget
-from .model import Context, Root, SinglePointModel, ScanModel
+from .model import Context, Root, ScanModel, SinglePointModel
 from .plot_widgets import VerticalPanesWidget
 from .rolling_1d import Rolling1DPlotWidget
 from .xy_1d import XY1DPlotWidget
-from .._qt import QtCore, QtWidgets
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,8 @@ def make_plot_for_dimensional_model(model: ScanModel) -> VerticalPanesWidget:
     if dim == 2:
         return Image2DPlotWidget(model)
     raise NotImplementedError(
-        f"Plots for {dim}-dimensional data are not yet implemented")
+        f"Plots for {dim}-dimensional data are not yet implemented"
+    )
 
 
 class PlotAreaWidget(pgda.DockArea):
@@ -146,11 +148,13 @@ class RootWidget(QtWidgets.QWidget):
 
 class PlotAreaTabWidget(QtWidgets.QWidget):
     """Window with tabs for multiple plot roots."""
+
     def __init__(self, roots, context):
         super().__init__()
 
         self.plot_area_widgets = OrderedDict(
-            (label, PlotAreaWidget(root, context)) for label, root in roots.items())
+            (label, PlotAreaWidget(root, context)) for label, root in roots.items()
+        )
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)

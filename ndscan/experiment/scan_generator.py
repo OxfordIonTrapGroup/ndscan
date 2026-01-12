@@ -1,9 +1,10 @@
+import random
 from collections.abc import Iterator
 from dataclasses import dataclass
 from itertools import product
-import numpy as np
-import random
 from typing import Any
+
+import numpy as np
 
 __all__ = [
     "ScanGenerator",
@@ -16,27 +17,24 @@ __all__ = [
 
 
 class ScanGenerator:
-    """Generates points along a single scan axis to be visited.
-    """
+    """Generates points along a single scan axis to be visited."""
+
     def has_level(self, level: int) -> bool:
-        """
-        """
+        """ """
         raise NotImplementedError
 
     def points_for_level(self, level: int, rng=None) -> list[Any]:
-        """
-        """
+        """ """
         raise NotImplementedError
 
     def describe_limits(self, target: dict[str, Any]) -> None:
-        """
-        """
+        """ """
         raise NotImplementedError
 
 
 class RefiningGenerator(ScanGenerator):
-    """Generates progressively finer grid by halving distance between points each level.
-    """
+    """Generates progressively finer grid by halving distance between points each level."""
+
     def __init__(self, lower, upper, randomise_order):
         self.lower = float(min(lower, upper))
         self.upper = float(max(lower, upper))
@@ -56,7 +54,7 @@ class RefiningGenerator(ScanGenerator):
             points = np.array([self.lower, self.upper])
         else:
             d = self.upper - self.lower
-            num = 2**(level - 1)
+            num = 2 ** (level - 1)
             points = np.arange(num) * d / num + d / (2 * num) + self.lower
 
         # Silently drop points outside of the limits
@@ -81,6 +79,7 @@ class CentreSpanRefiningGenerator(RefiningGenerator):
             limited (e.g. to be non-negative).
     :param limit_upper: See `limit_lower`.
     """
+
     def __init__(
         self,
         centre,
@@ -108,12 +107,10 @@ class ExpandingGenerator(ScanGenerator):
     """Generates points with given, constant spacing in progressively growing range
     around a given centre.
     """
-    def __init__(self,
-                 centre,
-                 spacing,
-                 randomise_order: bool,
-                 limit_lower=None,
-                 limit_upper=None):
+
+    def __init__(
+        self, centre, spacing, randomise_order: bool, limit_lower=None, limit_upper=None
+    ):
         """
         :param limit_lower: Optional lower limit (inclusive) to the range of generated
             points. Useful for representing scans on parameters the range of which is
@@ -134,6 +131,7 @@ class ExpandingGenerator(ScanGenerator):
 
     def has_level(self, level: int) -> bool:
         ""
+
         def num_points(limit):
             return np.floor(abs(self.centre - limit) / self.spacing)
 
@@ -168,6 +166,7 @@ class ExpandingGenerator(ScanGenerator):
 
 class LinearGenerator(ScanGenerator):
     """Generates equally spaced points between two endpoints."""
+
     def __init__(self, start, stop, num_points, randomise_order):
         if num_points < 2:
             raise ValueError("Need at least 2 points in linear scan")
@@ -183,10 +182,9 @@ class LinearGenerator(ScanGenerator):
     def points_for_level(self, level: int, rng=None) -> list[Any]:
         ""
         assert level == 0
-        points = np.linspace(start=self.start,
-                             stop=self.stop,
-                             num=self.num_points,
-                             endpoint=True)
+        points = np.linspace(
+            start=self.start, stop=self.stop, num=self.num_points, endpoint=True
+        )
         if self.randomise_order:
             rng.shuffle(points)
         return points.tolist()
@@ -200,13 +198,16 @@ class LinearGenerator(ScanGenerator):
 
 class CentreSpanGenerator(LinearGenerator):
     """Generates equally spaced points in ``centre``±``half_span``."""
-    def __init__(self,
-                 centre,
-                 half_span,
-                 num_points: int,
-                 randomise_order: bool,
-                 limit_lower=None,
-                 limit_upper=None):
+
+    def __init__(
+        self,
+        centre,
+        half_span,
+        num_points: int,
+        randomise_order: bool,
+        limit_lower=None,
+        limit_upper=None,
+    ):
         """
         :param limit_lower: Optional lower limit (inclusive) to the range of generated
             points. Useful for representing scans on parameters the range of which is
@@ -233,6 +234,7 @@ class CentreSpanGenerator(LinearGenerator):
 
 class ListGenerator(ScanGenerator):
     """Generates points by reading from an explicitly specified list."""
+
     def __init__(self, values, randomise_order):
         self.values = values
         self.randomise_order = randomise_order
@@ -269,8 +271,7 @@ GENERATORS = {
 
 @dataclass
 class ScanOptions:
-    """
-    """
+    """ """
 
     #: How many times to iterate through the specified scan points.
     #:
@@ -301,8 +302,9 @@ class ScanOptions:
             self.seed = random.getrandbits(32)
 
 
-def generate_points(axis_generators: list[ScanGenerator],
-                    options: ScanOptions) -> Iterator[Any]:
+def generate_points(
+    axis_generators: list[ScanGenerator], options: ScanOptions
+) -> Iterator[Any]:
     rng = np.random.RandomState(options.seed)
 
     # Stores computed coordinates for each axis, indexed first by

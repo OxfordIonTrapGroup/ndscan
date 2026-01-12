@@ -7,24 +7,31 @@ will likely be used by end users via
 """
 
 import logging
-import numpy as np
-from artiq.coredevice.exceptions import RTIOUnderflow
-from artiq.language import HasEnvironment, host_only, kernel, kernel_from_string, rpc
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import islice
 from typing import Any
+
+import numpy as np
+from artiq.coredevice.exceptions import RTIOUnderflow
+from artiq.language import HasEnvironment, host_only, kernel, kernel_from_string, rpc
+
 from .default_analysis import AnnotationContext, DefaultAnalysis
-from .fragment import ExpFragment, TransitoryError, RestartKernelTransitoryError
+from .fragment import ExpFragment, RestartKernelTransitoryError, TransitoryError
 from .parameters import ParamStore
 from .result_channels import ResultChannel, ResultSink, SingleUseSink
-from .scan_generator import generate_points, ScanGenerator, ScanOptions
+from .scan_generator import ScanGenerator, ScanOptions, generate_points
 from .utils import is_kernel
 
 __all__ = [
-    "ScanAxis", "ScanSpec", "ScanRunner", "select_runner_class",
-    "match_default_analysis", "filter_default_analyses", "describe_scan",
-    "describe_analyses"
+    "ScanAxis",
+    "ScanSpec",
+    "ScanRunner",
+    "select_runner_class",
+    "match_default_analysis",
+    "filter_default_analyses",
+    "describe_scan",
+    "describe_analyses",
 ]
 
 logger = logging.getLogger(__name__)
@@ -38,6 +45,7 @@ class ScanAxis:
     scan at runtime; i.e. the :class:`.ParamStore` to modify in order to set the
     parameter.
     """
+
     param_schema: dict[str, Any]
     path: str
     param_store: ParamStore
@@ -61,10 +69,13 @@ class ScanRunner(HasEnvironment):
     """Runs the actual loop that executes an :class:`.ExpFragment` for a specified list
     of scan axes (on either the host or core device, as appropriate).
     """
-    def build(self,
-              max_rtio_underflow_retries: int = 3,
-              max_transitory_error_retries: int = 10,
-              skip_on_persistent_transitory_error: bool = False):
+
+    def build(
+        self,
+        max_rtio_underflow_retries: int = 3,
+        max_transitory_error_retries: int = 10,
+        skip_on_persistent_transitory_error: bool = False,
+    ):
         """
         :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan
             point (by simply trying again) before giving up. Three is a pretty arbitrary
@@ -86,8 +97,9 @@ class ScanRunner(HasEnvironment):
         self.setattr_device("core")
         self.setattr_device("scheduler")
 
-    def run(self, fragment: ExpFragment, spec: ScanSpec,
-            axis_sinks: list[ResultSink]) -> None:
+    def run(
+        self, fragment: ExpFragment, spec: ScanSpec, axis_sinks: list[ResultSink]
+    ) -> None:
         """Run a scan of the given fragment, with axes as specified.
 
         Integrates with the ARTIQ scheduler to pause/terminate execution as requested.
@@ -120,8 +132,9 @@ class ScanRunner(HasEnvironment):
                     self.core.close()
             self.scheduler.pause()
 
-    def setup(self, fragment: ExpFragment, axes: list[ScanAxis],
-              axis_sinks: list[ResultSink]) -> None:
+    def setup(
+        self, fragment: ExpFragment, axes: list[ScanAxis], axis_sinks: list[ResultSink]
+    ) -> None:
         raise NotImplementedError
 
     def set_points(self, points: Iterator[tuple]) -> None:
@@ -145,6 +158,7 @@ class ResultBatcher:
     datasets/… (where the indices in the struct-of-arrays construction no longer match
     up).
     """
+
     def __init__(self, fragment: ExpFragment) -> None:
         self._fragment = fragment
         self._orig_sinks = dict[ResultChannel, ResultSink]()
@@ -176,8 +190,10 @@ class ResultBatcher:
         # First check whether we have all the values.
         for channel in self._orig_sinks.keys():
             if not channel.sink.is_set():
-                raise ValueError(f"Missing value for result channel '{channel}' " +
-                                 "(push() not called for current point)")
+                raise ValueError(
+                    f"Missing value for result channel '{channel}' "
+                    + "(push() not called for current point)"
+                )
         # Only then forward them.
         for channel, orig_sink in self._orig_sinks.items():
             orig_sink.push(channel.sink.get())
@@ -201,8 +217,9 @@ class ResultBatcher:
 
 
 class HostScanRunner(ScanRunner):
-    def setup(self, fragment: ExpFragment, axes: list[ScanAxis],
-              axis_sinks: list[ResultSink]) -> None:
+    def setup(
+        self, fragment: ExpFragment, axes: list[ScanAxis], axis_sinks: list[ResultSink]
+    ) -> None:
         self._fragment = fragment
         self._axes = axes
         self._axis_sinks = axis_sinks
@@ -220,13 +237,13 @@ class HostScanRunner(ScanRunner):
                     axis_values = next(self._points, None)
                     if axis_values is None:
                         return True
-                    for (axis, value) in zip(self._axes, axis_values):
+                    for axis, value in zip(self._axes, axis_values):
                         axis.param_store.set_value(value)
                     self._fragment.device_setup()
                     self._fragment.run_once()
 
                     result_batcher.ensure_complete_and_push()
-                    for (sink, value) in zip(self._axis_sinks, axis_values):
+                    for sink, value in zip(self._axis_sinks, axis_values):
                         # Now that we know self._fragment successfully produced a
                         # complete point, also record the axis coordinates.
                         sink.push(value)
@@ -242,8 +259,9 @@ class KernelScanRunner(ScanRunner):
     # metaprogramming. While the interface for this class is effortlessly generic, the
     # implementation might well be a long-forgotten ritual for invoking Cthulhu.
 
-    def setup(self, fragment: ExpFragment, axes: list[ScanAxis],
-              axis_sinks: list[ResultSink]) -> None:
+    def setup(
+        self, fragment: ExpFragment, axes: list[ScanAxis], axis_sinks: list[ResultSink]
+    ) -> None:
         self._fragment = fragment
 
         # Set up members to be accessed from the kernel through the
@@ -261,8 +279,9 @@ class KernelScanRunner(ScanRunner):
         # the concrete type for this scan so the compiler can infer the types in
         # run_chunk() correctly.
         self._get_param_values_chunk.__func__.__annotations__ = {
-            "return":
-            tuple.__class_getitem__(tuple(list[a.param_store.RpcType] for a in axes))
+            "return": tuple.__class_getitem__(
+                tuple(list[a.param_store.RpcType] for a in axes)
+            )
         }
 
         # Build kernel function that calls _get_param_values_chunk() and iterates over
@@ -357,8 +376,13 @@ class KernelScanRunner(ScanRunner):
                 if num_underflows >= self.max_rtio_underflow_retries:
                     raise
                 num_underflows += 1
-                print("Ignoring RTIOUnderflow (", num_underflows, "/",
-                      self.max_rtio_underflow_retries, ")")
+                print(
+                    "Ignoring RTIOUnderflow (",
+                    num_underflows,
+                    "/",
+                    self.max_rtio_underflow_retries,
+                    ")",
+                )
                 self._retry_point()
             except RestartKernelTransitoryError:
                 print("Caught transitory error, restarting kernel")
@@ -371,8 +395,13 @@ class KernelScanRunner(ScanRunner):
                         return False
                     raise
                 num_transitory_errors += 1
-                print("Caught transitory error (", num_transitory_errors, "/",
-                      self.max_transitory_error_retries, "), retrying")
+                print(
+                    "Caught transitory error (",
+                    num_transitory_errors,
+                    "/",
+                    self.max_transitory_error_retries,
+                    "), retrying",
+                )
                 self._retry_point()
         self._point_completed()
         return False
@@ -380,8 +409,7 @@ class KernelScanRunner(ScanRunner):
     @kernel
     def _should_pause(self) -> bool:
         current_time_mu = self.core.get_rtio_counter_mu()
-        if (current_time_mu - self._last_pause_check_mu >
-                self._pause_check_interval_mu):
+        if current_time_mu - self._last_pause_check_mu > self._pause_check_interval_mu:
             self._last_pause_check_mu = current_time_mu
             if self.scheduler.check_pause():
                 return True
@@ -398,7 +426,8 @@ class KernelScanRunner(ScanRunner):
         CHUNK_SIZE = 10
 
         self._current_chunk.extend(
-            islice(self._points, CHUNK_SIZE - len(self._current_chunk)))
+            islice(self._points, CHUNK_SIZE - len(self._current_chunk))
+        )
 
         values = tuple([] for _ in self._axes)
         for p in self._current_chunk:
@@ -408,8 +437,9 @@ class KernelScanRunner(ScanRunner):
                 # scans is implemented.
                 values[i].append(
                     axis.param_store.to_rpc_type(
-                        axis.param_store.coerce(
-                            axis.param_store.value_from_pyon(value))))
+                        axis.param_store.coerce(axis.param_store.value_from_pyon(value))
+                    )
+                )
         return values
 
     @rpc(flags={"async"})
@@ -487,8 +517,9 @@ def match_default_analysis(analysis: DefaultAnalysis, axes: Iterable[ScanAxis]) 
     return {a._store for a in analysis.required_axes()} == stores
 
 
-def filter_default_analyses(fragment: ExpFragment,
-                            axes: Iterable[ScanAxis]) -> list[DefaultAnalysis]:
+def filter_default_analyses(
+    fragment: ExpFragment, axes: Iterable[ScanAxis]
+) -> list[DefaultAnalysis]:
     """Return the default analyses of the given fragment that can be executed for the
     given scan spec.
 
@@ -501,14 +532,16 @@ def filter_default_analyses(fragment: ExpFragment,
             raise ValueError(
                 f"Unexpected get_default_analyses() return value for {fragment}: "
                 "Expected list of ndscan.experiment.DefaultAnalysis instances, got "
-                f"element of type '{analysis}'")
+                f"element of type '{analysis}'"
+            )
         if match_default_analysis(analysis, ax):
             result.append(analysis)
     return result
 
 
-def describe_scan(spec: ScanSpec, fragment: ExpFragment,
-                  short_result_names: dict[ResultChannel, str]) -> dict[str, Any]:
+def describe_scan(
+    spec: ScanSpec, fragment: ExpFragment, short_result_names: dict[ResultChannel, str]
+) -> dict[str, Any]:
     """Return metadata for the given spec in stringly typed dictionary form.
 
     :param spec: :class:`.ScanSpec` describing the scan.
@@ -518,10 +551,13 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
     desc = {}
 
     desc["fragment_fqn"] = fragment.fqn
-    axis_specs = [{
-        "param": ax.param_schema,
-        "path": ax.path,
-    } for ax in spec.axes]
+    axis_specs = [
+        {
+            "param": ax.param_schema,
+            "path": ax.path,
+        }
+        for ax in spec.axes
+    ]
     for ax, gen in zip(axis_specs, spec.generators):
         gen.describe_limits(ax)
 
@@ -532,14 +568,16 @@ def describe_scan(spec: ScanSpec, fragment: ExpFragment,
     # them; they should possibly just be ignored there.
     desc["channels"] = {
         name: channel.describe()
-        for (channel, name) in short_result_names.items() if channel.save_by_default
+        for (channel, name) in short_result_names.items()
+        if channel.save_by_default
     }
 
     return desc
 
 
-def describe_analyses(analyses: Iterable[DefaultAnalysis],
-                      context: AnnotationContext) -> dict[str, Any]:
+def describe_analyses(
+    analyses: Iterable[DefaultAnalysis], context: AnnotationContext
+) -> dict[str, Any]:
     """Return metadata for the given analyses in stringly typed dictionary form.
 
     :param analyses: The :class:`.DefaultAnalysis` objects to describe (already filtered
@@ -560,6 +598,7 @@ def describe_analyses(analyses: Iterable[DefaultAnalysis],
         for name, spec in online_analyses.items():
             if name in desc["online_analyses"]:
                 raise ValueError(
-                    f"An online analysis with name '{name}' already exists")
+                    f"An online analysis with name '{name}' already exists"
+                )
             desc["online_analyses"][name] = spec
     return desc

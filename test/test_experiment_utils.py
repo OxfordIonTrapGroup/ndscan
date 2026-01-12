@@ -1,5 +1,7 @@
 import unittest
+
 from artiq.language import kernel
+
 from ndscan.experiment.utils import is_kernel, path_matches_spec
 
 

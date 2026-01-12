@@ -11,15 +11,23 @@ with the appropriate type argument (:class:`FloatParam`, :class:`IntParam`,
 # but to hang our heads in shame and manually instantiate the parameter handling
 # machinery for all supported value types, in particular to handle cases where e.g.
 # both an int and a float parameter is scanned at the same time.
-from artiq.language import host_only, portable, units
 from enum import Enum
+from typing import TYPE_CHECKING, Any
+
+from artiq.language import host_only, portable, units
 from numpy import int32
-from typing import Any, TYPE_CHECKING
-from ..utils import eval_param_default, GetDataset
+
+from ..utils import GetDataset, eval_param_default
 
 __all__ = [
-    "InvalidDefaultError", "ParamStore", "ParamHandle", "FloatParam", "IntParam",
-    "StringParam", "BoolParam", "EnumParam"
+    "InvalidDefaultError",
+    "ParamStore",
+    "ParamHandle",
+    "FloatParam",
+    "IntParam",
+    "StringParam",
+    "BoolParam",
+    "EnumParam",
 ]
 
 if TYPE_CHECKING:
@@ -37,6 +45,7 @@ class ParamStore:
         store, i.e. the override/default value it was created for.
     :param value: The initial value.
     """
+
     def __init__(self, identity: tuple[str, str], value):
         self.identity = identity
 
@@ -95,8 +104,7 @@ class ParamStore:
 
     @classmethod
     def value_from_pyon(cls, value):
-        """
-        """
+        """ """
         return value
 
 
@@ -242,6 +250,7 @@ class ParamHandle:
     :param parameter: The parameter initially associated with this handle (see
         :attr:`parameter`).
     """
+
     def __init__(self, owner: "Fragment", name: str, parameter):
         #: The :class:`Fragment` owning this parameter handle.
         self.owner = owner
@@ -254,15 +263,16 @@ class ParamHandle:
         #: binding of the parameter.
         self.parameter = parameter
 
-        assert name.isidentifier(), ("ParamHandle name should be the identifier it is "
-                                     "referred to as in the owning fragment.")
+        assert name.isidentifier(), (
+            "ParamHandle name should be the identifier it is "
+            "referred to as in the owning fragment."
+        )
 
         self._store = None
         self._changed_after_use = True
 
     def set_store(self, store: ParamStore) -> None:
-        """
-        """
+        """ """
         if self._store:
             self._store._unregister_handle(self)
         store._register_handle(self)
@@ -271,8 +281,7 @@ class ParamHandle:
 
     @portable
     def changed_after_use(self) -> bool:
-        """
-        """
+        """ """
         return self._changed_after_use
 
 
@@ -328,8 +337,9 @@ def resolve_numeric_scale(scale: float | None, unit: str) -> float:
     try:
         return getattr(units, unit)
     except AttributeError:
-        raise KeyError("Unit '{}' is unknown, you must specify "
-                       "the scale manually".format(unit))
+        raise KeyError(
+            "Unit '{}' is unknown, you must specify the scale manually".format(unit)
+        )
 
 
 class ParamBase:
@@ -343,51 +353,50 @@ class ParamBase:
             setattr(self, k, v)
 
     def describe(self) -> dict[str, Any]:
-        """
-        """
+        """ """
         raise NotImplementedError
 
     def eval_default(self, get_dataset: GetDataset) -> Any:
-        """
-        """
+        """ """
         raise NotImplementedError
 
     def make_store(self, identity: tuple[str, str], value: float) -> ParamStore:
-        """
-        """
+        """ """
         raise NotImplementedError
 
 
 class FloatParam(ParamBase):
-    """
-    """
+    """ """
 
     HandleType = FloatParamHandle
     StoreType = FloatParamStore
     CompilerType = float  # deprecated (not used in ndscan anymore); will go away
 
-    def __init__(self,
-                 fqn: str,
-                 description: str,
-                 default: str | float,
-                 *,
-                 min: float | None = None,
-                 max: float | None = None,
-                 unit: str = "",
-                 scale: float | None = None,
-                 step: float | None = None,
-                 is_scannable: bool = True):
-
-        ParamBase.__init__(self,
-                           fqn=fqn,
-                           description=description,
-                           default=default,
-                           min=min,
-                           max=max,
-                           unit=unit,
-                           scale=scale,
-                           step=step,
-                           is_scannable=is_scannable)
+    def __init__(
+        self,
+        fqn: str,
+        description: str,
+        default: str | float,
+        *,
+        min: float | None = None,
+        max: float | None = None,
+        unit: str = "",
+        scale: float | None = None,
+        step: float | None = None,
+        is_scannable: bool = True,
+    ):
+        ParamBase.__init__(
+            self,
+            fqn=fqn,
+            description=description,
+            default=default,
+            min=min,
+            max=max,
+            unit=unit,
+            scale=scale,
+            step=step,
+            is_scannable=is_scannable,
+        )
         self.scale = resolve_numeric_scale(scale, unit)
         self.step = step if step is not None else self.scale / 10.0
 
@@ -396,7 +405,7 @@ class FloatParam(ParamBase):
         spec = {
             "is_scannable": self.is_scannable,
             "scale": self.scale,
-            "step": self.step
+            "step": self.step,
         }
         if self.min is not None:
             spec["min"] = self.min
@@ -423,45 +432,50 @@ class FloatParam(ParamBase):
         """"""
         if self.min is not None and value < self.min:
             raise InvalidDefaultError(
-                f"Value {value} for parameter {self.fqn} below minimum of {self.min}")
+                f"Value {value} for parameter {self.fqn} below minimum of {self.min}"
+            )
         if self.max is not None and value > self.max:
             raise InvalidDefaultError(
-                f"Value {value} for parameter {self.fqn} above maximum of {self.max}")
+                f"Value {value} for parameter {self.fqn} above maximum of {self.max}"
+            )
         return FloatParamStore(identity, value)
 
 
 class IntParam(ParamBase):
-    """
-    """
+    """ """
 
     HandleType = IntParamHandle
     StoreType = IntParamStore
     CompilerType = int32  # deprecated (not used in ndscan anymore); will go away
 
-    def __init__(self,
-                 fqn: str,
-                 description: str,
-                 default: str | int,
-                 *,
-                 min: int | None = 0,
-                 max: int | None = None,
-                 unit: str = "",
-                 scale: int | None = None,
-                 is_scannable: bool = True):
-
-        ParamBase.__init__(self,
-                           fqn=fqn,
-                           description=description,
-                           default=default,
-                           min=min,
-                           max=max,
-                           unit=unit,
-                           scale=scale,
-                           is_scannable=is_scannable)
+    def __init__(
+        self,
+        fqn: str,
+        description: str,
+        default: str | int,
+        *,
+        min: int | None = 0,
+        max: int | None = None,
+        unit: str = "",
+        scale: int | None = None,
+        is_scannable: bool = True,
+    ):
+        ParamBase.__init__(
+            self,
+            fqn=fqn,
+            description=description,
+            default=default,
+            min=min,
+            max=max,
+            unit=unit,
+            scale=scale,
+            is_scannable=is_scannable,
+        )
         self.scale = resolve_numeric_scale(scale, unit)
         if self.scale != 1:
             raise NotImplementedError(
-                "Non-unity scales not implemented for integer parameters")
+                "Non-unity scales not implemented for integer parameters"
+            )
 
         self.is_scannable = is_scannable
 
@@ -479,7 +493,7 @@ class IntParam(ParamBase):
             "description": self.description,
             "type": "int",
             "default": str(self.default),
-            "spec": spec
+            "spec": spec,
         }
 
     def eval_default(self, get_dataset: GetDataset) -> int:
@@ -492,10 +506,12 @@ class IntParam(ParamBase):
         """"""
         if self.min is not None and value < self.min:
             raise InvalidDefaultError(
-                f"Value {value} for parameter {self.fqn} below minimum of {self.min}")
+                f"Value {value} for parameter {self.fqn} below minimum of {self.min}"
+            )
         if self.max is not None and value > self.max:
             raise InvalidDefaultError(
-                f"Value {value} for parameter {self.fqn} above maximum of {self.max}")
+                f"Value {value} for parameter {self.fqn} above maximum of {self.max}"
+            )
 
         return IntParamStore(identity, value)
 
@@ -505,18 +521,15 @@ def _raise_not_implemented(*args):
 
 
 class StringParam(ParamBase):
-    """
-    """
+    """ """
 
     HandleType = StringParamHandle
     StoreType = StringParamStore
     CompilerType = str  # deprecated (not used in ndscan anymore); will go away
 
-    def __init__(self,
-                 fqn: str,
-                 description: str,
-                 default: str,
-                 is_scannable: bool = True):
+    def __init__(
+        self, fqn: str, description: str, default: str, is_scannable: bool = True
+    ):
         try:
             eval_param_default(default, _raise_not_implemented)
         except NotImplementedError:
@@ -528,13 +541,16 @@ class StringParam(ParamBase):
             # error is likely to be missing quotes. Also do not chain this onto the
             # eval() error, as that does not add any extra information.
             raise InvalidDefaultError(
-                "Default value for StringParam must be valid PYON, missing quotes? " +
-                f"(got: {default})") from None
-        ParamBase.__init__(self,
-                           fqn=fqn,
-                           description=description,
-                           default=default,
-                           is_scannable=is_scannable)
+                "Default value for StringParam must be valid PYON, missing quotes? "
+                + f"(got: {default})"
+            ) from None
+        ParamBase.__init__(
+            self,
+            fqn=fqn,
+            description=description,
+            default=default,
+            is_scannable=is_scannable,
+        )
 
     def describe(self) -> dict[str, Any]:
         """"""
@@ -543,9 +559,7 @@ class StringParam(ParamBase):
             "description": self.description,
             "type": "string",
             "default": str(self.default),
-            "spec": {
-                "is_scannable": self.is_scannable
-            }
+            "spec": {"is_scannable": self.is_scannable},
         }
 
     def eval_default(self, get_dataset: GetDataset) -> str:
@@ -558,22 +572,18 @@ class StringParam(ParamBase):
 
 
 class BoolParam(ParamBase):
-    """
-    """
+    """ """
 
     HandleType = BoolParamHandle
     StoreType = BoolParamStore
     CompilerType = bool  # deprecated (not used in ndscan anymore); will go away
 
-    def __init__(self,
-                 fqn: str,
-                 description: str,
-                 default: str | bool,
-                 is_scannable: bool = True):
-        super().__init__(fqn=fqn,
-                         description=description,
-                         default=default,
-                         is_scannable=is_scannable)
+    def __init__(
+        self, fqn: str, description: str, default: str | bool, is_scannable: bool = True
+    ):
+        super().__init__(
+            fqn=fqn, description=description, default=default, is_scannable=is_scannable
+        )
 
     def describe(self) -> dict[str, Any]:
         """"""
@@ -582,9 +592,7 @@ class BoolParam(ParamBase):
             "description": self.description,
             "type": "bool",
             "default": str(self.default),
-            "spec": {
-                "is_scannable": self.is_scannable
-            }
+            "spec": {"is_scannable": self.is_scannable},
         }
 
     def eval_default(self, get_dataset: GetDataset) -> bool:
@@ -602,7 +610,8 @@ _enum_compiler_type_cache = {}
 
 
 def _get_enum_compiler_types(
-        enum_type: type[Enum]) -> tuple[type[ParamStore], type[ParamHandle]]:
+    enum_type: type[Enum],
+) -> tuple[type[ParamStore], type[ParamHandle]]:
     if enum_type not in _enum_compiler_type_cache:
         # Cannot have `-> enum_type` annotations on get_value()/get()/use() here, as
         # this gives an "is not an ARTIQ type" error (despite working just fine when
@@ -666,26 +675,29 @@ def _get_enum_compiler_types(
 
 
 class EnumParam(ParamBase):
-    """
-    """
+    """ """
 
     # EnumParam can't support HandleType/StoreType as class attributes, as we need
     # one class per actual enum type
 
-    def __init__(self,
-                 fqn: str,
-                 description: str,
-                 default: Enum | str,
-                 enum_class: type[Enum] | None = None,
-                 is_scannable: bool = True):
+    def __init__(
+        self,
+        fqn: str,
+        description: str,
+        default: Enum | str,
+        enum_class: type[Enum] | None = None,
+        is_scannable: bool = True,
+    ):
         if enum_class is None:
             if isinstance(default, Enum):
                 enum_class = type(default)
             elif isinstance(default, str):
                 raise ValueError("enum_class must be specified if default is a string")
             else:
-                raise InvalidDefaultError("Unexpected default for EnumParam " +
-                                          f"'{default}' (type {type(default)})")
+                raise InvalidDefaultError(
+                    "Unexpected default for EnumParam "
+                    + f"'{default}' (type {type(default)})"
+                )
         if isinstance(default, str):
             try:
                 enum_class[eval_param_default(default, _raise_not_implemented)]
@@ -694,15 +706,18 @@ class EnumParam(ParamBase):
                 pass
             except Exception:
                 raise InvalidDefaultError(
-                    "str default values for EnumParm must be valid PYON strings " +
-                    "(including quotes) that evaluate to the name of an enum member " +
-                    f"(got: \"{default}\")")
+                    "str default values for EnumParm must be valid PYON strings "
+                    + "(including quotes) that evaluate to the name of an enum member "
+                    + f'(got: "{default}")'
+                )
         self.StoreType, self.HandleType = _get_enum_compiler_types(enum_class)
-        super().__init__(fqn=fqn,
-                         description=description,
-                         default=default,
-                         enum_class=enum_class,
-                         is_scannable=is_scannable)
+        super().__init__(
+            fqn=fqn,
+            description=description,
+            default=default,
+            enum_class=enum_class,
+            is_scannable=is_scannable,
+        )
 
     def describe(self) -> dict[str, Any]:
         """"""
@@ -724,10 +739,7 @@ class EnumParam(ParamBase):
             "description": self.description,
             "type": "enum",
             "default": default,
-            "spec": {
-                "members": members,
-                "is_scannable": self.is_scannable
-            }
+            "spec": {"members": members, "is_scannable": self.is_scannable},
         }
 
     def eval_default(self, get_dataset: GetDataset) -> Enum:
@@ -739,8 +751,10 @@ class EnumParam(ParamBase):
                     return self.enum_class[value]
                 if isinstance(value, self.enum_class):
                     return value
-                raise InvalidDefaultError("Unexpected default for EnumParam " +
-                                          f"'{value}' (type {type(value)})")
+                raise InvalidDefaultError(
+                    "Unexpected default for EnumParam "
+                    + f"'{value}' (type {type(value)})"
+                )
 
             # Converting the overall result rather than wrapping get_dataset is a bit
             # overly permissive in that it also allows "'foo'" to refer to Foo.foo,

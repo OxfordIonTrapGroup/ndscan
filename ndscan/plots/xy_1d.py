@@ -1,8 +1,9 @@
 import logging
-import numpy as np
-import pyqtgraph
 from collections import defaultdict
 from typing import NamedTuple
+
+import numpy as np
+import pyqtgraph
 
 from .._qt import QtCore
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
@@ -10,14 +11,28 @@ from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import (SubplotMenuPanesWidget, build_channel_selection_context_menu,
-                           add_source_id_label)
-from .utils import (call_later, extract_linked_datasets, extract_scalar_channels,
-                    get_default_hidden_channels, format_param_identity,
-                    group_channels_into_axes, group_axes_into_panes,
-                    hide_series_from_groups, get_axis_scaling_info, setup_axis_item,
-                    FIT_COLORS, SERIES_COLORS, HIGHLIGHT_PEN, enum_to_numeric,
-                    find_neighbour_index)
+from .plot_widgets import (
+    SubplotMenuPanesWidget,
+    add_source_id_label,
+    build_channel_selection_context_menu,
+)
+from .utils import (
+    FIT_COLORS,
+    HIGHLIGHT_PEN,
+    SERIES_COLORS,
+    call_later,
+    enum_to_numeric,
+    extract_linked_datasets,
+    extract_scalar_channels,
+    find_neighbour_index,
+    format_param_identity,
+    get_axis_scaling_info,
+    get_default_hidden_channels,
+    group_axes_into_panes,
+    group_channels_into_axes,
+    hide_series_from_groups,
+    setup_axis_item,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +40,7 @@ logger = logging.getLogger(__name__)
 class SourcePoint(NamedTuple):
     """For point averaging, keeps track of individual points in the source data (as
     opposed to the points derived from averaging)."""
+
     y: float
     y_err: float | None
     source_idx: int
@@ -55,8 +71,17 @@ def combined_uncertainty(points: list[SourcePoint], num_samples_per_point=1):
 
 
 class _XYSeries(QtCore.QObject):
-    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item,
-                 highlight_item, series_idx, pane_idx):
+    def __init__(
+        self,
+        view_box,
+        data_name,
+        data_item,
+        error_bar_name,
+        error_bar_item,
+        highlight_item,
+        series_idx,
+        pane_idx,
+    ):
         super().__init__(view_box)
 
         self.view_box = view_box
@@ -92,14 +117,17 @@ class _XYSeries(QtCore.QObject):
             num_to_show = min(num_to_show, len(y_err))
 
         # If nothing has changed, skip the update.
-        if (num_to_show == self.num_current_points
-                and averaging_enabled == self.averaging_enabled):
+        if (
+            num_to_show == self.num_current_points
+            and averaging_enabled == self.averaging_enabled
+        ):
             return
 
         # Combine points with same coordinates if enabled.
         if averaging_enabled:
             x_data, y_data, y_err, source_idxs = self._average_add_points(
-                num_to_show, x_data, y_data, y_err)
+                num_to_show, x_data, y_data, y_err
+            )
         else:
             x_data = x_data[:num_to_show]
             y_data = y_data[:num_to_show]
@@ -133,8 +161,10 @@ class _XYSeries(QtCore.QObject):
 
             # The only point at which ignoreBounds can be specified in current pyqtgraph
             # seems to be when adding the item, so remove it if we need to toggle it.
-            if (error_bars_huge != self.error_bar_bounds_ignored
-                    and self.error_bar_item.parentItem()):
+            if (
+                error_bars_huge != self.error_bar_bounds_ignored
+                and self.error_bar_item.parentItem()
+            ):
                 self.view_box.removeItem(self.error_bar_item)
 
             if not self.error_bar_item.parentItem():
@@ -164,9 +194,10 @@ class _XYSeries(QtCore.QObject):
         start_idx = sum(len(v) for v in self.source_points_by_x.values())
         for i in range(start_idx, num_to_show):
             self.source_points_by_x[x_data[i]].append(
-                SourcePoint(y=y_data[i],
-                            y_err=None if y_err is None else y_err[i],
-                            source_idx=i))
+                SourcePoint(
+                    y=y_data[i], y_err=None if y_err is None else y_err[i], source_idx=i
+                )
+            )
 
         # Average over values with same coordinate.
         x_data = np.array(list(self.source_points_by_x.keys()))
@@ -175,15 +206,19 @@ class _XYSeries(QtCore.QObject):
         # same distribution, and 2) the number of samples per point are equal for all
         # points -- see ``combined_uncertainty()``.
         y_data = np.array(
-            [np.nanmean([p.y for p in self.source_points_by_x[x]]) for x in x_data])
+            [np.nanmean([p.y for p in self.source_points_by_x[x]]) for x in x_data]
+        )
         y_err = np.array(
-            [combined_uncertainty(self.source_points_by_x[x]) for x in x_data])
+            [combined_uncertainty(self.source_points_by_x[x]) for x in x_data]
+        )
 
         # We can only ascribe a single source index to the data if there wasn't any
         # actual averaging.
         source_idxs = [
             self.source_points_by_x[x][0].source_idx
-            if len(self.source_points_by_x[x]) == 1 else None for x in x_data
+            if len(self.source_points_by_x[x]) == 1
+            else None
+            for x in x_data
         ]
 
         return x_data, y_data, y_err, source_idxs
@@ -203,9 +238,11 @@ class _XYSeries(QtCore.QObject):
         if not self.highlight_item.parentItem():
             return None
 
-        return find_neighbour_index(values=self.data_item.getData()[0],
-                                    current_idx=self.highlight_item.data["data"][0],
-                                    step=step)
+        return find_neighbour_index(
+            values=self.data_item.getData()[0],
+            current_idx=self.highlight_item.data["data"][0],
+            step=step,
+        )
 
 
 class XY1DPlotWidget(SubplotMenuPanesWidget):
@@ -218,10 +255,10 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         # just connect to the model without worrying about what happens after the C++
         # part of the object is destructed, as the signals are automatically
         # disconnected.
-        self.model.channel_schemata_changed.connect(self._initialise_series),
-        self.model.points_appended.connect(self._update_points),
-        self.model.annotations_changed.connect(self._update_annotations),
-        self.model.points_rewritten.connect(self._rewrite),
+        (self.model.channel_schemata_changed.connect(self._initialise_series),)
+        (self.model.points_appended.connect(self._update_points),)
+        (self.model.annotations_changed.connect(self._update_annotations),)
+        (self.model.points_rewritten.connect(self._rewrite),)
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
 
@@ -234,7 +271,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.x_schema = self.model.axes[0]
         self.x_param_spec = self.x_schema["param"]["spec"]
         self.x_unit_suffix, self.x_data_to_display_scale = get_axis_scaling_info(
-            self.x_param_spec)
+            self.x_param_spec
+        )
 
         self.crosshairs = []
         self._highlighted_spot = None
@@ -281,7 +319,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         panes_axes = group_axes_into_panes(channels, axes)
         if self.hidden_channels is None:
             self.hidden_channels = get_default_hidden_channels(
-                channels, self.data_names)
+                channels, self.data_names
+            )
         panes_axes_shown = hide_series_from_groups(panes_axes, self.hidden_channels)
 
         highlight_pen = pyqtgraph.mkPen(**HIGHLIGHT_PEN)
@@ -294,14 +333,14 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 view_box.scene().sigMouseClicked.connect(self._handle_scene_click)
 
                 info = []
-                for (series_idx, name) in series:
+                for series_idx, name in series:
                     color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
                     data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=5)
                     data_item.sigClicked.connect(self._point_clicked)
 
-                    highlight_item = pyqtgraph.ScatterPlotItem(pen=highlight_pen,
-                                                               brush=None,
-                                                               size=8)
+                    highlight_item = pyqtgraph.ScatterPlotItem(
+                        pen=highlight_pen, brush=None, size=8
+                    )
                     highlight_item.setZValue(2)  # Show above all other points.
 
                     error_bar_name = error_bar_names.get(name, None)
@@ -310,25 +349,37 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                     error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
                     self.series.append(
-                        _XYSeries(view_box, name, data_item, error_bar_name,
-                                  error_bar_item, highlight_item, series_idx,
-                                  len(self.panes) - 1))
+                        _XYSeries(
+                            view_box,
+                            name,
+                            data_item,
+                            error_bar_name,
+                            error_bar_item,
+                            highlight_item,
+                            series_idx,
+                            len(self.panes) - 1,
+                        )
+                    )
 
                     channel = channels[name]
                     label = channel["description"]
                     if not label:
                         label = channel["path"].split("/")[-1]
                     info.append(
-                        (label, channel["path"], channel["type"], color, channel))
+                        (label, channel["path"], channel["type"], color, channel)
+                    )
 
                 crosshair_label_args = setup_axis_item(axis, info)
                 crosshair_labels.extend(
-                    [CrosshairAxisLabel(view_box, *a) for a in crosshair_label_args])
+                    [CrosshairAxisLabel(view_box, *a) for a in crosshair_label_args]
+                )
 
-            x_label = CrosshairAxisLabel(pane.getViewBox(),
-                                         self.x_unit_suffix,
-                                         self.x_data_to_display_scale,
-                                         is_x=True)
+            x_label = CrosshairAxisLabel(
+                pane.getViewBox(),
+                self.x_unit_suffix,
+                self.x_data_to_display_scale,
+                is_x=True,
+            )
             crosshair_labels = [x_label] + crosshair_labels
             crosshair = LabeledCrosshairCursor(self, pane, crosshair_labels)
             self.crosshairs.append(crosshair)
@@ -338,10 +389,18 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         add_source_id_label(self.panes[-1].getViewBox(), self.model.context)
 
-        setup_axis_item(self.panes[-1].getAxis("bottom"), [
-            (self.x_schema["param"]["description"], format_param_identity(
-                self.x_schema), self.x_schema["param"]["type"], None, self.x_param_spec)
-        ])
+        setup_axis_item(
+            self.panes[-1].getAxis("bottom"),
+            [
+                (
+                    self.x_schema["param"]["description"],
+                    format_param_identity(self.x_schema),
+                    self.x_schema["param"]["type"],
+                    None,
+                    self.x_param_spec,
+                )
+            ],
+        )
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -358,7 +417,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         # If all points were unique so far, check if we have duplicates now.
         if not self.found_duplicate_x_data:
-            for x in x_data[len(self.unique_x_data):]:
+            for x in x_data[len(self.unique_x_data) :]:
                 if x in self.unique_x_data:
                     self.found_duplicate_x_data = True
                     break
@@ -458,8 +517,11 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                         self.annotation_items.append(item)
 
             else:
-                logger.info("Ignoring annotation of kind '%s' with coordinates %s",
-                            a.kind, list(a.coordinates.keys()))
+                logger.info(
+                    "Ignoring annotation of kind '%s' with coordinates %s",
+                    a.kind,
+                    list(a.coordinates.keys()),
+                )
 
     def build_context_menu(self, pane_idx: int | None, builder):
         x_schema = self.model.axes[0]
@@ -468,7 +530,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             for d in extract_linked_datasets(x_schema["param"]):
                 action = builder.append_action(f"Set '{d}' from crosshair")
                 action.triggered.connect(
-                    lambda *a, d=d: self._set_dataset_from_crosshair_x(pane_idx, d))
+                    lambda *a, d=d: self._set_dataset_from_crosshair_x(pane_idx, d)
+                )
             builder.ensure_separator()
 
         if self.found_duplicate_x_data:
@@ -476,13 +539,17 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             action.setCheckable(True)
             action.setChecked(self.averaging_enabled)
             action.triggered.connect(
-                lambda *a: self.enable_averaging(not self.averaging_enabled))
+                lambda *a: self.enable_averaging(not self.averaging_enabled)
+            )
             builder.ensure_separator()
 
         if len(self.data_names) > 1:
             build_channel_selection_context_menu(
-                builder, lambda: self._rewrite(self.model.get_point_data()),
-                self.data_names, self.hidden_channels)
+                builder,
+                lambda: self._rewrite(self.model.get_point_data()),
+                self.data_names,
+                self.hidden_channels,
+            )
             builder.ensure_separator()
 
         super().build_context_menu(pane_idx, builder)
@@ -496,8 +563,9 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
         # The x crosshair is always the first item (see `_initialise_series()`).
-        self.model.context.set_dataset(dataset_key,
-                                       self.crosshairs[pane_idx].labels[0].last_value)
+        self.model.context.set_dataset(
+            dataset_key, self.crosshairs[pane_idx].labels[0].last_value
+        )
 
     def _point_clicked(self, scatter_plot_item, spot_items: np.ndarray, ev):
         if len(spot_items) == 0:

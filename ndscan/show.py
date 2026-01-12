@@ -1,18 +1,19 @@
 """Standalone tool to show ndscan plots from ARTIQ HDF5 results files."""
 
-import asyncio
 import argparse
+import asyncio
+import os
+import sys
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import h5py
-import os
-import sys
-from oitg import results
-from sipyco import pyon
-from qasync import QEventLoop, QtWidgets
 
-from .plots.container_widgets import PlotAreaWidget, PlotAreaTabWidget
+import h5py
+from oitg import results
+from qasync import QEventLoop, QtWidgets
+from sipyco import pyon
+
+from .plots.container_widgets import PlotAreaTabWidget, PlotAreaWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
 from .results.arguments import extract_param_schema, summarise
@@ -52,15 +53,18 @@ def get_argparser():
         epilog=(
             "Instead of a file name, just a run id or 'magic' source string can be "
             "supplied, which is then resolved using oitg.results (e.g. 'alice_12345', "
-            "or just '12345' to infer the experiment name from the environment)."))
-    parser.add_argument("--prefix",
-                        default=None,
-                        type=str,
-                        help="Prefix of root in dataset tree (default: auto-detect)")
-    parser.add_argument("path",
-                        metavar="FILE",
-                        type=str,
-                        help="Path to HDF5 results file")
+            "or just '12345' to infer the experiment name from the environment)."
+        ),
+    )
+    parser.add_argument(
+        "--prefix",
+        default=None,
+        type=str,
+        help="Prefix of root in dataset tree (default: auto-detect)",
+    )
+    parser.add_argument(
+        "path", metavar="FILE", type=str, help="Path to HDF5 results file"
+    )
     return parser
 
 
@@ -83,8 +87,11 @@ def load_h5(args):
     if magic_spec is not None:
         paths = results.find_results(day="auto", **magic_spec)
         if len(paths) != 1:
-            QtWidgets.QMessageBox.critical(None, "Unable to resolve experiment path",
-                                           f"Could not resolve '{args.path}: {paths}'")
+            QtWidgets.QMessageBox.critical(
+                None,
+                "Unable to resolve experiment path",
+                f"Could not resolve '{args.path}: {paths}'",
+            )
             sys.exit(1)
         path = next(iter(paths.values())).path
     else:
@@ -100,8 +107,10 @@ def load_h5(args):
         datasets = file["datasets"]
     except KeyError:
         QtWidgets.QMessageBox.critical(
-            None, "Not an ARTIQ results file",
-            f"No ARTIQ dataset records found in file: '{args.path}'")
+            None,
+            "Not an ARTIQ results file",
+            f"No ARTIQ dataset records found in file: '{args.path}'",
+        )
         sys.exit(1)
 
     prefix = fetch_explicit_prefix(args)
@@ -113,17 +122,22 @@ def load_h5(args):
             datasets[prefix + "axes"][()]
         except KeyError:
             QtWidgets.QMessageBox.critical(
-                None, "Not an ndscan file",
+                None,
+                "Not an ndscan file",
                 "Datasets '{}*' in file '{}' do not look like ndscan results.".format(
-                    prefix, args.path))
+                    prefix, args.path
+                ),
+            )
             sys.exit(1)
         prefixes = [prefix]
     else:
         prefixes = find_ndscan_roots(datasets)
         if not prefixes:
             QtWidgets.QMessageBox.critical(
-                None, "Not an ndscan file",
-                f"No ndscan result datasets found in file: '{args.path}'")
+                None,
+                "Not an ndscan file",
+                f"No ndscan result datasets found in file: '{args.path}'",
+            )
             sys.exit(1)
 
     expid = pyon.decode(file["expid"][()])
@@ -134,11 +148,13 @@ def load_h5(args):
         print()
         schema = None
 
-    artiq_metadata = ArtiqMetadata(rid=file["rid"][()],
-                                   start_time=file["start_time"][()],
-                                   run_time=file["run_time"][()],
-                                   artiq_version=file["artiq_version"][()].decode(),
-                                   class_name=expid["class_name"])
+    artiq_metadata = ArtiqMetadata(
+        rid=file["rid"][()],
+        start_time=file["start_time"][()],
+        run_time=file["run_time"][()],
+        artiq_version=file["artiq_version"][()].decode(),
+        class_name=expid["class_name"],
+    )
 
     return path, datasets, prefixes, schema, artiq_metadata
 
@@ -164,23 +180,30 @@ def main():
 
         roots = [HDF5Root(datasets, p, context) for p in prefixes]
     except Exception as e:
-        QtWidgets.QMessageBox.critical(None, "Error parsing ndscan file",
-                                       f"Error parsing datasets in '{args.path}': {e}")
+        QtWidgets.QMessageBox.critical(
+            None,
+            "Error parsing ndscan file",
+            f"Error parsing datasets in '{args.path}': {e}",
+        )
         sys.exit(2)
 
     if len(roots) == 1:
         widget = PlotAreaWidget(roots[0], context)
     else:
         label_map = shorten_to_unambiguous_suffixes(
-            prefixes, lambda fqn, n: ".".join(fqn.split(".")[-(n + 1):]))
+            prefixes, lambda fqn, n: ".".join(fqn.split(".")[-(n + 1) :])
+        )
         widget = PlotAreaTabWidget(
-            OrderedDict(zip((strip_suffix(label_map[p], ".") for p in prefixes),
-                            roots)), context)
+            OrderedDict(
+                zip((strip_suffix(label_map[p], ".") for p in prefixes), roots)
+            ),
+            context,
+        )
     widget.setWindowTitle(f"{context.get_title()} – ndscan.show")
     widget.show()
     widget.resize(800, 600)
     sys.exit(app.exec())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

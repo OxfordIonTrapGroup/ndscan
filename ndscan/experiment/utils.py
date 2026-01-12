@@ -1,7 +1,8 @@
 import json
-import numpy
 from collections.abc import Iterable
 from typing import Any
+
+import numpy
 
 
 def path_matches_spec(path: Iterable[str], spec: str) -> bool:
@@ -10,7 +11,8 @@ def path_matches_spec(path: Iterable[str], spec: str) -> bool:
         return True
     if "*" in spec:
         raise NotImplementedError(
-            "Non-trivial wildcard path specifications not implemented yet")
+            "Non-trivial wildcard path specifications not implemented yet"
+        )
     return "/".join(path) == spec
 
 

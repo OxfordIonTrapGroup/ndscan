@@ -2,9 +2,12 @@
 Functions for pretty-printing user argument data (scan parameters, overrides, …) for
 FragmentScanExperiments from ARTIQ results.
 """
+
 from collections.abc import Iterable
 from typing import Any
+
 from sipyco import pyon
+
 from ..utils import PARAMS_ARG_KEY
 
 
@@ -43,8 +46,9 @@ def dump_overrides(schema: dict[str, Any]) -> Iterable[str]:
             yield f"   ({fqn}@{path})"
 
 
-def format_scan_range(typ: str, rang: dict[str, Any], param_spec: dict[str,
-                                                                       Any]) -> str:
+def format_scan_range(
+    typ: str, rang: dict[str, Any], param_spec: dict[str, Any]
+) -> str:
     if typ == "linear":
         start = format_numeric(rang["start"], param_spec["spec"])
         stop = format_numeric(rang["stop"], param_spec["spec"])

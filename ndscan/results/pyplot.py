@@ -5,26 +5,27 @@ These are not intended to be a fully-featured replacement for ``ndscan.plots``, 
 quick way to peek at data in a Matplotlib-centric workflow where pyqtgraph might not be
 available.
 """
+
 import json
+from typing import Any
+
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Any
+
 from ..plots.utils import extract_scalar_channels
 from .tools import find_ndscan_roots
 
 
-def make_default_1d_plot(datasets: dict[str, Any],
-                         root: str,
-                         figure,
-                         *,
-                         channel_filter=lambda name: True):
+def make_default_1d_plot(
+    datasets: dict[str, Any], root: str, figure, *, channel_filter=lambda name: True
+):
     def ds(key, is_json=False):
         val = datasets[root + key]
         if is_json:
             return json.loads(val)
         return val
 
-    axis_schema, = ds("axes", is_json=True)
+    (axis_schema,) = ds("axes", is_json=True)
     x_schema = axis_schema["param"]
     x_label = x_schema["description"]
     x_unit = x_schema["spec"].get("unit", "")
@@ -61,16 +62,20 @@ def make_default_1d_plot(datasets: dict[str, Any],
         else:
             # Plot error bars, except where they are huge.
             sensible_errs = np.abs(y_errs[ascending]) < 5 * np.median(y_errs)
-            plt_axis.errorbar(x_vals[ascending][sensible_errs],
-                              y_vals[ascending][sensible_errs],
-                              yerr=y_errs[ascending][sensible_errs],
-                              fmt="o",
-                              markersize=2)
-            plt_axis.plot(x_vals[ascending][~sensible_errs],
-                          y_vals[ascending][~sensible_errs],
-                          "o",
-                          markersize=2,
-                          color="r")
+            plt_axis.errorbar(
+                x_vals[ascending][sensible_errs],
+                y_vals[ascending][sensible_errs],
+                yerr=y_errs[ascending][sensible_errs],
+                fmt="o",
+                markersize=2,
+            )
+            plt_axis.plot(
+                x_vals[ascending][~sensible_errs],
+                y_vals[ascending][~sensible_errs],
+                "o",
+                markersize=2,
+                color="r",
+            )
 
         plt_axis.set_ylabel(y_label)
 
@@ -80,11 +85,9 @@ def make_default_1d_plot(datasets: dict[str, Any],
     plt_axes[0].set_title(title)
 
 
-def make_default_plot(datasets: dict[str, Any],
-                      root: str,
-                      figure,
-                      *,
-                      channel_filter=lambda name: True) -> None:
+def make_default_plot(
+    datasets: dict[str, Any], root: str, figure, *, channel_filter=lambda name: True
+) -> None:
     """Render a plot for the specified ndscan root to the given PyPlot figure.
 
     :param channel_filter: Called with the name for each result channel; if False, the
@@ -96,12 +99,14 @@ def make_default_plot(datasets: dict[str, Any],
     else:
         raise NotImplementedError(
             "Default plots for {}-dimensional scans not yet implemented".format(
-                num_axes))
+                num_axes
+            )
+        )
 
 
-def auto_plot(datasets: dict[str, Any],
-              *,
-              channel_filter=lambda name: True) -> list[plt.Figure]:
+def auto_plot(
+    datasets: dict[str, Any], *, channel_filter=lambda name: True
+) -> list[plt.Figure]:
     """Display PyPlot figures for all the ndscan roots found among the passed datasets.
 
     :param channel_filter: Called with the name for each result channel; if False, the

@@ -1,18 +1,30 @@
 import html
 import logging
-import numpy as np
 from typing import Any
-from ..utils import eval_param_default
+
+import numpy as np
+
 from .._qt import QtCore
+from ..utils import eval_param_default
 
 logger = logging.getLogger(__name__)
 
 # ColorBrewer-inspired to use for data series (RGBA) and associated fit curves.
 SERIES_COLORS = [
-    "#d9d9d9bb", "#fdb462bb", "#80b1d3bb", "#fb8072bb", "#bebadabb", "#ffffb3bb"
+    "#d9d9d9bb",
+    "#fdb462bb",
+    "#80b1d3bb",
+    "#fb8072bb",
+    "#bebadabb",
+    "#ffffb3bb",
 ]
 FIT_COLORS = [
-    "#ff333399", "#fdb462dd", "#80b1d3dd", "#fb8072dd", "#bebadadd", "#ffffb3dd"
+    "#ff333399",
+    "#fdb462dd",
+    "#80b1d3dd",
+    "#fb8072dd",
+    "#bebadadd",
+    "#ffffb3dd",
 ]
 
 #: pyqtgraph mkPen spec for highlighting selected points.
@@ -24,7 +36,8 @@ def _get_priority(channel_metadata: dict[str, Any]):
 
 
 def extract_scalar_channels(
-        channels: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
+    channels: dict[str, Any],
+) -> tuple[list[str], dict[str, str]]:
     """Extract channels with scalar numerical values from the given channel metadata,
     also mapping error bar channels to their associated value channels.
 
@@ -36,8 +49,7 @@ def extract_scalar_channels(
         bars, if any.
     """
     data_names = {
-        name
-        for name, spec in channels.items() if spec["type"] in ["int", "float"]
+        name for name, spec in channels.items() if spec["type"] in ["int", "float"]
     }
 
     path_to_name = {channels[name]["path"]: name for name in data_names}
@@ -56,7 +68,8 @@ def extract_scalar_channels(
                 # Previously, this accepted the shortened name instead of the full path;
                 # suggest this to help users migrate.
                 msg += "; did you mean to specify the full path '{}'?".format(
-                    channels[name]["path"])
+                    channels[name]["path"]
+                )
             logger.warning(msg)
             # Still avoid to display the error bar channel, though (key is arbitrary).
             error_bar_names[err_path] = name
@@ -65,7 +78,9 @@ def extract_scalar_channels(
         if err_name in error_bar_names:
             raise ValueError(
                 "More than one set of error bars specified for channel '{}'".format(
-                    err_path))
+                    err_path
+                )
+            )
         error_bar_names[err_name] = name
 
     data_names -= set(error_bar_names.values())
@@ -95,8 +110,9 @@ def get_default_hidden_channels(channels: dict[str, Any], data_names: list[str])
     return hidden_channels
 
 
-def _get_share_name(name: str, keyword: str, channels: dict[str, Any],
-                    path_to_name: dict[str, str]):
+def _get_share_name(
+    name: str, keyword: str, channels: dict[str, Any], path_to_name: dict[str, str]
+):
     """Extract the name of a channel from a display hint of another channel
 
     :param name: The name of the channel.
@@ -115,8 +131,9 @@ def _get_share_name(name: str, keyword: str, channels: dict[str, Any],
     return path_to_name[path]
 
 
-def group_channels_into_axes(channels: dict[str, Any],
-                             data_names: list[str]) -> list[list[str]]:
+def group_channels_into_axes(
+    channels: dict[str, Any], data_names: list[str]
+) -> list[list[str]]:
     """Extract channels with scalar numerical values from the given channel metadata,
     also mapping error bar channels to their associated value channels.
 
@@ -185,8 +202,9 @@ def group_channels_into_axes(channels: dict[str, Any],
     return [[name for (_, name) in axis] for axis in axes]
 
 
-def group_axes_into_panes(channels: dict[str, Any],
-                          axes_names: list[list[str]]) -> list[list[list[str]]]:
+def group_axes_into_panes(
+    channels: dict[str, Any], axes_names: list[list[str]]
+) -> list[list[list[str]]]:
     """Group axes returned by :func:`group_channels_into_axes` into plots by
         ``share_pane_with`` annotations in the channel's ``display_hints``.
 
@@ -201,14 +219,15 @@ def group_axes_into_panes(channels: dict[str, Any],
     name_to_axis_idx = {n: i for (i, ax) in enumerate(axes_names) for n in ax}
 
     axes_share_idxs = []  # List of sets of indices of axes sharing one plot.
-    for (idx, names) in enumerate(axes_names):
+    for idx, names in enumerate(axes_names):
         # The axis indices with which the current axis is to share a plot.
         share_idxs = {idx}
         for name in names:
             # Map all channel names specified to share a plot with the current axis
             # to their respective axis.
-            share_name = _get_share_name(name, "share_pane_with", channels,
-                                         path_to_name)
+            share_name = _get_share_name(
+                name, "share_pane_with", channels, path_to_name
+            )
             share_idxs.add(name_to_axis_idx[share_name])
 
         # If the current indices are part of any previous plot, merge that
@@ -229,8 +248,9 @@ def group_axes_into_panes(channels: dict[str, Any],
     return [[axes_names[axis] for axis in plot] for plot in plots]
 
 
-def hide_series_from_groups(panes_axes_names: list[list[list[str]]],
-                            hidden_names: set[str]):
+def hide_series_from_groups(
+    panes_axes_names: list[list[list[str]]], hidden_names: set[str]
+):
     """To produce a stable layout and style (series placement and color), we iterate
         once over all series and keep only those that are not hidden, skipping empty
         axes and panes as we go, before actually creating the layout/plot items.
@@ -354,8 +374,9 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, str, dict[str, An
         return result
 
     axis_item.setLabel("<br>".join(label_html(*a) for a in axes))
-    axis_item.setToolTip("\n".join(identity for _, identity, _, _, _ in axes
-                                   if identity))
+    axis_item.setToolTip(
+        "\n".join(identity for _, identity, _, _, _ in axes if identity)
+    )
 
     # Get the color of the first axis with this particular (unit, scale) combination.
     crosshair_info = []

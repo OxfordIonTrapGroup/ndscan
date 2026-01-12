@@ -1,7 +1,8 @@
 """Pseudocolor 2D plot for equidistant data."""
 
-from itertools import chain, repeat
 import logging
+from itertools import chain, repeat
+
 import numpy as np
 import pyqtgraph
 
@@ -10,9 +11,15 @@ from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .plot_widgets import ContextMenuPanesWidget, add_source_id_label
-from .utils import (call_later, extract_linked_datasets, extract_scalar_channels,
-                    format_param_identity, get_axis_scaling_info, setup_axis_item,
-                    enum_to_numeric)
+from .utils import (
+    call_later,
+    enum_to_numeric,
+    extract_linked_datasets,
+    extract_scalar_channels,
+    format_param_identity,
+    get_axis_scaling_info,
+    setup_axis_item,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +60,8 @@ def _coords_to_indices(coords, range_spec):
 
 
 class CrosshairZDataLabel(CrosshairLabel):
-    """Crosshair label for the z value of a 2D image
-    """
+    """Crosshair label for the z value of a 2D image"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.x_range = None
@@ -62,8 +69,9 @@ class CrosshairZDataLabel(CrosshairLabel):
         self.image_data = None
         self.z_limits = None
 
-    def set_crosshair_info(self, unit_suffix: str, data_to_display_scale: float,
-                           _color):
+    def set_crosshair_info(
+        self, unit_suffix: str, data_to_display_scale: float, _color
+    ):
         """Update the unit/scale information of the underlying data.
 
         :param unit_suffix: The unit (including a leading space).
@@ -107,11 +115,19 @@ class CrosshairZDataLabel(CrosshairLabel):
 
 
 class _ImagePlot:
-    def __init__(self, image_item: pyqtgraph.ImageItem,
-                 colorbar: pyqtgraph.ColorBarItem, active_channel_name: str,
-                 x_min: float | None, x_max: float | None, x_increment: float | None,
-                 y_min: float | None, y_max: float | None, y_increment: float | None,
-                 channels: dict[str, dict]):
+    def __init__(
+        self,
+        image_item: pyqtgraph.ImageItem,
+        colorbar: pyqtgraph.ColorBarItem,
+        active_channel_name: str,
+        x_min: float | None,
+        x_max: float | None,
+        x_increment: float | None,
+        y_min: float | None,
+        y_max: float | None,
+        y_increment: float | None,
+        channels: dict[str, dict],
+    ):
         self.image_item = image_item
         self.colorbar = colorbar
         self.channels = channels
@@ -149,7 +165,8 @@ class _ImagePlot:
             label = channel["path"].split("/")[-1]
         crosshair_info = setup_axis_item(
             self.colorbar.getAxis("right"),
-            [(label, channel["path"], channel["type"], None, channel)])
+            [(label, channel["path"], channel["type"], None, channel)],
+        )
         # Update crosshair label.
         self.z_crosshair_label.set_crosshair_info(*crosshair_info[0])
 
@@ -188,15 +205,20 @@ class _ImagePlot:
 
         num_to_show = min(len(x_data), len(y_data), len(z_data))
 
-        if (num_to_show == self.num_shown
-                and averaging_enabled == self.averaging_enabled):
+        if (
+            num_to_show == self.num_shown
+            and averaging_enabled == self.averaging_enabled
+        ):
             return
         num_skip = self.num_shown
 
         # Update running averages.
-        for x, y, z in zip(x_data[num_skip:num_to_show], y_data[num_skip:num_to_show],
-                           z_data[num_skip:num_to_show]):
-            avg, num = self.averages_by_coords.get((x, y), (0., 0))
+        for x, y, z in zip(
+            x_data[num_skip:num_to_show],
+            y_data[num_skip:num_to_show],
+            z_data[num_skip:num_to_show],
+        ):
+            avg, num = self.averages_by_coords.get((x, y), (0.0, 0))
             num += 1
             avg += (z - avg) / num
             self.averages_by_coords[(x, y)] = (avg, num)
@@ -212,13 +234,17 @@ class _ImagePlot:
 
             # TODO: Splat old data for progressively less blurry look on refining scans?
             self.image_data = np.full(
-                (_num_points_in_range(x_range), _num_points_in_range(y_range)), np.nan)
+                (_num_points_in_range(x_range), _num_points_in_range(y_range)), np.nan
+            )
 
             self.image_rect = QtCore.QRectF(
-                QtCore.QPointF(x_range[0] - x_range[2] / 2,
-                               y_range[0] - y_range[2] / 2),
-                QtCore.QPointF(x_range[1] + x_range[2] / 2,
-                               y_range[1] + y_range[2] / 2))
+                QtCore.QPointF(
+                    x_range[0] - x_range[2] / 2, y_range[0] - y_range[2] / 2
+                ),
+                QtCore.QPointF(
+                    x_range[1] + x_range[2] / 2, y_range[1] + y_range[2] / 2
+                ),
+            )
 
             num_skip = 0
 
@@ -231,8 +257,9 @@ class _ImagePlot:
         for i, (x_idx, y_idx) in enumerate(zip(x_inds, y_inds)):
             data_idx = num_skip + i
             coords, z = (x_data[data_idx], y_data[data_idx]), z_data[data_idx]
-            self.image_data[x_idx, y_idx] = (self.averages_by_coords[coords][0]
-                                             if averaging_enabled else z)
+            self.image_data[x_idx, y_idx] = (
+                self.averages_by_coords[coords][0] if averaging_enabled else z
+            )
 
         cmap = colormaps.plasma
         channel = self.channels[self.active_channel_name]
@@ -249,8 +276,9 @@ class _ImagePlot:
         self.colorbar.setLevels(z_limits)
 
         self.image_item.setImage(self.image_data, autoLevels=False)
-        self.z_crosshair_label.set_image_data(self.image_data, self.x_range,
-                                              self.y_range, self.current_z_limits)
+        self.z_crosshair_label.set_image_data(
+            self.image_data, self.x_range, self.y_range, self.current_z_limits
+        )
         if num_skip == 0:
             # Image size has changed, set plot item size accordingly.
             self.image_item.setRect(self.image_rect)
@@ -301,9 +329,18 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
 
         def setup_axis(schema, location):
             param = schema["param"]
-            setup_axis_item(self.plot_item.getAxis(location),
-                            [(param["description"], format_param_identity(schema),
-                              param["type"], None, param["spec"])])
+            setup_axis_item(
+                self.plot_item.getAxis(location),
+                [
+                    (
+                        param["description"],
+                        format_param_identity(schema),
+                        param["type"],
+                        None,
+                        param["spec"],
+                    )
+                ],
+            )
 
         setup_axis(self.x_schema, "bottom")
         setup_axis(self.y_schema, "left")
@@ -314,21 +351,28 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
         image_item = pyqtgraph.ImageItem()
         self.plot_item.addItem(image_item)
         colorbar = self.plot_item.addColorBar(image_item, width=15.0, interactive=False)
-        self.plot = _ImagePlot(image_item, colorbar, self.data_names[0],
-                               *bounds(self.x_schema), *bounds(self.y_schema), channels)
+        self.plot = _ImagePlot(
+            image_item,
+            colorbar,
+            self.data_names[0],
+            *bounds(self.x_schema),
+            *bounds(self.y_schema),
+            channels,
+        )
 
         x_scaling_info = get_axis_scaling_info(self.x_schema["param"]["spec"])
         y_scaling_info = get_axis_scaling_info(self.y_schema["param"]["spec"])
 
-        x_label = CrosshairAxisLabel(self.plot_item.getViewBox(),
-                                     *x_scaling_info,
-                                     is_x=True)
-        y_label = CrosshairAxisLabel(self.plot_item.getViewBox(),
-                                     *y_scaling_info,
-                                     is_x=False)
+        x_label = CrosshairAxisLabel(
+            self.plot_item.getViewBox(), *x_scaling_info, is_x=True
+        )
+        y_label = CrosshairAxisLabel(
+            self.plot_item.getViewBox(), *y_scaling_info, is_x=False
+        )
 
         self.crosshair = LabeledCrosshairCursor(
-            self, self.plot_item, [x_label, y_label, self.plot.z_crosshair_label])
+            self, self.plot_item, [x_label, y_label, self.plot.z_crosshair_label]
+        )
 
         add_source_id_label(self.plot_item.getViewBox(), self.model.context)
 
@@ -351,21 +395,27 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
 
             if self.x_schema["param"]["type"] == "enum":
                 points["axis_0"] = enum_to_numeric(
-                    self.x_schema["param"]["spec"]["members"].keys(), points["axis_0"])
+                    self.x_schema["param"]["spec"]["members"].keys(), points["axis_0"]
+                )
             if self.y_schema["param"]["type"] == "enum":
                 points["axis_1"] = enum_to_numeric(
-                    self.y_schema["param"]["spec"]["members"].keys(), points["axis_1"])
+                    self.y_schema["param"]["spec"]["members"].keys(), points["axis_1"]
+                )
             self.plot.data_changed(points, invalidate_previous=invalidate)
 
     def build_context_menu(self, pane_idx: int | None, builder):
         if self.model.context.is_online_master():
             x_datasets = extract_linked_datasets(self.x_schema["param"])
             y_datasets = extract_linked_datasets(self.y_schema["param"])
-            for d, axis_idx in chain(zip(x_datasets, repeat(0)),
-                                     zip(y_datasets, repeat(1))):
+            for d, axis_idx in chain(
+                zip(x_datasets, repeat(0)), zip(y_datasets, repeat(1))
+            ):
                 action = builder.append_action(f"Set '{d}' from crosshair")
-                action.triggered.connect(lambda *a, axis_idx=axis_idx, d=d: (
-                    self._set_dataset_from_crosshair(d, axis_idx)))
+                action.triggered.connect(
+                    lambda *a, axis_idx=axis_idx, d=d: (
+                        self._set_dataset_from_crosshair(d, axis_idx)
+                    )
+                )
             if len(x_datasets) == 1 and len(y_datasets) == 1:
                 action = builder.append_action("Set both from crosshair")
 
@@ -381,7 +431,8 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
             action.setCheckable(True)
             action.setChecked(self.plot.averaging_enabled)
             action.triggered.connect(
-                lambda *a: self.plot.update(not self.plot.averaging_enabled))
+                lambda *a: self.plot.update(not self.plot.averaging_enabled)
+            )
             builder.ensure_separator()
 
         self.channel_menu_group = QtGui.QActionGroup(self)
@@ -391,7 +442,8 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
             action.setActionGroup(self.channel_menu_group)
             action.setChecked(name == self.plot.active_channel_name)
             action.triggered.connect(
-                lambda *a, name=name: self.plot.activate_channel(name))
+                lambda *a, name=name: self.plot.activate_channel(name)
+            )
         builder.ensure_separator()
 
         super().build_context_menu(pane_idx, builder)
@@ -400,5 +452,6 @@ class Image2DPlotWidget(ContextMenuPanesWidget):
         if not self.plot:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.model.context.set_dataset(dataset,
-                                       self.crosshair.labels[axis_idx].last_value)
+        self.model.context.set_dataset(
+            dataset, self.crosshair.labels[axis_idx].last_value
+        )

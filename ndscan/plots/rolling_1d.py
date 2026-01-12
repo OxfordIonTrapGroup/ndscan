@@ -1,23 +1,41 @@
 import logging
+from collections import deque
+
 import numpy as np
 import pyqtgraph
-from collections import deque
 
 from .._qt import QtWidgets
 from .model import SinglePointModel
 from .model.subscan import create_subscan_roots
-from .plot_widgets import (SubplotMenuPanesWidget, build_channel_selection_context_menu,
-                           add_source_id_label)
-from .utils import (call_later, extract_scalar_channels, get_default_hidden_channels,
-                    group_channels_into_axes, group_axes_into_panes,
-                    hide_series_from_groups, setup_axis_item, SERIES_COLORS)
+from .plot_widgets import (
+    SubplotMenuPanesWidget,
+    add_source_id_label,
+    build_channel_selection_context_menu,
+)
+from .utils import (
+    SERIES_COLORS,
+    call_later,
+    extract_scalar_channels,
+    get_default_hidden_channels,
+    group_axes_into_panes,
+    group_channels_into_axes,
+    hide_series_from_groups,
+    setup_axis_item,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class _Series:
-    def __init__(self, view_box, data_name, data_item, error_bar_name, error_bar_item,
-                 history_length):
+    def __init__(
+        self,
+        view_box,
+        data_name,
+        data_item,
+        error_bar_name,
+        error_bar_item,
+        history_length,
+    ):
         self.view_box = view_box
         self.data_item = data_item
         self.data_name = data_name
@@ -32,7 +50,7 @@ class _Series:
         if self.error_bar_item:
             p.append(2 * data[self.error_bar_name])
 
-        is_first = (self.values.shape[0] == 0)
+        is_first = self.values.shape[0] == 0
         if is_first:
             self.values = np.array([p])
         else:
@@ -45,9 +63,11 @@ class _Series:
         num_to_show = self.values.shape[0]
         self.data_item.setData(self.x_indices[-num_to_show:], self.values[:, 0].T)
         if self.error_bar_item:
-            self.error_bar_item.setData(x=self.x_indices[-num_to_show:],
-                                        y=self.values[:, 0].T,
-                                        height=self.values[:, 1].T)
+            self.error_bar_item.setData(
+                x=self.x_indices[-num_to_show:],
+                y=self.values[:, 0].T,
+                height=self.values[:, 1].T,
+            )
 
         if is_first:
             self.view_box.addItem(self.data_item)
@@ -106,7 +126,8 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
         panes_axes = group_axes_into_panes(channels, axes)
         if self.hidden_channels is None:
             self.hidden_channels = get_default_hidden_channels(
-                channels, self.data_names)
+                channels, self.data_names
+            )
         panes_axes_shown = hide_series_from_groups(panes_axes, self.hidden_channels)
 
         for axes_series in panes_axes_shown:
@@ -116,7 +137,7 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
                 axis, view_box = pane.new_y_axis()
 
                 info = []
-                for (series_idx, name) in series:
+                for series_idx, name in series:
                     color = SERIES_COLORS[series_idx % len(SERIES_COLORS)]
                     data_item = pyqtgraph.ScatterPlotItem(pen=None, brush=color, size=6)
 
@@ -126,15 +147,23 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
                         error_bar_item = pyqtgraph.ErrorBarItem(pen=color)
 
                     self.series.append(
-                        _Series(view_box, name, data_item, error_bar_name,
-                                error_bar_item, self._history_length))
+                        _Series(
+                            view_box,
+                            name,
+                            data_item,
+                            error_bar_name,
+                            error_bar_item,
+                            self._history_length,
+                        )
+                    )
 
                     channel = channels[name]
                     label = channel["description"]
                     if not label:
                         label = channel["path"].split("/")[-1]
                     info.append(
-                        (label, channel["path"], channel["type"], color, channel))
+                        (label, channel["path"], channel["type"], color, channel)
+                    )
 
                 setup_axis_item(axis, info)
 
@@ -209,7 +238,8 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
         builder.ensure_separator()
 
         if len(self.data_names) > 1:
-            build_channel_selection_context_menu(builder, self._rewrite,
-                                                 self.data_names, self.hidden_channels)
+            build_channel_selection_context_menu(
+                builder, self._rewrite, self.data_names, self.hidden_channels
+            )
 
         super().build_context_menu(pane_idx, builder)

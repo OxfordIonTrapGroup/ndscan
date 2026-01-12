@@ -5,17 +5,24 @@ Collecting them all in a single module might or might not turn out to be a good 
 could also keep them inline with the other test_experiment_* unit test modules.
 """
 
-from artiq.language import kernel
+import math
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum, unique
+
+from artiq.language import kernel
 from emulator_environment import KernelEmulatorCase
 from fixtures import TrivialKernelFragment
-import math
+
 from ndscan.experiment.entry_point import make_fragment_scan_exp, run_fragment_once
 from ndscan.experiment.fragment import ExpFragment
-from ndscan.experiment.parameters import (FloatParam, IntParam, StringParam, BoolParam,
-                                          EnumParam)
+from ndscan.experiment.parameters import (
+    BoolParam,
+    EnumParam,
+    FloatParam,
+    IntParam,
+    StringParam,
+)
 from ndscan.experiment.result_channels import FloatChannel, IntChannel, OpaqueChannel
 from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
 
@@ -46,6 +53,7 @@ class SmorgasbordKernelFragment(ExpFragment):
     we can assign the values to member variables initialised with the host-side
     parameter type before.
     """
+
     def build_fragment(self) -> None:
         self.setattr_param("float", FloatParam, "Float", default=0.1)
         self.setattr_param("int", IntParam, "Int", default=42)
@@ -124,15 +132,17 @@ class TestSmorgasbordKernelCase(KernelEmulatorCase):
             return f"{fragment_fqn}.{name}"
 
         for scan_def in scan_defs:
-            exp.args._params["scan"]["axes"].append({
-                "fqn": fqn(scan_def.param_name),
-                "path": "*",
-                "type": "list",
-                "range": {
-                    "values": scan_def.schema_values,
-                    "randomise_order": True,
-                },
-            })
+            exp.args._params["scan"]["axes"].append(
+                {
+                    "fqn": fqn(scan_def.param_name),
+                    "path": "*",
+                    "type": "list",
+                    "range": {
+                        "values": scan_def.schema_values,
+                        "randomise_order": True,
+                    },
+                }
+            )
         exp.prepare()
         exp.run()
 
@@ -146,9 +156,11 @@ class TestSmorgasbordKernelCase(KernelEmulatorCase):
         num_points = math.prod(len(scan_def.schema_values) for scan_def in scan_defs)
         for i, scan_def in enumerate(scan_defs):
             num_repeats = num_points // len(scan_def.schema_values)
-            self.assertEqual(Counter(d(f"points.axis_{i}")),
-                             Counter({k: num_repeats
-                                      for k in scan_def.schema_values}))
-            self.assertEqual(Counter(d(f"points.channel_{scan_def.param_name}_result")),
-                             Counter({k: num_repeats
-                                      for k in scan_def.result_values}))
+            self.assertEqual(
+                Counter(d(f"points.axis_{i}")),
+                Counter({k: num_repeats for k in scan_def.schema_values}),
+            )
+            self.assertEqual(
+                Counter(d(f"points.channel_{scan_def.param_name}_result")),
+                Counter({k: num_repeats for k in scan_def.result_values}),
+            )

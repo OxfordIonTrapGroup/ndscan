@@ -1,7 +1,9 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
-from pyqtgraph import SignalProxy
 from typing import Any
+
+from pyqtgraph import SignalProxy
+
 from ..._qt import QtCore
 from ...utils import FIT_OBJECTS
 
@@ -21,6 +23,7 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
     :param parent_model: The :class:`~ndscan.plots.model.ScanModel` to draw the data
         from. The schema is notexpected not to change until :meth:`stop` is called.
     """
+
     _trigger_recompute_fit = QtCore.pyqtSignal()
 
     def __init__(self, schema: dict[str, Any], parent_model):
@@ -39,7 +42,8 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
         self._recompute_fit_limiter = SignalProxy(
             self._trigger_recompute_fit,
             slot=lambda: asyncio.ensure_future(self._recompute_fit()),
-            rateLimit=30)
+            rateLimit=30,
+        )
         self._recompute_in_progress = False
         self._fit_executor = ProcessPoolExecutor(max_workers=1)
 
@@ -61,7 +65,8 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
             error_key = key + "_error"
             if error_key in result:
                 raise ValueError(
-                    f"Fit error key name collides with result: '{error_key}'")
+                    f"Fit error key name collides with result: '{error_key}'"
+                )
             result[error_key] = value
         return result
 
@@ -101,8 +106,15 @@ class OnlineNamedFitAnalysis(OnlineAnalysis):
 
         loop = asyncio.get_event_loop()
         self._last_fit_params, self._last_fit_errors = await loop.run_in_executor(
-            self._fit_executor, _run_fit, self._fit_type, xs, ys, y_errs,
-            self._constants, self._initial_values)
+            self._fit_executor,
+            _run_fit,
+            self._fit_type,
+            xs,
+            ys,
+            y_errs,
+            self._constants,
+            self._initial_values,
+        )
 
         self._recompute_in_progress = False
         self.updated.emit()
@@ -115,10 +127,8 @@ def _run_fit(fit_type, xs, ys, y_errs, constants, initial_values):
     primitive API.
     """
     try:
-        return FIT_OBJECTS[fit_type].fit(x=xs,
-                                         y=ys,
-                                         y_err=y_errs,
-                                         constants=constants,
-                                         initialise=initial_values)
+        return FIT_OBJECTS[fit_type].fit(
+            x=xs, y=ys, y_err=y_errs, constants=constants, initialise=initial_values
+        )
     except Exception:
         return None, None
