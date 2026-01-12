@@ -2,19 +2,21 @@
 
 import logging
 from itertools import chain, repeat
+from typing import Any
 
 import numpy as np
 import pyqtgraph
-
-from ndscan.plots.model.select_point import SelectPointFromScanModel
-from ndscan.plots.model.subscan import create_subscan_roots
 
 from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
-from .plot_widgets import SubplotMenuPanesWidget, add_source_id_label
+from .model.select_point import SelectPointFromScanModel
+from .model.slice import create_slice_roots
+from .model.subscan import create_subscan_roots
+from .plot_widgets import SliceableMenuPanesWidget, add_source_id_label
 from .utils import (
+    CONTRASTING_COLOR_TO_HIGHLIGHT,
     HIGHLIGHT_PEN,
     call_later,
     enum_to_numeric,
@@ -24,6 +26,7 @@ from .utils import (
     format_param_identity,
     get_axis_scaling_info,
     setup_axis_item,
+    slice_data_along_axis,
 )
 
 logger = logging.getLogger(__name__)
@@ -66,6 +69,7 @@ def _coords_to_indices(coords, range_spec):
 
 class CrosshairZDataLabel(CrosshairLabel):
     """Crosshair label for the z value of a 2D image"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.x_range = None
@@ -155,7 +159,7 @@ class _ImagePlot:
         self.y_max = y_max
         self.y_increment = y_increment
 
-        self.points = None
+        self.points: dict[str, Any] | None = None
         self.num_shown = 0
         self.current_z_limits = None
         self.x_range = None
@@ -229,9 +233,9 @@ class _ImagePlot:
 
         # Update running averages.
         for x, y, z in zip(
-                x_data[num_skip:num_to_show],
-                y_data[num_skip:num_to_show],
-                z_data[num_skip:num_to_show],
+            x_data[num_skip:num_to_show],
+            y_data[num_skip:num_to_show],
+            z_data[num_skip:num_to_show],
         ):
             avg, num = self.averages_by_coords.get((x, y), (0.0, 0))
             num += 1
@@ -253,10 +257,12 @@ class _ImagePlot:
             )
 
             self.image_rect = QtCore.QRectF(
-                QtCore.QPointF(x_range[0] - x_range[2] / 2,
-                               y_range[0] - y_range[2] / 2),
-                QtCore.QPointF(x_range[1] + x_range[2] / 2,
-                               y_range[1] + y_range[2] / 2),
+                QtCore.QPointF(
+                    x_range[0] - x_range[2] / 2, y_range[0] - y_range[2] / 2
+                ),
+                QtCore.QPointF(
+                    x_range[1] + x_range[2] / 2, y_range[1] + y_range[2] / 2
+                ),
             )
 
             num_skip = 0
@@ -300,11 +306,12 @@ class _ImagePlot:
         self.averaging_enabled = averaging_enabled
 
 
-class Image2DPlotWidget(SubplotMenuPanesWidget):
+class Image2DPlotWidget(SliceableMenuPanesWidget):
     def __init__(self, model: ScanModel):
         super().__init__()
 
         self.model = model
+
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(lambda p: self._update_points(p, False))
         self.model.points_rewritten.connect(lambda p: self._update_points(p, True))
@@ -317,7 +324,7 @@ class Image2DPlotWidget(SubplotMenuPanesWidget):
 
         self.plot_item = self.add_pane()
         self.plot_item.showGrid(x=True, y=True)
-        self.plot = None
+        self.plot: _ImagePlot | None = None
         self.crosshair = None
 
         self.found_duplicate_coords = False
@@ -335,6 +342,7 @@ class Image2DPlotWidget(SubplotMenuPanesWidget):
             self.plot = None
 
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
+        self.slice_roots = create_slice_roots(self.model, self.selected_point_model)
 
         try:
             self.data_names, _ = extract_scalar_channels(channels)
@@ -348,13 +356,15 @@ class Image2DPlotWidget(SubplotMenuPanesWidget):
             param = schema["param"]
             setup_axis_item(
                 self.plot_item.getAxis(location),
-                [(
-                    param["description"],
-                    format_param_identity(schema),
-                    param["type"],
-                    None,
-                    param["spec"],
-                )],
+                [
+                    (
+                        param["description"],
+                        format_param_identity(schema),
+                        param["type"],
+                        None,
+                        param["spec"],
+                    )
+                ],
             )
 
         setup_axis(self.x_schema, "bottom")
@@ -378,10 +388,10 @@ class Image2DPlotWidget(SubplotMenuPanesWidget):
         )
 
         highlight_pen = pyqtgraph.mkPen(**HIGHLIGHT_PEN)
-        self.highlight_point_item = pyqtgraph.ScatterPlotItem(pen=highlight_pen,
-                                                              brush=None,
-                                                              size=8,
-                                                              symbol="o")
+        brush = pyqtgraph.mkBrush(CONTRASTING_COLOR_TO_HIGHLIGHT)
+        self.highlight_point_item = pyqtgraph.ScatterPlotItem(
+            pen=highlight_pen, brush=brush, size=8, symbol="o"
+        )
         self.highlight_point_item.setZValue(2)  # Show above all other points.
         self.plot_item.addItem(self.highlight_point_item)
 
@@ -402,6 +412,7 @@ class Image2DPlotWidget(SubplotMenuPanesWidget):
         add_source_id_label(self.plot_item.getViewBox(), self.model.context)
 
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
+        self.slice_roots = create_slice_roots(self.model, self.selected_point_model)
 
         self.ready.emit()
 
@@ -471,93 +482,36 @@ class Image2DPlotWidget(SubplotMenuPanesWidget):
             action.triggered.connect(
                 lambda *a, name=name: self.plot.activate_channel(name)
             )
+
         builder.ensure_separator()
 
         super().build_context_menu(pane_idx, builder)
+        builder.ensure_separator()
 
     def _set_dataset_from_crosshair(self, dataset, axis_idx):
         if not self.plot:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.model.context.set_dataset(dataset,
-                                       self.crosshair.labels[axis_idx].last_value)
+        self.model.context.set_dataset(
+            dataset, self.crosshair.labels[axis_idx].last_value
+        )
 
     def _point_clicked(self, pos: QtCore.QPointF):
+        """Callback for when `self.plot` is clicked.
+
+        :param pos: Position of the click in `plot`'s coordinates.
+            Here, these are in units of the point indices
+        """
         x_idx = np.floor(pos.x())
         y_idx = np.floor(pos.y())
         x = self.plot.x_range[0] + x_idx * self.plot.x_range[2]
         y = self.plot.y_range[0] + y_idx * self.plot.y_range[2]
 
         source_idx = self._xy_to_source_index(x, y)
-        self._highlight_index(source_idx)
-
-    def _xy_to_source_index(self, x, y) -> int | None:
-        x_source = self.plot.points["axis_0"]
-        y_source = self.plot.points["axis_1"]
-
-        source_idx = np.flatnonzero(np.logical_and(x_source == x, y_source == y))
-
-        if source_idx.size == 0:
-            return None
-
-        # FIXME: Does not handle duplicate coordinates correctly.
-        return source_idx[0]
-
-    def _get_highlighted_neighbour_index(self, axis: int, step: int) -> int | None:
-        current_x, current_y = self._highlighted_xy
-
-        if not self.plot or self._highlighted_xy == (None, None):
-            return None
-
-        x_source = np.asarray(self.plot.points["axis_0"])
-        y_source = np.asarray(self.plot.points["axis_1"])
-
-        def _get_nearest(
-            sliced_axis_coord,
-            fixed_axis_coord,
-            sliced_axis_source,
-            fixed_axis_source,
-        ):
-            sliced_indices = np.flatnonzero(fixed_axis_source == fixed_axis_coord)
-            _sliced_source = sliced_axis_source[sliced_indices]
-
-            # Doesn't matter if the coordinates are duplicated here --
-            # the first occurrence is as good as any.
-            idx_along_slice = np.flatnonzero(_sliced_source == sliced_axis_coord)[0]
-            neighbour = _sliced_source[find_neighbour_index(_sliced_source,
-                                                            idx_along_slice, step)]
-            return np.flatnonzero(
-                np.logical_and(
-                    sliced_axis_source == neighbour,
-                    fixed_axis_source == fixed_axis_coord,
-                ))[0]
-
-        if axis == 0:
-            return _get_nearest(current_x, current_y, x_source, y_source)
-        elif axis == 1:
-            return _get_nearest(current_y, current_x, y_source, x_source)
-
-    def _highlight_index(self, source_idx: int | None):
-        self.selected_point_model.set_source_index(source_idx)
-
-        if source_idx is None and self.highlight_point_item.parentItem():
-            self.plot_item.removeItem(self.highlight_point_item)
-            self._highlighted_xy = (None, None)
-        else:
-            x = self.plot.points["axis_0"][source_idx]
-            y = self.plot.points["axis_1"][source_idx]
-
-            if source_idx is None:
-                return
-
-            self.highlight_point_item.setData([x], [y], data=source_idx)
-            self._highlighted_xy = (x, y)
-            if not self.highlight_point_item.parentItem():
-                # Add with ignoreBounds=True to avoid highlighting an edge point causing
-                # the entire plot to shift in auto-range mode.
-                self.plot_item.addItem(self.highlight_point_item, ignoreBounds=True)
+        self._highlight_point_at_index(source_idx)
 
     def keyPressEvent(self, event):
+        """Handle arrow key presses to move the highlighted point."""
         key = event.key()
         is_left = key == QtCore.Qt.Key.Key_Left
         is_right = key == QtCore.Qt.Key.Key_Right
@@ -574,5 +528,79 @@ class Image2DPlotWidget(SubplotMenuPanesWidget):
         step = -1 if is_left or is_down else 1
         neighbour_idx = self._get_highlighted_neighbour_index(axis, step)
         if neighbour_idx is not None:
-            self._highlight_index(neighbour_idx)
+            self._highlight_point_at_index(neighbour_idx)
         event.accept()
+
+    def _highlight_point_at_index(self, source_idx: int | None):
+        """Highlight the point at the given index of the source data."""
+        self.selected_point_model.set_source_index(source_idx)
+
+        if source_idx is None and self.highlight_point_item.parentItem():
+            self.plot_item.removeItem(self.highlight_point_item)
+            self._highlighted_xy = (None, None)
+            return
+
+        x = self.plot.points["axis_0"][source_idx]
+        y = self.plot.points["axis_1"][source_idx]
+
+        if source_idx is None:
+            return
+
+        self.highlight_point_item.setData([x], [y], data=source_idx)
+        self._highlighted_xy = (x, y)
+        if not self.highlight_point_item.parentItem():
+            self.plot_item.addItem(self.highlight_point_item)
+
+    def _xy_to_source_index(self, x, y) -> int | None:
+        """Get the source index of the point at the given coordinates."""
+        x_source = self.plot.points["axis_0"]
+        y_source = self.plot.points["axis_1"]
+
+        source_idx = np.flatnonzero(np.logical_and(x_source == x, y_source == y))
+
+        if source_idx.size == 0:
+            return None
+
+        # FIXME: Does not handle duplicate coordinates correctly.
+        return source_idx[0]
+
+    def _get_highlighted_neighbour_index(self, axis: int, step: int) -> int | None:
+        """Get the source index of the neighbouring point along the given axis."""
+        if not self.plot or self._highlighted_xy == (None, None):
+            return None
+
+        source = self.plot.points
+
+        sliced_idxs = slice_data_along_axis(
+            source, self.selected_point_model.get_source_index(), axis
+        )
+
+        sliced_axis_name = f"axis_{axis}"
+        fixed_axis_name = f"axis_{1 - axis}"
+
+        slicing_axis_source = np.asarray(source[sliced_axis_name])
+        fixed_axis_source = np.asarray(source[fixed_axis_name])
+
+        sliced_axis_source = slicing_axis_source[sliced_idxs]
+
+        # Coordinates of the point along and orthogonal to the slice axis.
+        sliced_axis_coord = self._highlighted_xy[axis]
+        fixed_axis_coord = self._highlighted_xy[1 - axis]
+
+        # Find index of the highlighted point along the slice.
+        try:
+            idx_along_slice = np.flatnonzero(sliced_axis_source == sliced_axis_coord)[0]
+        except IndexError:  # no matches found
+            return None
+
+        # Find coordinate of the neighbour along the slice.
+        neighbour_coord = sliced_axis_source[
+            find_neighbour_index(sliced_axis_source, idx_along_slice, step)
+        ]
+        # Map back to source index.
+        return np.argmax(
+            np.logical_and(
+                slicing_axis_source == neighbour_coord,
+                fixed_axis_source == fixed_axis_coord,
+            )
+        )

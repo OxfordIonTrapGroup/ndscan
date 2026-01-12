@@ -1,6 +1,6 @@
 import html
 import logging
-from typing import Any
+from typing import Any, Iterable
 
 import numpy as np
 
@@ -28,7 +28,8 @@ FIT_COLORS = [
 ]
 
 #: pyqtgraph mkPen spec for highlighting selected points.
-HIGHLIGHT_PEN = {"color": "#ff0", "width": 5}
+HIGHLIGHT_PEN = {"color": "#ffff00", "width": 5}
+CONTRASTING_COLOR_TO_HIGHLIGHT = "#c61187ff"
 
 
 def _get_priority(channel_metadata: dict[str, Any]):
@@ -431,3 +432,39 @@ def find_neighbour_index(values, current_idx, step):
     # equivalent?!).
     new_idx = (x_order == current_idx).argmax() + step
     return x_order[min(max(new_idx, 0), len(values) - 1)]
+
+
+def slice_data_along_axis(
+    source_data: dict[str, Any], fixed_point_idx: int, axis_idx: int | Iterable[int]
+) -> np.ndarray:
+    """
+    Slice source data along `axis_idx` (possibly a hyperplane)
+    passing through `fixed_point_idx`.
+
+    :param source_data: The point data from the source model.
+    :param fixed_point_idx: The index of the fixed point in the source data.
+    :param axis_idx: The index (indices) of the slicing axis (axes).
+
+    return: The indices of the sliced data.
+    """
+
+    if isinstance(axis_idx, int):
+        axis_idx = [axis_idx]
+
+    # First, determine the fixed coordinates along all non-slicing axes.
+    fixed_coordinates = {}
+    for axis, values in source_data.items():
+        if axis.startswith("axis_"):
+            axis_num = int(axis[len("axis_") :])
+            if axis_num not in axis_idx:
+                fixed_coordinates[axis] = values[fixed_point_idx]
+
+    # Now, extract the sliced indices along the slicing axis.
+    return np.flatnonzero(
+        np.logical_and.reduce(
+            [
+                np.asarray(source_data[axis]) == value
+                for axis, value in fixed_coordinates.items()
+            ]
+        )
+    )
