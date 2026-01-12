@@ -87,15 +87,23 @@
 <span class="c1"># but to hang our heads in shame and manually instantiate the parameter handling</span>
 <span class="c1"># machinery for all supported value types, in particular to handle cases where e.g.</span>
 <span class="c1"># both an int and a float parameter is scanned at the same time.</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">host_only</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">units</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">host_only</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">units</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">int32</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">eval_param_default</span><span class="p">,</span> <span class="n">GetDataset</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">GetDataset</span><span class="p">,</span> <span class="n">eval_param_default</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;InvalidDefaultError&quot;</span><span class="p">,</span> <span class="s2">&quot;ParamStore&quot;</span><span class="p">,</span> <span class="s2">&quot;ParamHandle&quot;</span><span class="p">,</span> <span class="s2">&quot;FloatParam&quot;</span><span class="p">,</span> <span class="s2">&quot;IntParam&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;StringParam&quot;</span><span class="p">,</span> <span class="s2">&quot;BoolParam&quot;</span><span class="p">,</span> <span class="s2">&quot;EnumParam&quot;</span>
+    <span class="s2">&quot;InvalidDefaultError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ParamStore&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ParamHandle&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FloatParam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IntParam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;StringParam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BoolParam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;EnumParam&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
@@ -118,6 +126,7 @@
 <span class="sd">        store, i.e. the override/default value it was created for.</span>
 <span class="sd">    :param value: The initial value.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">identity</span> <span class="o">=</span> <span class="n">identity</span>
 
@@ -180,14 +189,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ParamStore.value_from_pyon">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.ParamStore.value_from_pyon">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">value_from_pyon</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">value</span></div>
-</div>
 
 
 
@@ -335,6 +340,7 @@
 <span class="sd">    :param parameter: The parameter initially associated with this handle (see</span>
 <span class="sd">        :attr:`parameter`).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="s2">&quot;Fragment&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
         <span class="c1">#: The :class:`Fragment` owning this parameter handle.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">owner</span>
@@ -347,32 +353,26 @@
         <span class="c1">#: binding of the parameter.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">=</span> <span class="n">parameter</span>
 
-        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="p">(</span><span class="s2">&quot;ParamHandle name should be the identifier it is &quot;</span>
-                                     <span class="s2">&quot;referred to as in the owning fragment.&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">(),</span> <span class="p">(</span>
+            <span class="s2">&quot;ParamHandle name should be the identifier it is &quot;</span>
+            <span class="s2">&quot;referred to as in the owning fragment.&quot;</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_changed_after_use</span> <span class="o">=</span> <span class="kc">True</span>
 
-<div class="viewcode-block" id="ParamHandle.set_store">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.ParamHandle.set_store">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">ParamStore</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">_unregister_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="n">store</span><span class="o">.</span><span class="n">_register_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="o">=</span> <span class="n">store</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_changed_after_use</span> <span class="o">=</span> <span class="kc">True</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_changed_after_use</span> <span class="o">=</span> <span class="kc">True</span>
 
-
-<div class="viewcode-block" id="ParamHandle.changed_after_use">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.ParamHandle.changed_after_use">[docs]</a>
     <span class="nd">@portable</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">changed_after_use</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_changed_after_use</span></div>
-</div>
 
 
 
@@ -428,8 +428,9 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Unit &#39;</span><span class="si">{}</span><span class="s2">&#39; is unknown, you must specify &quot;</span>
-                       <span class="s2">&quot;the scale manually&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="s2">&quot;Unit &#39;</span><span class="si">{}</span><span class="s2">&#39; is unknown, you must specify the scale manually&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+        <span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ParamBase</span><span class="p">:</span>
@@ -443,53 +444,50 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_dataset</span><span class="p">:</span> <span class="n">GetDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">make_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamStore</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
 
-<div class="viewcode-block" id="FloatParam">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.FloatParam">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FloatParam</span><span class="p">(</span><span class="n">ParamBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 
     <span class="n">HandleType</span> <span class="o">=</span> <span class="n">FloatParamHandle</span>
     <span class="n">StoreType</span> <span class="o">=</span> <span class="n">FloatParamStore</span>
     <span class="n">CompilerType</span> <span class="o">=</span> <span class="nb">float</span>  <span class="c1"># deprecated (not used in ndscan anymore); will go away</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
-                 <span class="o">*</span><span class="p">,</span>
-                 <span class="nb">min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="nb">max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                 <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-
-        <span class="n">ParamBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                           <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
-                           <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
-                           <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
-                           <span class="nb">min</span><span class="o">=</span><span class="nb">min</span><span class="p">,</span>
-                           <span class="nb">max</span><span class="o">=</span><span class="nb">max</span><span class="p">,</span>
-                           <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
-                           <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
-                           <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
-                           <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="nb">min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">ParamBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
+            <span class="nb">min</span><span class="o">=</span><span class="nb">min</span><span class="p">,</span>
+            <span class="nb">max</span><span class="o">=</span><span class="nb">max</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+            <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+            <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">resolve_numeric_scale</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">step</span> <span class="k">if</span> <span class="n">step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">/</span> <span class="mf">10.0</span>
 
@@ -498,7 +496,7 @@
         <span class="n">spec</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;is_scannable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span>
+            <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span>
@@ -525,48 +523,50 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> below minimum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> below minimum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> above maximum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">FloatParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> above maximum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">FloatParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 
-
-<div class="viewcode-block" id="IntParam">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.IntParam">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">IntParam</span><span class="p">(</span><span class="n">ParamBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 
     <span class="n">HandleType</span> <span class="o">=</span> <span class="n">IntParamHandle</span>
     <span class="n">StoreType</span> <span class="o">=</span> <span class="n">IntParamStore</span>
     <span class="n">CompilerType</span> <span class="o">=</span> <span class="n">int32</span>  <span class="c1"># deprecated (not used in ndscan anymore); will go away</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="o">*</span><span class="p">,</span>
-                 <span class="nb">min</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                 <span class="nb">max</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                 <span class="n">scale</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-
-        <span class="n">ParamBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                           <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
-                           <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
-                           <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
-                           <span class="nb">min</span><span class="o">=</span><span class="nb">min</span><span class="p">,</span>
-                           <span class="nb">max</span><span class="o">=</span><span class="nb">max</span><span class="p">,</span>
-                           <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
-                           <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
-                           <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="nb">min</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nb">max</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">ParamBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
+            <span class="nb">min</span><span class="o">=</span><span class="nb">min</span><span class="p">,</span>
+            <span class="nb">max</span><span class="o">=</span><span class="nb">max</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+            <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">resolve_numeric_scale</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="s2">&quot;Non-unity scales not implemented for integer parameters&quot;</span><span class="p">)</span>
+                <span class="s2">&quot;Non-unity scales not implemented for integer parameters&quot;</span>
+            <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span> <span class="o">=</span> <span class="n">is_scannable</span>
 
@@ -584,7 +584,7 @@
             <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;int&quot;</span><span class="p">,</span>
             <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">),</span>
-            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="n">spec</span>
+            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="n">spec</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_dataset</span><span class="p">:</span> <span class="n">GetDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -597,34 +597,30 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> below minimum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> below minimum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> above maximum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> for parameter </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> above maximum of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">IntParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="n">IntParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_raise_not_implemented</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
 
-<div class="viewcode-block" id="StringParam">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.StringParam">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">StringParam</span><span class="p">(</span><span class="n">ParamBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 
     <span class="n">HandleType</span> <span class="o">=</span> <span class="n">StringParamHandle</span>
     <span class="n">StoreType</span> <span class="o">=</span> <span class="n">StringParamStore</span>
     <span class="n">CompilerType</span> <span class="o">=</span> <span class="nb">str</span>  <span class="c1"># deprecated (not used in ndscan anymore); will go away</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">default</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">eval_param_default</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="n">_raise_not_implemented</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
@@ -636,13 +632,16 @@
             <span class="c1"># error is likely to be missing quotes. Also do not chain this onto the</span>
             <span class="c1"># eval() error, as that does not add any extra information.</span>
             <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
-                <span class="s2">&quot;Default value for StringParam must be valid PYON, missing quotes? &quot;</span> <span class="o">+</span>
-                <span class="sa">f</span><span class="s2">&quot;(got: </span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
-        <span class="n">ParamBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                           <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
-                           <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
-                           <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
-                           <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">)</span>
+                <span class="s2">&quot;Default value for StringParam must be valid PYON, missing quotes? &quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;(got: </span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="n">ParamBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
+            <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
@@ -651,9 +650,7 @@
             <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
             <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">),</span>
-            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;is_scannable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span>
-            <span class="p">}</span>
+            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;is_scannable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span><span class="p">},</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_dataset</span><span class="p">:</span> <span class="n">GetDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -662,29 +659,22 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">make_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StringParamStore</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">StringParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">StringParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 
-
-<div class="viewcode-block" id="BoolParam">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.BoolParam">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BoolParam</span><span class="p">(</span><span class="n">ParamBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 
     <span class="n">HandleType</span> <span class="o">=</span> <span class="n">BoolParamHandle</span>
     <span class="n">StoreType</span> <span class="o">=</span> <span class="n">BoolParamStore</span>
     <span class="n">CompilerType</span> <span class="o">=</span> <span class="nb">bool</span>  <span class="c1"># deprecated (not used in ndscan anymore); will go away</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">,</span>
-                 <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
-                         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
-                         <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
-                         <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span> <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
@@ -693,9 +683,7 @@
             <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;bool&quot;</span><span class="p">,</span>
             <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">),</span>
-            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;is_scannable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span>
-            <span class="p">}</span>
+            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;is_scannable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span><span class="p">},</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_dataset</span><span class="p">:</span> <span class="n">GetDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -706,15 +694,15 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">make_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BoolParamStore</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">BoolParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="n">BoolParamStore</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 
 <span class="n">_enum_compiler_type_cache</span> <span class="o">=</span> <span class="p">{}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_enum_compiler_types</span><span class="p">(</span>
-        <span class="n">enum_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Enum</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">ParamStore</span><span class="p">],</span> <span class="nb">type</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]]:</span>
+    <span class="n">enum_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Enum</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">ParamStore</span><span class="p">],</span> <span class="nb">type</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]]:</span>
     <span class="k">if</span> <span class="n">enum_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_enum_compiler_type_cache</span><span class="p">:</span>
         <span class="c1"># Cannot have `-&gt; enum_type` annotations on get_value()/get()/use() here, as</span>
         <span class="c1"># this gives an &quot;is not an ARTIQ type&quot; error (despite working just fine when</span>
@@ -777,29 +765,30 @@
     <span class="k">return</span> <span class="n">_enum_compiler_type_cache</span><span class="p">[</span><span class="n">enum_type</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="EnumParam">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.parameters.EnumParam">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">EnumParam</span><span class="p">(</span><span class="n">ParamBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 
     <span class="c1"># EnumParam can&#39;t support HandleType/StoreType as class attributes, as we need</span>
     <span class="c1"># one class per actual enum type</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">default</span><span class="p">:</span> <span class="n">Enum</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">enum_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Enum</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fqn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="n">Enum</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">enum_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Enum</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_scannable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="k">if</span> <span class="n">enum_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
                 <span class="n">enum_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;enum_class must be specified if default is a string&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span><span class="s2">&quot;Unexpected default for EnumParam &quot;</span> <span class="o">+</span>
-                                          <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="s2">&#39; (type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">default</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
+                    <span class="s2">&quot;Unexpected default for EnumParam &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="s2">&#39; (type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">default</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">enum_class</span><span class="p">[</span><span class="n">eval_param_default</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="n">_raise_not_implemented</span><span class="p">)]</span>
@@ -808,15 +797,18 @@
                 <span class="k">pass</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
-                    <span class="s2">&quot;str default values for EnumParm must be valid PYON strings &quot;</span> <span class="o">+</span>
-                    <span class="s2">&quot;(including quotes) that evaluate to the name of an enum member &quot;</span> <span class="o">+</span>
-                    <span class="sa">f</span><span class="s2">&quot;(got: </span><span class="se">\&quot;</span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">)&quot;</span><span class="p">)</span>
+                    <span class="s2">&quot;str default values for EnumParm must be valid PYON strings &quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot;(including quotes) that evaluate to the name of an enum member &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;(got: &quot;</span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="s1">&quot;)&#39;</span>
+                <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">StoreType</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">HandleType</span> <span class="o">=</span> <span class="n">_get_enum_compiler_types</span><span class="p">(</span><span class="n">enum_class</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
-                         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
-                         <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
-                         <span class="n">enum_class</span><span class="o">=</span><span class="n">enum_class</span><span class="p">,</span>
-                         <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">fqn</span><span class="o">=</span><span class="n">fqn</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
+            <span class="n">enum_class</span><span class="o">=</span><span class="n">enum_class</span><span class="p">,</span>
+            <span class="n">is_scannable</span><span class="o">=</span><span class="n">is_scannable</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
@@ -838,10 +830,7 @@
             <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;enum&quot;</span><span class="p">,</span>
             <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="n">default</span><span class="p">,</span>
-            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;members&quot;</span><span class="p">:</span> <span class="n">members</span><span class="p">,</span>
-                <span class="s2">&quot;is_scannable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span>
-            <span class="p">}</span>
+            <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;members&quot;</span><span class="p">:</span> <span class="n">members</span><span class="p">,</span> <span class="s2">&quot;is_scannable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_scannable</span><span class="p">},</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">eval_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_dataset</span><span class="p">:</span> <span class="n">GetDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Enum</span><span class="p">:</span>
@@ -853,8 +842,10 @@
                     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">enum_class</span><span class="p">[</span><span class="n">value</span><span class="p">]</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">enum_class</span><span class="p">):</span>
                     <span class="k">return</span> <span class="n">value</span>
-                <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span><span class="s2">&quot;Unexpected default for EnumParam &quot;</span> <span class="o">+</span>
-                                          <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; (type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
+                    <span class="s2">&quot;Unexpected default for EnumParam &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; (type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="p">)</span>
 
             <span class="c1"># Converting the overall result rather than wrapping get_dataset is a bit</span>
             <span class="c1"># overly permissive in that it also allows &quot;&#39;foo&#39;&quot; to refer to Foo.foo,</span>
@@ -864,8 +855,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">make_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">Enum</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParamStore</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">StoreType</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">StoreType</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 </pre></div>
 
            </div>

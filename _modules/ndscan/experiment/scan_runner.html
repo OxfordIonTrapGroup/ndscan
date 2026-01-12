@@ -83,24 +83,31 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.coredevice.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RTIOUnderflow</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">host_only</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_from_string</span><span class="p">,</span> <span class="n">rpc</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">islice</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.coredevice.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RTIOUnderflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">host_only</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_from_string</span><span class="p">,</span> <span class="n">rpc</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.default_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">DefaultAnalysis</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.fragment</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">TransitoryError</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.fragment</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span><span class="p">,</span> <span class="n">TransitoryError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamStore</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ResultSink</span><span class="p">,</span> <span class="n">SingleUseSink</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.scan_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_points</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.scan_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span><span class="p">,</span> <span class="n">generate_points</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_kernel</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;ScanAxis&quot;</span><span class="p">,</span> <span class="s2">&quot;ScanSpec&quot;</span><span class="p">,</span> <span class="s2">&quot;ScanRunner&quot;</span><span class="p">,</span> <span class="s2">&quot;select_runner_class&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;match_default_analysis&quot;</span><span class="p">,</span> <span class="s2">&quot;filter_default_analyses&quot;</span><span class="p">,</span> <span class="s2">&quot;describe_scan&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;describe_analyses&quot;</span>
+    <span class="s2">&quot;ScanAxis&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ScanSpec&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ScanRunner&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;select_runner_class&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;match_default_analysis&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;filter_default_analyses&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;describe_scan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;describe_analyses&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -116,6 +123,7 @@
 <span class="sd">    scan at runtime; i.e. the :class:`.ParamStore` to modify in order to set the</span>
 <span class="sd">    parameter.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">param_schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">param_store</span><span class="p">:</span> <span class="n">ParamStore</span></div>
@@ -145,12 +153,15 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the actual loop that executes an :class:`.ExpFragment` for a specified list</span>
 <span class="sd">    of scan axes (on either the host or core device, as appropriate).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
 <div class="viewcode-block" id="ScanRunner.build">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanRunner.build">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-              <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-              <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-              <span class="n">skip_on_persistent_transitory_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">skip_on_persistent_transitory_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param max_rtio_underflow_retries: Number of RTIOUnderflows to tolerate per scan</span>
 <span class="sd">            point (by simply trying again) before giving up. Three is a pretty arbitrary</span>
@@ -175,8 +186,9 @@
 
 <div class="viewcode-block" id="ScanRunner.run">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanRunner.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span>
-            <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a scan of the given fragment, with axes as specified.</span>
 
 <span class="sd">        Integrates with the ARTIQ scheduler to pause/terminate execution as requested.</span>
@@ -210,8 +222,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
-              <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span> <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -239,6 +252,7 @@
 <span class="sd">    datasets/… (where the indices in the struct-of-arrays construction no longer match</span>
 <span class="sd">    up).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span> <span class="o">=</span> <span class="n">fragment</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ResultSink</span><span class="p">]()</span>
@@ -270,8 +284,10 @@
         <span class="c1"># First check whether we have all the values.</span>
         <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing value for result channel &#39;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&#39; &quot;</span> <span class="o">+</span>
-                                 <span class="s2">&quot;(push() not called for current point)&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Missing value for result channel &#39;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot;(push() not called for current point)&quot;</span>
+                <span class="p">)</span>
         <span class="c1"># Only then forward them.</span>
         <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">orig_sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">orig_sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
@@ -295,8 +311,9 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">HostScanRunner</span><span class="p">(</span><span class="n">ScanRunner</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
-              <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span> <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span> <span class="o">=</span> <span class="n">fragment</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="n">axes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_axis_sinks</span> <span class="o">=</span> <span class="n">axis_sinks</span>
@@ -314,13 +331,13 @@
                     <span class="n">axis_values</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_points</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">axis_values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="k">return</span> <span class="kc">True</span>
-                    <span class="k">for</span> <span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">,</span> <span class="n">axis_values</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">,</span> <span class="n">axis_values</span><span class="p">):</span>
                         <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
 
                     <span class="n">result_batcher</span><span class="o">.</span><span class="n">ensure_complete_and_push</span><span class="p">()</span>
-                    <span class="k">for</span> <span class="p">(</span><span class="n">sink</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_axis_sinks</span><span class="p">,</span> <span class="n">axis_values</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">sink</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_axis_sinks</span><span class="p">,</span> <span class="n">axis_values</span><span class="p">):</span>
                         <span class="c1"># Now that we know self._fragment successfully produced a</span>
                         <span class="c1"># complete point, also record the axis coordinates.</span>
                         <span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
@@ -336,8 +353,9 @@
     <span class="c1"># metaprogramming. While the interface for this class is effortlessly generic, the</span>
     <span class="c1"># implementation might well be a long-forgotten ritual for invoking Cthulhu.</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span>
-              <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">],</span> <span class="n">axis_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResultSink</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span> <span class="o">=</span> <span class="n">fragment</span>
 
         <span class="c1"># Set up members to be accessed from the kernel through the</span>
@@ -355,8 +373,9 @@
         <span class="c1"># the concrete type for this scan so the compiler can infer the types in</span>
         <span class="c1"># run_chunk() correctly.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_param_values_chunk</span><span class="o">.</span><span class="vm">__func__</span><span class="o">.</span><span class="vm">__annotations__</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;return&quot;</span><span class="p">:</span>
-            <span class="nb">tuple</span><span class="o">.</span><span class="n">__class_getitem__</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">RpcType</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">))</span>
+            <span class="s2">&quot;return&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="o">.</span><span class="n">__class_getitem__</span><span class="p">(</span>
+                <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">RpcType</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">)</span>
+            <span class="p">)</span>
         <span class="p">}</span>
 
         <span class="c1"># Build kernel function that calls _get_param_values_chunk() and iterates over</span>
@@ -451,8 +470,13 @@
                 <span class="k">if</span> <span class="n">num_underflows</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">:</span>
                     <span class="k">raise</span>
                 <span class="n">num_underflows</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span> <span class="n">num_underflows</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
-                      <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span>
+                    <span class="n">num_underflows</span><span class="p">,</span>
+                    <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+                    <span class="s2">&quot;)&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_retry_point</span><span class="p">()</span>
             <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error, restarting kernel&quot;</span><span class="p">)</span>
@@ -465,8 +489,13 @@
                         <span class="k">return</span> <span class="kc">False</span>
                     <span class="k">raise</span>
                 <span class="n">num_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span> <span class="n">num_transitory_errors</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
-                      <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span> <span class="s2">&quot;), retrying&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
+                    <span class="n">num_transitory_errors</span><span class="p">,</span>
+                    <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
+                    <span class="s2">&quot;), retrying&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_retry_point</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_point_completed</span><span class="p">()</span>
         <span class="k">return</span> <span class="kc">False</span>
@@ -474,8 +503,7 @@
     <span class="nd">@kernel</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">current_time_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">current_time_mu</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_pause_check_mu</span> <span class="o">&gt;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_pause_check_interval_mu</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">current_time_mu</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_pause_check_mu</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pause_check_interval_mu</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_last_pause_check_mu</span> <span class="o">=</span> <span class="n">current_time_mu</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
                 <span class="k">return</span> <span class="kc">True</span>
@@ -492,7 +520,8 @@
         <span class="n">CHUNK_SIZE</span> <span class="o">=</span> <span class="mi">10</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
-            <span class="n">islice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_points</span><span class="p">,</span> <span class="n">CHUNK_SIZE</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="p">)))</span>
+            <span class="n">islice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_points</span><span class="p">,</span> <span class="n">CHUNK_SIZE</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="p">))</span>
+        <span class="p">)</span>
 
         <span class="n">values</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="p">:</span>
@@ -502,8 +531,9 @@
                 <span class="c1"># scans is implemented.</span>
                 <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">to_rpc_type</span><span class="p">(</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span>
-                            <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">value_from_pyon</span><span class="p">(</span><span class="n">value</span><span class="p">))))</span>
+                        <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">value_from_pyon</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
         <span class="k">return</span> <span class="n">values</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
@@ -586,8 +616,9 @@
 
 <div class="viewcode-block" id="filter_default_analyses">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.filter_default_analyses">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">filter_default_analyses</span><span class="p">(</span><span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
-                            <span class="n">axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_default_analyses</span><span class="p">(</span>
+    <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ScanAxis</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the default analyses of the given fragment that can be executed for the</span>
 <span class="sd">    given scan spec.</span>
 
@@ -600,7 +631,8 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Unexpected get_default_analyses() return value for </span><span class="si">{</span><span class="n">fragment</span><span class="si">}</span><span class="s2">: &quot;</span>
                 <span class="s2">&quot;Expected list of ndscan.experiment.DefaultAnalysis instances, got &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;element of type &#39;</span><span class="si">{</span><span class="n">analysis</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;element of type &#39;</span><span class="si">{</span><span class="n">analysis</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">match_default_analysis</span><span class="p">(</span><span class="n">analysis</span><span class="p">,</span> <span class="n">ax</span><span class="p">):</span>
             <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span></div>
@@ -609,8 +641,9 @@
 
 <div class="viewcode-block" id="describe_scan">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.describe_scan">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">describe_scan</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
-                  <span class="n">short_result_names</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">describe_scan</span><span class="p">(</span>
+    <span class="n">spec</span><span class="p">:</span> <span class="n">ScanSpec</span><span class="p">,</span> <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">short_result_names</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return metadata for the given spec in stringly typed dictionary form.</span>
 
 <span class="sd">    :param spec: :class:`.ScanSpec` describing the scan.</span>
@@ -620,10 +653,13 @@
     <span class="n">desc</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;fragment_fqn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fragment</span><span class="o">.</span><span class="n">fqn</span>
-    <span class="n">axis_specs</span> <span class="o">=</span> <span class="p">[{</span>
-        <span class="s2">&quot;param&quot;</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">param_schema</span><span class="p">,</span>
-        <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
-    <span class="p">}</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
+    <span class="n">axis_specs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;param&quot;</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">param_schema</span><span class="p">,</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span>
+    <span class="p">]</span>
     <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">gen</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">generators</span><span class="p">):</span>
         <span class="n">gen</span><span class="o">.</span><span class="n">describe_limits</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
 
@@ -634,7 +670,8 @@
     <span class="c1"># them; they should possibly just be ignored there.</span>
     <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">channel</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
-        <span class="k">for</span> <span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">in</span> <span class="n">short_result_names</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">channel</span><span class="o">.</span><span class="n">save_by_default</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">in</span> <span class="n">short_result_names</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">channel</span><span class="o">.</span><span class="n">save_by_default</span>
     <span class="p">}</span>
 
     <span class="k">return</span> <span class="n">desc</span></div>
@@ -643,8 +680,9 @@
 
 <div class="viewcode-block" id="describe_analyses">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.describe_analyses">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">describe_analyses</span><span class="p">(</span><span class="n">analyses</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">],</span>
-                      <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">describe_analyses</span><span class="p">(</span>
+    <span class="n">analyses</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DefaultAnalysis</span><span class="p">],</span> <span class="n">context</span><span class="p">:</span> <span class="n">AnnotationContext</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return metadata for the given analyses in stringly typed dictionary form.</span>
 
 <span class="sd">    :param analyses: The :class:`.DefaultAnalysis` objects to describe (already filtered</span>
@@ -665,7 +703,8 @@
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">online_analyses</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;online_analyses&quot;</span><span class="p">]:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;An online analysis with name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; already exists&quot;</span><span class="p">)</span>
+                    <span class="sa">f</span><span class="s2">&quot;An online analysis with name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; already exists&quot;</span>
+                <span class="p">)</span>
             <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;online_analyses&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span>
     <span class="k">return</span> <span class="n">desc</span></div>
 

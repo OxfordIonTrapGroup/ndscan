@@ -78,21 +78,30 @@
 <span class="sd">Result handling building blocks.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">rpc</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">artiq.language.units</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">artiq.language.units</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">artiq.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasEnvironment</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">portable</span><span class="p">,</span> <span class="n">rpc</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">dump_json</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;SingleUseSink&quot;</span><span class="p">,</span> <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span> <span class="s2">&quot;AppendingDatasetSink&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ScalarDatasetSink&quot;</span><span class="p">,</span> <span class="s2">&quot;ResultChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;NumericChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span> <span class="s2">&quot;OpaqueChannel&quot;</span>
+    <span class="s2">&quot;SingleUseSink&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;AppendingDatasetSink&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ScalarDatasetSink&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ResultChannel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NumericChannel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FloatChannel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IntChannel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;OpaqueChannel&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ResultSink</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a new value.</span>
 
@@ -109,6 +118,7 @@
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.SingleUseSink">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SingleUseSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that allows only one value to be pushed (before being cleared).&quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
@@ -147,6 +157,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">LastValueSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that allows multiple values to be pushed, but retains only the last-pushed</span>
 <span class="sd">    one.&quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -169,6 +180,7 @@
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ArraySink">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ArraySink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that stores all pushed values in a list.&quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -234,6 +246,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">ScalarDatasetSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">,</span> <span class="n">HasEnvironment</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that writes pushed results to a dataset, overwriting its previous value</span>
 <span class="sd">    if any.&quot;&quot;&quot;</span>
+
 <div class="viewcode-block" id="ScalarDatasetSink.build">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ScalarDatasetSink.build">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">broadcast</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -308,11 +321,14 @@
 <span class="sd">              the behaviour of previous ``ndscan`` versions, where all axes used to be</span>
 <span class="sd">              shown in a single plot pane.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                 <span class="n">display_hints</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">save_by_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">display_hints</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">save_by_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">display_hints</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">display_hints</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">display_hints</span>
@@ -322,49 +338,33 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 
-<div class="viewcode-block" id="ResultChannel.describe">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.describe">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="n">desc</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
             <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_type_string</span><span class="p">()</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_type_string</span><span class="p">(),</span>
         <span class="p">}</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_hints</span><span class="p">:</span>
             <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;display_hints&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_hints</span>
-        <span class="k">return</span> <span class="n">desc</span></div>
+        <span class="k">return</span> <span class="n">desc</span>
 
-
-<div class="viewcode-block" id="ResultChannel.is_muted">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.is_muted">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_muted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="c1"># TODO: Implement muting interface?</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
-
-<div class="viewcode-block" id="ResultChannel.set_sink">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.set_sink">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sink</span><span class="p">:</span> <span class="n">ResultSink</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">sink</span></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">sink</span>
 
-
-<div class="viewcode-block" id="ResultChannel.push">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultChannel.push">[docs]</a>
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coerce_to_type</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
@@ -388,14 +388,17 @@
 <span class="sd">    :param scale: Unit scaling. If ``None``, the default scaling as per ARTIQ&#39;s unit</span>
 <span class="sd">        handling machinery (``artiq.language.units``) is used.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                 <span class="n">display_hints</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="nb">min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="nb">max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                 <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">display_hints</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="nb">max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">display_hints</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="nb">min</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="nb">max</span>
@@ -407,8 +410,10 @@
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">scale</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">artiq</span><span class="o">.</span><span class="n">language</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
                 <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Unit </span><span class="si">{}</span><span class="s2"> is unknown, you must specify &quot;</span>
-                                   <span class="s2">&quot;the scale manually&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                        <span class="s2">&quot;Unit </span><span class="si">{}</span><span class="s2"> is unknown, you must specify &quot;</span>
+                        <span class="s2">&quot;the scale manually&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+                    <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">unit</span>
 
@@ -419,7 +424,7 @@
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.NumericChannel.get_last">[docs]</a>
     <span class="nd">@kernel</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; Returns the last value pushed to this result channel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the last value pushed to this result channel.</span>
 
 <span class="sd">        This method is a workaround for limitations of ARTIQ python, which make it</span>
 <span class="sd">        impractical to extract values from the sinks without going through RPCs.</span>
@@ -430,21 +435,16 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span></div>
 
 
-<div class="viewcode-block" id="NumericChannel.push">
-<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.NumericChannel.push">[docs]</a>
     <span class="nd">@portable</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value_pushed</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span> <span class="o">=</span> <span class="n">raw_value</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_push</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span></div>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">_push</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
@@ -465,6 +465,7 @@
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.FloatChannel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FloatChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`NumericChannel` that accepts floating-point results.&quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;float&quot;</span>
 
@@ -477,6 +478,7 @@
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.IntChannel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">IntChannel</span><span class="p">(</span><span class="n">NumericChannel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`NumericChannel` that accepts integer results.&quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;int&quot;</span>
 
@@ -499,6 +501,7 @@
 <span class="sd">    Any values pushed are just passed through to the ARTIQ dataset layer; it is up to</span>
 <span class="sd">    the user to choose something compatibile with HDF5 and PYON.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;opaque&quot;</span>
 
@@ -512,6 +515,7 @@
 
 <span class="sd">    Serialised as a JSON string for HDF5 compatibility.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;subscan&quot;</span>
 

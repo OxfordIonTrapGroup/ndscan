@@ -92,19 +92,28 @@
 <span class="sd">Both can produce :class:`Annotation`\ s; particular values or plot locations highlighted</span>
 <span class="sd">in the user interface.</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.annotations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">AnnotationValueRef</span><span class="p">,</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">Annotation</span><span class="p">,</span>
-                          <span class="n">computed_curve</span><span class="p">,</span> <span class="n">axis_location</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.annotations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Annotation</span><span class="p">,</span>
+    <span class="n">AnnotationContext</span><span class="p">,</span>
+    <span class="n">AnnotationValueRef</span><span class="p">,</span>
+    <span class="n">axis_location</span><span class="p">,</span>
+    <span class="n">computed_curve</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamHandle</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultChannel</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;Annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;DefaultAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;CustomAnalysis&quot;</span><span class="p">,</span> <span class="s2">&quot;OnlineFit&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ResultPrefixAnalysisWrapper&quot;</span>
+    <span class="s2">&quot;Annotation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DefaultAnalysis&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CustomAnalysis&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;OnlineFit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ResultPrefixAnalysisWrapper&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -122,6 +131,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis functionality associated with an `ExpFragment` to be executed when that</span>
 <span class="sd">    fragment is scanned in a particular way.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
 <div class="viewcode-block" id="DefaultAnalysis.required_axes">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.default_analysis.DefaultAnalysis.required_axes">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
@@ -205,12 +215,18 @@
 <span class="sd">    :param analysis_results: Optionally, a number of result channels for analysis</span>
 <span class="sd">        results. They are later passed to ``analyze_fn``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">required_axes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">],</span>
-        <span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span>
-            <span class="nb">dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">]</span>
-        <span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">Annotation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+        <span class="n">analyze_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span>
+                <span class="nb">dict</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+                <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+                <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">],</span>
+            <span class="p">],</span>
+            <span class="nb">list</span><span class="p">[</span><span class="n">Annotation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">],</span>
         <span class="n">analysis_results</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">required_axes</span><span class="p">)</span>
@@ -220,10 +236,14 @@
         <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">analysis_results</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">path</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">:</span>
-                <span class="n">axes</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;@&quot;</span> <span class="o">+</span> <span class="n">h</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">()</span>
-                                 <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicate analysis result channel name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; &quot;</span> <span class="o">+</span>
-                                 <span class="sa">f</span><span class="s2">&quot;in analysis for axes [</span><span class="si">{</span><span class="n">axes</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+                <span class="n">axes</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;@&quot;</span> <span class="o">+</span> <span class="n">h</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">_stringize_path</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_required_axis_handles</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Duplicate analysis result channel name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;in analysis for axes [</span><span class="si">{</span><span class="n">axes</span><span class="si">}</span><span class="s2">]&quot;</span>
+                <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">ParamHandle</span><span class="p">]:</span>
@@ -252,8 +272,9 @@
             <span class="n">user_axis_data</span><span class="p">[</span><span class="n">handle</span><span class="p">]</span> <span class="o">=</span> <span class="n">axis_data</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">identity</span><span class="p">]</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_fn</span><span class="p">(</span><span class="n">user_axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span>
-                                           <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span><span class="p">)</span>
+            <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_fn</span><span class="p">(</span>
+                <span class="n">user_axis_data</span><span class="p">,</span> <span class="n">result_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_channels</span>
+            <span class="p">)</span>
         <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">orignal_exception</span><span class="p">:</span>
             <span class="c1"># Tolerate old analysis functions that do not take analysis result channels.</span>
             <span class="k">try</span><span class="p">:</span>
@@ -273,51 +294,15 @@
 <span class="c1">#: Default points of interest for various fit types (e.g. highlighting the π time for a</span>
 <span class="c1">#: Rabi flop fit, or the extremum of a parabola.</span>
 <span class="n">DEFAULT_FIT_ANNOTATIONS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;decaying_sinusoid&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;pi_time&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_max_transfer&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;detuned_square_pulse&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;centre&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;offset&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;exponential_decay&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;t_1_e&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_1_e&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;centre&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;x0&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;lorentzian&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;extremum&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;x0&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;parabola&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;extremum&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;position&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;rabi_flop&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;pi_time&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_pi&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;sinusoid&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;pi_time&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_pi&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;v_function&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;centre&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;x0&quot;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
+    <span class="s2">&quot;decaying_sinusoid&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;pi_time&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_max_transfer&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;detuned_square_pulse&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;centre&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;offset&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;exponential_decay&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;t_1_e&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_1_e&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;centre&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;x0&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;lorentzian&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;extremum&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;x0&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;parabola&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;extremum&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;position&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;rabi_flop&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;pi_time&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_pi&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;sinusoid&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;pi_time&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;t_pi&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;v_function&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;centre&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="s2">&quot;x0&quot;</span><span class="p">}},</span>
 <span class="p">}</span>
 
 
@@ -344,13 +329,16 @@
 <span class="sd">        a dictionary mapping fit parameter names to the respective values, forwarded to</span>
 <span class="sd">        :meth:`oitg.fitting.FitBase.FitBase.fit`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">fit_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">],</span>
-                 <span class="n">annotations</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">analysis_identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">initial_values</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fit_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamHandle</span> <span class="o">|</span> <span class="n">ResultChannel</span><span class="p">],</span>
+        <span class="n">annotations</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">analysis_identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">initial_values</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span> <span class="o">=</span> <span class="n">fit_type</span>
         <span class="k">if</span> <span class="n">fit_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FIT_OBJECTS</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Unknown fit type: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">fit_type</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -372,7 +360,8 @@
         <span class="s2">&quot;&quot;</span>
         <span class="c1"># TODO: Generalise to higher-dimensional fits.</span>
         <span class="n">channels</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">context</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ResultChannel</span><span class="p">)</span>
         <span class="p">]</span>
 
@@ -384,26 +373,31 @@
             <span class="n">analysis_identifier</span> <span class="o">=</span> <span class="s2">&quot;fit_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">analysis_ref</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span><span class="s2">&quot;online_result&quot;</span><span class="p">,</span>
-                                      <span class="n">analysis_name</span><span class="o">=</span><span class="n">analysis_identifier</span><span class="p">,</span>
-                                      <span class="n">result_key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">AnnotationValueRef</span><span class="p">(</span>
+                <span class="s2">&quot;online_result&quot;</span><span class="p">,</span> <span class="n">analysis_name</span><span class="o">=</span><span class="n">analysis_identifier</span><span class="p">,</span> <span class="n">result_key</span><span class="o">=</span><span class="n">key</span>
+            <span class="p">)</span>
 
         <span class="n">annotations</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">computed_curve</span><span class="p">(</span><span class="n">function_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">,</span>
-                           <span class="n">parameters</span><span class="o">=</span><span class="p">{</span>
-                               <span class="n">k</span><span class="p">:</span> <span class="n">analysis_ref</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
-                               <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">FIT_OBJECTS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">]</span><span class="o">.</span><span class="n">parameter_names</span>
-                           <span class="p">},</span>
-                           <span class="n">associated_channels</span><span class="o">=</span><span class="n">channels</span><span class="p">)</span>
+            <span class="n">computed_curve</span><span class="p">(</span>
+                <span class="n">function_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">,</span>
+                <span class="n">parameters</span><span class="o">=</span><span class="p">{</span>
+                    <span class="n">k</span><span class="p">:</span> <span class="n">analysis_ref</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">FIT_OBJECTS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">]</span><span class="o">.</span><span class="n">parameter_names</span>
+                <span class="p">},</span>
+                <span class="n">associated_channels</span><span class="o">=</span><span class="n">channels</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="p">]</span>
         <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="c1"># TODO: Change API to allow more general annotations.</span>
             <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">):</span>
                 <span class="n">annotations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">axis_location</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span>
-                                  <span class="n">position</span><span class="o">=</span><span class="n">analysis_ref</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]),</span>
-                                  <span class="n">position_error</span><span class="o">=</span><span class="n">analysis_ref</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;_error&quot;</span><span class="p">),</span>
-                                  <span class="n">associated_channels</span><span class="o">=</span><span class="n">channels</span><span class="p">))</span>
+                    <span class="n">axis_location</span><span class="p">(</span>
+                        <span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span>
+                        <span class="n">position</span><span class="o">=</span><span class="n">analysis_ref</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]),</span>
+                        <span class="n">position_error</span><span class="o">=</span><span class="n">analysis_ref</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;_error&quot;</span><span class="p">),</span>
+                        <span class="n">associated_channels</span><span class="o">=</span><span class="n">channels</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">context</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">annotations</span><span class="p">],</span> <span class="p">{</span>
             <span class="n">analysis_identifier</span><span class="p">:</span> <span class="p">{</span>
@@ -414,7 +408,7 @@
                     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                 <span class="p">},</span>
                 <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
-                <span class="s2">&quot;initial_values&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_values</span>
+                <span class="s2">&quot;initial_values&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_values</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">}</span>
 
@@ -444,6 +438,7 @@
 <span class="sd">    This can be used to disambiguate potential conflicts between result names when</span>
 <span class="sd">    programmatically collecting analyses from multiple sources.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">:</span> <span class="n">DefaultAnalysis</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param wrapped: The :class:`.DefaultAnalysis` instance to forward to.</span>
@@ -472,8 +467,7 @@
         <span class="c1"># TODO: Prepend to ResultChannel.path as well? For now, nothing relies on the</span>
         <span class="c1"># path schema entry for analysis results, so it&#39;s a wash.</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
-            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">get_analysis_results</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapped</span><span class="o">.</span><span class="n">get_analysis_results</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span></div>
 
 
