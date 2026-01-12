@@ -12,7 +12,7 @@ from experiment client code, like ``artiq.experiment`` does for upstream ARTIQ::
 """
 
 # The wildcard imports below aren't actually unused, as we re-export them.
-# flake8: noqa: F401
+# ruff: noqa: F401
 
 import artiq.experiment
 from artiq.experiment import *

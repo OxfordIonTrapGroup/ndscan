@@ -3,8 +3,8 @@
 Coding conventions
 ==================
 
- - Format *all* code using `YAPF <https://github.com/google/yapf>`_, and make sure
-   ``flake8 ndscan`` passes. Configuration files for both are included, and should be
+ - Format *all* code using `Ruff <https://docs.astral.sh/ruff/>`_, and make sure
+   ``ruff check ndscan`` passes. Configuration files for both are included, and should be
    picked up automatically by either tool. It is just not worth spending time on
    obsessing or arguing about formatting details. (Also, you won't get past the
    automated CI checks if you don't follow those styles.)
