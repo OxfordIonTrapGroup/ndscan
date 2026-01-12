@@ -55,10 +55,13 @@ build-backend = "hatchling.build"
 [tool.poe.tasks]
 docs = "make -C $POE_ROOT/docs html"
 
-fmt-imports = "ruff check --select I --fix examples ndscan test -q"
+_fmt-imports = "ruff check --select I --fix examples ndscan test -q"
 _fmt = "ruff format examples ndscan test"
-fmt.sequence = ["fmt-imports", "_fmt"]
+fmt.sequence = ["_fmt-imports", "_fmt"]
 
-fmt-test = "ruff format --check examples ndscan test"
+_fmt-test-imports = "ruff check --select I examples ndscan test -q"
+_fmt-test = "ruff format --check examples ndscan test"
+fmt-test.sequence = ["_fmt-test-imports", "_fmt-test"]
+
 lint = "ruff check examples ndscan test"
 test = "python -m unittest discover -v test"
