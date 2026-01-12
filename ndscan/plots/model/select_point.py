@@ -25,6 +25,9 @@ class SelectPointFromScanModel(SinglePointModel):
             return
         self._set_point(idx, silently_fail=False)
 
+    def get_source_index(self) -> int | None:
+        return self._source_index
+
     def get_channel_schemata(self) -> dict[str, Any]:
         return self._source.get_channel_schemata()
 

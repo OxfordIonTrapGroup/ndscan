@@ -359,6 +359,7 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
                 action.triggered.connect(
                     lambda *a, name=name: self._toggle_subscan_plot(name)
                 )
+
         super().build_context_menu(pane_idx, builder)
 
     def _toggle_subscan_plot(self, name):
@@ -401,6 +402,90 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
         # This triggers the plot widget's closeEvent, which in turn emits was_closed(),
         # which in causes the dock to be removed.
         self.subscan_plots[name].close()
+
+
+# TODO: Use metaprogramming to avoid code duplication with SubscanMenuPanesWidget.
+class SliceableMenuPanesWidget(SubplotMenuPanesWidget):
+    """
+    PlotWidget with a context menu to open new windows for slices for
+    multi-dimensional data.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        #: Maps axis names to model Root instances. Populated once we have the
+        #: channel schemata; also keeps the Root objects alive.
+        self.slice_roots: dict[str, Root] = {}
+
+        #: Maps axis names to active plot widgets.
+        self.slice_plots: dict[str, VerticalPanesWidget] = {}
+
+    def closeEvent(self, ev):
+        # Hide subplots as well when hiding the parent plot (i.e. self).
+        for w in self.slice_plots.values():
+            w.close()
+        super().closeEvent(ev)
+
+    def build_context_menu(
+        self, pane_idx: int | None, builder: ContextMenuBuilder
+    ) -> None:
+        if len(self.slice_roots) > 0:
+            builder.ensure_separator()
+            for name in self.slice_roots.keys():
+                action = builder.append_action(f"Slice along '{name}'")
+                action.setCheckable(True)
+                action.setChecked(name in self.slice_plots)
+                action.triggered.connect(
+                    lambda *a, name=name: self._toggle_slice_plot(name)
+                )
+        super().build_context_menu(pane_idx, builder)
+
+    def _toggle_slice_plot(self, name):
+        toggle_all = (
+            QtWidgets.QApplication.keyboardModifiers()
+            & QtCore.Qt.KeyboardModifier.ShiftModifier
+        )
+        if name in self.slice_plots:
+            if toggle_all:
+                # This will also end up removing the plots from self.slice_plots; take
+                # list() to not depend on the details of the signal dispatch timing.
+                for key in list(self.slice_plots.keys()):
+                    self.close_slice_plot(key)
+            else:
+                # Just close the one plot.
+                self.close_slice_plot(name)
+        else:
+            if toggle_all:
+                for name in self.slice_roots.keys():
+                    if name not in self.slice_plots:
+                        self.open_slice_plot(name)
+            else:
+                self.open_slice_plot(name)
+
+    def open_slice_plot(self, name):
+        assert name not in self.slice_plots
+        try:
+            from .container_widgets import RootWidget
+
+            plot = RootWidget(self.slice_roots[name])
+        except NotImplementedError as err:
+            logger.info("Ignoring slice '%s': %s", name, str(err))
+            return
+        self.slice_plots[name] = plot
+        plot.new_dock_requested.connect(self.new_dock_requested)
+        plot.was_closed.connect(lambda: self.slice_plots.pop(name).deleteLater())
+        self.new_dock_requested.emit(plot, f"Slice along '{name}'")
+
+        # Creating a new dock shifts focus to the new slice plots;
+        # return focus to the original plot.
+        self.setFocus()
+
+    def close_slice_plot(self, name):
+        # This triggers the plot widget's closeEvent, which in turn emits was_closed(),
+        # which in causes the dock to be removed.
+        self.slice_plots[name].close()
+        self.setFocus()
 
 
 def add_source_id_label(
