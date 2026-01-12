@@ -5,4 +5,5 @@ ignore =[
     # Star imports are common in idiomatic ARTIQ code
     "F403", "F405"
 ]
+extend-select = ["I"]
 
