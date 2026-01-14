@@ -62,8 +62,7 @@ class DefaultAnalysis:
     def describe_online_analyses(
         self, context: AnnotationContext
     ) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
-        """Exceute analysis and serialise information about resulting annotations and
-        online analyses to stringly typed metadata.
+        """Serialise information about online analyses to stringly typed metadata.
 
         :param context: The :class:`.AnnotationContext` to use to resolve references to
             fragment tree objects in user-specified data.
