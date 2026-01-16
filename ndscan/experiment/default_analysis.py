@@ -251,7 +251,7 @@ class OnlineFit(DefaultAnalysis):
 
         params = []
         if fit_type not in FIT_OBJECTS:
-            logger.warning("Unknown fit type: '%s'", fit_type, exc_info=True)
+            raise ValueError(f"Unrecognised fit type: '{fit_type}'")
         else:
             try:
                 params = FIT_OBJECTS[fit_type].all_parameter_names
@@ -260,8 +260,8 @@ class OnlineFit(DefaultAnalysis):
                 # If explicitly requested to save fit results, then get all non-derived params
                 if save_fit_results is True:
                     logger.warning(
-                        "AttributeError: Installed oitg version may not support online fit saving."
-                        "Try upgrading oitg to the latest version. Unable to save derived fit params",
+                        "Derived parameters not accessible in installed version of oitg. "
+                        "Consider upgrading.",
                         fit_type,
                         exc_info=True,
                     )
@@ -294,6 +294,7 @@ class OnlineFit(DefaultAnalysis):
         self.initial_values = {} if initial_values is None else initial_values
 
     def required_axes(self) -> set[ParamHandle]:
+        ""
         return {a for a in self.data.values() if isinstance(a, ParamHandle)}
 
     def describe_online_analyses(
@@ -355,6 +356,7 @@ class OnlineFit(DefaultAnalysis):
         }
 
     def get_analysis_results(self) -> dict[str, ResultChannel]:
+        ""
         return self._result_channels
 
     def execute(
@@ -363,6 +365,7 @@ class OnlineFit(DefaultAnalysis):
         result_data: dict[ResultChannel, list],
         context: AnnotationContext,
     ) -> list[dict[str, Any]]:
+        ""
         if not self._save_fit_results:
             return []
 
