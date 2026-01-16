@@ -20,6 +20,7 @@ from mock_environment import HasEnvironmentCase
 from sipyco import pyon
 
 from ndscan.experiment import *
+from ndscan.experiment.parameters import FloatParamStore
 from ndscan.experiment.utils import is_kernel
 from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
 
@@ -336,6 +337,14 @@ class RunOnceCase(HasEnvironmentCase):
     def test_run_once_host(self):
         fragment = self.create(AddOneFragment, [])
         self.assertEqual(run_fragment_once(fragment), {fragment.result: 1.0})
+
+    def test_run_once_overrides(self):
+        f = self.create(AddOneFragment, [])
+        store = FloatParamStore("...", 5.0)
+        self.assertEqual(
+            run_fragment_once(f, overrides={f.fqn + ".value": [("*", store)]}),
+            {f.result: 6.0},
+        )
 
     def test_run_once_repeated(self):
         fragment = self.create(AddOneFragment, [])
