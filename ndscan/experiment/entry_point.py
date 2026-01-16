@@ -741,6 +741,9 @@ def run_fragment_once(
     """Initialise the passed fragment and run it once, capturing and returning the
     values from any result channels.
 
+    :param max_rtio_error_retries: Number of times to catch RTIOUnderflow exceptions and
+        retry execution. If exceeded, the exception is re-raised for the caller to
+        handle. If ``0``, retrying is disabled entirely.
     :param max_transitory_error_retries: Number of times to catch transitory error
         exceptions and retry execution. If exceeded, the exception is re-raised for
         the caller to handle. If ``0``, retrying is disabled entirely.
