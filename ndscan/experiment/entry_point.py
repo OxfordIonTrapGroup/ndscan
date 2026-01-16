@@ -736,6 +736,7 @@ def run_fragment_once(
     fragment: ExpFragment,
     max_rtio_underflow_retries: int = 3,
     max_transitory_error_retries: int = 10,
+    overrides: dict[str, list[tuple[str, ParamStore]]] = {},
 ) -> dict[ResultChannel, Any]:
     """Initialise the passed fragment and run it once, capturing and returning the
     values from any result channels.
@@ -743,6 +744,8 @@ def run_fragment_once(
     :param max_transitory_error_retries: Number of times to catch transitory error
         exceptions and retry execution. If exceeded, the exception is re-raised for
         the caller to handle. If ``0``, retrying is disabled entirely.
+    :param overrides: Any parameter overrides to apply when initialising the fragment;
+        see :meth:`.Fragment.init_params`.
 
     :return: A dictionary mapping :class:`ResultChannel` instances to their values
         (or ``None`` if not pushed to).
@@ -757,7 +760,7 @@ def run_fragment_once(
     runner = _FragmentRunner(
         fragment, fragment, max_rtio_underflow_retries, max_transitory_error_retries
     )
-    fragment.init_params()
+    fragment.init_params(overrides=overrides)
     fragment.prepare()
     try:
         while True:
