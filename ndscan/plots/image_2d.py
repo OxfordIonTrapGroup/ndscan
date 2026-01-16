@@ -508,7 +508,8 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         y = self.plot.y_range[0] + y_idx * self.plot.y_range[2]
 
         source_idx = self._xy_to_source_index(x, y)
-        self._highlight_point_at_index(source_idx)
+        if source_idx is not None:
+            self._highlight_point_at_index(source_idx)
 
     def keyPressEvent(self, event):
         """Handle arrow key presses to move the highlighted point."""
@@ -535,9 +536,10 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         """Highlight the point at the given index of the source data."""
         self.selected_point_model.set_source_index(source_idx)
 
-        if source_idx is None and self.highlight_point_item.parentItem():
-            self.plot_item.removeItem(self.highlight_point_item)
+        if source_idx is None:
             self._highlighted_xy = (None, None)
+            if self.highlight_point_item.parentItem():
+                self.plot_item.removeItem(self.highlight_point_item)
             return
 
         x = self.plot.points["axis_0"][source_idx]
