@@ -835,13 +835,19 @@
     <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
     <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
     <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">overrides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{},</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialise the passed fragment and run it once, capturing and returning the</span>
 <span class="sd">    values from any result channels.</span>
 
+<span class="sd">    :param max_rtio_error_retries: Number of times to catch RTIOUnderflow exceptions and</span>
+<span class="sd">        retry execution. If exceeded, the exception is re-raised for the caller to</span>
+<span class="sd">        handle. If ``0``, retrying is disabled entirely.</span>
 <span class="sd">    :param max_transitory_error_retries: Number of times to catch transitory error</span>
 <span class="sd">        exceptions and retry execution. If exceeded, the exception is re-raised for</span>
 <span class="sd">        the caller to handle. If ``0``, retrying is disabled entirely.</span>
+<span class="sd">    :param overrides: Any parameter overrides to apply when initialising the fragment;</span>
+<span class="sd">        see :meth:`.Fragment.init_params`.</span>
 
 <span class="sd">    :return: A dictionary mapping :class:`ResultChannel` instances to their values</span>
 <span class="sd">        (or ``None`` if not pushed to).</span>
@@ -856,7 +862,7 @@
     <span class="n">runner</span> <span class="o">=</span> <span class="n">_FragmentRunner</span><span class="p">(</span>
         <span class="n">fragment</span><span class="p">,</span> <span class="n">fragment</span><span class="p">,</span> <span class="n">max_rtio_underflow_retries</span><span class="p">,</span> <span class="n">max_transitory_error_retries</span>
     <span class="p">)</span>
-    <span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">()</span>
+    <span class="n">fragment</span><span class="o">.</span><span class="n">init_params</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
     <span class="n">fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
