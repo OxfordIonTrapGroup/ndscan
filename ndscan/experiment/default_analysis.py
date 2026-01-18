@@ -402,7 +402,11 @@ class OnlineFit(DefaultAnalysis):
             return []
 
         weights = 1 / (np.asarray(y_err) ** 2) if y_err is not None else np.ones_like(y)
-        reduced_chi_squared = np.sum(residuals**2 * weights) / (len(y) - len(p_dict))
+        num_free_fit_params = len(fitter.parameter_names) - len(self.constants)
+
+        reduced_chi_squared = np.sum(residuals**2 * weights) / (
+            len(y) - num_free_fit_params
+        )
 
         for param, value in p_dict.items():
             param_name = self._channel_prefix + param
