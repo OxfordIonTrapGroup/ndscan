@@ -249,40 +249,43 @@ class OnlineFit(DefaultAnalysis):
     ):
         self.fit_type = fit_type
 
-        params = []
         if fit_type not in FIT_OBJECTS:
             raise ValueError(f"Unrecognised fit type: '{fit_type}'")
-        else:
-            try:
-                params = FIT_OBJECTS[fit_type].all_parameter_names
-            except AttributeError:
-                # For backwards-compatibility with older oitg versions
-                # If explicitly requested to save fit results, then get all non-derived params
-                if save_fit_results is True:
-                    logger.warning(
-                        "Derived parameters not accessible in installed version of oitg. "
-                        "Consider upgrading.",
-                        fit_type,
-                        exc_info=True,
-                    )
-                    params = FIT_OBJECTS[fit_type].parameter_names
-                else:
-                    # If none specified and oitg version does not support derived_parameter_names,
-                    # do not save results
-                    save_fit_results = False
+
+        params = []
+        try:
+            params = FIT_OBJECTS[fit_type].all_parameter_names
+        except AttributeError:
+            # For backwards-compatibility with older oitg versions
+            # If explicitly requested to save fit results, then get all non-derived params
+            if save_fit_results is True:
+                logger.warning(
+                    "Derived parameters not accessible in installed version of oitg. "
+                    "Consider upgrading.",
+                    fit_type,
+                    exc_info=True,
+                )
+                params = FIT_OBJECTS[fit_type].parameter_names
+            else:
+                # If none specified and oitg version does not support derived_parameter_names,
+                # do not save results
+                save_fit_results = False
         self._save_fit_results = (save_fit_results is None) or save_fit_results
 
         self._result_channels = {}
+        self._channel_prefix = f"{fit_type}_fit_"
 
         if self._save_fit_results:
             for param in params:
-                self._result_channels[param] = OpaqueChannel(f"fit_{param}")
-                self._result_channels[param + "_err"] = OpaqueChannel(
-                    f"fit_{param}_err"
+                self._result_channels[f"{self._channel_prefix}{param}"] = OpaqueChannel(
+                    f"{fit_type}_{param}"
+                )
+                self._result_channels[f"{self._channel_prefix}{param}_err"] = (
+                    OpaqueChannel(f"{fit_type}_{param}_err")
                 )
 
-            self._result_channels["reduced_chi_squared"] = OpaqueChannel(
-                f"fit_{self.fit_type}_reduced_chi_squared"
+            self._result_channels[f"{self._channel_prefix}reduced_chi_squared"] = (
+                OpaqueChannel(f"{self._channel_prefix}reduced_chi_squared")
             )
 
         self.data = data
@@ -402,11 +405,16 @@ class OnlineFit(DefaultAnalysis):
         reduced_chi_squared = np.sum(residuals**2 * weights) / (len(y) - len(p_dict))
 
         for param, value in p_dict.items():
-            if param not in self._result_channels:
+            param_name = self._channel_prefix + param
+            if param_name not in self._result_channels:
                 continue
-            self._result_channels[param].push(value)
-            self._result_channels[param + "_err"].push(p_error_dict.get(param, None))
-        self._result_channels["reduced_chi_squared"].push(reduced_chi_squared)
+            self._result_channels[param_name].push(value)
+            self._result_channels[param_name + "_err"].push(
+                p_error_dict.get(param, None)
+            )
+        self._result_channels[f"{self._channel_prefix}reduced_chi_squared"].push(
+            reduced_chi_squared
+        )
 
         return []
 
