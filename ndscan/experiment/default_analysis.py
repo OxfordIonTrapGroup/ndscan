@@ -387,13 +387,19 @@ class OnlineFit(DefaultAnalysis):
 
         try:
             p_dict, p_error_dict, residuals = fitter.fit(
-                x, y, y_err, calculate_residuals=True
+                x,
+                y,
+                y_err,
+                calculate_residuals=True,
+                constants=self.constants,
+                initialise=self.initial_values,
             )
         except FitError:
             logger.warning("Fit failed for fit type '%s'", self.fit_type, exc_info=True)
             return []
 
-        reduced_chi_squared = np.sum(residuals**2) / (len(y) - len(p_dict))
+        weights = 1 / (np.asarray(y_err) ** 2) if y_err is not None else np.ones_like(y)
+        reduced_chi_squared = np.sum(residuals**2 * weights) / (len(y) - len(p_dict))
 
         for param, value in p_dict.items():
             if param not in self._result_channels:
