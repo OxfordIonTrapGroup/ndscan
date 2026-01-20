@@ -390,7 +390,7 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
             pen=highlight_pen, brush=brush, size=8, symbol="o"
         )
         self.highlight_point_item.setZValue(2)  # Show above all other points.
-        self.plot_item.addItem(self.highlight_point_item)
+        self.plot_item.addItem(self.highlight_point_item, ignoreBounds=True)
 
         x_scaling_info = get_axis_scaling_info(self.x_schema["param"]["spec"])
         y_scaling_info = get_axis_scaling_info(self.y_schema["param"]["spec"])
@@ -548,7 +548,7 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         self.highlight_point_item.setData([x], [y], data=source_idx)
         self._highlighted_xy = (x, y)
         if not self.highlight_point_item.parentItem():
-            self.plot_item.addItem(self.highlight_point_item)
+            self.plot_item.addItem(self.highlight_point_item, ignoreBounds=True)
 
     def _xy_to_source_index(self, x, y) -> int | None:
         """Get the source index of the point at the given coordinates."""
