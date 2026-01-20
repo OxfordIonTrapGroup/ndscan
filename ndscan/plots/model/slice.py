@@ -169,7 +169,6 @@ def create_slice_roots(
         return {}
 
     result = {}
-    model.get_point_data()
     for i, axis in enumerate(model.axes):
         name = axis.get("param", {}).get("description", "axis_{}".format(i))
         root = SliceRoot(model, selected_point, schemata, i)
