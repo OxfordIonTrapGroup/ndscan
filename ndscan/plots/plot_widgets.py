@@ -101,9 +101,9 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
     error = QtCore.pyqtSignal(str)
 
     #: Emitted when the user opened a subplot/… and the containing widget should show
-    #: the given widget in a new dock. Arguments are (VerticalPanesWidget to show,
+    #: the given widget in a new dock. Arguments are (RootWidget to show,
     #: dock title).
-    new_dock_requested = QtCore.pyqtSignal(object, str)
+    new_dock_requested = QtCore.pyqtSignal(object)
 
     #: Emitted after the dock containing this widget was closed by the user (if a
     #: subplot/…), whether through a context menu or the docking area UI.
@@ -397,7 +397,7 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
         self.subscan_plots[name] = plot
         plot.new_dock_requested.connect(self.new_dock_requested)
         plot.was_closed.connect(lambda: self.subscan_plots.pop(name).deleteLater())
-        self.new_dock_requested.emit(plot, root.get_title())
+        self.new_dock_requested.emit(plot)
 
     def close_subscan_plot(self, name):
         # This triggers the plot widget's closeEvent, which in turn emits was_closed(),
@@ -476,7 +476,7 @@ class SliceableMenuPanesWidget(SubplotMenuPanesWidget):
         self.slice_plots[name] = plot
         plot.new_dock_requested.connect(self.new_dock_requested)
         plot.was_closed.connect(lambda: self.slice_plots.pop(name).deleteLater())
-        self.new_dock_requested.emit(plot, f"Slice along '{name}'")
+        self.new_dock_requested.emit(plot)
 
         # Creating a new dock shifts focus to the new slice plots;
         # return focus to the original plot.
