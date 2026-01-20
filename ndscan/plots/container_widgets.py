@@ -41,10 +41,13 @@ class PlotAreaWidget(pgda.DockArea):
 
         self._root_dock.addWidget(self._root_widget)
 
-    def _add_dock(self, widget: VerticalPanesWidget, title: str):
-        dock = pgda.Dock(title, autoOrientation=False, closable=True, widget=widget)
+    def _add_dock(self, widget: "RootWidget"):
+        dock = pgda.Dock(
+            widget.get_title(), autoOrientation=False, closable=True, widget=widget
+        )
         widget.was_closed.connect(lambda: self._was_closed_cb(dock))
         dock.sigClosed.connect(widget.close)
+        widget.title_changed.connect(dock.setTitle)
 
         _, docks = self.findAll()
         if len(docks) > 1:
@@ -70,14 +73,25 @@ class RootWidget(QtWidgets.QWidget):
     loading), the plot after that.
     """
 
-    new_dock_requested = QtCore.pyqtSignal(object, str)
+    #: Emitted when the user opened a subplot/… and the containing widget should show
+    #: the given widget in a new dock. Arguments are (RootWidget to show,
+    #: dock title).
+    new_dock_requested = QtCore.pyqtSignal(object)
+
+    #: Emitted after the dock containing this widget was closed by the user (if a
+    #: subplot/…), whether through a context menu or the docking area UI.
     was_closed = QtCore.pyqtSignal()
+
+    #: Emitted when the most informative title for the widget changes (to be displayed
+    #: in the dock header, etc.). Argument is the new title.
+    title_changed = QtCore.pyqtSignal(str)
 
     def __init__(self, root: Root):
         super().__init__()
 
         self.root = root
         self.root.model_changed.connect(self._change_model)
+        self.root.title_changed.connect(self.title_changed)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -95,6 +109,9 @@ class RootWidget(QtWidgets.QWidget):
 
         if self.root.get_model() is not None:
             self._change_model()
+
+    def get_title(self) -> str:
+        return self.root.get_title()
 
     def closeEvent(self, ev):
         if self.plot_widget is None:
