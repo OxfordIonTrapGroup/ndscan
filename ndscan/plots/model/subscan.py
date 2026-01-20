@@ -48,6 +48,9 @@ class SubscanRoot(Root):
     def get_model(self) -> Model | None:
         return self._model
 
+    def get_title(self) -> str:
+        return f"subscan '{self.name}'"
+
 
 class SubscanModel(ScanModel):
     """A scan selected out of a single point with a subscan channel.

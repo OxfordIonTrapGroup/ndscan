@@ -33,7 +33,7 @@ class SubscriberRoot(Root):
 
         # For root dataset sources, scan metadata doesn't change once it's been set.
         self._schema_revision = None
-        self._title_set = False
+        self._title = f"{prefix} <synchronising>"
         self._source_id_set = False
         self._axes_initialised = False
 
@@ -49,10 +49,9 @@ class SubscriberRoot(Root):
             return
 
         fqn = d("fragment_fqn")
-        if not self._title_set or self._context.get_title() != fqn:
-            if fqn:
-                self._context.set_title(fqn)
-                self._title_set = True
+        if fqn and self._title != fqn:
+            self._title = fqn
+            self.title_changed.emit(self._title)
 
         source_id = d("source_id")
         if not self._source_id_set or self._context.get_source_id() != source_id:
@@ -83,6 +82,9 @@ class SubscriberRoot(Root):
 
     def get_model(self) -> Model | None:
         return self._model
+
+    def get_title(self) -> str:
+        return self._title
 
 
 class SubscriberSinglePointModel(SinglePointModel):

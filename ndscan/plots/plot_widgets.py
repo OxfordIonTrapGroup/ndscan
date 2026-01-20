@@ -389,14 +389,15 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
         try:
             from .container_widgets import RootWidget
 
-            plot = RootWidget(self.subscan_roots[name])
+            root = self.subscan_roots[name]
+            plot = RootWidget(root)
         except NotImplementedError as err:
             logger.info("Ignoring subscan '%s': %s", name, str(err))
             return
         self.subscan_plots[name] = plot
         plot.new_dock_requested.connect(self.new_dock_requested)
         plot.was_closed.connect(lambda: self.subscan_plots.pop(name).deleteLater())
-        self.new_dock_requested.emit(plot, f"subscan '{name}'")
+        self.new_dock_requested.emit(plot, root.get_title())
 
     def close_subscan_plot(self, name):
         # This triggers the plot widget's closeEvent, which in turn emits was_closed(),
