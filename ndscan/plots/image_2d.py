@@ -558,7 +558,14 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         x_source = self.plot.points["axis_0"]
         y_source = self.plot.points["axis_1"]
 
-        source_idx = np.flatnonzero(np.logical_and(x_source == x, y_source == y))
+        # KLUDGE: For some reason, the range spec/… calculation introduces more than the
+        # possibly expected few ulp roundoff error; use a relatively loose tolerance of
+        # 1e-14 (about 50 epsilon). A slightly cleaner solution would be to use an
+        # absolute tolerance based on the minimal spacing of source data points.
+        source_idx = np.flatnonzero(
+            np.isclose(x_source, x, atol=0.0, rtol=1e-14)
+            & np.isclose(y_source, y, atol=0.0, rtol=1e-14)
+        )
 
         if source_idx.size == 0:
             return None
