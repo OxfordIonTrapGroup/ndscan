@@ -326,6 +326,7 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         self.plot_item.showGrid(x=True, y=True)
         self.plot: _ImagePlot | None = None
         self.crosshair = None
+        self._highlighted_xy = (None, None)
 
         self.found_duplicate_coords = False
         self.unique_coords = set[tuple[float, float]]()
