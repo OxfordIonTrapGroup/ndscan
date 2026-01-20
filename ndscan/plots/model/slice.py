@@ -57,6 +57,9 @@ class SliceRoot(Root):
         self._selected_point.point_changed.connect(self._update)
         self._update()
 
+    def get_title(self):
+        return f"Slice along axis {self.axis_idx}"
+
 
 class SliceForScanModel(ScanModel):
     """A 1-dimensional slice of an N-dimensional scan.

@@ -43,21 +43,11 @@ class Context(QtCore.QObject):
     """
 
     source_id_changed = QtCore.pyqtSignal(str)
-    title_changed = QtCore.pyqtSignal(str)
 
     def __init__(self, set_dataset: Callable[[str, Any], None] = None):
         super().__init__()
         self._set_dataset = set_dataset
-        self._title = ""
         self._source_id = "<unknown>"
-
-    def get_title(self) -> str:
-        return self._title
-
-    def set_title(self, title: str) -> None:
-        if self._title != title:
-            self._title = title
-            self.title_changed.emit(title)
 
     def get_source_id(self):
         """Return a short string that helps the user to identify the data source.
@@ -148,8 +138,15 @@ class Root(QtCore.QObject):
     """
 
     model_changed = QtCore.pyqtSignal(object)
+    title_changed = QtCore.pyqtSignal(str)
 
     def get_model(self) -> Optional["Model"]:
+        raise NotImplementedError
+
+    def get_title(self) -> str:
+        """Return a human-readable title describing what this data tree represents,
+        suitable for window/dock/… title bars.
+        """
         raise NotImplementedError
 
 

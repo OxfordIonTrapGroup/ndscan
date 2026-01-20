@@ -29,8 +29,8 @@ class PlotAreaWidget(pgda.DockArea):
         super().__init__()
 
         self.root = root
+        self.root.title_changed.connect(self._set_window_title)
         self.context = context
-        self.context.title_changed.connect(self._set_window_title)
 
         self._root_widget = RootWidget(root)
         self._root_widget.new_dock_requested.connect(self._add_dock)

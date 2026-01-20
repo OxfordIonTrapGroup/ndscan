@@ -16,9 +16,11 @@ class HDF5Root(Root):
     :param datasets: The HDF5 group below which the dataset keys are found.
     :param prefix: Prefix of the ndscan dataset tree to represent, e.g.
         ``"ndscan."`` for the default location.
+    :param context: The ambient context to pass down to models.
+    :param title: Human-readable title (:meth:`.Root.get_title()`).
     """
 
-    def __init__(self, datasets: h5py.Group, prefix: str, context: Context):
+    def __init__(self, datasets: h5py.Group, prefix: str, context: Context, title: str):
         super().__init__()
 
         try:
@@ -39,8 +41,13 @@ class HDF5Root(Root):
                 axes, datasets, prefix, schema_revision, context
             )
 
+        self._title = title
+
     def get_model(self) -> Model | None:
         return self._model
+
+    def get_title(self) -> str:
+        return self._title
 
 
 class HDF5SingleShotModel(SinglePointModel):

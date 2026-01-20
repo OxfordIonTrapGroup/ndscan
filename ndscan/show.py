@@ -173,12 +173,12 @@ def main():
 
     print_metadata(artiq_metadata)
 
+    title = os.path.basename(args.path)
     try:
         context = Context()
-        context.set_title(os.path.basename(args.path))
         context.set_source_id(get_source_id(datasets, prefixes))
 
-        roots = [HDF5Root(datasets, p, context) for p in prefixes]
+        roots = [HDF5Root(datasets, p, context, title) for p in prefixes]
     except Exception as e:
         QtWidgets.QMessageBox.critical(
             None,
@@ -199,7 +199,7 @@ def main():
             ),
             context,
         )
-    widget.setWindowTitle(f"{context.get_title()} – ndscan.show")
+    widget.setWindowTitle(f"{title} – ndscan.show")
     widget.show()
     widget.resize(800, 600)
     sys.exit(app.exec())
