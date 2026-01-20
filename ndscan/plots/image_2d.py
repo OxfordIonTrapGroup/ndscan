@@ -341,9 +341,6 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
             self.plot.image_item.destroyLater()
             self.plot = None
 
-        self.subscan_roots = create_subscan_roots(self.selected_point_model)
-        self.slice_roots = create_slice_roots(self.model, self.selected_point_model)
-
         try:
             self.data_names, _ = extract_scalar_channels(channels)
         except ValueError as e:
