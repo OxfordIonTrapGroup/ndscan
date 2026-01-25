@@ -221,7 +221,7 @@ class ArgumentInterface(HasEnvironment):
             }
         self._params = self.get_argument(PARAMS_ARG_KEY, PYONValue(default=desc))
 
-    def make_override_stores(self) -> dict[str, tuple[str, ParamStore]]:
+    def make_override_stores(self) -> dict[str, list[tuple[str, ParamStore]]]:
         stores = {}
         for fqn, specs in self._params.get("overrides", {}).items():
             try:
