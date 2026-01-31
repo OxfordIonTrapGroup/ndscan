@@ -376,6 +376,17 @@ class RunOnceCase(HasEnvironmentCase):
             {"result": 1.0},
         )
 
+    def test_create_and_run_once_overrides(self):
+        store = FloatParamStore("...", 5.0)
+        self.assertEqual(
+            create_and_run_fragment_once(
+                self.create(HasEnvironment),
+                AddOneFragment,
+                overrides={"fixtures.AddOneFragment.value": [("*", store)]},
+            ),
+            {"result": 6.0},
+        )
+
     def test_run_once_transitory_errors(self):
         fragment = self.create(TransitoryErrorFragment, [])
         fragment.num_device_setup_to_fail = 3
