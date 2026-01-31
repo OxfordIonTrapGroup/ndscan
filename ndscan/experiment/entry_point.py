@@ -782,6 +782,7 @@ def create_and_run_fragment_once(
     *args,
     max_rtio_underflow_retries: int = 3,
     max_transitory_error_retries: int = 10,
+    overrides: dict[str, list[tuple[str, ParamStore]]] = {},
     **kwargs,
 ) -> dict[str, Any]:
     """Create an instance of the passed :class:`.ExpFragment` type and runs it once,
@@ -813,6 +814,7 @@ def create_and_run_fragment_once(
         fragment_class(env, [], *args, **kwargs),
         max_rtio_underflow_retries=max_rtio_underflow_retries,
         max_transitory_error_retries=max_transitory_error_retries,
+        overrides=overrides,
     )
     shortened_names = _shorten_result_channel_names(
         channel.path for channel in results.keys()
