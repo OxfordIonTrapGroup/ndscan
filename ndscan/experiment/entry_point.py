@@ -199,7 +199,10 @@ class ArgumentInterface(HasEnvironment):
                     param = handle.owner._free_params[handle.name]
                     always_shown_params += [(param.fqn, path)]
                 except KeyError:
-                    logger.warning(
+                    # This is benign if a parameter explicitly listed in a fragment's
+                    # get_always_shown_params() is subsequently overridden in a parent
+                    # fragment/subscan/…
+                    logger.debug(
                         "Parameter '%s' specified in get_always_shown_params()"
                         " is not a free parameter of fragment '%s'",
                         handle.name,
