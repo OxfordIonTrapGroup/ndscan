@@ -884,6 +884,7 @@
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
     <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
     <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">overrides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
@@ -915,6 +916,7 @@
         <span class="n">fragment_class</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
         <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
         <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
+        <span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">shortened_names</span> <span class="o">=</span> <span class="n">_shorten_result_channel_names</span><span class="p">(</span>
         <span class="n">channel</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
