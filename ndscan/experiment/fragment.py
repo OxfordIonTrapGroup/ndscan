@@ -892,31 +892,38 @@ class AggregateExpFragment(ExpFragment):
         if not operands:
             raise ValueError("At least one operand must be given")
 
-        operand_funcs = [
-            operand.run_once if isinstance(operand, ExpFragment) else operand
-            for operand in operands
-        ]
-        self._exp_fragments = [
-            operand for operand in operands if isinstance(operand, ExpFragment)
-        ]
-
         # Since polymorphism is not supported by the ARTIQ compiler, make named
-        # attributes for each operand and make a _run_once_impl() helper function
-        # that calls them one after each other.
-        for i, func in enumerate(operand_funcs):
-            setattr(self, f"_operand_func_{i}", func)
+        # attributes for each operand and make a _run_once_impl() helper function that
+        # calls them one after each other. Just lowering fragment operands to their
+        # run_once() function first would seem cleaner, but stops monomorphisation from
+        # working if run_once() is implemented in a base class of the operand (which is
+        # arguably an ARTIQ compiler bug), so we explicitly handle both cases.
+        self._exp_fragments = []
+        self._call_statements = []
+        is_kernels = []
+        for i, operand in enumerate(operands):
+            if isinstance(operand, ExpFragment):
+                self._exp_fragments.append(operand)
+                name = f"_operand_fragment_{i}"
+                setattr(self, name, operand)
+                self._call_statements.append(f"self.{name}.run_once()")
+                is_kernels.append(is_kernel(operand.run_once))
+            elif callable(operand):
+                name = f"_operand_func_{i}"
+                setattr(self, name, operand)
+                self._call_statements.append(f"self.{name}()")
+                is_kernels.append(is_kernel(operand))
+            else:
+                raise TypeError(f"Expected callable or ExpFragment, not '{operand}'")
 
         self._run_once_impl = kernel_from_string(
-            ["self"],
-            "\n".join([f"self._operand_func_{i}()" for i in range(len(operand_funcs))]),
-            portable,
+            ["self"], "\n".join(self._call_statements), portable
         )
 
-        # If all operand functions are @kernel, then make our run_once()
-        # run on the kernel too. Reassigning the member function is a bit janky, but so
-        # would it be to update the decorator, as `artiq_embedded` is an immutable tuple
-        # and the type is not public.
-        is_kernels = [is_kernel(func) for func in operand_funcs]
+        # If all operands are @kernel, then make our run_once() run on the kernel too.
+        # Reassigning the member function is a bit janky, but so would it be to update
+        # the decorator, as `artiq_embedded` is an immutable tuple and the type is not
+        # public.
         if all(is_kernels):
             self.run_once = self._kernel_run_once
         else:
