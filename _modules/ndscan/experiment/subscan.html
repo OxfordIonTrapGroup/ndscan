@@ -556,7 +556,8 @@
 <span class="sd">            def configure_scan(self):</span>
 <span class="sd">                if self.num_scan_points.changed_after_use():</span>
 <span class="sd">                    self.scan.configure([(self.foo.param_a,</span>
-<span class="sd">                        LinearGenerator(0.0, 0.1, self.num_scan_points.use()))])</span>
+<span class="sd">                        LinearGenerator(0.0, 0.1, self.num_scan_points.use(),</span>
+<span class="sd">                                        randomise_order=True))])</span>
 
 <span class="sd">            def host_setup(self):</span>
 <span class="sd">                # Run at least once before kernel starts such that all the fields</span>
@@ -632,8 +633,8 @@
             <span class="n">save_results_by_default</span><span class="p">,</span>
             <span class="n">expose_analysis_results</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">run_once</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_run_once</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_kernel</span><span class="p">(</span><span class="n">scanned_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_once</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">acquire</span></div>
 
 
 <div class="viewcode-block" id="SubscanExpFragment.configure">
@@ -677,6 +678,7 @@
 
 <div class="viewcode-block" id="SubscanExpFragment.run_once">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.run_once">[docs]</a>
+    <span class="nd">@kernel</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the subscan as previously configured.</span>
 
@@ -687,11 +689,7 @@
 <span class="sd">        well.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span></div>
-
-
-    <span class="nd">@kernel</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_kernel_run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_subscan</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span></div>
+</div>
 
 </pre></div>
 
