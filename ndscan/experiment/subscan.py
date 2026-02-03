@@ -544,8 +544,8 @@ class SubscanExpFragment(ExpFragment):
             save_results_by_default,
             expose_analysis_results,
         )
-        if is_kernel(scanned_fragment.run_once):
-            self.run_once = self._kernel_run_once
+        if not is_kernel(scanned_fragment.run_once):
+            self.run_once = self._subscan.acquire
 
     def configure(
         self,
@@ -583,6 +583,7 @@ class SubscanExpFragment(ExpFragment):
         self._scanned_fragment.host_cleanup()
         super().host_cleanup()
 
+    @kernel
     def run_once(self) -> None:
         """Execute the subscan as previously configured.
 
@@ -592,8 +593,4 @@ class SubscanExpFragment(ExpFragment):
         ``run_once()`` method, this will automatically be made a ``@kernel`` method as
         well.
         """
-        self._subscan.acquire()
-
-    @kernel
-    def _kernel_run_once(self):
         self._subscan.acquire()

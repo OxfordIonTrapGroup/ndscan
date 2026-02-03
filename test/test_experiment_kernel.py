@@ -10,6 +10,7 @@ from collections import Counter
 from dataclasses import dataclass
 from enum import Enum, unique
 
+import numpy as np
 from artiq.language import kernel
 from emulator_environment import KernelEmulatorCase
 from fixtures import TrivialKernelFragment
@@ -24,6 +25,8 @@ from ndscan.experiment.parameters import (
     StringParam,
 )
 from ndscan.experiment.result_channels import FloatChannel, IntChannel, OpaqueChannel
+from ndscan.experiment.scan_generator import LinearGenerator, ListGenerator
+from ndscan.experiment.subscan import SubscanExpFragment, setattr_subscan
 from ndscan.utils import SCHEMA_REVISION, SCHEMA_REVISION_KEY
 
 
@@ -164,3 +167,212 @@ class TestSmorgasbordKernelCase(KernelEmulatorCase):
                 Counter(d(f"points.channel_{scan_def.param_name}_result")),
                 Counter({k: num_repeats for k in scan_def.result_values}),
             )
+
+
+# # #
+
+
+class Inner(ExpFragment):
+    def build_fragment(self) -> None:
+        self.setattr_device("core")
+        self.setattr_param("param_float", FloatParam, "Float param", default=0.0)
+        self.setattr_param("param_int", IntParam, "Int param", default=0.0)
+        self.setattr_result("result", FloatChannel)
+
+    @kernel
+    def run_once(self) -> None:
+        self.result.push(self.param_float.get() + self.param_int.get())
+
+
+INT_GEN = ListGenerator([-1, 0, 1], randomise_order=False)
+FLOAT_GEN = LinearGenerator(-1.0, 1.0, 11, randomise_order=False)
+
+
+class FloatSetattrSubscan(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("inner", Inner)
+        setattr_subscan(self, "float_scan", self.inner, [(self.inner, "param_float")])
+
+    def host_setup(self):
+        self.float_scan.set_scan_spec([(self.inner.param_float, FLOAT_GEN)])
+        super().host_setup()
+
+    @kernel
+    def run_once(self) -> None:
+        self.float_scan.acquire()
+
+
+class IntSetattrSubscan(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("inner", Inner)
+        setattr_subscan(self, "int_scan", self.inner, [(self.inner, "param_int")])
+
+    def host_setup(self):
+        self.int_scan.set_scan_spec([(self.inner.param_int, INT_GEN)])
+
+    @kernel
+    def run_once(self) -> None:
+        self.int_scan.acquire()
+
+
+class SetattrParent(ExpFragment):
+    def build_fragment(self) -> None:
+        self.setattr_fragment("int_frag", IntSetattrSubscan)
+        self.setattr_fragment("float_frag", FloatSetattrSubscan)
+
+    @kernel
+    def run_once(self):
+        self.int_frag.run_once()
+        self.float_frag.run_once()
+
+
+SetattrParentScan = make_fragment_scan_exp(SetattrParent)
+
+
+class FloatSubscanExpFragment(SubscanExpFragment):
+    pass
+
+
+class FloatFragmentSubscan(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("inner", Inner)
+        self.setattr_fragment(
+            "scan",
+            FloatSubscanExpFragment,
+            self,
+            self.inner,
+            [(self.inner, "param_float")],
+        )
+
+    def host_setup(self):
+        self.scan.configure([(self.inner.param_float, FLOAT_GEN)])
+        super().host_setup()
+
+    @kernel
+    def run_once(self) -> None:
+        self.scan.run_once()
+
+
+class IntSubscanExpFragment(SubscanExpFragment):
+    pass
+
+
+class IntFragmentSubscan(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("inner", Inner)
+        self.setattr_fragment(
+            "scan",
+            IntSubscanExpFragment,
+            self,
+            self.inner,
+            [(self.inner, "param_int")],
+        )
+
+    def host_setup(self):
+        self.scan.configure([(self.inner.param_int, INT_GEN)])
+
+    @kernel
+    def run_once(self) -> None:
+        self.scan.run_once()
+
+
+class FragmentSubscanParent(ExpFragment):
+    def build_fragment(self) -> None:
+        self.setattr_fragment("int_frag", IntFragmentSubscan)
+        self.setattr_fragment("float_frag", FloatFragmentSubscan)
+
+    @kernel
+    def run_once(self):
+        self.int_frag.run_once()
+        self.float_frag.run_once()
+
+
+FragmentSubscanParentScan = make_fragment_scan_exp(FragmentSubscanParent)
+
+
+class FloatSubclassSubscan(SubscanExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("inner", Inner)
+        super().build_fragment(
+            self,
+            self.inner,
+            [(self.inner, "param_float")],
+        )
+
+    def host_setup(self):
+        self.configure([(self.inner.param_float, FLOAT_GEN)])
+        super().host_setup()
+
+
+class IntSubclassSubscan(SubscanExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("inner", Inner)
+        super().build_fragment(
+            self,
+            self.inner,
+            [(self.inner, "param_int")],
+        )
+
+    def host_setup(self):
+        self.configure([(self.inner.param_int, INT_GEN)])
+        super().host_setup()
+
+
+class SubclassSubscanParent(ExpFragment):
+    def build_fragment(self) -> None:
+        self.setattr_fragment("int_frag", IntSubclassSubscan)
+        self.setattr_fragment("float_frag", FloatSubclassSubscan)
+
+    @kernel
+    def run_once(self):
+        self.int_frag.run_once()
+        self.float_frag.run_once()
+
+
+SubclassSubscanParentScan = make_fragment_scan_exp(SubclassSubscanParent)
+
+
+class TestSubscanKernelCase(KernelEmulatorCase):
+    def _test_subscan(self, cls, fragment_fqn, float_channel_name, int_channel_name):
+        exp = self.create(cls)
+        exp.prepare()
+        exp.run()
+
+        def d(key):
+            return self.dataset_db.get("ndscan.rid_0." + key)
+
+        self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
+        self.assertEqual(d("completed"), True)
+        self.assertEqual(d("fragment_fqn"), fragment_fqn)
+        self.assertEqual(d("source_id"), "rid_0")
+
+        np.testing.assert_array_max_ulp(
+            d(f"point.{float_channel_name}"), FLOAT_GEN.points_for_level(0)
+        )
+        np.testing.assert_array_max_ulp(
+            d(f"point.{int_channel_name}"), INT_GEN.points_for_level(0)
+        )
+
+    def test_setattr_subscan(self):
+        self._test_subscan(
+            SetattrParentScan,
+            "test_experiment_kernel.SetattrParent",
+            "float_scan_channel_result",
+            "int_scan_channel_result",
+        )
+
+    def test_fragment_subscan(self):
+        self._test_subscan(
+            FragmentSubscanParentScan,
+            "test_experiment_kernel.FragmentSubscanParent",
+            "float_frag_scan__channel_result",
+            "int_frag_scan__channel_result",
+        )
+
+    def test_subclass_subscan(self):
+        self._test_subscan(
+            SubclassSubscanParentScan,
+            "test_experiment_kernel.SubclassSubscanParent",
+            "float_frag__channel_result",
+            "int_frag__channel_result",
+        )
