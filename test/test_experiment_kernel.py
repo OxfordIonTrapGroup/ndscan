@@ -172,6 +172,46 @@ class TestSmorgasbordKernelCase(KernelEmulatorCase):
 # # #
 
 
+class OneTrivial(AggregateExpFragment):
+    def build_fragment(self):
+        return super().build_fragment(
+            [self.setattr_fragment("a", TrivialKernelFragment)]
+        )
+
+
+class TwoTrivial(AggregateExpFragment):
+    def build_fragment(self):
+        return super().build_fragment(
+            [
+                self.setattr_fragment("a", TrivialKernelFragment),
+                self.setattr_fragment("b", TrivialKernelFragment),
+            ]
+        )
+
+
+class TwoPlusOneTrivial(AggregateExpFragment):
+    def build_fragment(self):
+        return super().build_fragment(
+            [
+                self.setattr_fragment("a", TwoTrivial),
+                self.setattr_fragment("b", OneTrivial),
+            ]
+        )
+
+
+TwoPlusOneTrivialScan = make_fragment_scan_exp(TwoPlusOneTrivial)
+
+
+class TestAggregateCase(KernelEmulatorCase):
+    def test_two_plus_one(self):
+        exp = self.create(TwoPlusOneTrivialScan)
+        exp.prepare()
+        exp.run()
+
+
+# # #
+
+
 class Inner(ExpFragment):
     def build_fragment(self) -> None:
         self.setattr_device("core")

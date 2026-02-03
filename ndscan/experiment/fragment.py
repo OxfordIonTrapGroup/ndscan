@@ -924,21 +924,21 @@ class AggregateExpFragment(ExpFragment):
         # Reassigning the member function is a bit janky, but so would it be to update
         # the decorator, as `artiq_embedded` is an immutable tuple and the type is not
         # public.
-        if all(is_kernels):
-            self.run_once = self._kernel_run_once
-        else:
+        if not all(is_kernels):
             if any(is_kernels):
                 logger.warning(
                     "Mixed host/@kernel functions among passed callables; "
                     + "execution will be slow as the kernel(s) will be "
                     "recompiled for each scan point."
                 )
+            self.run_once = lambda: self._run_once_impl(self)
 
     def prepare(self) -> None:
         ""
         for exp in self._exp_fragments:
             exp.prepare()
 
+    @kernel
     def run_once(self) -> None:
         """Execute the experiment by calling all operands.
 
@@ -948,10 +948,6 @@ class AggregateExpFragment(ExpFragment):
         If all operands have a ``@kernel`` ``run_once()``, this is implemented on
         the core device as well to avoid costly kernel recompilations in a scan.
         """
-        return self._run_once_impl(self)
-
-    @kernel
-    def _kernel_run_once(self) -> None:
         return self._run_once_impl(self)
 
     def get_always_shown_params(self) -> list[ParamHandle]:
