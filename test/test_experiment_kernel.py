@@ -16,7 +16,7 @@ from emulator_environment import KernelEmulatorCase
 from fixtures import TrivialKernelFragment
 
 from ndscan.experiment.entry_point import make_fragment_scan_exp, run_fragment_once
-from ndscan.experiment.fragment import ExpFragment
+from ndscan.experiment.fragment import AggregateExpFragment, ExpFragment
 from ndscan.experiment.parameters import (
     BoolParam,
     EnumParam,
@@ -215,15 +215,11 @@ class IntSetattrSubscan(ExpFragment):
         self.int_scan.acquire()
 
 
-class SetattrParent(ExpFragment):
+class SetattrParent(AggregateExpFragment):
     def build_fragment(self) -> None:
         self.setattr_fragment("int_frag", IntSetattrSubscan)
         self.setattr_fragment("float_frag", FloatSetattrSubscan)
-
-    @kernel
-    def run_once(self):
-        self.int_frag.run_once()
-        self.float_frag.run_once()
+        super().build_fragment([self.int_frag, self.float_frag])
 
 
 SetattrParentScan = make_fragment_scan_exp(SetattrParent)
@@ -276,15 +272,11 @@ class IntFragmentSubscan(ExpFragment):
         self.scan.run_once()
 
 
-class FragmentSubscanParent(ExpFragment):
+class FragmentSubscanParent(AggregateExpFragment):
     def build_fragment(self) -> None:
         self.setattr_fragment("int_frag", IntFragmentSubscan)
         self.setattr_fragment("float_frag", FloatFragmentSubscan)
-
-    @kernel
-    def run_once(self):
-        self.int_frag.run_once()
-        self.float_frag.run_once()
+        super().build_fragment([self.int_frag, self.float_frag])
 
 
 FragmentSubscanParentScan = make_fragment_scan_exp(FragmentSubscanParent)
@@ -318,15 +310,11 @@ class IntSubclassSubscan(SubscanExpFragment):
         super().host_setup()
 
 
-class SubclassSubscanParent(ExpFragment):
+class SubclassSubscanParent(AggregateExpFragment):
     def build_fragment(self) -> None:
         self.setattr_fragment("int_frag", IntSubclassSubscan)
         self.setattr_fragment("float_frag", FloatSubclassSubscan)
-
-    @kernel
-    def run_once(self):
-        self.int_frag.run_once()
-        self.float_frag.run_once()
+        super().build_fragment([self.int_frag, self.float_frag])
 
 
 SubclassSubscanParentScan = make_fragment_scan_exp(SubclassSubscanParent)
