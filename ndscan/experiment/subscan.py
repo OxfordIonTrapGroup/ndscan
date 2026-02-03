@@ -469,7 +469,8 @@ class SubscanExpFragment(ExpFragment):
             def configure_scan(self):
                 if self.num_scan_points.changed_after_use():
                     self.scan.configure([(self.foo.param_a,
-                        LinearGenerator(0.0, 0.1, self.num_scan_points.use()))])
+                        LinearGenerator(0.0, 0.1, self.num_scan_points.use(),
+                                        randomise_order=True))])
 
             def host_setup(self):
                 # Run at least once before kernel starts such that all the fields
