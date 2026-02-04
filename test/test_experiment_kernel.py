@@ -404,3 +404,80 @@ class TestSubscanKernelCase(KernelEmulatorCase):
             "float_frag__channel_result",
             "int_frag__channel_result",
         )
+
+
+# # #
+
+
+class KernelAddOneFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_param("value", FloatParam, "Value to return", 0.0)
+        self.setattr_result("result", FloatChannel)
+
+        self.num_prepare_calls = 0
+        self.num_host_setup_calls = 0
+        self.num_device_setup_calls = 0
+        self.num_host_cleanup_calls = 0
+        self.num_device_cleanup_calls = 0
+
+    def prepare(self):
+        self.num_prepare_calls += 1
+
+    def host_setup(self):
+        self.num_host_setup_calls += 1
+
+    @kernel
+    def device_setup(self):
+        self.num_device_setup_calls += 1
+
+    def host_cleanup(self):
+        self.num_host_cleanup_calls += 1
+
+    @kernel
+    def device_cleanup(self):
+        self.num_device_cleanup_calls += 1
+
+    @kernel
+    def run_once(self):
+        self.result.push(self.value.get() + 1)
+
+
+KernelAddOneFragmentScan = make_fragment_scan_exp(KernelAddOneFragment)
+
+
+class TestLifetimeCountsCase(KernelEmulatorCase):
+    def test_direct_counts(self):
+        exp = self.create(KernelAddOneFragmentScan)
+        values = [0.0, 1.0, 2.0]
+        fragment_fqn = "test_experiment_kernel.KernelAddOneFragment"
+
+        exp.args._params["scan"]["axes"].append(
+            {
+                "fqn": f"{fragment_fqn}.value",
+                "path": "*",
+                "type": "list",
+                "range": {
+                    "values": values,
+                    "randomise_order": True,
+                },
+            }
+        )
+
+        exp.prepare()
+        exp.run()
+
+        def d(key):
+            return self.dataset_db.get("ndscan.rid_0." + key)
+
+        self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
+        self.assertEqual(d("completed"), True)
+        self.assertEqual(d("fragment_fqn"), fragment_fqn)
+        self.assertEqual(d("source_id"), "rid_0")
+
+        f: KernelAddOneFragment = exp.fragment
+
+        self.assertEqual(f.num_prepare_calls, 1)
+        self.assertEqual(f.num_host_setup_calls, 1)
+        self.assertEqual(f.num_device_setup_calls, len(values))
+        self.assertEqual(f.num_device_cleanup_calls, 1)
+        self.assertEqual(f.num_host_cleanup_calls, 1)
