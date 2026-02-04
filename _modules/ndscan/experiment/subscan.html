@@ -206,7 +206,7 @@
 
     <span class="nd">@portable</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">execute_default_analyses</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">acquire</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">device_cleanup</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">RestartKernelTransitoryError</span><span class="p">(</span><span class="s2">&quot;Subscan interrupted by pause request&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_finalize</span><span class="p">(</span><span class="n">execute_default_analyses</span><span class="p">)</span>
 
@@ -675,6 +675,18 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+
+    <span class="c1"># The default device_setup() implementation is appropriate here. It will not forward</span>
+    <span class="c1"># to the scanned fragment as we have detached the subfragment (but the subscan</span>
+    <span class="c1"># runner will invoke it before every point).</span>
+
+<div class="viewcode-block" id="SubscanExpFragment.device_cleanup">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.device_cleanup">[docs]</a>
+    <span class="nd">@portable</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scanned_fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_cleanup_subfragments</span><span class="p">()</span></div>
+
 
 <div class="viewcode-block" id="SubscanExpFragment.run_once">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.subscan.SubscanExpFragment.run_once">[docs]</a>

@@ -211,7 +211,7 @@
                 <span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
 
                 <span class="c1"># For on-core-device scans, we&#39;ll spawn a kernel here.</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquire</span><span class="p">():</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">device_cleanup</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
                     <span class="k">return</span>
             <span class="k">finally</span><span class="p">:</span>
                 <span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
@@ -232,8 +232,11 @@
 
 <div class="viewcode-block" id="ScanRunner.acquire">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_runner.ScanRunner.acquire">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_cleanup</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param device_cleanup: Whether to execute :meth:`.ExpFragment.device_cleanup` at</span>
+<span class="sd">            the end of the scan (e.g. for use in subscans which may not actually leave</span>
+<span class="sd">            the device).</span>
 <span class="sd">        :return: ``true`` if scan is complete, ``false`` if the scan has been</span>
 <span class="sd">            interrupted and ``acquire()`` should be called again to complete it.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -321,7 +324,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">set_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_points</span> <span class="o">=</span> <span class="n">points</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_cleanup</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">ResultBatcher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">)</span> <span class="k">as</span> <span class="n">result_batcher</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># FIXME: Need to handle transitory errors here (or possibly, would be</span>
@@ -345,7 +348,8 @@
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
                         <span class="k">return</span> <span class="kc">False</span>
             <span class="k">finally</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">device_cleanup</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">KernelScanRunner</span><span class="p">(</span><span class="n">ScanRunner</span><span class="p">):</span>
@@ -430,7 +434,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_result_batcher</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@kernel</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_cleanup</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_install_result_batcher</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_last_pause_check_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get_rtio_counter_mu</span><span class="p">()</span>
@@ -446,7 +450,8 @@
                 <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_RUN_CHUNK_PROCEED</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_remove_result_batcher</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">device_cleanup</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
         <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
         <span class="k">return</span> <span class="kc">True</span>
 
