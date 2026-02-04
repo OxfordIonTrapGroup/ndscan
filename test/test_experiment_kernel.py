@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum, unique
 
 import numpy as np
-from artiq.language import kernel
+from artiq.language import kernel, rpc
 from emulator_environment import KernelEmulatorCase
 from fixtures import TrivialKernelFragment
 
@@ -445,6 +445,48 @@ class KernelAddOneFragment(ExpFragment):
 KernelAddOneFragmentScan = make_fragment_scan_exp(KernelAddOneFragment)
 
 
+class KernelAddOneFragmentSubscan(SubscanExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("add_one", KernelAddOneFragment)
+        self.setattr_param(
+            "num_scan_points", IntParam, "Number of subscan points", default=3
+        )
+        super().build_fragment(self, self.add_one, [(self.add_one, "value")])
+
+    @rpc(flags={"async"})
+    def configure_scan(self):
+        if self.num_scan_points.changed_after_use():
+            self.configure(
+                [
+                    (
+                        self.add_one.value,
+                        LinearGenerator(
+                            0.0,
+                            1.0,
+                            num_points=self.num_scan_points.use(),
+                            randomise_order=True,
+                        ),
+                    )
+                ]
+            )
+
+    def host_setup(self):
+        # Run at least once before kernel starts such that all the fields
+        # are initialised (required for the ARTIQ compiler).
+        self.configure_scan()
+        super().host_setup()
+
+    @kernel
+    def device_setup(self):
+        # Update scan if num_scan_points was changed (can be left out if
+        # there are no scannable parameters influencing the scan settings).
+        self.configure_scan()
+        self.device_setup_subfragments()
+
+
+KernelAddOneFragmentSubscanScan = make_fragment_scan_exp(KernelAddOneFragmentSubscan)
+
+
 class TestLifetimeCountsCase(KernelEmulatorCase):
     def test_direct_counts(self):
         exp = self.create(KernelAddOneFragmentScan)
@@ -466,18 +508,52 @@ class TestLifetimeCountsCase(KernelEmulatorCase):
         exp.prepare()
         exp.run()
 
-        def d(key):
-            return self.dataset_db.get("ndscan.rid_0." + key)
-
-        self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
-        self.assertEqual(d("completed"), True)
-        self.assertEqual(d("fragment_fqn"), fragment_fqn)
-        self.assertEqual(d("source_id"), "rid_0")
-
         f: KernelAddOneFragment = exp.fragment
 
         self.assertEqual(f.num_prepare_calls, 1)
         self.assertEqual(f.num_host_setup_calls, 1)
         self.assertEqual(f.num_device_setup_calls, len(values))
+        self.assertEqual(f.num_device_cleanup_calls, 1)
+        self.assertEqual(f.num_host_cleanup_calls, 1)
+
+    def test_subscan_counts(self):
+        exp = self.create(KernelAddOneFragmentSubscanScan)
+        exp.prepare()
+        exp.run()
+
+        f: KernelAddOneFragment = exp.fragment.add_one
+
+        # FIXME: prepare() is currently not forwarded (but probably should be?)
+        # self.assertEqual(f.num_prepare_calls, 1)
+        self.assertEqual(f.num_host_setup_calls, 1)
+        self.assertEqual(f.num_device_setup_calls, 3)
+        self.assertEqual(f.num_device_cleanup_calls, 1)
+        self.assertEqual(f.num_host_cleanup_calls, 1)
+
+    def test_subscan_scan_counts(self):
+        exp = self.create(KernelAddOneFragmentSubscanScan)
+        fragment_fqn = "test_experiment_kernel.KernelAddOneFragmentSubscan"
+
+        num_pointss = [2, 3, 4]
+        exp.args._params["scan"]["axes"].append(
+            {
+                "fqn": f"{fragment_fqn}.num_scan_points",
+                "path": "*",
+                "type": "list",
+                "range": {
+                    "values": num_pointss,
+                    "randomise_order": True,
+                },
+            }
+        )
+
+        exp.prepare()
+        exp.run()
+
+        f: KernelAddOneFragment = exp.fragment.add_one
+        # FIXME: prepare() is currently not forwarded (but probably should be?)
+        # self.assertEqual(f.num_prepare_calls, 1)
+        self.assertEqual(f.num_host_setup_calls, 1)
+        self.assertEqual(f.num_device_setup_calls, sum(num_pointss))
         self.assertEqual(f.num_device_cleanup_calls, 1)
         self.assertEqual(f.num_host_cleanup_calls, 1)

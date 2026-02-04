@@ -125,7 +125,7 @@ class Subscan:
 
     @portable
     def acquire(self, execute_default_analyses=False):
-        if not self._runner.acquire():
+        if not self._runner.acquire(device_cleanup=False):
             raise RestartKernelTransitoryError("Subscan interrupted by pause request")
         self._finalize(execute_default_analyses)
 
@@ -582,6 +582,15 @@ class SubscanExpFragment(ExpFragment):
         """"""
         self._scanned_fragment.host_cleanup()
         super().host_cleanup()
+
+    # The default device_setup() implementation is appropriate here. It will not forward
+    # to the scanned fragment as we have detached the subfragment (but the subscan
+    # runner will invoke it before every point).
+
+    @portable
+    def device_cleanup(self):
+        self._scanned_fragment.device_cleanup()
+        self.device_cleanup_subfragments()
 
     @kernel
     def run_once(self) -> None:
