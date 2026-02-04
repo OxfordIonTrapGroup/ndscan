@@ -45,7 +45,6 @@ class KernelEmulatorCase(unittest.TestCase):
         except DeviceError as e:
             # skip if ddb does not match requirements
             raise unittest.SkipTest("test device not available: `{}`".format(*e.args))
-        exp.prepare()
         return exp
 
     def execute(self, cls, *args, **kwargs):
