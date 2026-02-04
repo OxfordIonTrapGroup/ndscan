@@ -122,7 +122,7 @@ class ScanRunner(HasEnvironment):
                 fragment.host_setup()
 
                 # For on-core-device scans, we'll spawn a kernel here.
-                if self.acquire():
+                if self.acquire(device_cleanup=True):
                     return
             finally:
                 fragment.host_cleanup()
@@ -140,8 +140,11 @@ class ScanRunner(HasEnvironment):
     def set_points(self, points: Iterator[tuple]) -> None:
         raise NotImplementedError
 
-    def acquire(self) -> bool:
+    def acquire(self, device_cleanup: bool) -> bool:
         """
+        :param device_cleanup: Whether to execute :meth:`.ExpFragment.device_cleanup` at
+            the end of the scan (e.g. for use in subscans which may not actually leave
+            the device).
         :return: ``true`` if scan is complete, ``false`` if the scan has been
             interrupted and ``acquire()`` should be called again to complete it.
         """
@@ -227,7 +230,7 @@ class HostScanRunner(ScanRunner):
     def set_points(self, points: Iterator[tuple]) -> None:
         self._points = points
 
-    def acquire(self) -> bool:
+    def acquire(self, device_cleanup: bool) -> bool:
         with ResultBatcher(self._fragment) as result_batcher:
             try:
                 # FIXME: Need to handle transitory errors here (or possibly, would be
@@ -251,7 +254,8 @@ class HostScanRunner(ScanRunner):
                     if self.scheduler.check_pause():
                         return False
             finally:
-                self._fragment.device_cleanup()
+                if device_cleanup:
+                    self._fragment.device_cleanup()
 
 
 class KernelScanRunner(ScanRunner):
@@ -336,7 +340,7 @@ class KernelScanRunner(ScanRunner):
         self._result_batcher = None
 
     @kernel
-    def acquire(self) -> bool:
+    def acquire(self, device_cleanup: bool) -> bool:
         self._install_result_batcher()
         try:
             self._last_pause_check_mu = self.core.get_rtio_counter_mu()
@@ -352,7 +356,8 @@ class KernelScanRunner(ScanRunner):
                 assert result == self._RUN_CHUNK_PROCEED
         finally:
             self._remove_result_batcher()
-            self._fragment.device_cleanup()
+            if device_cleanup:
+                self._fragment.device_cleanup()
         assert False, "Execution never reaches here, return is just to pacify compiler."
         return True
 
