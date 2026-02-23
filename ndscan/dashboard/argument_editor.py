@@ -51,6 +51,13 @@ def _update_ndscan_params(arguments, params):
 
 
 class ScanOptions:
+    """Bundles together the widgets for the scan options section at the bottom of the
+    argument editor area.
+
+    This is not itself a QWidget, as the widgets will be added to the QTreeWidget used
+    to render the entire editor area.
+    """
+
     def __init__(self, current_scan: dict[str, Any]):
         self.num_repeats_container = QtWidgets.QWidget()
         num_repeats_layout = QtWidgets.QHBoxLayout()
