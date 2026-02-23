@@ -320,6 +320,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                     twi = QtWidgets.QTreeWidgetItem()
                     scan_options_group.addChild(twi)
                     self.setItemWidget(twi, 1, widget)
+                scan_options_group.setExpanded(True)
 
         buttons_item = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(buttons_item)
