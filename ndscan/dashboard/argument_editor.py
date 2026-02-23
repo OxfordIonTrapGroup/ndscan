@@ -50,6 +50,14 @@ def _update_ndscan_params(arguments, params):
     arguments[PARAMS_ARG_KEY]["state"] = pyon.encode(params)
 
 
+# For simplicity, we realise infinite repeats as int32.max (rather than adding
+# special-case support for this on the scan runner side). This should take many days
+# even for very fast single-point scans, and in either case would produce many GiB of
+# data, to where it would be more practical to just schedule multiple experiments if for
+# whatever reason more repeats were required.
+NUM_REPEATS_INFINITE = 2**31 - 1
+
+
 class ScanOptions:
     """Bundles together the widgets for the scan options section at the bottom of the
     argument editor area.
@@ -72,7 +80,6 @@ class ScanOptions:
         self.num_repeats_box.setMinimum(1)
         # A gratuitous, but hopefully generous restriction
         self.num_repeats_box.setMaximum(2**16)
-        self.num_repeats_box.setValue(current_scan.get("num_repeats", 1))
         num_repeats_layout.addWidget(self.num_repeats_box)
         num_repeats_layout.setStretchFactor(self.num_repeats_box, 0)
 
@@ -84,6 +91,14 @@ class ScanOptions:
         num_repeats_layout.addWidget(self.infinite_repeat_box)
         num_repeats_layout.setStretchFactor(self.infinite_repeat_box, 0)
         num_repeats_layout.addStretch()
+
+        num_repeats = current_scan.get("num_repeats", 1)
+        if num_repeats == NUM_REPEATS_INFINITE:
+            self.num_repeats_box.setValue(1)
+            self.infinite_repeat_box.setChecked(True)
+        else:
+            self.num_repeats_box.setValue(num_repeats)
+            self.infinite_repeat_box.setChecked(False)
 
         #
 
@@ -191,12 +206,9 @@ class ScanOptions:
 
     def write_to_params(self, params: dict[str, Any]) -> None:
         scan = params.setdefault("scan", {})
-        # For simplicity, we realise infinite repeats as int32.max, as this should take
-        # many days even for very fast single-point scans, and in either case would
-        # produce many GiB of data, to where it would be more practical to just schedule
-        # multiple experiments if for whatever reason more repeats were required.
+
         scan["num_repeats"] = (
-            2**31 - 1
+            NUM_REPEATS_INFINITE
             if self.infinite_repeat_box.isChecked()
             else self.num_repeats_box.value()
         )
