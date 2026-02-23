@@ -294,24 +294,24 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
                 self.scan_options = ScanOptions(ndscan_params["scan"])
 
             for fqn, path in ndscan_params["always_shown"]:
-                self._make_param_items(fqn, path, True)
+                self._append_param_items(fqn, path, True)
 
             for name, argument in vanilla_args.items():
-                self._make_vanilla_argument_item(name, argument)
+                self._append_vanilla_argument_item(name, argument)
 
-            self.override_separator = self._make_line_separator()
+            self.override_separator = self._append_line_separator()
 
-            self._make_add_override_prompt_item()
+            self._append_add_override_prompt_item()
             self._set_override_line_idle()
 
             for ax in ndscan_params.get("scan", {}).get("axes", []):
-                self._make_override_item(ax["fqn"], ax["path"])
+                self._append_override_item(ax["fqn"], ax["path"])
 
             for fqn, overrides in ndscan_params["overrides"].items():
                 for o in overrides:
-                    self._make_override_item(fqn, o["path"])
+                    self._append_override_item(fqn, o["path"])
 
-            self._make_line_separator()
+            self._append_line_separator()
 
             if self.scan_options:
                 scan_options_group = self._make_group_header_item("Scan options")
@@ -379,7 +379,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         for entry in self._param_entries.values():
             entry.disable_scan()
 
-    def _make_param_items(self, fqn, path, show_always, insert_at_idx=-1):
+    def _append_param_items(self, fqn, path, show_always, insert_at_idx=-1):
         if (fqn, path) in self._param_entries:
             return
         schema = self._schema_for_fqn(fqn)
@@ -479,7 +479,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
         return id_item, main_item
 
-    def _make_vanilla_argument_item(self, name, argument):
+    def _append_vanilla_argument_item(self, name, argument):
         if name in self._arg_to_widgets:
             logger.warning("Argument with name '%s' already exists, skipping.", name)
             return
@@ -536,7 +536,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
 
         self.setItemWidget(widget_item, 2, buttons)
 
-    def _make_line_separator(self):
+    def _append_line_separator(self):
         f = QtWidgets.QFrame(self)
         f.setMinimumHeight(15)
         f.setFrameShape(QtWidgets.QFrame.Shape.HLine)
@@ -552,8 +552,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self.setItemWidget(wi, 1, f)
         return wi
 
-    def _make_override_item(self, fqn, path):
-        items = self._make_param_items(
+    def _append_override_item(self, fqn, path):
+        items = self._append_param_items(
             fqn, path, False, self.indexOfTopLevelItem(self._override_prompt_item)
         )
         self._override_items[(fqn, path)] = items
@@ -565,7 +565,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         geom = self.geometry()
         self.resize(geom.width(), geom.height())
 
-    def _make_add_override_prompt_item(self):
+    def _append_add_override_prompt_item(self):
         self._override_prompt_item = QtWidgets.QTreeWidgetItem()
         self.addTopLevelItem(self._override_prompt_item)
 
@@ -589,7 +589,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         prompt = LayoutWidget()
         self._add_override_prompt_box = FuzzySelectWidget([])
         self._add_override_prompt_box.finished.connect(
-            lambda a: self._make_override_item(*self._param_choice_map[a])
+            lambda a: self._append_override_item(*self._param_choice_map[a])
         )
         self._add_override_prompt_box.aborted.connect(self._set_override_line_idle)
         prompt.addWidget(self._add_override_prompt_box)
