@@ -13,11 +13,16 @@ from .._qt import QtCore, QtGui, QtWidgets
 from ..utils import (
     PARAMS_ARG_KEY,
     NoAxesMode,
-    eval_param_default,
     shorten_to_unambiguous_suffixes,
 )
+from .param_tree_dialog import OverrideProvider, OverrideStatus, ParamTreeDialog
 from .scan_options import list_scan_option_types
-from .utils import format_override_identity, load_icon_cached, set_column_resize_mode
+from .utils import (
+    eval_default_using_local_datasets,
+    format_override_identity,
+    load_icon_cached,
+    set_column_resize_mode,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +225,7 @@ class ScanOptions:
         )
 
 
-class ArgumentEditor(QtWidgets.QTreeWidget):
+class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
     def __init__(self, manager, dock, expurl):
         super().__init__()
 
@@ -267,6 +272,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         self._override_items = dict()
 
         self._add_override_icon = load_icon_cached("list-add-32.png")
+        self._open_param_tree_icon = load_icon_cached("view-list-tree-32.png")
         self._remove_override_icon = load_icon_cached("list-remove-32.png")
         self._default_value_icon = self.style().standardIcon(
             QtWidgets.QStyle.StandardPixmap.SP_BrowserReload
@@ -378,6 +384,21 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
     def disable_all_scans(self):
         for entry in self._param_entries.values():
             entry.disable_scan()
+
+    def override_status(self, fqn, path) -> OverrideStatus:
+        if (fqn, path) in self._ndscan_params["always_shown"]:
+            return OverrideStatus.always_shown
+        if (fqn, path) in self._override_items:
+            return OverrideStatus.overriden
+        return OverrideStatus.not_overridden
+
+    def add_override(self, fqn, path):
+        assert self.override_status(fqn, path) == OverrideStatus.not_overridden
+        self._append_override_item(fqn, path)
+
+    def remove_override(self, fqn, path):
+        assert self.override_status(fqn, path) == OverrideStatus.overriden
+        self._remove_override(fqn, path)
 
     def _append_param_items(self, fqn, path, show_always, insert_at_idx=-1):
         if (fqn, path) in self._param_entries:
@@ -573,11 +594,19 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         left = LayoutWidget()
         left.layout.setContentsMargins(3, 3, 3, 3)
 
+        self._add_override_line = QtWidgets.QWidget()
+        self._add_override_line.setLayout(QtWidgets.QHBoxLayout())
         self._add_override_button = QtWidgets.QToolButton()
         self._add_override_button.setIcon(self._add_override_icon)
         self._add_override_button.clicked.connect(self._set_override_line_active)
         self._add_override_button.setShortcut("Ctrl+T")
-        left.addWidget(self._add_override_button, 0, 0)
+        self._add_override_line.layout().addWidget(self._add_override_button)
+        self._open_param_tree_button = QtWidgets.QToolButton()
+        self._open_param_tree_button.setIcon(self._open_param_tree_icon)
+        self._open_param_tree_button.clicked.connect(self._open_param_tree)
+        self._open_param_tree_button.setShortcut("Ctrl+Alt+T")
+        self._add_override_line.layout().addWidget(self._open_param_tree_button)
+        left.addWidget(self._add_override_line, 0, 0)
 
         self._add_override_prompt_label = QtWidgets.QLabel("Add parameter:")
         left.addWidget(self._add_override_prompt_label, 0, 0)
@@ -595,9 +624,22 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         prompt.addWidget(self._add_override_prompt_box)
         self.setItemWidget(self._override_prompt_item, 1, prompt)
 
+    def _open_param_tree(self):
+        dialog = ParamTreeDialog(
+            instances=self._ndscan_params["instances"],
+            schemata=self._ndscan_params["schemata"],
+            override_provider=self,
+            manager_datasets=self.manager.datasets,
+            add_override_icon=self._add_override_icon,
+            remove_override_icon=self._remove_override_icon,
+            parent=self,
+        )
+        dialog.setWindowTitle(f"Parameters for {self.expurl}")
+        dialog.exec()
+
     def _set_override_line_idle(self):
-        self._add_override_button.setEnabled(True)
-        self._add_override_button.setVisible(True)
+        self._add_override_line.setEnabled(True)
+        self._add_override_line.setVisible(True)
         self._add_override_prompt_label.setVisible(False)
         self._add_override_prompt_box.setVisible(False)
 
@@ -607,8 +649,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
             [(s, 0) for s in self._param_choice_map.keys()]
         )
 
-        self._add_override_button.setEnabled(False)
-        self._add_override_button.setVisible(False)
+        self._add_override_line.setEnabled(False)
+        self._add_override_line.setVisible(False)
         self._add_override_prompt_label.setVisible(True)
         self._add_override_prompt_box.setVisible(True)
 
@@ -718,9 +760,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget):
         )
 
     def _param_display_name(self, fqn, path):
-        if not path:
-            path = "/"
-        return self.shortened_fqns[fqn] + "@" + path
+        return format_override_identity(self.shortened_fqns[fqn], path)
 
     def _schema_for_fqn(self, fqn):
         return self._ndscan_params["schemata"][fqn]
@@ -823,28 +863,9 @@ class OverrideEntry(LayoutWidget):
                 self._set_fixed_value(o["value"])
                 return
         try:
-
-            def get_dataset(key, default=None):
-                try:
-                    bs = manager_datasets.backing_store
-                except AttributeError:
-                    logger.error(
-                        "Datasets still synchronising with master, "
-                        + "cannot access '%s'",
-                        key,
-                    )
-                    bs = {}
-                try:
-                    return bs[key][1]
-                except KeyError:
-                    if default is None:
-                        raise KeyError(
-                            f"Could not read dataset '{key}', but no "
-                            + "fallback default value given"
-                        ) from None
-                    return default
-
-            value = eval_param_default(self.schema["default"], get_dataset)
+            value = eval_default_using_local_datasets(
+                self.schema["default"], manager_datasets
+            )
         except Exception as e:
             logger.error(
                 'Failed to evaluate defaults string "%s" for %s: %s',
