@@ -12,15 +12,6 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-USER_READABLE_TYPE = {
-    "bool": "BoolParam",
-    "enum": "EnumParam",
-    "float": "FloatParam",
-    "int": "IntParam",
-    "string": "StringParam",
-}
-
-
 def format_value(schema: dict[str, Any], value: Any) -> str:
     """Format a parameter value for display.
 
