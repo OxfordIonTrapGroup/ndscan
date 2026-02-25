@@ -308,7 +308,11 @@ class ParamTreeDialog(QtWidgets.QDialog):
                     if item.childCount() == 0:
                         del self.fragment_tree_items[path]
                         # In C++, we could just drop the QTreeWidgetItem().
-                        item.parent().removeChild(item)
+                        if (parent := item.parent()) is not None:
+                            parent.removeChild(item)
+                        else:
+                            idx = self.tree_widget.indexOfTopLevelItem(item)
+                            self.tree_widget.takeTopLevelItem(idx)
                         is_unchanged = False
                 if is_unchanged:
                     break
