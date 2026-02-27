@@ -803,7 +803,7 @@ def create_and_run_fragment_once(
 
         class MyEnvExperiment(EnvExperiment):
             def run(self):
-                results = create_and_run_once(self, MyExpFragment)
+                results = create_and_run_fragment_once(self, MyExpFragment)
                 print(results["foo"])
 
     :param env: The ``HasEnvironment`` to use.
