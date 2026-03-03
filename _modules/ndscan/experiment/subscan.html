@@ -79,6 +79,7 @@
 <span class="sd">another child fragment as part of its execution.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">copy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
@@ -109,6 +110,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_kernel</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;setattr_subscan&quot;</span><span class="p">,</span> <span class="s2">&quot;Subscan&quot;</span><span class="p">,</span> <span class="s2">&quot;SubscanExpFragment&quot;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Subscan">
@@ -166,11 +169,6 @@
 <span class="sd">            mapping parameter handles, result channels and analysis channel names to</span>
 <span class="sd">            lists of their values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="c1"># TODO: This is probably superfluous (or if not, the on-kernel-friendly</span>
-        <span class="c1"># implementation might also need something similar).</span>
-        <span class="k">for</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="n">sink</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_scan_spec</span><span class="p">(</span><span class="n">axis_generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -194,6 +192,19 @@
             <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
             <span class="n">generators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">generator</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">[</span><span class="n">param_handle</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArraySink</span><span class="p">()</span>
+
+        <span class="c1"># Since we have reset the coordinate sinks, also clear out any remaining points</span>
+        <span class="c1"># in the result sinks (e.g. from a previously interrupted/failed scan;</span>
+        <span class="c1"># _finalize() would clean them up after a successful point).</span>
+        <span class="n">had_any</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_result_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">had_any</span> <span class="o">|=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sink</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="n">sink</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">had_any</span><span class="p">:</span>
+            <span class="c1"># Log to give users a chance to debug continuously interrupted/reset scans</span>
+            <span class="c1"># (though this may occur as part of normal operation, so even INFO may be</span>
+            <span class="c1"># too noisy).</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Discarded previous results in Subscan.set_scan_spec()&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span> <span class="o">=</span> <span class="n">ScanSpec</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">generators</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
