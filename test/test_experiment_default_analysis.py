@@ -57,6 +57,7 @@ class OnlineFitDataSource(ExpFragment):
         constants: dict[str, Any] | None = None,
         initial_values: dict[str, Any] | None = None,
         gaussian_noise: float = 0.0,
+        random_seed: int = 0,
     ):
         self.fit_name = fit_name
 
@@ -68,13 +69,14 @@ class OnlineFitDataSource(ExpFragment):
         self.setattr_result("y", FloatChannel)
         if self.gaussian_noise > 0.0:
             self.setattr_result("y_err", FloatChannel)
+            self.rng = np.random.default_rng(seed=random_seed)
 
     def run_once(self) -> None:
         model = FIT_OBJECTS[self.fit_name].fitting_function(
             self.x.get(), self.parameters | self.constants | self.initial_values
         )
         if self.gaussian_noise > 0:
-            model += np.random.randn() * self.gaussian_noise
+            model += self.rng.standard_normal() * self.gaussian_noise
             self.y_err.push(self.gaussian_noise)
         self.y.push(model)
 
