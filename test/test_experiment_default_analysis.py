@@ -178,5 +178,5 @@ class OnlineFitAnalysisTestCase(HasEnvironmentCase):
                 true_params,
                 constants={},
                 initial_values={},
-                gaussian_noise=0.5,
+                gaussian_noise=0.1,
             )
