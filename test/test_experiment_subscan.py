@@ -4,9 +4,11 @@ Tests for subscan functionality.
 
 import json
 
+import numpy as np
 from fixtures import (
     AddOneCustomAnalysisFragment,
     AddOneFragment,
+    MultiPointTransitoryErrorFragment,
     ReboundAddOneFragment,
     TwoAnalysisAggregate,
     TwoAnalysisFragment,
@@ -287,3 +289,40 @@ class SubscanAnalysisCase(ExpFragmentCase):
         self.assertTrue(parent.had_all_results)
         self.assertEqual(results[parent.scan_first_result_a], 42.0)
         self.assertEqual(results[parent.scan_second_result_a], 42.0)
+
+
+class TransitoryErrorSubscan(SubscanExpFragment):
+    def build_fragment(self, **kwargs):
+        self.setattr_fragment("frag", MultiPointTransitoryErrorFragment, **kwargs)
+        super().build_fragment(self, self.frag, [(self.frag, "value")])
+        self.configure(
+            [(self.frag.value, LinearGenerator(0, 10, 11, randomise_order=True))]
+        )
+
+
+class TransitoryErrorSubscanCase(ExpFragmentCase):
+    def _test_with_kwargs(self, **kwargs):
+        # Fail every third point (as good as any).
+        subscan = self.create(
+            TransitoryErrorSubscan, fail_at_point=lambda i: i % 3 == 1, **kwargs
+        )
+        results = run_fragment_once(subscan)
+        inputs = results[subscan._axis_0]
+        outputs = results[subscan._channel_result]
+        np.testing.assert_array_equal(np.sort(inputs), np.arange(11))
+        np.testing.assert_array_equal(inputs, outputs)
+
+    def test_nominal(self):
+        self._test_with_kwargs()
+
+    def test_transitory_setup(self):
+        self._test_with_kwargs(num_device_setup_to_fail=2)
+
+    def test_transitory_run(self):
+        self._test_with_kwargs(num_run_once_to_fail=2)
+
+    def test_restart_transitory_setup(self):
+        self._test_with_kwargs(num_device_setup_to_restart_fail=2)
+
+    def test_restart_transitory_run(self):
+        self._test_with_kwargs(num_run_once_to_restart_fail=2)

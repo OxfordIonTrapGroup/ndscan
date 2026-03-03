@@ -227,29 +227,32 @@ class HostScanRunner(ScanRunner):
         self._axes = axes
         self._axis_sinks = axis_sinks
 
+        #: Stores the axis values while acquiring a point to not lose them in case of
+        #: an interruption by a transitory error.
+        self._current_axis_values: tuple | None = None
+
     def set_points(self, points: Iterator[tuple]) -> None:
         self._points = points
 
     def acquire(self, device_cleanup: bool) -> bool:
         with ResultBatcher(self._fragment) as result_batcher:
             try:
-                # FIXME: Need to handle transitory errors here (or possibly, would be
-                # enough to do so in ScanRunner.run(), which we want anyway for
-                # host_setup(), etc.).
                 while True:
-                    axis_values = next(self._points, None)
-                    if axis_values is None:
-                        return True
-                    for axis, value in zip(self._axes, axis_values):
+                    if self._current_axis_values is None:
+                        self._current_axis_values = next(self._points, None)
+                        if self._current_axis_values is None:
+                            return True
+                    for axis, value in zip(self._axes, self._current_axis_values):
                         axis.param_store.set_value(value)
                     self._fragment.device_setup()
                     self._fragment.run_once()
 
                     result_batcher.ensure_complete_and_push()
-                    for sink, value in zip(self._axis_sinks, axis_values):
-                        # Now that we know self._fragment successfully produced a
-                        # complete point, also record the axis coordinates.
+                    # Now that we know self._fragment successfully produced a complete
+                    # point, also record the axis coordinates.
+                    for sink, value in zip(self._axis_sinks, self._current_axis_values):
                         sink.push(value)
+                    self._current_axis_values = None
 
                     if self.scheduler.check_pause():
                         return False
