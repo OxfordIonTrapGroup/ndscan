@@ -115,6 +115,7 @@ class TransitoryErrorFragment(ExpFragment):
         self.num_device_setup_to_restart_fail = 0
         self.num_run_once_to_fail = 0
         self.num_run_once_to_restart_fail = 0
+        self.setattr_param("value", IntParam, "Value to produce", default=42)
         self.setattr_result("result", IntChannel)
 
     def device_setup(self):
@@ -132,12 +133,16 @@ class TransitoryErrorFragment(ExpFragment):
         if self.num_run_once_to_fail > 0:
             self.num_run_once_to_fail -= 1
             raise TransitoryError
-        self.result.push(42)
+        self.result.push(self.value.get())
 
 
 class MultiPointTransitoryErrorFragment(TransitoryErrorFragment):
     """TransitoryErrorFragment that resets counters after run_once() has completed
     successfully (for testing scan behaviour).
+
+    fail_at_point is invoked with a continuously increasing point index to determine
+    whether the current point should require the configured number of retries or succeed
+    immediately.
     """
 
     def build_fragment(
@@ -146,24 +151,34 @@ class MultiPointTransitoryErrorFragment(TransitoryErrorFragment):
         num_device_setup_to_restart_fail=0,
         num_run_once_to_fail=0,
         num_run_once_to_restart_fail=0,
+        fail_at_point=lambda point_idx: True,
     ):
         super().build_fragment()
+        self.fail_at_point = fail_at_point
         self.orig_num_device_setup_to_fail = num_device_setup_to_fail
         self.orig_num_device_setup_to_restart_fail = num_device_setup_to_restart_fail
         self.orig_num_run_once_to_fail = num_run_once_to_fail
         self.orig_num_run_once_to_restart_fail = num_run_once_to_restart_fail
+        self.point_idx = 0
         self.reset_counters()
 
     def reset_counters(self):
-        self.num_device_setup_to_fail = self.orig_num_device_setup_to_fail
-        self.num_device_setup_to_restart_fail = (
-            self.orig_num_device_setup_to_restart_fail
-        )
-        self.num_run_once_to_fail = self.orig_num_run_once_to_fail
-        self.num_run_once_to_restart_fail = self.orig_num_run_once_to_restart_fail
+        if self.fail_at_point(self.point_idx):
+            self.num_device_setup_to_fail = self.orig_num_device_setup_to_fail
+            self.num_device_setup_to_restart_fail = (
+                self.orig_num_device_setup_to_restart_fail
+            )
+            self.num_run_once_to_fail = self.orig_num_run_once_to_fail
+            self.num_run_once_to_restart_fail = self.orig_num_run_once_to_restart_fail
+        else:
+            self.num_device_setup_to_fail = 0
+            self.num_device_setup_to_restart_fail = 0
+            self.num_run_once_to_fail = 0
+            self.num_run_once_to_restart_fail = 0
 
     def run_once(self):
         super().run_once()
+        self.point_idx += 1
         self.reset_counters()
 
 
