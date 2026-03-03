@@ -3,6 +3,7 @@ Implements subscans, that is, the ability for an :class:`.ExpFragment` to scan
 another child fragment as part of its execution.
 """
 
+import logging
 from collections import OrderedDict
 from copy import copy
 from functools import reduce
@@ -33,6 +34,8 @@ from .scan_runner import (
 from .utils import is_kernel
 
 __all__ = ["setattr_subscan", "Subscan", "SubscanExpFragment"]
+
+logger = logging.getLogger(__name__)
 
 
 class Subscan:
@@ -86,11 +89,6 @@ class Subscan:
             mapping parameter handles, result channels and analysis channel names to
             lists of their values.
         """
-
-        # TODO: This is probably superfluous (or if not, the on-kernel-friendly
-        # implementation might also need something similar).
-        for sink in self._child_result_sinks.values():
-            sink.clear()
         self.set_scan_spec(axis_generators, options)
         self._fragment.prepare()
         self._runner.run(
@@ -113,6 +111,19 @@ class Subscan:
             axes.append(axis)
             generators.append(generator)
             self._coordinate_sinks[param_handle] = ArraySink()
+
+        # Since we have reset the coordinate sinks, also clear out any remaining points
+        # in the result sinks (e.g. from a previously interrupted/failed scan;
+        # _finalize() would clean them up after a successful point).
+        had_any = False
+        for sink in self._child_result_sinks.values():
+            had_any |= len(sink.get_all()) > 0
+            sink.clear()
+        if had_any:
+            # Log to give users a chance to debug continuously interrupted/reset scans
+            # (though this may occur as part of normal operation, so even INFO may be
+            # too noisy).
+            logger.debug("Discarded previous results in Subscan.set_scan_spec()")
 
         self._spec = ScanSpec(axes, generators, options)
         self._runner.setup(self._fragment, axes, list(self._coordinate_sinks.values()))

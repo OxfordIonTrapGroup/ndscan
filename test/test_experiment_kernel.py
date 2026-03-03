@@ -11,12 +11,17 @@ from dataclasses import dataclass
 from enum import Enum, unique
 
 import numpy as np
-from artiq.language import kernel, rpc
+from artiq.language import kernel, portable, rpc
 from emulator_environment import KernelEmulatorCase
 from fixtures import TrivialKernelFragment
 
 from ndscan.experiment.entry_point import make_fragment_scan_exp, run_fragment_once
-from ndscan.experiment.fragment import AggregateExpFragment, ExpFragment
+from ndscan.experiment.fragment import (
+    AggregateExpFragment,
+    ExpFragment,
+    RestartKernelTransitoryError,
+    TransitoryError,
+)
 from ndscan.experiment.parameters import (
     BoolParam,
     EnumParam,
@@ -557,3 +562,180 @@ class TestLifetimeCountsCase(KernelEmulatorCase):
         self.assertEqual(f.num_device_setup_calls, sum(num_pointss))
         self.assertEqual(f.num_device_cleanup_calls, 1)
         self.assertEqual(f.num_host_cleanup_calls, 1)
+
+
+# # #
+
+
+class KernelMultiPointTransitoryErrorFragment(ExpFragment):
+    """TransitoryErrorFragment that resets counters after run_once() has completed
+    successfully (for testing scan behaviour).
+
+    fail_at_point is invoked with a continuously increasing point index to determine
+    whether the current point should require the configured number of retries or succeed
+    immediately.
+    """
+
+    def build_fragment(
+        self,
+        num_device_setup_to_fail=0,
+        num_device_setup_to_restart_fail=0,
+        num_run_once_to_fail=0,
+        num_run_once_to_restart_fail=0,
+        fail_at_point=lambda point_idx: True,
+    ):
+        self.setattr_device("core")
+
+        self.fail_at_point = fail_at_point
+        self.orig_num_device_setup_to_fail = num_device_setup_to_fail
+        self.orig_num_device_setup_to_restart_fail = num_device_setup_to_restart_fail
+        self.orig_num_run_once_to_fail = num_run_once_to_fail
+        self.orig_num_run_once_to_restart_fail = num_run_once_to_restart_fail
+        self.point_idx = 0
+        self.reset_counters()
+
+        self.setattr_param("value", IntParam, "Value to produce", default=42)
+        self.setattr_result("result", IntChannel)
+
+    @portable
+    def reset_counters(self):
+        if self.fail_at_point(self.point_idx):
+            self.num_device_setup_to_fail = self.orig_num_device_setup_to_fail
+            self.num_device_setup_to_restart_fail = (
+                self.orig_num_device_setup_to_restart_fail
+            )
+            self.num_run_once_to_fail = self.orig_num_run_once_to_fail
+            self.num_run_once_to_restart_fail = self.orig_num_run_once_to_restart_fail
+        else:
+            self.num_device_setup_to_fail = 0
+            self.num_device_setup_to_restart_fail = 0
+            self.num_run_once_to_fail = 0
+            self.num_run_once_to_restart_fail = 0
+
+    @kernel
+    def device_setup(self):
+        if self.num_device_setup_to_restart_fail > 0:
+            self.num_device_setup_to_restart_fail -= 1
+            raise RestartKernelTransitoryError
+        if self.num_device_setup_to_fail > 0:
+            self.num_device_setup_to_fail -= 1
+            raise TransitoryError
+
+    @kernel
+    def run_once(self):
+        if self.num_run_once_to_restart_fail > 0:
+            self.num_run_once_to_restart_fail -= 1
+            raise RestartKernelTransitoryError
+        if self.num_run_once_to_fail > 0:
+            self.num_run_once_to_fail -= 1
+            raise TransitoryError
+        self.result.push(self.value.get())
+        self.point_idx += 1
+        self.reset_counters()
+
+
+@unique
+class ConfigureMode(Enum):
+    once_in_build = 0
+    every_host_setup = 1
+
+
+class KernelTransitoryErrorSubscan(SubscanExpFragment):
+    def build_fragment(self, configure_mode: ConfigureMode, **kwargs):
+        self.configure_mode = configure_mode
+        self.setattr_fragment("frag", KernelMultiPointTransitoryErrorFragment, **kwargs)
+        super().build_fragment(self, self.frag, [(self.frag, "value")])
+        self.axis_generators = [
+            (self.frag.value, LinearGenerator(0, 10, 11, randomise_order=True))
+        ]
+        if self.configure_mode == ConfigureMode.once_in_build:
+            self.configure(self.axis_generators)
+
+    def host_setup(self):
+        if self.configure_mode == ConfigureMode.every_host_setup:
+            self.configure(self.axis_generators)
+        super().host_setup()
+
+
+def _fail_every(count):
+    def result(i) -> bool:
+        return bool(i % count == 1)
+
+    return result
+
+
+class KernelTransitoryErrorSubscanCase(KernelEmulatorCase):
+    def _test_with_kwargs(self, configure_mode: ConfigureMode, **kwargs):
+        subscan = self.create(
+            KernelTransitoryErrorSubscan,
+            [],
+            configure_mode,
+            **kwargs,
+        )
+        results = run_fragment_once(subscan)
+        inputs = results[subscan._axis_0]
+        outputs = results[subscan._channel_result]
+        np.testing.assert_array_equal(np.sort(inputs), np.arange(11))
+        np.testing.assert_array_equal(inputs, outputs)
+
+    def test_nominal(self):
+        def never(i) -> bool:
+            return False
+
+        self._test_with_kwargs(ConfigureMode.once_in_build, fail_at_point=never)
+
+    def test_transitory_setup_once(self):
+        self._test_with_kwargs(
+            ConfigureMode.once_in_build,
+            num_device_setup_to_fail=2,
+            fail_at_point=_fail_every(3),
+        )
+
+    def test_transitory_run_once(self):
+        self._test_with_kwargs(
+            ConfigureMode.once_in_build,
+            num_run_once_to_fail=2,
+            fail_at_point=_fail_every(3),
+        )
+
+    def test_restart_transitory_setup_once(self):
+        self._test_with_kwargs(
+            ConfigureMode.once_in_build,
+            num_device_setup_to_restart_fail=2,
+            fail_at_point=_fail_every(3),
+        )
+
+    def test_restart_transitory_run_once(self):
+        self._test_with_kwargs(
+            ConfigureMode.once_in_build,
+            num_run_once_to_restart_fail=2,
+            fail_at_point=_fail_every(3),
+        )
+
+    def test_transitory_setup_every(self):
+        self._test_with_kwargs(
+            ConfigureMode.every_host_setup,
+            num_device_setup_to_fail=2,
+            fail_at_point=_fail_every(3),
+        )
+
+    def test_transitory_run_every(self):
+        self._test_with_kwargs(
+            ConfigureMode.every_host_setup,
+            num_run_once_to_fail=2,
+            fail_at_point=_fail_every(3),
+        )
+
+    def test_restart_transitory_setup_every(self):
+        self._test_with_kwargs(
+            ConfigureMode.every_host_setup,
+            num_device_setup_to_restart_fail=2,
+            fail_at_point=_fail_every(12),
+        )
+
+    def test_restart_transitory_run_every(self):
+        self._test_with_kwargs(
+            ConfigureMode.every_host_setup,
+            num_run_once_to_restart_fail=2,
+            fail_at_point=_fail_every(12),
+        )
