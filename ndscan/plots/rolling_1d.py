@@ -105,8 +105,12 @@ class Rolling1DPlotWidget(SubplotMenuPanesWidget):
         # Set of channel names that are currently hidden.
         self.hidden_channels = None
 
+        # If the schema/a point already exist, we need to immediately process them
+        # instead of waiting for a change signal.
         if self.model.get_channel_schemata() is not None:
             call_later(self._initialise_series)
+            if (point := self.model.get_point()) is not None:
+                call_later(lambda: self._append_point(point))
 
     def _initialise_series(self):
         self.clear_panes()
