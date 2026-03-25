@@ -16,7 +16,7 @@ from sipyco import pyon
 from .plots.container_widgets import PlotAreaTabWidget, PlotAreaWidget
 from .plots.model import Context
 from .plots.model.hdf5 import HDF5Root
-from .results.arguments import extract_param_schema, summarise
+from .results.arguments import dump_vanilla_artiq_args, extract_param_schema, summarise
 from .results.tools import find_ndscan_roots, get_source_id
 from .utils import shorten_to_unambiguous_suffixes, strip_suffix
 
@@ -148,6 +148,8 @@ def load_h5(args):
         print()
         schema = None
 
+    vanilla_arg_dumps = list(dump_vanilla_artiq_args(expid["arguments"]))
+
     artiq_metadata = ArtiqMetadata(
         rid=file["rid"][()],
         start_time=file["start_time"][()],
@@ -156,7 +158,7 @@ def load_h5(args):
         class_name=expid["class_name"],
     )
 
-    return path, datasets, prefixes, schema, artiq_metadata
+    return path, datasets, prefixes, schema, vanilla_arg_dumps, artiq_metadata
 
 
 def main():
@@ -166,10 +168,19 @@ def main():
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
 
-    _, datasets, prefixes, schema, artiq_metadata = load_h5(args)
+    _, datasets, prefixes, schema, vanilla_arg_dumps, artiq_metadata = load_h5(args)
 
     if schema is not None:
         print(summarise(schema))
+
+    if vanilla_arg_dumps:
+        print("ARTIQ arguments")
+        print("===============")
+        print()
+        for vad in vanilla_arg_dumps:
+            print(vad)
+        print()
+        print()
 
     print_metadata(artiq_metadata)
 
