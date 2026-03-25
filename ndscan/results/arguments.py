@@ -92,6 +92,15 @@ def dump_scan(schema: dict[str, Any]) -> Iterable[str]:
     yield f" - Randomise order globally: {scan['randomise_order_globally']}"
 
 
+def dump_vanilla_artiq_args(arguments: dict[str, Any]) -> Iterable[str]:
+    """Format all non-ndscan (vanilla ARTIQ) arguments for printing as a list."""
+    for name, value in arguments.items():
+        if name == PARAMS_ARG_KEY:
+            # Skip the argument we serialise our data into.
+            continue
+        yield f" - {name}: {pyon.encode(value)}"
+
+
 def summarise(schema: dict[str, Any]) -> str:
     """Convenience method returning a combination of :meth:`dump_overrides` and
     :meth:`dump_scan` ready to be printed.
