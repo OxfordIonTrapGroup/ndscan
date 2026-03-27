@@ -302,14 +302,27 @@ def extract_linked_datasets(param_schema: dict[str, Any]) -> list[str]:
 
 
 def format_param_identity(schema: dict[str, Any]) -> str:
-    """Extract a string representation of the parameter identity from the given schema,
-    for use in human-readable labels.
+    """Extract a string representation of the parameter identity from the given axis
+    schema, for use in human-readable labels.
     """
     path = schema["path"]
     if not path:
         path = "/"
     shortened_fqn = schema["param"]["fqn"].split(".")[-1]
     return shortened_fqn + "@" + path
+
+
+def is_categorical_axis(schema: dict[str, Any]) -> bool:
+    """Return whether the given axis is a scan over a categorical parameter.
+
+    If False, it is a standard numerical parameter with 1:1 mapping between parameter
+    values and plot coordinates.
+    """
+    match schema["param"]["type"]:
+        case "bool" | "enum":
+            return True
+        case _:
+            return False
 
 
 def get_axis_scaling_info(spec: dict[str, Any]):
