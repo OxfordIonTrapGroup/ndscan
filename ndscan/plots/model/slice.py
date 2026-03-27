@@ -3,7 +3,12 @@ from typing import Any
 
 import numpy as np
 
-from ..utils import format_label_value, get_axis_scaling_info, slice_data_along_axis
+from ..utils import (
+    format_label_value,
+    get_axis_scaling_info,
+    is_categorical_axis,
+    slice_data_along_axis,
+)
 from . import Model, Root, ScanModel
 from .select_point import SelectPointFromScanModel
 
@@ -83,13 +88,21 @@ def axis_description(model: ScanModel, idx: int) -> str:
 
 
 def format_axis_value(model: ScanModel, axis_idx: int, point_idx: int) -> str:
+    """Format, for a given point (identified by its index) in the given scan model, the
+    coordinate along one of the axes (identified by its index) for UI display.
+    """
     schema = model.axes[axis_idx]
     unit_suffix, data_to_display_scale = get_axis_scaling_info(schema["param"]["spec"])
     all_values = model.get_point_data()[f"axis_{axis_idx}"]
-    limits = (np.min(all_values), np.max(all_values))
-    return format_label_value(
-        all_values[point_idx], data_to_display_scale, limits, unit_suffix
-    )
+
+    value = all_values[point_idx]
+    if is_categorical_axis(schema):
+        return str(value)
+    else:
+        limits = (np.min(all_values), np.max(all_values))
+        return format_label_value(
+            all_values[point_idx], data_to_display_scale, limits, unit_suffix
+        )
 
 
 class SliceForScanModel(ScanModel):
