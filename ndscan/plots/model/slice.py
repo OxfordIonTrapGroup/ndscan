@@ -67,15 +67,14 @@ class SliceRoot(Root):
     def get_title(self) -> str:
         selected_idx = self._selected_point.get_source_index()
         if selected_idx is None:
-            return f"slice along '{axis_description(self._parent, self.axis_idx)}'"
+            return f"Slice along '{axis_description(self._parent, self.axis_idx)}'"
 
         def coord_str(axis_idx):
             desc = axis_description(self._parent, axis_idx)
-            desc = desc[0].lower() + desc[1:]
             value_with_unit = format_axis_value(self._parent, axis_idx, selected_idx)
-            return f"{desc} {value_with_unit}"
+            return f"'{desc}': {value_with_unit}"
 
-        return "slice at " + ", ".join(
+        return "Slice at " + "; ".join(
             coord_str(i) for i in range(len(self._parent.axes)) if i != self.axis_idx
         )
 
