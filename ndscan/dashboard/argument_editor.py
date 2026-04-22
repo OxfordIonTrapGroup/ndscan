@@ -450,6 +450,11 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         label.setFont(font)
         label_container.addWidget(label)
 
+        if explanation := schema.get("explanation", ""):
+            label.setToolTip(explanation)
+        else:
+            label.setToolTip(schema["description"])
+
         # For whatever reason, the auto-sized column is not wide enough to display the
         # whole label if displayed through a widget – whether through an extra
         # LayoutWidget or the QLabel directly. This does not occur when passing a string

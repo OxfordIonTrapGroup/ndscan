@@ -164,6 +164,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
                         "step": 0.1,
                     },
                     "type": "float",
+                    "explanation": "",
                 },
                 "path": "*",
             }
@@ -258,6 +259,7 @@ class FragmentScanExpCase(HasEnvironmentCase):
                         "unit": "ms",
                     },
                     "type": "float",
+                    "explanation": "",
                 },
                 "path": "*",
             }
