@@ -89,6 +89,7 @@ class FloatParamCase(GenericBase.Cases):
         "max": 2.0,
         "unit": "baz",
         "scale": 1.0,
+        "explanation": "barbarbar",
     }
     EXPECTED_DESCRIPTION = {
         "description": "bar",
@@ -102,6 +103,7 @@ class FloatParamCase(GenericBase.Cases):
             "step": 0.1,
             "is_scannable": True,
         },
+        "explanation": "barbarbar",
     }
 
 
@@ -116,6 +118,7 @@ class IntParamCase(GenericBase.Cases):
         "max": 1,
         "unit": "baz",
         "scale": 1,
+        "explanation": "barbarbar",
     }
     EXPECTED_DESCRIPTION = {
         "description": "bar",
@@ -128,6 +131,7 @@ class IntParamCase(GenericBase.Cases):
             "scale": 1,
             "is_scannable": True,
         },
+        "explanation": "barbarbar",
     }
 
 
@@ -138,6 +142,7 @@ class StringParamCase(GenericBase.Cases):
     EXAMPLE_KWARGS = {
         "description": "baz",
         "default": "'foo'",
+        "explanation": "barbarbar",
     }
     EXPECTED_DESCRIPTION = {
         "description": "baz",
@@ -146,6 +151,7 @@ class StringParamCase(GenericBase.Cases):
         "spec": {
             "is_scannable": True,
         },
+        "explanation": "barbarbar",
     }
 
     def to_dataset_value(self, x):
@@ -164,6 +170,7 @@ class BoolParamCase(GenericBase.Cases):
     EXAMPLE_KWARGS = {
         "description": "bar",
         "default": True,
+        "explanation": "barbarbar",
     }
     EXPECTED_DESCRIPTION = {
         "description": "bar",
@@ -172,6 +179,7 @@ class BoolParamCase(GenericBase.Cases):
         "spec": {
             "is_scannable": True,
         },
+        "explanation": "barbarbar",
     }
 
 
@@ -190,12 +198,14 @@ class EnumParamElemCase(GenericBase.Cases):
     EXAMPLE_KWARGS = {
         "description": "bar",
         "default": Options.first,
+        "explanation": "barbarbar",
     }
     EXPECTED_DESCRIPTION = {
         "description": "bar",
         "type": "enum",
         "default": "'first'",
         "spec": {"members": {o.name: o.value for o in Options}, "is_scannable": True},
+        "explanation": "barbarbar",
     }
 
     def to_dataset_value(self, x):
@@ -220,6 +230,7 @@ class EnumParamStringCase(GenericBase.Cases):
         "type": "enum",
         "default": "'first'",
         "spec": {"members": {o.name: o.value for o in Options}, "is_scannable": True},
+        "explanation": "",
     }
 
     def to_dataset_value(self, x):

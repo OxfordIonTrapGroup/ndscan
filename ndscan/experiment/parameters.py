@@ -384,6 +384,7 @@ class FloatParam(ParamBase):
         scale: float | None = None,
         step: float | None = None,
         is_scannable: bool = True,
+        explanation: str = "",
     ):
         ParamBase.__init__(
             self,
@@ -396,6 +397,7 @@ class FloatParam(ParamBase):
             scale=scale,
             step=step,
             is_scannable=is_scannable,
+            explanation=explanation,
         )
         self.scale = resolve_numeric_scale(scale, unit)
         self.step = step if step is not None else self.scale / 10.0
@@ -420,6 +422,7 @@ class FloatParam(ParamBase):
             "type": "float",
             "default": str(self.default),
             "spec": spec,
+            "explanation": self.explanation,
         }
 
     def eval_default(self, get_dataset: GetDataset) -> float:
@@ -459,6 +462,7 @@ class IntParam(ParamBase):
         unit: str = "",
         scale: int | None = None,
         is_scannable: bool = True,
+        explanation: str = "",
     ):
         ParamBase.__init__(
             self,
@@ -470,6 +474,7 @@ class IntParam(ParamBase):
             unit=unit,
             scale=scale,
             is_scannable=is_scannable,
+            explanation=explanation,
         )
         self.scale = resolve_numeric_scale(scale, unit)
         if self.scale != 1:
@@ -494,6 +499,7 @@ class IntParam(ParamBase):
             "type": "int",
             "default": str(self.default),
             "spec": spec,
+            "explanation": self.explanation,
         }
 
     def eval_default(self, get_dataset: GetDataset) -> int:
@@ -528,7 +534,13 @@ class StringParam(ParamBase):
     CompilerType = str  # deprecated (not used in ndscan anymore); will go away
 
     def __init__(
-        self, fqn: str, description: str, default: str, is_scannable: bool = True
+        self,
+        fqn: str,
+        description: str,
+        default: str,
+        is_scannable: bool = True,
+        *,
+        explanation: str = "",
     ):
         try:
             eval_param_default(default, _raise_not_implemented)
@@ -550,6 +562,7 @@ class StringParam(ParamBase):
             description=description,
             default=default,
             is_scannable=is_scannable,
+            explanation=explanation,
         )
 
     def describe(self) -> dict[str, Any]:
@@ -560,6 +573,7 @@ class StringParam(ParamBase):
             "type": "string",
             "default": str(self.default),
             "spec": {"is_scannable": self.is_scannable},
+            "explanation": self.explanation,
         }
 
     def eval_default(self, get_dataset: GetDataset) -> str:
@@ -579,10 +593,20 @@ class BoolParam(ParamBase):
     CompilerType = bool  # deprecated (not used in ndscan anymore); will go away
 
     def __init__(
-        self, fqn: str, description: str, default: str | bool, is_scannable: bool = True
+        self,
+        fqn: str,
+        description: str,
+        default: str | bool,
+        is_scannable: bool = True,
+        *,
+        explanation: str = "",
     ):
         super().__init__(
-            fqn=fqn, description=description, default=default, is_scannable=is_scannable
+            fqn=fqn,
+            description=description,
+            default=default,
+            is_scannable=is_scannable,
+            explanation=explanation,
         )
 
     def describe(self) -> dict[str, Any]:
@@ -593,6 +617,7 @@ class BoolParam(ParamBase):
             "type": "bool",
             "default": str(self.default),
             "spec": {"is_scannable": self.is_scannable},
+            "explanation": self.explanation,
         }
 
     def eval_default(self, get_dataset: GetDataset) -> bool:
@@ -687,6 +712,8 @@ class EnumParam(ParamBase):
         default: Enum | str,
         enum_class: type[Enum] | None = None,
         is_scannable: bool = True,
+        *,
+        explanation: str = "",
     ):
         if enum_class is None:
             if isinstance(default, Enum):
@@ -717,6 +744,7 @@ class EnumParam(ParamBase):
             default=default,
             enum_class=enum_class,
             is_scannable=is_scannable,
+            explanation=explanation,
         )
 
     def describe(self) -> dict[str, Any]:
@@ -740,6 +768,7 @@ class EnumParam(ParamBase):
             "type": "enum",
             "default": default,
             "spec": {"members": members, "is_scannable": self.is_scannable},
+            "explanation": self.explanation,
         }
 
     def eval_default(self, get_dataset: GetDataset) -> Enum:
