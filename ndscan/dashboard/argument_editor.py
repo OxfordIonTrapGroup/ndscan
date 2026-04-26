@@ -453,7 +453,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         if explanation := schema.get("explanation", ""):
             label.setToolTip(explanation)
         else:
-            label.setToolTip(schema["description"])
+            label.setToolTip(schema["description"] + " (no <i>explanation</i> set)")
 
         # For whatever reason, the auto-sized column is not wide enough to display the
         # whole label if displayed through a widget – whether through an extra
