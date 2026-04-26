@@ -229,6 +229,8 @@ class ParamTreeDialog(QtWidgets.QDialog):
             extras.append(range_extras)
         html += "</p><p>".join("<br>".join(e) for e in extras)
         html += "</p>"
+        if explanation := schema.get("explanation"):
+            html += f"<p>Explanation: {explanation}</p>"
         self.text_edit.setHtml(html)
 
         override_status = self.override_provider.override_status(fqn, path)
