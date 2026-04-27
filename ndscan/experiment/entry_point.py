@@ -53,7 +53,7 @@ from .result_channels import (
     ResultChannel,
     ScalarDatasetSink,
 )
-from .scan_generator import GENERATORS, ScanOptions
+from .scan_generator import GENERATORS, INT_GENERATORS, ScanGenerator, ScanOptions
 from .scan_runner import (
     ScanAxis,
     ScanSpec,
@@ -182,6 +182,23 @@ class FragmentScanExperiment(EnvExperiment):
         self.tlr.analyze()
 
 
+def select_generator_class(
+    scan_type: str, param_type: str
+) -> type[ScanGenerator] | None:
+    """Return the :class:`ScanGenerator` subclass implementing ``scan_type`` for a
+    parameter of the given type (as per the schema), or ``None`` if no implementation
+    matches.
+
+    Integer parameters use the :data:`INT_GENERATORS` specialisations where
+    available, so each integer is visited at most once and refining scans
+    terminate.
+    """
+    if param_type == "int":
+        if (cls := INT_GENERATORS.get(scan_type)) is not None:
+            return cls
+    return GENERATORS.get(scan_type)
+
+
 class ArgumentInterface(HasEnvironment):
     def build(self, fragments: list[Fragment], scannable: bool = False) -> None:
         self._fragments = fragments
@@ -253,18 +270,11 @@ class ArgumentInterface(HasEnvironment):
         generators = []
         axes = []
         for axspec in scan.get("axes", []):
-            generator_class = GENERATORS.get(axspec["type"], None)
-            if not generator_class:
-                raise ScanSpecError(
-                    "Axis type '{}' not implemented".format(axspec["type"])
-                )
-            generator = generator_class(**axspec["range"])
-            generators.append(generator)
-
             fqn = axspec["fqn"]
             pathspec = axspec["path"]
 
             try:
+                schema = self._schemata[fqn]
                 store_type = self._sample_instances[fqn].StoreType
             except KeyError:
                 raise KeyError(
@@ -273,9 +283,18 @@ class ArgumentInterface(HasEnvironment):
                     + "(likely due to outdated argument editor after "
                     + "changes to experiment; try Recompute All Arguments)"
                 )
+
+            generator_class = select_generator_class(axspec["type"], schema["type"])
+            if not generator_class:
+                raise ScanSpecError(
+                    "Axis type '{}' not implemented".format(axspec["type"])
+                )
+            generator = generator_class(**axspec["range"])
+            generators.append(generator)
+
             first_value = generator.points_for_level(0, random)[0]
             store = store_type((fqn, pathspec), store_type.value_from_pyon(first_value))
-            axes.append(ScanAxis(self._schemata[fqn], pathspec, store))
+            axes.append(ScanAxis(schema, pathspec, store))
 
         options = ScanOptions(
             scan.get("num_repeats", 1),
