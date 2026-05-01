@@ -1,11 +1,13 @@
+import logging
 import random
 from collections.abc import Iterator
 from dataclasses import dataclass
 from itertools import product
 from typing import Any
-from venv import logger
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ScanGenerator",
