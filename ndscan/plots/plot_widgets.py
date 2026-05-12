@@ -495,25 +495,32 @@ def add_source_id_label(
     """Add a translucent TextItem pinned to the bottom left of the view box displaying
     the context source id string.
     """
-    text_item = pyqtgraph.TextItem(
+
+    # Use custom slots instead of function pointers to prevent memory leak
+    # if the underlying C object is destroyed
+    class SourceIdTextItem(pyqtgraph.TextItem):
+        @QtCore.pyqtSlot(str)
+        def setText(self, text):
+            return super().setText(" " + text + " ")
+
+        @QtCore.pyqtSlot(object)
+        def setPosFromViewRange(self, viewBox):
+            (xmin, _), (ymin, _) = viewBox.viewRange()
+            return self.setPos(xmin, ymin)
+
+    text_item = SourceIdTextItem(
         text="", anchor=(0, 1), color=(255, 255, 255), fill=(0, 0, 0)
     )
     text_item.setZValue(1000)
     text_item.setOpacity(0.3)
     view_box.addItem(text_item, ignoreBounds=True)
 
-    def update_text(*args):
-        text_item.setText(" " + context.get_source_id() + " ")
+    context.source_id_changed.connect(text_item.setText)
+    view_box.sigRangeChanged.connect(text_item.setPosFromViewRange)
 
-    context.source_id_changed.connect(update_text)
-    update_text()
-
-    def update_text_pos(*args):
-        ((x, _), (y, _)) = view_box.viewRange()
-        text_item.setPos(x, y)
-
-    view_box.sigRangeChanged.connect(update_text_pos)
-    update_text_pos()
+    # Initialise
+    text_item.setText(context.get_source_id())
+    text_item.setPosFromViewRange(view_box)
 
     return text_item
 
