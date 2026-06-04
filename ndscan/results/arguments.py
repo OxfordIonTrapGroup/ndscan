@@ -57,6 +57,14 @@ def format_scan_range(
         lower = format_numeric(rang["lower"], param_spec["spec"])
         upper = format_numeric(rang["upper"], param_spec["spec"])
         return f"{lower} to {upper}, refining"
+    if typ in ("centre_span", "centre_span_refining"):
+        centre = format_numeric(rang["centre"], param_spec["spec"])
+        half_span = format_numeric(rang["half_span"], param_spec["spec"])
+        if typ == "centre_span_refining":
+            points = "refining"
+        else:
+            points = f"{rang['num_points']} points"
+        return f"{centre} ± {half_span}, {points}"
     if typ == "list":
         return f"list: [{rang['values']}]"
 
