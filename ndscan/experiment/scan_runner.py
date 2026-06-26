@@ -179,7 +179,7 @@ class ResultBatcher:
             if channel.sink is None:
                 continue
             self._orig_sinks[channel] = channel.sink
-            channel.sink = SingleUseSink()
+            channel.sink = SingleUseSink(channel.path)
 
     def discard_current(self) -> None:
         """Discard any results that may have been pushed already (e.g. if a point was
