@@ -592,6 +592,7 @@ class _NoAxisRunner(HasEnvironment):
 
     @portable
     def _run_loop(self):
+        self._install_result_batcher()
         try:
             while not self.scheduler.check_pause():
                 try:
@@ -647,12 +648,24 @@ class _NoAxisRunner(HasEnvironment):
                     )
             return False
         finally:
+            self._remove_result_batcher()
             self.fragment.device_cleanup()
         assert False, "Execution never reaches here, return is just to pacify compiler."
         return True
 
     @rpc(flags={"async"})
+    def _install_result_batcher(self):
+        self._result_batcher = ResultBatcher(self.fragment)
+        self._result_batcher.install()
+
+    @rpc(flags={"async"})
+    def _remove_result_batcher(self):
+        self._result_batcher.remove()
+        self._result_batcher = None
+
+    @rpc(flags={"async"})
     def _finish_point(self):
+        self._result_batcher.ensure_complete_and_push()
         if self.timestamp_sink:
             self.timestamp_sink.push(time.monotonic() - self._time_series_start)
         else:
