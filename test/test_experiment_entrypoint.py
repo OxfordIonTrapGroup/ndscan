@@ -7,6 +7,7 @@ import json
 from fixtures import (
     AddOneAggregate,
     AddOneFragment,
+    DoublePushFragment,
     MultiPointTransitoryErrorFragment,
     MultiReboundAddOneFragment,
     ReadParamDefault,
@@ -25,9 +26,10 @@ from ndscan.experiment.utils import is_kernel
 from ndscan.utils import PARAMS_ARG_KEY, SCHEMA_REVISION, SCHEMA_REVISION_KEY
 
 ScanAddOneExp = make_fragment_scan_exp(AddOneFragment)
+ScanDoublePushExp = make_fragment_scan_exp(DoublePushFragment)
+ScanReadParamDefaultExp = make_fragment_scan_exp(ReadParamDefault)
 ScanReboundAddOneExp = make_fragment_scan_exp(ReboundAddOneFragment)
 ScanTwoAnalysisAggregateExp = make_fragment_scan_exp(TwoAnalysisAggregate)
-ScanReadParamDefaultExp = make_fragment_scan_exp(ReadParamDefault)
 
 
 class TestAggregateExpFragment(HasEnvironmentCase):
@@ -333,6 +335,10 @@ class FragmentScanExpCase(HasEnvironmentCase):
         exp.run()
 
         self.assertEqual(self.dataset_db.data["ndscan.rid_0.point.value"][1], 2)
+
+    def test_double_push_1d(self):
+        with self.assertRaises(ResultLifecycleError):
+            self._test_run_1d(ScanDoublePushExp, "fixtures.DoublePushFragment", [])
 
 
 class RunOnceCase(HasEnvironmentCase):
