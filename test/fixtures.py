@@ -256,3 +256,15 @@ class ReadParamDefault(ExpFragment):
 
     def run_once(self) -> None:
         self.value.push(self.foo.get())
+
+
+class DoublePushFragment(ExpFragment):
+    """Calls push() twice on a result channel, to check logic for detecting this."""
+
+    def build_fragment(self):
+        self.setattr_param("value", FloatParam, "Value to push", default=0.0)
+        self.setattr_result("result", FloatChannel)
+
+    def run_once(self):
+        self.result.push(self.value.get())
+        self.result.push(self.value.get())
