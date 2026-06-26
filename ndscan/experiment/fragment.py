@@ -641,8 +641,7 @@ class Fragment(HasEnvironment):
             fragment.
         """
         assert self._building, (
-            "Can only call detach subfragments while parent still"
-            + "in build_fragment()"
+            "Can only call detach subfragments while parent still in build_fragment()"
         )
         assert fragment in self._subfragments, (
             "Can only detach subfragments directly from their parent fragment"
