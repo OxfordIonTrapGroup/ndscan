@@ -55,6 +55,7 @@ from .result_channels import (
 )
 from .scan_generator import GENERATORS, INT_GENERATORS, ScanGenerator, ScanOptions
 from .scan_runner import (
+    ResultBatcher,
     ScanAxis,
     ScanSpec,
     describe_analyses,
@@ -322,6 +323,7 @@ class TopLevelRunner(HasEnvironment):
     ):
         self.fragment = fragment
         self.spec = spec
+        self.no_axes_mode = no_axes_mode
         self.max_rtio_underflow_retries = max_rtio_underflow_retries
         self.max_transitory_error_retries = max_transitory_error_retries
         self.skip_on_persistent_transitory_error = skip_on_persistent_transitory_error
@@ -339,12 +341,8 @@ class TopLevelRunner(HasEnvironment):
             dataset_prefix += "."
         self.dataset_prefix = dataset_prefix
 
-        # FIXME: We save these as individual booleans as enums crash the ARTIQ compiler.
-        self._continue_running = False
         self._is_time_series = False
-
         if not self.spec.axes:
-            self._continue_running = no_axes_mode != NoAxesMode.single
             if no_axes_mode == NoAxesMode.time_series:
                 self._is_time_series = True
                 param_schema = {
@@ -414,17 +412,28 @@ class TopLevelRunner(HasEnvironment):
         """Run the (possibly trivial) scan."""
         self._broadcast_metadata()
 
-        if not self.spec.axes and not self._is_time_series:
-            self._run_continuous()
-            return None, {c: s.get_last() for c, s in self._scan_result_sinks.items()}
-
-        if self._is_time_series:
-            self._timestamp_sink = AppendingDatasetSink(
-                self, self.dataset_prefix + "points.axis_0"
+        if not self.spec.axes or self._is_time_series:
+            timestamp_sink = None
+            if self._is_time_series:
+                timestamp_sink = AppendingDatasetSink(
+                    self, self.dataset_prefix + "points.axis_0"
+                )
+                self._coordinate_sinks = [timestamp_sink]
+            runner = _NoAxisRunner(
+                self,
+                fragment=self.fragment,
+                phase_dataset_key=self.dataset_prefix + "point_phase",
+                continue_running=self.no_axes_mode != NoAxesMode.single,
+                timestamp_sink=timestamp_sink,
+                max_rtio_underflow_retries=self.max_rtio_underflow_retries,
+                max_transitory_error_retries=self.max_transitory_error_retries,
             )
-            self._coordinate_sinks = [self._timestamp_sink]
-            self._time_series_start = time.monotonic()
-            self._run_continuous()
+            runner.run()
+            if not self._is_time_series:
+                self._set_completed()
+                return None, {
+                    c: s.get_last() for c, s in self._scan_result_sinks.items()
+                }
         else:
             runner = select_runner_class(self.fragment)(
                 self,
@@ -437,8 +446,7 @@ class TopLevelRunner(HasEnvironment):
                 for i in range(len(self.spec.axes))
             ]
             runner.run(self.fragment, self.spec, self._coordinate_sinks)
-            self._set_completed()
-
+        self._set_completed()
         return self._make_coordinate_dict(), self._make_value_dict()
 
     def _make_coordinate_dict(self):
@@ -479,48 +487,118 @@ class TopLevelRunner(HasEnvironment):
             for name, channel in self._analysis_results.items()
         }
 
-    def _run_continuous(self):
+    def _set_completed(self):
+        self.set_dataset(self.dataset_prefix + "completed", True, broadcast=True)
+
+    def _broadcast_metadata(self):
+        def push(name, value):
+            self.set_dataset(self.dataset_prefix + name, value, broadcast=True)
+
+        push(SCHEMA_REVISION_KEY, SCHEMA_REVISION)
+
+        source_prefix = self.get_dataset("system_id", default="rid")
+        push("source_id", f"{source_prefix}_{self.scheduler.rid}")
+
+        push("completed", False)
+
+        self._scan_desc = describe_scan(
+            self.spec, self.fragment, self._short_child_channel_names
+        )
+        self._scan_desc.update(
+            describe_analyses(self._analyses, self._annotation_context)
+        )
+        self._scan_desc["analysis_results"] = {
+            name: channel.describe() for name, channel in self._analysis_results.items()
+        }
+
+        for name, value in self._scan_desc.items():
+            # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
+            ds_value = to_metadata_broadcast_type(value)
+            if ds_value is None:
+                push(name, dump_json(value))
+            else:
+                push(name, ds_value)
+
+    def create_applet(self, title: str, group: str = "ndscan"):
+        cmd = [
+            "${python}",
+            "-m ndscan.applet",
+            "--server=${server}",
+            "--port-notify=${port_notify}",
+            "--port-control=${port_control}",
+            f"--prefix={self.dataset_prefix}",
+        ]
+        self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
+
+
+def _shorten_result_channel_names(full_names: Iterable[str]) -> dict[str, str]:
+    return shorten_to_unambiguous_suffixes(
+        full_names, lambda fqn, n: "/".join(fqn.split("/")[-n:])
+    )
+
+
+class _NoAxisRunner(HasEnvironment):
+    # TODO: Unify with _FragmentRunner.
+
+    def build(
+        self,
+        fragment: ExpFragment,
+        phase_dataset_key: str,
+        continue_running: bool,
+        timestamp_sink: AppendingDatasetSink | None,
+        max_rtio_underflow_retries: int,
+        max_transitory_error_retries: int,
+    ):
+        self.fragment = fragment
+        self.phase_dataset_key = phase_dataset_key
+        self.continue_running = continue_running
+        self.timestamp_sink = timestamp_sink
+        self.max_rtio_underflow_retries = max_rtio_underflow_retries
+        self.max_transitory_error_retries = max_transitory_error_retries
+        self.setattr_device("core")
+        self.setattr_device("scheduler")
+
+    def run(self):
+        if self.timestamp_sink is not None:
+            self._time_series_start = time.monotonic()
+
         self._point_phase = False
-        # TODO: Unify with _FragmentRunner.
         self.num_current_transitory_errors = 0
         self.num_current_underflows = 0
-        try:
-            while True:
-                # After every pause(), pull in dataset changes (immediately as well to
-                # catch changes between the time the experiment is prepared and when it
-                # is run, to keep the semantics uniform).
-                self.fragment.recompute_param_defaults()
-                try:
-                    self.fragment.host_setup()
-                    if is_kernel(self.fragment.run_once):
-                        done = self._run_continuous_kernel()
-                        self.core.comm.close()
-                        if done:
-                            break
-                    else:
-                        if self._continuous_loop():
-                            break
-                finally:
-                    self.fragment.host_cleanup()
-                self.scheduler.pause()
-        finally:
-            self._set_completed()
+
+        while True:
+            # After every pause(), pull in dataset changes (immediately as well to
+            # catch changes between the time the experiment is prepared and when it
+            # is run, to keep the semantics uniform).
+            self.fragment.recompute_param_defaults()
+            try:
+                self.fragment.host_setup()
+                if is_kernel(self.fragment.run_once):
+                    done = self._run_kernel()
+                    self.core.comm.close()
+                    if done:
+                        break
+                else:
+                    if self._run_loop():
+                        break
+            finally:
+                self.fragment.host_cleanup()
+            self.scheduler.pause()
 
     @kernel
-    def _run_continuous_kernel(self):
+    def _run_kernel(self):
         self.core.reset()
-        return self._continuous_loop()
+        return self._run_loop()
 
     @portable
-    def _continuous_loop(self):
-        # TODO: Unify with _FragmentRunner.
+    def _run_loop(self):
         try:
             while not self.scheduler.check_pause():
                 try:
                     self.fragment.device_setup()
                     self.fragment.run_once()
-                    self._finish_continuous_point()
-                    if not self._continue_running:
+                    self._finish_point()
+                    if not self.continue_running:
                         return True
 
                     # One point is now finished, so reset transitory error counters for
@@ -574,63 +652,12 @@ class TopLevelRunner(HasEnvironment):
         return True
 
     @rpc(flags={"async"})
-    def _finish_continuous_point(self):
-        if self._is_time_series:
-            self._timestamp_sink.push(time.monotonic() - self._time_series_start)
+    def _finish_point(self):
+        if self.timestamp_sink:
+            self.timestamp_sink.push(time.monotonic() - self._time_series_start)
         else:
             self._point_phase = not self._point_phase
-            self.set_dataset(
-                self.dataset_prefix + "point_phase", self._point_phase, broadcast=True
-            )
-
-    def _set_completed(self):
-        self.set_dataset(self.dataset_prefix + "completed", True, broadcast=True)
-
-    def _broadcast_metadata(self):
-        def push(name, value):
-            self.set_dataset(self.dataset_prefix + name, value, broadcast=True)
-
-        push(SCHEMA_REVISION_KEY, SCHEMA_REVISION)
-
-        source_prefix = self.get_dataset("system_id", default="rid")
-        push("source_id", f"{source_prefix}_{self.scheduler.rid}")
-
-        push("completed", False)
-
-        self._scan_desc = describe_scan(
-            self.spec, self.fragment, self._short_child_channel_names
-        )
-        self._scan_desc.update(
-            describe_analyses(self._analyses, self._annotation_context)
-        )
-        self._scan_desc["analysis_results"] = {
-            name: channel.describe() for name, channel in self._analysis_results.items()
-        }
-
-        for name, value in self._scan_desc.items():
-            # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
-            ds_value = to_metadata_broadcast_type(value)
-            if ds_value is None:
-                push(name, dump_json(value))
-            else:
-                push(name, ds_value)
-
-    def create_applet(self, title: str, group: str = "ndscan"):
-        cmd = [
-            "${python}",
-            "-m ndscan.applet",
-            "--server=${server}",
-            "--port-notify=${port_notify}",
-            "--port-control=${port_control}",
-            f"--prefix={self.dataset_prefix}",
-        ]
-        self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
-
-
-def _shorten_result_channel_names(full_names: Iterable[str]) -> dict[str, str]:
-    return shorten_to_unambiguous_suffixes(
-        full_names, lambda fqn, n: "/".join(fqn.split("/")[-n:])
-    )
+            self.set_dataset(self.phase_dataset_key, self._point_phase, broadcast=True)
 
 
 def make_fragment_scan_exp(
@@ -689,7 +716,7 @@ class _FragmentRunner(HasEnvironment):
         self.num_transitory_errors_caught = 0
 
     def run(self) -> bool:
-        """Execute device_setup()/run_once(), retrying if nececssary.
+        """Execute device_setup()/run_once(), retrying if necessary.
 
         :return: ``True`` if execution completed, ``False`` if it should be attempted
             again (RestartKernelTransitoryError).
