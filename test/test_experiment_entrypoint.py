@@ -336,6 +336,12 @@ class FragmentScanExpCase(HasEnvironmentCase):
 
         self.assertEqual(self.dataset_db.data["ndscan.rid_0.point.value"][1], 2)
 
+    def test_double_push_trivial(self):
+        with self.assertRaises(ResultLifecycleError):
+            exp = self.create(ScanDoublePushExp)
+            exp.prepare()
+            exp.run()
+
     def test_double_push_1d(self):
         with self.assertRaises(ResultLifecycleError):
             self._test_run_1d(ScanDoublePushExp, "fixtures.DoublePushFragment", [])
