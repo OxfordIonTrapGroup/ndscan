@@ -28,6 +28,7 @@ class ResultLifecycleError(RuntimeError):
     """Raised if a result channel was not pushed to, or was pushed to more than once per
     point.
     """
+
     pass
 
 
@@ -66,13 +67,21 @@ class SingleUseSink(ResultSink):
     per point.
     """
 
-    def __init__(self):
+    def __init__(self, channel_path: str):
+        """
+        :param channel_path: Name of the associated result channel, to streamline error
+            message generation. (Strictly speaking, this is a layering violation, and
+            could be handled by re-raising in ResultChannel.push() instead.)
+        """
+        self._channel_path = channel_path
         self._is_set: bool = False
         self._value: Any = None
 
     def push(self, value: Any) -> None:
         if self._is_set:
-            raise ResultLifecycleError("Result channel already pushed to")
+            raise ResultLifecycleError(
+                f"Already pushed to result channel '{self._channel_path}'"
+            )
         self._value = value
         self._is_set = True
 
@@ -81,7 +90,9 @@ class SingleUseSink(ResultSink):
 
     def get(self) -> Any:
         if not self._is_set:
-            raise ResultLifecycleError("No value pushed to sink")
+            raise ResultLifecycleError(
+                f"No value pushed to result channel '{self._channel_path}"
+            )
         return self._value
 
     def get_last(self) -> Any:
