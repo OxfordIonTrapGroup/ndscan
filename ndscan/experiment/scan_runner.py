@@ -19,7 +19,12 @@ from artiq.language import HasEnvironment, host_only, kernel, kernel_from_string
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, RestartKernelTransitoryError, TransitoryError
 from .parameters import ParamStore
-from .result_channels import ResultChannel, ResultSink, SingleUseSink
+from .result_channels import (
+    ResultChannel,
+    ResultLifecycleError,
+    ResultSink,
+    SingleUseSink,
+)
 from .scan_generator import ScanGenerator, ScanOptions, generate_points
 from .utils import is_kernel
 
@@ -193,7 +198,7 @@ class ResultBatcher:
         # First check whether we have all the values.
         for channel in self._orig_sinks.keys():
             if not channel.sink.is_set():
-                raise ValueError(
+                raise ResultLifecycleError(
                     f"Missing value for result channel '{channel}' "
                     + "(push() not called for current point)"
                 )

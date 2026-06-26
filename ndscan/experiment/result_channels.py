@@ -10,6 +10,7 @@ from artiq.language import HasEnvironment, kernel, portable, rpc
 from .utils import dump_json
 
 __all__ = [
+    "ResultLifecycleError",
     "SingleUseSink",
     "LastValueSink",
     "ArraySink",
@@ -23,23 +24,47 @@ __all__ = [
 ]
 
 
+class ResultLifecycleError(RuntimeError):
+    """Raised if a result channel was not pushed to, or was pushed to more than once per
+    point.
+    """
+    pass
+
+
 class ResultSink:
     """ """
 
     def push(self, value: Any) -> None:
         """Record a new value.
 
-        This should never fail; neither in the sense of raising an exception, nor (for
-        sinks that record a series of values) in the sense of failing to record the
-        presence of a value, as code consuming results relies on one ``push()`` each to
-        a set of result channels and subsequently sinks representing a single multi-
-        dimensional data point.
+        Due to limited availability of generics or metaprogramming in ARTIQ Python,
+        result handling is implemented as a disaggregated set of channels, where each
+        channel (and in turn sink) is pushed to once per logical point. In other words,
+        results are stored in "struct of arrays" rather than "array of structs" form,
+        where the arrays are built up by repeated ``push()`` calls.
+
+        The ndscan scan runners will ensure that each channel is pushed to exactly once
+        per points; if this invariant is violated, a :class:`ResultLifecycleError` is
+        raised, and _none_ of the results are forwarded to the top-level sinks. This
+        ensures that dataset arrays remain rectangular with a clear point index to
+        element mapping, and points are retryable.
+
+        Pushing to user-provided top-level sinks usually should not fail. If pushing is
+        fallible, ndscan does not provide any help with ensuring that the
+        one-push()-per-point invariant is preserved. That is, such errors should be
+        considered to be unrecoverable, unless the user code takes steps to avoid a
+        situation where sinks on other channels pushed to before the failure hold data
+        for a point but others do not.
         """
         raise NotImplementedError
 
 
 class SingleUseSink(ResultSink):
-    """Sink that allows only one value to be pushed (before being cleared)."""
+    """Sink that allows only one value to be pushed (before being cleared).
+
+    This is used by ndscan internally to ensure each channel is pushed to exactly once
+    per point.
+    """
 
     def __init__(self):
         self._is_set: bool = False
@@ -47,7 +72,7 @@ class SingleUseSink(ResultSink):
 
     def push(self, value: Any) -> None:
         if self._is_set:
-            raise RuntimeError("Result channel already pushed to")
+            raise ResultLifecycleError("Result channel already pushed to")
         self._value = value
         self._is_set = True
 
@@ -56,7 +81,7 @@ class SingleUseSink(ResultSink):
 
     def get(self) -> Any:
         if not self._is_set:
-            raise ValueError("No value pushed to sink")
+            raise ResultLifecycleError("No value pushed to sink")
         return self._value
 
     def get_last(self) -> Any:
