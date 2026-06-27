@@ -95,7 +95,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.default_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnnotationContext</span><span class="p">,</span> <span class="n">DefaultAnalysis</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.fragment</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpFragment</span><span class="p">,</span> <span class="n">RestartKernelTransitoryError</span><span class="p">,</span> <span class="n">TransitoryError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamStore</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultChannel</span><span class="p">,</span> <span class="n">ResultSink</span><span class="p">,</span> <span class="n">SingleUseSink</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ResultChannel</span><span class="p">,</span>
+    <span class="n">ResultLifecycleError</span><span class="p">,</span>
+    <span class="n">ResultSink</span><span class="p">,</span>
+    <span class="n">SingleUseSink</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scan_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span><span class="p">,</span> <span class="n">generate_points</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_kernel</span>
 
@@ -268,7 +273,7 @@
             <span class="k">if</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span>
-            <span class="n">channel</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">SingleUseSink</span><span class="p">()</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">SingleUseSink</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">discard_current</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Discard any results that may have been pushed already (e.g. if a point was</span>
@@ -287,7 +292,7 @@
         <span class="c1"># First check whether we have all the values.</span>
         <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="k">raise</span> <span class="n">ResultLifecycleError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Missing value for result channel &#39;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
                     <span class="o">+</span> <span class="s2">&quot;(push() not called for current point)&quot;</span>
                 <span class="p">)</span>

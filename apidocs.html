@@ -63,6 +63,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#module-ndscan.experiment.result_channels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.result_channels</span></code> module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ndscan.experiment.result_channels.ResultLifecycleError"><code class="docutils literal notranslate"><span class="pre">ResultLifecycleError</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ndscan.experiment.result_channels.SingleUseSink"><code class="docutils literal notranslate"><span class="pre">SingleUseSink</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ndscan.experiment.result_channels.LastValueSink"><code class="docutils literal notranslate"><span class="pre">LastValueSink</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ndscan.experiment.result_channels.ArraySink"><code class="docutils literal notranslate"><span class="pre">ArraySink</span></code></a></li>
@@ -889,19 +890,39 @@ binding of the parameter.</p>
 <section id="module-ndscan.experiment.result_channels">
 <span id="ndscan-experiment-result-channels-module"></span><h3><a class="reference internal" href="#module-ndscan.experiment.result_channels" title="ndscan.experiment.result_channels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ndscan.experiment.result_channels</span></code></a> module<a class="headerlink" href="#module-ndscan.experiment.result_channels" title="Link to this heading"></a></h3>
 <p>Result handling building blocks.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="ndscan.experiment.result_channels.ResultLifecycleError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ndscan.experiment.result_channels.</span></span><span class="sig-name descname"><span class="pre">ResultLifecycleError</span></span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ResultLifecycleError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ResultLifecycleError" title="Link to this definition"></a></dt>
+<dd><p>Raised if a result channel was not pushed to, or was pushed to more than once per
+point.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="ndscan.experiment.result_channels.SingleUseSink">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ndscan.experiment.result_channels.</span></span><span class="sig-name descname"><span class="pre">SingleUseSink</span></span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#SingleUseSink"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.SingleUseSink" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ndscan.experiment.result_channels.</span></span><span class="sig-name descname"><span class="pre">SingleUseSink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#SingleUseSink"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.SingleUseSink" title="Link to this definition"></a></dt>
 <dd><p>Sink that allows only one value to be pushed (before being cleared).</p>
+<p>This is used by ndscan internally to ensure each channel is pushed to exactly once
+per point.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="ndscan.experiment.result_channels.SingleUseSink.push">
 <span class="sig-name descname"><span class="pre">push</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#SingleUseSink.push"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.SingleUseSink.push" title="Link to this definition"></a></dt>
 <dd><p>Record a new value.</p>
-<p>This should never fail; neither in the sense of raising an exception, nor (for
-sinks that record a series of values) in the sense of failing to record the
-presence of a value, as code consuming results relies on one <code class="docutils literal notranslate"><span class="pre">push()</span></code> each to
-a set of result channels and subsequently sinks representing a single multi-
-dimensional data point.</p>
+<p>Due to limited availability of generics or metaprogramming in ARTIQ Python,
+result handling is implemented as a disaggregated set of channels, where each
+channel (and in turn sink) is pushed to once per logical point. In other words,
+results are stored in “struct of arrays” rather than “array of structs” form,
+where the arrays are built up by repeated <code class="docutils literal notranslate"><span class="pre">push()</span></code> calls.</p>
+<p>The ndscan scan runners will ensure that each channel is pushed to exactly once
+per points; if this invariant is violated, a <a class="reference internal" href="#ndscan.experiment.result_channels.ResultLifecycleError" title="ndscan.experiment.result_channels.ResultLifecycleError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultLifecycleError</span></code></a> is
+raised, and _none_ of the results are forwarded to the top-level sinks. This
+ensures that dataset arrays remain rectangular with a clear point index to
+element mapping, and points are retryable.</p>
+<p>Pushing to user-provided top-level sinks usually should not fail. If pushing is
+fallible, ndscan does not provide any help with ensuring that the
+one-push()-per-point invariant is preserved. That is, such errors should be
+considered to be unrecoverable, unless the user code takes steps to avoid a
+situation where sinks on other channels pushed to before the failure hold data
+for a point but others do not.</p>
 </dd></dl>
 
 </dd></dl>
@@ -915,11 +936,22 @@ one.</p>
 <dt class="sig sig-object py" id="ndscan.experiment.result_channels.LastValueSink.push">
 <span class="sig-name descname"><span class="pre">push</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#LastValueSink.push"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.LastValueSink.push" title="Link to this definition"></a></dt>
 <dd><p>Record a new value.</p>
-<p>This should never fail; neither in the sense of raising an exception, nor (for
-sinks that record a series of values) in the sense of failing to record the
-presence of a value, as code consuming results relies on one <code class="docutils literal notranslate"><span class="pre">push()</span></code> each to
-a set of result channels and subsequently sinks representing a single multi-
-dimensional data point.</p>
+<p>Due to limited availability of generics or metaprogramming in ARTIQ Python,
+result handling is implemented as a disaggregated set of channels, where each
+channel (and in turn sink) is pushed to once per logical point. In other words,
+results are stored in “struct of arrays” rather than “array of structs” form,
+where the arrays are built up by repeated <code class="docutils literal notranslate"><span class="pre">push()</span></code> calls.</p>
+<p>The ndscan scan runners will ensure that each channel is pushed to exactly once
+per points; if this invariant is violated, a <a class="reference internal" href="#ndscan.experiment.result_channels.ResultLifecycleError" title="ndscan.experiment.result_channels.ResultLifecycleError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultLifecycleError</span></code></a> is
+raised, and _none_ of the results are forwarded to the top-level sinks. This
+ensures that dataset arrays remain rectangular with a clear point index to
+element mapping, and points are retryable.</p>
+<p>Pushing to user-provided top-level sinks usually should not fail. If pushing is
+fallible, ndscan does not provide any help with ensuring that the
+one-push()-per-point invariant is preserved. That is, such errors should be
+considered to be unrecoverable, unless the user code takes steps to avoid a
+situation where sinks on other channels pushed to before the failure hold data
+for a point but others do not.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -938,11 +970,22 @@ dimensional data point.</p>
 <dt class="sig sig-object py" id="ndscan.experiment.result_channels.ArraySink.push">
 <span class="sig-name descname"><span class="pre">push</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ArraySink.push"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ArraySink.push" title="Link to this definition"></a></dt>
 <dd><p>Record a new value.</p>
-<p>This should never fail; neither in the sense of raising an exception, nor (for
-sinks that record a series of values) in the sense of failing to record the
-presence of a value, as code consuming results relies on one <code class="docutils literal notranslate"><span class="pre">push()</span></code> each to
-a set of result channels and subsequently sinks representing a single multi-
-dimensional data point.</p>
+<p>Due to limited availability of generics or metaprogramming in ARTIQ Python,
+result handling is implemented as a disaggregated set of channels, where each
+channel (and in turn sink) is pushed to once per logical point. In other words,
+results are stored in “struct of arrays” rather than “array of structs” form,
+where the arrays are built up by repeated <code class="docutils literal notranslate"><span class="pre">push()</span></code> calls.</p>
+<p>The ndscan scan runners will ensure that each channel is pushed to exactly once
+per points; if this invariant is violated, a <a class="reference internal" href="#ndscan.experiment.result_channels.ResultLifecycleError" title="ndscan.experiment.result_channels.ResultLifecycleError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultLifecycleError</span></code></a> is
+raised, and _none_ of the results are forwarded to the top-level sinks. This
+ensures that dataset arrays remain rectangular with a clear point index to
+element mapping, and points are retryable.</p>
+<p>Pushing to user-provided top-level sinks usually should not fail. If pushing is
+fallible, ndscan does not provide any help with ensuring that the
+one-push()-per-point invariant is preserved. That is, such errors should be
+considered to be unrecoverable, unless the user code takes steps to avoid a
+situation where sinks on other channels pushed to before the failure hold data
+for a point but others do not.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -987,11 +1030,22 @@ if any.</p>
 <dt class="sig sig-object py" id="ndscan.experiment.result_channels.ScalarDatasetSink.push">
 <span class="sig-name descname"><span class="pre">push</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#ScalarDatasetSink.push"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.ScalarDatasetSink.push" title="Link to this definition"></a></dt>
 <dd><p>Record a new value.</p>
-<p>This should never fail; neither in the sense of raising an exception, nor (for
-sinks that record a series of values) in the sense of failing to record the
-presence of a value, as code consuming results relies on one <code class="docutils literal notranslate"><span class="pre">push()</span></code> each to
-a set of result channels and subsequently sinks representing a single multi-
-dimensional data point.</p>
+<p>Due to limited availability of generics or metaprogramming in ARTIQ Python,
+result handling is implemented as a disaggregated set of channels, where each
+channel (and in turn sink) is pushed to once per logical point. In other words,
+results are stored in “struct of arrays” rather than “array of structs” form,
+where the arrays are built up by repeated <code class="docutils literal notranslate"><span class="pre">push()</span></code> calls.</p>
+<p>The ndscan scan runners will ensure that each channel is pushed to exactly once
+per points; if this invariant is violated, a <a class="reference internal" href="#ndscan.experiment.result_channels.ResultLifecycleError" title="ndscan.experiment.result_channels.ResultLifecycleError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultLifecycleError</span></code></a> is
+raised, and _none_ of the results are forwarded to the top-level sinks. This
+ensures that dataset arrays remain rectangular with a clear point index to
+element mapping, and points are retryable.</p>
+<p>Pushing to user-provided top-level sinks usually should not fail. If pushing is
+fallible, ndscan does not provide any help with ensuring that the
+one-push()-per-point invariant is preserved. That is, such errors should be
+considered to be unrecoverable, unless the user code takes steps to avoid a
+situation where sinks on other channels pushed to before the failure hold data
+for a point but others do not.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1428,7 +1482,7 @@ produce results).</p></li>
 executed.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.Subscan.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ScanOptions</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">num_repeats_per_point=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=1547033508)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execute_default_analyses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel"><span class="pre">ResultChannel</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan.run" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ScanOptions</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">num_repeats_per_point=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=2382793883)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execute_default_analyses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.result_channels.ResultChannel" title="ndscan.experiment.result_channels.ResultChannel"><span class="pre">ResultChannel</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#Subscan.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.Subscan.run" title="Link to this definition"></a></dt>
 <dd><p>Run the subscan with the given axis iteration specifications, and return the
 data point coordinates/result channel values.</p>
 <dl class="field-list simple">
@@ -1565,7 +1619,7 @@ must not fail to produce results).</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ndscan.experiment.subscan.SubscanExpFragment.configure">
-<span class="sig-name descname"><span class="pre">configure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ScanOptions</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">num_repeats_per_point=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=3018519147)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.configure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.configure" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">configure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_generators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ndscan.experiment.parameters.ParamHandle" title="ndscan.experiment.parameters.ParamHandle"><span class="pre">ParamHandle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ndscan.experiment.scan_generator.ScanGenerator" title="ndscan.experiment.scan_generator.ScanGenerator"><span class="pre">ScanGenerator</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ScanOptions</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ScanOptions(num_repeats=1,</span> <span class="pre">num_repeats_per_point=1,</span> <span class="pre">randomise_order_globally=False,</span> <span class="pre">seed=1362748383)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ndscan/experiment/subscan.html#SubscanExpFragment.configure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.subscan.SubscanExpFragment.configure" title="Link to this definition"></a></dt>
 <dd><p>Configure point generators for each scan axis, and scan options.</p>
 <p>This only needs to be called once (but can be called multiple times to change
 settings between <code class="docutils literal notranslate"><span class="pre">run_once()</span></code> invocations, e.g. from a parent fragment

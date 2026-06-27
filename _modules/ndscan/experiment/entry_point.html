@@ -131,6 +131,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scan_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">GENERATORS</span><span class="p">,</span> <span class="n">INT_GENERATORS</span><span class="p">,</span> <span class="n">ScanGenerator</span><span class="p">,</span> <span class="n">ScanOptions</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scan_runner</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ResultBatcher</span><span class="p">,</span>
     <span class="n">ScanAxis</span><span class="p">,</span>
     <span class="n">ScanSpec</span><span class="p">,</span>
     <span class="n">describe_analyses</span><span class="p">,</span>
@@ -416,6 +417,7 @@
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">spec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">no_axes_mode</span> <span class="o">=</span> <span class="n">no_axes_mode</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span> <span class="o">=</span> <span class="n">max_rtio_underflow_retries</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span> <span class="o">=</span> <span class="n">max_transitory_error_retries</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">skip_on_persistent_transitory_error</span> <span class="o">=</span> <span class="n">skip_on_persistent_transitory_error</span>
@@ -433,12 +435,8 @@
             <span class="n">dataset_prefix</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">=</span> <span class="n">dataset_prefix</span>
 
-        <span class="c1"># FIXME: We save these as individual booleans as enums crash the ARTIQ compiler.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span> <span class="o">=</span> <span class="kc">False</span>
-
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span> <span class="o">=</span> <span class="n">no_axes_mode</span> <span class="o">!=</span> <span class="n">NoAxesMode</span><span class="o">.</span><span class="n">single</span>
             <span class="k">if</span> <span class="n">no_axes_mode</span> <span class="o">==</span> <span class="n">NoAxesMode</span><span class="o">.</span><span class="n">time_series</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">param_schema</span> <span class="o">=</span> <span class="p">{</span>
@@ -508,17 +506,28 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the (possibly trivial) scan.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_metadata</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous</span><span class="p">()</span>
-            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp_sink</span> <span class="o">=</span> <span class="n">AppendingDatasetSink</span><span class="p">(</span>
-                <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;points.axis_0&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
+            <span class="n">timestamp_sink</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
+                <span class="n">timestamp_sink</span> <span class="o">=</span> <span class="n">AppendingDatasetSink</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;points.axis_0&quot;</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span> <span class="o">=</span> <span class="p">[</span><span class="n">timestamp_sink</span><span class="p">]</span>
+            <span class="n">runner</span> <span class="o">=</span> <span class="n">_NoAxisRunner</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="n">fragment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span>
+                <span class="n">phase_dataset_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;point_phase&quot;</span><span class="p">,</span>
+                <span class="n">continue_running</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">no_axes_mode</span> <span class="o">!=</span> <span class="n">NoAxesMode</span><span class="o">.</span><span class="n">single</span><span class="p">,</span>
+                <span class="n">timestamp_sink</span><span class="o">=</span><span class="n">timestamp_sink</span><span class="p">,</span>
+                <span class="n">max_rtio_underflow_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+                <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_timestamp_sink</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_time_series_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous</span><span class="p">()</span>
+            <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
+                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_result_sinks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">runner</span> <span class="o">=</span> <span class="n">select_runner_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">)(</span>
                 <span class="bp">self</span><span class="p">,</span>
@@ -531,8 +540,7 @@
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
             <span class="p">]</span>
             <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_coordinate_dict</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_value_dict</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_coordinate_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -572,110 +580,6 @@
             <span class="n">name</span><span class="p">:</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">get_last</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_run_continuous</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="c1"># TODO: Unify with _FragmentRunner.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="c1"># After every pause(), pull in dataset changes (immediately as well to</span>
-                <span class="c1"># catch changes between the time the experiment is prepared and when it</span>
-                <span class="c1"># is run, to keep the semantics uniform).</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
-                        <span class="n">done</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_continuous_kernel</span><span class="p">()</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                        <span class="k">if</span> <span class="n">done</span><span class="p">:</span>
-                            <span class="k">break</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">():</span>
-                            <span class="k">break</span>
-                <span class="k">finally</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_set_completed</span><span class="p">()</span>
-
-    <span class="nd">@kernel</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_run_continuous_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continuous_loop</span><span class="p">()</span>
-
-    <span class="nd">@portable</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_continuous_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># TODO: Unify with _FragmentRunner.</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_finish_continuous_point</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_continue_running</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="kc">True</span>
-
-                    <span class="c1"># One point is now finished, so reset transitory error counters for</span>
-                    <span class="c1"># the next one.</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="k">except</span> <span class="n">RTIOUnderflow</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">:</span>
-                        <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span>
-                        <span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span><span class="p">,</span>
-                        <span class="s2">&quot;/&quot;</span><span class="p">,</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
-                        <span class="s2">&quot;)&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">if</span> <span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span>
-                        <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span>
-                    <span class="p">):</span>
-                        <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span>
-                        <span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span><span class="p">,</span>
-                        <span class="s2">&quot;/&quot;</span><span class="p">,</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
-                        <span class="s2">&quot;), restarting kernel&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="k">return</span> <span class="kc">False</span>
-                <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">if</span> <span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span>
-                        <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span>
-                    <span class="p">):</span>
-                        <span class="k">raise</span>
-                    <span class="nb">print</span><span class="p">(</span>
-                        <span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span><span class="p">,</span>
-                        <span class="s2">&quot;/&quot;</span><span class="p">,</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
-                        <span class="s2">&quot;), retrying&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
-        <span class="k">return</span> <span class="kc">True</span>
-
-    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_finish_continuous_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp_sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_series_start</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;point_phase&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span>
-            <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_set_completed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">+</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -725,6 +629,142 @@
     <span class="k">return</span> <span class="n">shorten_to_unambiguous_suffixes</span><span class="p">(</span>
         <span class="n">full_names</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">fqn</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:])</span>
     <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_NoAxisRunner</span><span class="p">(</span><span class="n">HasEnvironment</span><span class="p">):</span>
+    <span class="c1"># TODO: Unify with _FragmentRunner.</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
+        <span class="n">phase_dataset_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">continue_running</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">timestamp_sink</span><span class="p">:</span> <span class="n">AppendingDatasetSink</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="n">fragment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_dataset_key</span> <span class="o">=</span> <span class="n">phase_dataset_key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">continue_running</span> <span class="o">=</span> <span class="n">continue_running</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_sink</span> <span class="o">=</span> <span class="n">timestamp_sink</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span> <span class="o">=</span> <span class="n">max_rtio_underflow_retries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span> <span class="o">=</span> <span class="n">max_transitory_error_retries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setattr_device</span><span class="p">(</span><span class="s2">&quot;scheduler&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_time_series_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># After every pause(), pull in dataset changes (immediately as well to</span>
+            <span class="c1"># catch changes between the time the experiment is prepared and when it</span>
+            <span class="c1"># is run, to keep the semantics uniform).</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">recompute_param_defaults</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_setup</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">is_kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">):</span>
+                    <span class="n">done</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kernel</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">done</span><span class="p">:</span>
+                        <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_loop</span><span class="p">():</span>
+                        <span class="k">break</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">host_cleanup</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+
+    <span class="nd">@kernel</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_loop</span><span class="p">()</span>
+
+    <span class="nd">@portable</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_install_result_batcher</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">check_pause</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_finish_point</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_running</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="kc">True</span>
+
+                    <span class="c1"># One point is now finished, so reset transitory error counters for</span>
+                    <span class="c1"># the next one.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">except</span> <span class="n">RTIOUnderflow</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">:</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;Ignoring RTIOUnderflow (&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_underflows</span><span class="p">,</span>
+                        <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">max_rtio_underflow_retries</span><span class="p">,</span>
+                        <span class="s2">&quot;)&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="n">RestartKernelTransitoryError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span>
+                        <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span>
+                    <span class="p">):</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span><span class="p">,</span>
+                        <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
+                        <span class="s2">&quot;), restarting kernel&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">except</span> <span class="n">TransitoryError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span>
+                        <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span>
+                    <span class="p">):</span>
+                        <span class="k">raise</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;Caught transitory error (&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">num_current_transitory_errors</span><span class="p">,</span>
+                        <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
+                        <span class="s2">&quot;), retrying&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_remove_result_batcher</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_install_result_batcher</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_batcher</span> <span class="o">=</span> <span class="n">ResultBatcher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_batcher</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
+
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove_result_batcher</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_batcher</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_batcher</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_finish_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_batcher</span><span class="o">.</span><span class="n">ensure_complete_and_push</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_sink</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_series_start</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phase_dataset_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_point_phase</span><span class="p">,</span> <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="make_fragment_scan_exp">
@@ -786,7 +826,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_transitory_errors_caught</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute device_setup()/run_once(), retrying if nececssary.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute device_setup()/run_once(), retrying if necessary.</span>
 
 <span class="sd">        :return: ``True`` if execution completed, ``False`` if it should be attempted</span>
 <span class="sd">            again (RestartKernelTransitoryError).</span>

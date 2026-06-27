@@ -86,6 +86,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">dump_json</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ResultLifecycleError&quot;</span><span class="p">,</span>
     <span class="s2">&quot;SingleUseSink&quot;</span><span class="p">,</span>
     <span class="s2">&quot;LastValueSink&quot;</span><span class="p">,</span>
     <span class="s2">&quot;ArraySink&quot;</span><span class="p">,</span>
@@ -99,17 +100,41 @@
 <span class="p">]</span>
 
 
+<div class="viewcode-block" id="ResultLifecycleError">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.ResultLifecycleError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResultLifecycleError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised if a result channel was not pushed to, or was pushed to more than once per</span>
+<span class="sd">    point.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
 <span class="k">class</span><span class="w"> </span><span class="nc">ResultSink</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a new value.</span>
 
-<span class="sd">        This should never fail; neither in the sense of raising an exception, nor (for</span>
-<span class="sd">        sinks that record a series of values) in the sense of failing to record the</span>
-<span class="sd">        presence of a value, as code consuming results relies on one ``push()`` each to</span>
-<span class="sd">        a set of result channels and subsequently sinks representing a single multi-</span>
-<span class="sd">        dimensional data point.</span>
+<span class="sd">        Due to limited availability of generics or metaprogramming in ARTIQ Python,</span>
+<span class="sd">        result handling is implemented as a disaggregated set of channels, where each</span>
+<span class="sd">        channel (and in turn sink) is pushed to once per logical point. In other words,</span>
+<span class="sd">        results are stored in &quot;struct of arrays&quot; rather than &quot;array of structs&quot; form,</span>
+<span class="sd">        where the arrays are built up by repeated ``push()`` calls.</span>
+
+<span class="sd">        The ndscan scan runners will ensure that each channel is pushed to exactly once</span>
+<span class="sd">        per points; if this invariant is violated, a :class:`ResultLifecycleError` is</span>
+<span class="sd">        raised, and _none_ of the results are forwarded to the top-level sinks. This</span>
+<span class="sd">        ensures that dataset arrays remain rectangular with a clear point index to</span>
+<span class="sd">        element mapping, and points are retryable.</span>
+
+<span class="sd">        Pushing to user-provided top-level sinks usually should not fail. If pushing is</span>
+<span class="sd">        fallible, ndscan does not provide any help with ensuring that the</span>
+<span class="sd">        one-push()-per-point invariant is preserved. That is, such errors should be</span>
+<span class="sd">        considered to be unrecoverable, unless the user code takes steps to avoid a</span>
+<span class="sd">        situation where sinks on other channels pushed to before the failure hold data</span>
+<span class="sd">        for a point but others do not.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
@@ -117,9 +142,19 @@
 <div class="viewcode-block" id="SingleUseSink">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.SingleUseSink">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SingleUseSink</span><span class="p">(</span><span class="n">ResultSink</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that allows only one value to be pushed (before being cleared).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sink that allows only one value to be pushed (before being cleared).</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="sd">    This is used by ndscan internally to ensure each channel is pushed to exactly once</span>
+<span class="sd">    per point.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param channel_path: Name of the associated result channel, to streamline error</span>
+<span class="sd">            message generation. (Strictly speaking, this is a layering violation, and</span>
+<span class="sd">            could be handled by re-raising in ResultChannel.push() instead.)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_path</span> <span class="o">=</span> <span class="n">channel_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -127,7 +162,9 @@
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.result_channels.SingleUseSink.push">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Result channel already pushed to&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ResultLifecycleError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Already pushed to result channel &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+            <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span> <span class="o">=</span> <span class="kc">True</span></div>
 
@@ -137,7 +174,9 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_set</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No value pushed to sink&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ResultLifecycleError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;No value pushed to result channel &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_path</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
