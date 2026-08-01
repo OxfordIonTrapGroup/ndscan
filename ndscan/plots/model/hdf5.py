@@ -10,6 +10,15 @@ from . import Context, FixedDataSource, Model, Root, ScanModel, SinglePointModel
 logger = logging.getLogger(__name__)
 
 
+def _read(dataset: h5py.Dataset):
+    """Read the entire dataset, converting ``bytes`` (h5py) to ``str`` (as delivered for
+    live applets by SiPyCo).
+    """
+    if h5py.check_string_dtype(dataset.dtype):
+        dataset = dataset.asstr()
+    return dataset[()]
+
+
 class HDF5Root(Root):
     """Scan root fed from an HDF5 results file.
 
@@ -60,7 +69,7 @@ class HDF5SingleShotModel(SinglePointModel):
 
         self._point = {}
         for key in self._channel_schemata:
-            self._point[key] = datasets[prefix + "point." + key][()]
+            self._point[key] = _read(datasets[prefix + "point." + key])
 
     def get_channel_schemata(self) -> dict[str, Any]:
         return self._channel_schemata
@@ -89,7 +98,7 @@ class HDF5ScanModel(ScanModel):
                 # FIXME: Need different HDF5 dataset operation for arrays?!
                 try:
                     self._analysis_result_sources[name] = FixedDataSource(
-                        datasets[prefix + "analysis_result." + name][()]
+                        _read(datasets[prefix + "analysis_result." + name])
                     )
                 except KeyError:
                     pass
@@ -98,7 +107,7 @@ class HDF5ScanModel(ScanModel):
         for name in [f"axis_{i}" for i in range(len(self.axes))] + [
             "channel_" + c for c in self._channel_schemata.keys()
         ]:
-            self._point_data[name] = datasets[prefix + "points." + name][:]
+            self._point_data[name] = _read(datasets[prefix + "points." + name])
 
         self._set_online_analyses(json.loads(datasets[prefix + "online_analyses"][()]))
         self._set_annotation_schemata(json.loads(datasets[prefix + "annotations"][()]))
