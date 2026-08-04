@@ -500,9 +500,6 @@ def format_label_value(
     try:
         parsed_value = parse_coord_param_value(value, param_schema)
     except ValueError:
-        parsed_value = None
-
-    if parsed_value is None:
         return "?"
 
     match axis_type:

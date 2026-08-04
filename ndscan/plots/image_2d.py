@@ -25,6 +25,7 @@ from .utils import (
     find_neighbour_index,
     format_param_identity,
     get_axis_scaling_info,
+    parse_coord_param_value,
     setup_axis_item,
     slice_data_along_axis,
 )
@@ -496,9 +497,22 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         if not self.plot:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
-        self.model.context.set_dataset(
-            dataset, self.crosshair.labels[axis_idx].last_value
-        )
+
+        coordinate = self.crosshair.labels[axis_idx].last_value
+
+        try:
+            value = parse_coord_param_value(
+                coordinate,
+                self.model.axes[axis_idx]["param"],
+            )
+            self.model.context.set_dataset(dataset, value)
+        except ValueError:
+            logger.warning(
+                "Crosshair value %s could not be categorised for dataset '%s'",
+                self.crosshair.labels[axis_idx].last_value,
+                dataset,
+            )
+            return
 
     def _point_clicked(self, pos: QtCore.QPointF):
         """Callback for when `self.plot` is clicked.

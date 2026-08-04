@@ -31,6 +31,7 @@ from .utils import (
     group_axes_into_panes,
     group_channels_into_axes,
     hide_series_from_groups,
+    parse_coord_param_value,
     setup_axis_item,
 )
 
@@ -563,10 +564,19 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         if not self.crosshairs:
             logger.warning("Plot not initialised yet, ignoring set dataset request")
             return
+
         # The x crosshair is always the first item (see `_initialise_series()`).
-        self.model.context.set_dataset(
-            dataset_key, self.crosshairs[pane_idx].labels[0].last_value
-        )
+        coordinate = self.crosshairs[pane_idx].labels[0].last_value
+
+        try:
+            value = parse_coord_param_value(coordinate, self.x_schema["param"])
+            self.model.context.set_dataset(dataset_key, value)
+        except ValueError:
+            logger.warning(
+                "Crosshair x value %s could not be categorised for dataset '%s'",
+                coordinate,
+                dataset_key,
+            )
 
     def _point_clicked(self, scatter_plot_item, spot_items: np.ndarray, ev):
         if len(spot_items) == 0:
