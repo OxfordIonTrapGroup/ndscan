@@ -488,23 +488,78 @@ def format_label_value(
     data_to_display_scale: float,
     limits: tuple[float, float],
     unit_suffix: str,
+    param_schema: dict[str, Any] = {},
 ) -> str:
     """Format axis position with sensible precision for display in a label.
 
     We do not have any metadata for the number of digits to show, so we guess from the
     range of displayed data (if available).
     """
-    # Base case: we want to resolve at least milli-units on the data's scale.
-    span = data_to_display_scale
-    if limits[1] > limits[0]:
-        # Preferred case: we want to resolve >1000 points in the displayed range.
-        span *= limits[1] - limits[0]
-    elif np.abs(value) > 0:
-        # Fallback case: we want to resolve >3 significant figures of the value.
-        span *= value
-    smallest_digit = np.floor(np.log10(span)) - 3
-    precision = int(-smallest_digit) if smallest_digit < 0 else 0
+    axis_type = param_schema.get("type", "float")
 
-    return "{0:.{n}f}{1}".format(
-        value * data_to_display_scale, unit_suffix, n=precision
-    )
+    try:
+        parsed_value = parse_coord_param_value(value, param_schema)
+    except ValueError:
+        parsed_value = None
+
+    if parsed_value is None:
+        return "?"
+
+    match axis_type:
+        case "bool" | "enum":
+            return str(parsed_value)
+        case "int" | "float":
+            # Base case: we want to resolve at least milli-units on the data's scale.
+            span = data_to_display_scale
+            if limits[1] > limits[0]:
+                # Preferred case: we want to resolve >1000 points in the displayed range.
+                span *= limits[1] - limits[0]
+            elif np.abs(parsed_value) > 0:
+                # Fallback case: we want to resolve >3 significant figures of the value.
+                span *= parsed_value
+            smallest_digit = np.floor(np.log10(span)) - 3
+
+            if axis_type == "int":
+                smallest_digit = max(smallest_digit, 0)
+
+            precision = int(-smallest_digit) if smallest_digit < 0 else 0
+
+            return "{0:.{n}f}{1}".format(
+                parsed_value * data_to_display_scale, unit_suffix, n=precision
+            )
+        case _:
+            raise ValueError(f"Unknown axis type '{axis_type}'")
+
+
+def parse_coord_param_value(coord: float, param_schema: dict[str, Any]) -> Any:
+    """Parse a coordinate as a parameter specified by its schema.
+
+    Raises `ValueError` for categorical parameters if the coordinate is out of range.
+
+    :param coord: The coordinate value to parse.
+    :param param_schema: The parameter schema for the axis.
+    :return: The parsed parameter value.
+    """
+    axis_type = param_schema.get("type", "float")
+
+    match axis_type:
+        case "bool":
+            if round(coord) not in [0, 1]:
+                raise ValueError(
+                    f"Coordinate {coord} categorisation as bool undefined."
+                )
+            return round(coord) == 1
+        case "enum":
+            members = param_schema.get("spec", {}).get("members", {}).keys()
+            try:
+                return list(members)[round(coord)]
+            except IndexError:
+                raise ValueError(
+                    f"Coordinate {coord} categorisation as given enum undefined."
+                )
+        case "int":
+            return int(round(coord))
+        case "float":
+            return float(coord)
+        case _:
+            raise ValueError(f"Unknown axis type '{axis_type}'")

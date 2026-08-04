@@ -397,10 +397,16 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         y_scaling_info = get_axis_scaling_info(self.y_schema["param"]["spec"])
 
         x_label = CrosshairAxisLabel(
-            self.plot_item.getViewBox(), *x_scaling_info, is_x=True
+            self.plot_item.getViewBox(),
+            *x_scaling_info,
+            is_x=True,
+            param_schema=self.x_schema["param"],
         )
         y_label = CrosshairAxisLabel(
-            self.plot_item.getViewBox(), *y_scaling_info, is_x=False
+            self.plot_item.getViewBox(),
+            *y_scaling_info,
+            is_x=False,
+            param_schema=self.y_schema["param"],
         )
 
         self.crosshair = LabeledCrosshairCursor(
