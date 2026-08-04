@@ -1,3 +1,5 @@
+from typing import Any
+
 import pyqtgraph
 
 from .._qt import QtCore, QtGui, QtWidgets
@@ -58,15 +60,19 @@ class CrosshairLabel:
         raise NotImplementedError
 
     def set_value(self, value: float, limits: tuple[float, float]):
-        text = format_label_value(
-            value, self.data_to_display_scale, limits, self.unit_suffix
-        )
+        text = self._format_label_value(value, limits)
+
         for label in self.text_items:
             label.setText(text)
 
     def set_visible(self, visible: bool):
         for label in self.text_items:
             label.setVisible(visible)
+
+    def _format_label_value(self, value: float, limits: tuple[float, float]) -> str:
+        return format_label_value(
+            value, self.data_to_display_scale, limits, self.unit_suffix
+        )
 
 
 class CrosshairAxisLabel(CrosshairLabel):
@@ -79,10 +85,12 @@ class CrosshairAxisLabel(CrosshairLabel):
         data_to_display_scale: float = 1.0,
         color: str = SERIES_COLORS[0],
         is_x: bool = False,
+        param_schema: dict[str, Any] = {},
     ):
         super().__init__(view_box, unit_suffix, data_to_display_scale, color)
         self.is_x = is_x
         self.last_value = None
+        self.param_schema = param_schema
 
     def update_coords(self, data_coords):
         x_range, y_range = self.view_box.state["viewRange"]
@@ -90,6 +98,15 @@ class CrosshairAxisLabel(CrosshairLabel):
         limits = tuple(x_range if self.is_x else y_range)
         self.set_value(coord, limits)
         self.last_value = coord
+
+    def _format_label_value(self, value: float, limits: tuple[float, float]) -> str:
+        return format_label_value(
+            value,
+            self.data_to_display_scale,
+            limits,
+            self.unit_suffix,
+            self.param_schema,
+        )
 
 
 class LabeledCrosshairCursor(QtCore.QObject):

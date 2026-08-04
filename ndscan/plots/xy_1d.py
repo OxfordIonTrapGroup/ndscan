@@ -379,6 +379,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 self.x_unit_suffix,
                 self.x_data_to_display_scale,
                 is_x=True,
+                param_schema=self.x_schema["param"],
             )
             crosshair_labels = [x_label] + crosshair_labels
             crosshair = LabeledCrosshairCursor(self, pane, crosshair_labels)
