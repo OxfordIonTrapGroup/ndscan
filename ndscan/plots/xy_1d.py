@@ -28,6 +28,7 @@ from .utils import (
     format_param_identity,
     get_axis_scaling_info,
     get_default_hidden_channels,
+    get_param_categories,
     group_axes_into_panes,
     group_channels_into_axes,
     hide_series_from_groups,
@@ -385,6 +386,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             crosshair_labels = [x_label] + crosshair_labels
             crosshair = LabeledCrosshairCursor(self, pane, crosshair_labels)
             self.crosshairs.append(crosshair)
+            self._set_view_box_limits(pane.getViewBox())
 
         if len(self.panes) > 1:
             self.link_x_axes()
@@ -625,3 +627,10 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         if not event.isAccepted():
             # Event not handled yet, so background/… was clicked instead of a point.
             self._background_clicked()
+
+    def _set_view_box_limits(self, view_box):
+        param_categories = get_param_categories(self.x_schema["param"])
+        if param_categories is not None:
+            x_min = -0.5
+            x_max = len(param_categories) - 0.5
+            view_box.setLimits(xMin=x_min, xMax=x_max, minXRange=1.05)

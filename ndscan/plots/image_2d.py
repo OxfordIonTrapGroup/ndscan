@@ -25,6 +25,7 @@ from .utils import (
     find_neighbour_index,
     format_param_identity,
     get_axis_scaling_info,
+    get_param_categories,
     parse_coord_param_value,
     setup_axis_item,
     slice_data_along_axis,
@@ -631,3 +632,16 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
                 fixed_axis_source == fixed_axis_coord,
             )
         )
+
+    def _set_view_box_limits(self, view_box):
+        x_param_categories = get_param_categories(self.x_schema["param"])
+        if x_param_categories is not None:
+            x_min = -0.5
+            x_max = len(x_param_categories) - 0.5
+            view_box.setLimits(xMin=x_min, xMax=x_max, minXRange=1.05)
+
+        y_param_categories = get_param_categories(self.y_schema["param"])
+        if y_param_categories is not None:
+            y_min = -0.5
+            y_max = len(y_param_categories) - 0.5
+            view_box.setLimits(yMin=y_min, yMax=y_max, minYRange=1.05)
