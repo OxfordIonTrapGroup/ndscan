@@ -547,7 +547,7 @@ def parse_coord_param_value(coord: float, param_schema: dict[str, Any]) -> Any:
                 )
             return round(coord) == 1
         case "enum":
-            members = list(param_schema.get("spec", {}).get("members", {}).keys())
+            members = list(param_schema.get("spec", {}).get("members", {}).values())
             enum_idx = round(coord)
             if not 0 <= enum_idx < len(list(members)):
                 raise ValueError(
