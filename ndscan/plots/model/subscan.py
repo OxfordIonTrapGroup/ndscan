@@ -42,7 +42,7 @@ class SubscanRoot(Root):
         self._schema_str = schema_str
         self._schema = json.loads(schema_str)
 
-        self._model = SubscanModel(self._schema, self._parent, self.name + "_")
+        self._model = SubscanModel(self._schema, self._parent, self._schema_key)
         self.model_changed.emit(self._model)
 
     def get_model(self) -> Model | None:
@@ -60,13 +60,32 @@ class SubscanModel(ScanModel):
     """
 
     def __init__(
-        self, schema: dict[str, Any], parent: SinglePointModel, result_prefix: str
+        self, schema: dict[str, Any], parent: SinglePointModel, spec_channel_name: str
     ):
         super().__init__(schema["axes"], parent.schema_revision, parent.context)
-
         self._channel_schemata = schema["channels"]
 
-        self._result_prefix = result_prefix
+        # Resolve the result channels holding the flattened subscan data by path. An
+        # unfortunate consequence of the shortest-unambiguous-suffix path -> channel
+        # name shortening occurring independently per channel is that the data channel
+        # names cannot be derived from the spec channel name, as the data channel names
+        # may be unique even if "spec" isn't.
+        parent_schemata = parent.get_channel_schemata()
+        names_by_path = {s["path"]: n for n, s in parent_schemata.items()}
+        path_prefix = strip_suffix(parent_schemata[spec_channel_name]["path"], "spec")
+        self._data_channel_names = {}
+        for name in [f"axis_{i}" for i in range(len(self.axes))] + [
+            "channel_" + c for c in self._channel_schemata.keys()
+        ]:
+            path = path_prefix + name
+            parent_name = names_by_path.get(path)
+            if parent_name is None:
+                raise ValueError(
+                    f"Did not find channel with path '{path}' among parent scan "
+                    f"channels while resolving subscan '{spec_channel_name}"
+                )
+            self._data_channel_names[name] = parent_name
+
         self._point_data = {}
         self._parent = parent
         self._parent.point_changed.connect(self._update)
@@ -96,10 +115,8 @@ class SubscanModel(ScanModel):
             logger.debug("Ignoring update")
             return
 
-        for name in [f"axis_{i}" for i in range(len(self.axes))] + [
-            "channel_" + c for c in self._channel_schemata.keys()
-        ]:
-            self._point_data[name] = parent_data[self._result_prefix + name]
+        for name, parent_name in self._data_channel_names.items():
+            self._point_data[name] = parent_data[parent_name]
         self.points_rewritten.emit(self._point_data)
 
         for r, c in self._analysis_result_mappings:
