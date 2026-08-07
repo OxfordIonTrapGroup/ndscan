@@ -499,11 +499,89 @@ class BoolScanOption(ScanOption):
         return True
 
 
+class EnumMemberSelectionDialog(QtWidgets.QDialog):
+    """Modal dialogue for choosing a subset of enum members (by highlighting them in a
+    list) for :class:`EnumScanOption`.
+    """
+
+    def __init__(
+        self,
+        parent: QtWidgets.QWidget,
+        members: dict[str, str],
+        selected_keys: list[str],
+    ):
+        super().__init__(parent)
+        self.setWindowTitle("Select members to scan")
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.list = QtWidgets.QListWidget()
+        self.list.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
+        )
+        # Size the dialog to show all members at once if possible (enums will typically
+        # have less than a dozen or two members).
+        self.list.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents
+        )
+
+        # Add items, storing the keys in the user data slot for later building of the
+        # selection.
+        for key, display_string in members.items():
+            item = QtWidgets.QListWidgetItem(display_string)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, key)
+            self.list.addItem(item)
+            item.setSelected(key in selected_keys)
+        self.list.itemDoubleClicked.connect(lambda _: self.accept())
+        layout.addWidget(self.list)
+
+        # For simplicity, use standard Ok/Cancel buttons, which come with keyboard
+        # shortcuts etc.
+        self.buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+
+        # At least one member needs to be selected for the scan not to be empty.
+        self.list.itemSelectionChanged.connect(self._selection_changed)
+        self._selection_changed()
+
+    def _selection_changed(self) -> None:
+        ok = self.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        ok.setEnabled(len(self.list.selectedItems()) > 0)
+
+    def selected_keys(self) -> list[str]:
+        keys = []
+        for i in range(self.list.count()):
+            item = self.list.item(i)
+            if item.isSelected():
+                keys.append(item.data(QtCore.Qt.ItemDataRole.UserRole))
+        return keys
+
+
 class EnumScanOption(ScanOption):
+    def __init__(self, schema: dict[str, Any], path: str):
+        super().__init__(schema, path)
+        self._members = self.schema["spec"]["members"]
+        # Default to scanning over all members (in declaration order).
+        self._selected_keys = list(self._members.keys())
+
     def build_ui(self, layout: QtWidgets.QLayout) -> None:
+        self.button_members = QtWidgets.QPushButton()
+        self.button_members.clicked.connect(self._show_member_selection_dialog)
+        layout.addWidget(self.button_members)
+        layout.setStretchFactor(self.button_members, 1)
+
+        layout.addWidget(make_divider())
+
         self.check_randomise = self.make_randomise_box()
         layout.addWidget(self.check_randomise)
         layout.setStretchFactor(self.check_randomise, 0)
+
+        self._update_members_button()
 
     def write_to_params(self, params: dict) -> None:
         spec = {
@@ -511,7 +589,7 @@ class EnumScanOption(ScanOption):
             "path": self.path,
             "type": "list",
             "range": {
-                "values": list(self.schema["spec"]["members"].keys()),
+                "values": list(self._selected_keys),
                 "randomise_order": self.check_randomise.isChecked(),
             },
         }
@@ -520,8 +598,54 @@ class EnumScanOption(ScanOption):
     def attempt_read_from_axis(self, axis: dict) -> bool:
         if axis["type"] != "list":
             return False
+        values = axis["range"].get("values", [])
+
+        # Check for unknown values.
+        unknown = [v for v in values if v not in self._members]
+        if unknown:
+            identity = format_override_identity(self.schema["fqn"], self.path)
+            logger.warning(
+                f"Stored scan values {unknown} not in schema for enum parameter "
+                f"'{identity}', ignoring"
+            )
+
+        # For the moment, normalise everything to always be in the one order we allow
+        # to be specified in the selection dialog box to avoid confusing behaviour.
+        selected = [k for k in self._members.keys() if k in values]
+
+        # Disallow empty selections.
+        if not selected:
+            selected = list(self._members.keys())
+
+        self._selected_keys = selected
+        self._update_members_button()
         self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
         return True
+
+    def _update_members_button(self) -> None:
+        num_total = len(self._members)
+        num_selected = len(self._selected_keys)
+        if num_selected == num_total:
+            self.button_members.setText(f"All {num_total} members")
+        else:
+            self.button_members.setText(f"{num_selected} of {num_total} members")
+        selected_str = ", ".join(self._members[k] for k in self._selected_keys)
+        self.button_members.setToolTip(
+            f"Select enum members to scan over (currently: {selected_str})"
+        )
+
+    def _show_member_selection_dialog(self) -> None:
+        dialog = EnumMemberSelectionDialog(
+            self.button_members, self._members, self._selected_keys
+        )
+        if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        selected = dialog.selected_keys()
+        if not selected or selected == self._selected_keys:
+            return
+        self._selected_keys = selected
+        self._update_members_button()
+        self.value_changed.emit()
 
 
 def list_scan_option_types(
