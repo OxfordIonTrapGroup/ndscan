@@ -547,13 +547,13 @@ def parse_coord_param_value(coord: float, param_schema: dict[str, Any]) -> Any:
                 )
             return round(coord) == 1
         case "enum":
-            members = param_schema.get("spec", {}).get("members", {}).keys()
-            try:
-                return list(members)[round(coord)]
-            except IndexError:
+            members = list(param_schema.get("spec", {}).get("members", {}).keys())
+            enum_idx = round(coord)
+            if not 0 <= enum_idx < len(list(members)):
                 raise ValueError(
                     f"Coordinate {coord} categorisation as given enum undefined."
                 )
+            return members[enum_idx]
         case "int":
             return int(round(coord))
         case "float":
