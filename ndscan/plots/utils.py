@@ -502,30 +502,29 @@ def format_label_value(
     except ValueError:
         return "?"
 
-    match axis_type:
-        case "bool" | "enum":
-            return str(parsed_value)
-        case "int" | "float":
-            # Base case: we want to resolve at least milli-units on the data's scale.
-            span = data_to_display_scale
-            if limits[1] > limits[0]:
-                # Preferred case: we want to resolve >1000 points in the displayed range.
-                span *= limits[1] - limits[0]
-            elif np.abs(parsed_value) > 0:
-                # Fallback case: we want to resolve >3 significant figures of the value.
-                span *= parsed_value
-            smallest_digit = np.floor(np.log10(span)) - 3
+    if axis_type in ["bool", "enum"]:
+        return str(parsed_value)
+    elif axis_type in ["int", "float"]:
+        # Base case: we want to resolve at least milli-units on the data's scale.
+        span = data_to_display_scale
+        if limits[1] > limits[0]:
+            # Preferred case: we want to resolve >1000 points in the displayed range.
+            span *= limits[1] - limits[0]
+        elif np.abs(parsed_value) > 0:
+            # Fallback case: we want to resolve >3 significant figures of the value.
+            span *= parsed_value
+        smallest_digit = np.floor(np.log10(span)) - 3
 
-            if axis_type == "int":
-                smallest_digit = max(smallest_digit, 0)
+        if axis_type == "int":
+            smallest_digit = max(smallest_digit, 0)
 
-            precision = int(-smallest_digit) if smallest_digit < 0 else 0
+        precision = int(-smallest_digit) if smallest_digit < 0 else 0
 
-            return "{0:.{n}f}{1}".format(
-                parsed_value * data_to_display_scale, unit_suffix, n=precision
-            )
-        case _:
-            raise ValueError(f"Unknown axis type '{axis_type}'")
+        return "{0:.{n}f}{1}".format(
+            parsed_value * data_to_display_scale, unit_suffix, n=precision
+        )
+    else:
+        raise ValueError(f"Unknown axis type '{axis_type}'")
 
 
 def parse_coord_param_value(coord: float, param_schema: dict[str, Any]) -> Any:
@@ -537,26 +536,35 @@ def parse_coord_param_value(coord: float, param_schema: dict[str, Any]) -> Any:
     :param param_schema: The parameter schema for the axis.
     :return: The parsed parameter value.
     """
+
+    categories = get_param_categories(param_schema)
+
+    if categories:
+        category_idx = round(coord)
+        if not 0 <= category_idx < len(categories):
+            raise ValueError(f"No category corresponding to coordinate {coord}.")
+        return categories[category_idx]
+    else:
+        axis_type = param_schema.get("type", "float")
+        if axis_type == "int":
+            return int(round(coord))
+        elif axis_type == "float":
+            return coord
+        else:
+            raise ValueError(f"Unknown axis type '{axis_type}'")
+
+
+def get_param_categories(param_schema: dict[str, Any]) -> list[Any] | None:
+    """Return the categories for a parameter, if any.
+
+    :param param_schema: The parameter schema for the axis.
+    :return: A list of categories, or None if the parameter is not categorical.
+    """
     axis_type = param_schema.get("type", "float")
 
-    match axis_type:
-        case "bool":
-            if round(coord) not in [0, 1]:
-                raise ValueError(
-                    f"Coordinate {coord} categorisation as bool undefined."
-                )
-            return round(coord) == 1
-        case "enum":
-            members = list(param_schema.get("spec", {}).get("members", {}).values())
-            enum_idx = round(coord)
-            if not 0 <= enum_idx < len(list(members)):
-                raise ValueError(
-                    f"Coordinate {coord} categorisation as given enum undefined."
-                )
-            return members[enum_idx]
-        case "int":
-            return int(round(coord))
-        case "float":
-            return float(coord)
-        case _:
-            raise ValueError(f"Unknown axis type '{axis_type}'")
+    if axis_type == "bool":
+        return [False, True]
+    elif axis_type == "enum":
+        return list(param_schema.get("spec", {}).get("members", {}).values())
+    else:
+        return None
