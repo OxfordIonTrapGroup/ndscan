@@ -9,6 +9,7 @@ from .._qt import QtCore
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
+from .model.rollback import RollbackScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import (
@@ -250,7 +251,9 @@ class _XYSeries(QtCore.QObject):
 class XY1DPlotWidget(SubplotMenuPanesWidget):
     def __init__(self, model: ScanModel):
         super().__init__()
-        self.model = model
+        self._base_model = model
+        self.model = RollbackScanModel(model)
+        # self.model = model
 
         # Since we are a QObject ourselves, and the parents will make sure the widget is
         # deleteLater()d on the on the C++ side once it is removed from the UI, we can
@@ -413,19 +416,26 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.ready.emit()
 
     def _create_progress_bar(self):
-        self.progress_bar = self.scene().addWidget(ScrubbableProgressBar())
+        progress_bar = self.scene().addWidget(ScrubbableProgressBar())
         self.layout.addItem(
-            self.progress_bar,
+            progress_bar,
             self.layout.rowCount(),
             0,
             QtCore.Qt.AlignmentFlag.AlignBaseline
             | QtCore.Qt.AlignmentFlag.AlignJustify,
         )
 
-        self.model.points_appended.connect(self.progress_bar._update_points)
-        self.model.points_rewritten.connect(self.progress_bar._update_points)
+        self.progress_bar = progress_bar.widget()
+        self.progress_bar.rollback_target_changed.connect(
+            self.model._update_rollback_target
+        )
+
+        self._base_model.points_appended.connect(self.progress_bar.update_points)
+        self._base_model.points_rewritten.connect(self.progress_bar.update_points)
+        # self.progress_bar.valueChanged.connect(self.model._update_rollback_target)
 
     def _update_points(self, points):
+        # print(points)
         x_data = points["axis_0"]
         # Compare length to zero instead of using `not x_data` for NumPy array
         # compatibility.
