@@ -5,7 +5,7 @@ from typing import NamedTuple
 import numpy as np
 import pyqtgraph
 
-from .._qt import QtCore
+from .._qt import QtCore, QtWidgets
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
@@ -17,7 +17,7 @@ from .plot_widgets import (
     add_source_id_label,
     build_channel_selection_context_menu,
 )
-from .scrollable_progress_bar import ScrubbableProgressBar
+from .scrollable_progress_bar import SliderContainer
 from .utils import (
     FIT_COLORS,
     HIGHLIGHT_PEN,
@@ -416,7 +416,17 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.ready.emit()
 
     def _create_progress_bar(self):
-        progress_bar = self.scene().addWidget(ScrubbableProgressBar())
+        container = SliderContainer()
+        container.setFixedHeight(10)
+        container.setStyleSheet("background: transparent")
+
+        self.progress_bar = container.slider
+        self.progress_bar.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+
+        progress_bar = self.scene().addWidget(container)
         self.layout.addItem(
             progress_bar,
             self.layout.rowCount(),
@@ -425,7 +435,6 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             | QtCore.Qt.AlignmentFlag.AlignJustify,
         )
 
-        self.progress_bar = progress_bar.widget()
         self.progress_bar.rollback_target_changed.connect(
             self.model._update_rollback_target
         )
