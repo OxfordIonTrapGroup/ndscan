@@ -1,10 +1,14 @@
 from .._qt import QtCore, QtWidgets
 
 
-class SliderContainer(QtWidgets.QWidget):
-    def __init__(self):
+class TimeSliderContainer(QtWidgets.QWidget):
+    def __init__(self, container_height=10):
         super().__init__()
-        self.slider = ScrubbableProgressBar(self)
+        self.slider = TimeSlider(self)
+
+        self.setFixedHeight(container_height)
+        self.slider._container_height = container_height
+        self.setStyleSheet("background: transparent")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -12,20 +16,29 @@ class SliderContainer(QtWidgets.QWidget):
         self.slider.setExpanded(False, new_width)
 
 
-class ScrubbableProgressBar(QtWidgets.QSlider):
-    rollback_target_changed = QtCore.pyqtSignal(int)
+class TimeSlider(QtWidgets.QSlider):
+    state_changed = QtCore.pyqtSignal(int)
 
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        parent=None,
+        expanded_height: int = 6,
+        collapsed_height: int = 4,
+        container_height: int = 10,
+    ):
         super().__init__(QtCore.Qt.Orientation.Horizontal, parent)
 
-        self._set_stylesheet()
-        self._expanded_height = 6
-        self.setFixedHeight(6)
+        self._container_height = container_height
+        self.expanded_height = expanded_height
+        self.collapsed_height = collapsed_height
+
+        self.valueChanged.connect(self.rollback_target)
+
         self.setTickInterval(1)
         self.setMinimum(0)
-        self.valueChanged.connect(self.rollback_target)
         self.setValue(self.maximum())
-        self.hover = False
+
+        self._set_stylesheet()
 
     def update_points(self, point_data: dict[str, list]):
         num_points = len(next(iter(point_data.values()), []))
@@ -40,7 +53,7 @@ class ScrubbableProgressBar(QtWidgets.QSlider):
         else:
             self.target_idx = index
 
-        self.rollback_target_changed.emit(self.target_idx)
+        self.state_changed.emit(self.target_idx)
 
     def _set_stylesheet(self):
         self.setStyleSheet("""
@@ -56,14 +69,15 @@ class ScrubbableProgressBar(QtWidgets.QSlider):
             }
             QSlider::handle:horizontal::hover {
                 background: #fff;
+                border-radius: 3px;
             }
         """)
 
     def setExpanded(self, expanded: bool, width):
-        if expanded:
-            self.setGeometry(0, 4, width, 6)
-        else:
-            self.setGeometry(0, 6, width, 4)
+        height = self.expanded_height if expanded else self.collapsed_height
+        y_pos = self._container_height - height
+
+        self.setGeometry(0, y_pos, width, self.expanded_height)
 
     def enterEvent(self, event):
         self.setExpanded(True, self.parent().width())

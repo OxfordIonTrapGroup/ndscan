@@ -9,7 +9,7 @@ from .._qt import QtCore, QtWidgets
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
-from .model.rollback import RollbackScanModel
+from .model.rollback import HistoryFromScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import (
@@ -17,7 +17,7 @@ from .plot_widgets import (
     add_source_id_label,
     build_channel_selection_context_menu,
 )
-from .scrollable_progress_bar import SliderContainer
+from .time_slider import TimeSliderContainer
 from .utils import (
     FIT_COLORS,
     HIGHLIGHT_PEN,
@@ -252,7 +252,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
     def __init__(self, model: ScanModel):
         super().__init__()
         self._base_model = model
-        self.model = RollbackScanModel(model)
+        self.model = HistoryFromScanModel(model)
         # self.model = model
 
         # Since we are a QObject ourselves, and the parents will make sure the widget is
@@ -416,10 +416,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.ready.emit()
 
     def _create_progress_bar(self):
-        container = SliderContainer()
-        container.setFixedHeight(10)
-        container.setStyleSheet("background: transparent")
-
+        container = TimeSliderContainer()
         self.progress_bar = container.slider
         self.progress_bar.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
@@ -435,13 +432,10 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             | QtCore.Qt.AlignmentFlag.AlignJustify,
         )
 
-        self.progress_bar.rollback_target_changed.connect(
-            self.model._update_rollback_target
-        )
+        self.progress_bar.state_changed.connect(self.model._update_state)
 
         self._base_model.points_appended.connect(self.progress_bar.update_points)
         self._base_model.points_rewritten.connect(self.progress_bar.update_points)
-        # self.progress_bar.valueChanged.connect(self.model._update_rollback_target)
 
     def _update_points(self, points):
         # print(points)
