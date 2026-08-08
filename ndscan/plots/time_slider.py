@@ -23,7 +23,7 @@ class TimeSlider(QtWidgets.QSlider):
         self,
         parent=None,
         expanded_height: int = 6,
-        collapsed_height: int = 4,
+        collapsed_height: int = 2,
         container_height: int = 10,
     ):
         super().__init__(QtCore.Qt.Orientation.Horizontal, parent)
@@ -65,7 +65,7 @@ class TimeSlider(QtWidgets.QSlider):
                 border: none;
             }
             QSlider::sub-page:horizontal {
-                background: rgba(170, 208, 239, 255);
+                background: #a1c9e6;
             }
             QSlider::handle:horizontal::hover {
                 background: #fff;

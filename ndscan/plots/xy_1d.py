@@ -9,7 +9,7 @@ from .._qt import QtCore, QtWidgets
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
-from .model.rollback import HistoryFromScanModel
+from .model.history import HistoryFromScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import (

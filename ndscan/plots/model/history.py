@@ -39,7 +39,7 @@ class HistoryFromScanModel(ScanModel):
         self._parent.points_rewritten.connect(self._rewrite_data)
         self._parent.annotations_changed.connect(self._update_annotations)
         self._parent.channel_schemata_changed.connect(
-            lambda *args: self._channel_schemata_changed.emit(args)
+            lambda *args: self.channel_schemata_changed.emit(*args)
         )
         self._state = state
         self._rewrite_data()
@@ -76,10 +76,6 @@ class HistoryFromScanModel(ScanModel):
                     incoming_values[:imax], self._sliced_data[name][:imax]
                 ):
                     data_rewritten = True
-
-        # print(type(self._sliced_data), type(sliced_data))
-        # if self._sliced_data == sliced_data:
-        #     return
 
         self._sliced_data = sliced_data
 
