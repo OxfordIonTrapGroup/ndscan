@@ -64,14 +64,19 @@ class RollbackScanModel(ScanModel):
 
         self._parent.points_appended.connect(self._append_data)
         self._parent.points_rewritten.connect(self._rewrite_data)
-        self._parent.annotations_changed.connect(
-            lambda *args: self.annotations_changed.emit(args)
-        )
+        self._parent.annotations_changed.connect(self._update_annotations)
         self._parent.channel_schemata_changed.connect(
             lambda *args: self._channel_schemata_changed.emit(args)
         )
         self._target_idx = target_idx
         self._rewrite_data()
+
+        self._update_annotations(self._parent._annotations)
+
+    def _update_annotations(self, annotations):
+        self._annotation_schemata = self._parent._annotation_schemata
+        self._annotations = annotations
+        self.annotations_changed.emit(annotations)
 
     def _update_rollback_target(self, target_idx: int) -> None:
         parent_data = self._parent.get_point_data()
