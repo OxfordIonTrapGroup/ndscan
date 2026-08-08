@@ -16,6 +16,7 @@ from .plot_widgets import (
     add_source_id_label,
     build_channel_selection_context_menu,
 )
+from .scrollable_progress_bar import ScrubbableProgressBar
 from .utils import (
     FIT_COLORS,
     HIGHLIGHT_PEN,
@@ -403,12 +404,26 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 )
             ],
         )
+        self._create_progress_bar()
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
         self._update_annotations()
 
         self.ready.emit()
+
+    def _create_progress_bar(self):
+        self.progress_bar = self.scene().addWidget(ScrubbableProgressBar())
+        self.layout.addItem(
+            self.progress_bar,
+            self.layout.rowCount(),
+            0,
+            QtCore.Qt.AlignmentFlag.AlignBaseline
+            | QtCore.Qt.AlignmentFlag.AlignJustify,
+        )
+
+        self.model.points_appended.connect(self.progress_bar._update_points)
+        self.model.points_rewritten.connect(self.progress_bar._update_points)
 
     def _update_points(self, points):
         x_data = points["axis_0"]
