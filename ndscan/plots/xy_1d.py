@@ -253,7 +253,6 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         super().__init__()
         self._base_model = model
         self.model = HistoryFromScanModel(model)
-        # self.model = model
 
         # Since we are a QObject ourselves, and the parents will make sure the widget is
         # deleteLater()d on the on the C++ side once it is removed from the UI, we can
@@ -407,7 +406,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 )
             ],
         )
-        self._create_progress_bar()
+        self._create_time_slider()
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -415,27 +414,28 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         self.ready.emit()
 
-    def _create_progress_bar(self):
+    def _create_time_slider(self):
         container = TimeSliderContainer()
-        self.progress_bar = container.slider
-        self.progress_bar.setSizePolicy(
+        self.time_slider = container.slider
+        self.time_slider.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed,
         )
 
-        progress_bar = self.scene().addWidget(container)
+        time_slider = self.scene().addWidget(container)
         self.layout.addItem(
-            progress_bar,
+            time_slider,
             self.layout.rowCount(),
             0,
             QtCore.Qt.AlignmentFlag.AlignBaseline
             | QtCore.Qt.AlignmentFlag.AlignJustify,
         )
 
-        self.progress_bar.state_changed.connect(self.model._update_state)
+        self.time_slider.state_changed.connect(self.model._update_state)
+        self.time_slider.update_points(self.model.get_point_data())
 
-        self._base_model.points_appended.connect(self.progress_bar.update_points)
-        self._base_model.points_rewritten.connect(self.progress_bar.update_points)
+        self._base_model.points_appended.connect(self.time_slider.update_points)
+        self._base_model.points_rewritten.connect(self.time_slider.update_points)
 
     def _update_points(self, points):
         # print(points)
