@@ -898,7 +898,7 @@ requires-dist = [
     { name = "oitg", git = "https://github.com/oxfordiontrapgroup/oitg.git" },
     { name = "pyqt6", specifier = ">=6.5.2" },
     { name = "pyqtgraph", specifier = ">=0.13.3" },
-    { name = "qasync", git = "https://github.com/dnadlinger/qasync.git?branch=windows-qmutexlocker-fix" },
+    { name = "qasync", specifier = ">=0.28.0" },
     { name = "sipyco", git = "https://github.com/m-labs/sipyco.git?tag=v1.9" },
 ]
 
@@ -1504,8 +1504,12 @@ wheels = [
 
 [[package]]
 name = "qasync"
-version = "0.27.2"
-source = { git = "https://github.com/dnadlinger/qasync.git?branch=windows-qmutexlocker-fix#5f99e2bf2d53cf82366c61445d74bc01ea250f84" }
+version = "0.28.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/b2/5be08597dbbf331edb69478eae2f8dd511834cebf56a183b442e7437f8e0/qasync-0.28.0.tar.gz", hash = "sha256:6f7f1f18971f59cb259b107218269ba56e3ad475ec456e54714b426a6e30b71d", size = 14010, upload-time = "2025-08-28T01:31:36.785Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e5/84/0ce4cd946f6e958428c87d5accac35df70f81607e45ba4919947d0762d63/qasync-0.28.0-py3-none-any.whl", hash = "sha256:21faba8d047c717008378f5ac29ea58c32a8128528629e4afd57c59b768dba0f", size = 16188, upload-time = "2025-08-28T01:31:35.591Z" },
+]
 
 [[package]]
 name = "rapidfuzz"
