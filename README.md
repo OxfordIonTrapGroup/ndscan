@@ -151,6 +151,9 @@ Release notes
 - **Experiment code/execution**:
   - Fixed subscans being misconfigured after transitory-error interruptions
     (both host and kernel subscans).
+  - Failed online fit executions (e.g. for fit results exposed as subscan
+    analysis result channels) now push NaN values instead of leaving the results
+    unset/`None`.
 - **`results` tooling**:
   - `ndscan_show` console output/`ndscan_to_txt` argument dumps now handle
     (refining) centre-span scan ranges (#497) and no longer double-quote list

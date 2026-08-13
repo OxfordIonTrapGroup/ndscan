@@ -1,10 +1,12 @@
 import logging
 import sys
 import unittest
+import unittest.mock
 from typing import Any
 
 import numpy as np
 from mock_environment import HasEnvironmentCase
+from oitg.fitting.FitBase import FitError
 
 from ndscan.experiment.default_analysis import CustomAnalysis, OnlineFit
 from ndscan.experiment.entry_point import run_fragment_once
@@ -180,3 +182,26 @@ class OnlineFitAnalysisTestCase(HasEnvironmentCase):
                 initial_values={},
                 gaussian_noise=0.1,
             )
+
+    def test_failed_fit(self):
+        # If the fit fails, NaN is substituted for all the exported results, such
+        # that downstream consumers (e.g. per-point dataset writers for the results
+        # exposed to an enclosing scan) are not left with missing/None values.
+        exp = self.create(
+            OnlineFitDataSourceSubscan,
+            [],
+            fit_name="gaussian",
+            parameters=self.CASES["gaussian"],
+            constants={},
+            initial_values={},
+        )
+        with unittest.mock.patch.object(
+            FIT_OBJECTS["gaussian"], "fit", side_effect=FitError("synthetic failure")
+        ):
+            results = run_fragment_once(exp)
+        for key in [
+            f"{name}{suffix}"
+            for name in self.CASES["gaussian"].keys()
+            for suffix in ("", "_err")
+        ] + ["reduced_chi_squared"]:
+            self.assertTrue(np.isnan(results[getattr(exp, f"_gaussian_fit_{key}")]))
