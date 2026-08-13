@@ -80,6 +80,11 @@ class Fragment(HasEnvironment):
         #: result channels; e.g. for subscans).
         self._detached_subfragments = set()
 
+        #: Maps local names (possibly the empty string, e.g. for the scan set up by
+        #: SubscanExpFragment itself) to (subscan, scanned_fragment) tuples for
+        #: subscans owned by this fragment; see _register_subscan().
+        self._subscans = {}
+
         klass = self.__class__
         mod = klass.__module__
         # KLUDGE: Strip prefix added by file_import() to make path matches compatible
@@ -774,6 +779,48 @@ class Fragment(HasEnvironment):
             if s in self._detached_subfragments:
                 continue
             s._collect_result_channels(channels)
+
+    def _register_subscan(self, name: str, subscan, scanned_fragment: "Fragment"):
+        """Register a subscan owned by this fragment (see ``subscan.setup_subscan()``),
+        such that it can be discovered by scan runners (e.g. for in-progress previews).
+
+        :param name: The name of the subscan within this fragment (as in the result
+            channel prefix); possibly the empty string, e.g. for the scan set up by
+            :class:`.SubscanExpFragment` for itself.
+        :param subscan: The ``subscan.Subscan`` instance.
+        :param scanned_fragment: The fragment iterated over by the subscan. As it will
+            have been detached from this fragment, it is tracked explicitly here so
+            nested subscans within it can be discovered as well.
+        """
+        assert self._building, "Can only register subscans during build_fragment()"
+        assert name not in self._subscans, f"Subscan '{name}' already registered"
+        self._subscans[name] = (subscan, scanned_fragment)
+
+    def _collect_subscans(self, subscans: dict[str, Any]) -> None:
+        """Recursively collect all subscans in the fragment tree, including those
+        within fragments scanned by other subscans.
+
+        :param subscans: Dictionary to store the results in, mapping a name derived
+            from the respective owning fragment path (elements joined by underscores)
+            to the ``subscan.Subscan`` instances. If multiple subscans happen to map
+            to the same name, only the first one is kept (with a warning logged).
+        """
+        for name, (subscan, scanned_fragment) in self._subscans.items():
+            path = self._fragment_path + ([name] if name else [])
+            joined_name = "_".join(path) or type(self).__name__
+            if joined_name in subscans:
+                logger.warning(
+                    "Multiple subscans map to name '%s'; ignoring all but the first "
+                    "(e.g. no in-progress preview will be published for the others)",
+                    joined_name,
+                )
+            else:
+                subscans[joined_name] = subscan
+            scanned_fragment._collect_subscans(subscans)
+        for s in self._subfragments:
+            if s in self._detached_subfragments:
+                continue
+            s._collect_subscans(subscans)
 
     def _get_dataset_or_set_default(self, key, default=None) -> Any:
         try:

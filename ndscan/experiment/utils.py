@@ -102,7 +102,7 @@ def broadcast_scan_metadata(
 
 
 def issue_create_applet_ccb(
-    ccb, title: str, dataset_prefix: str, group: str = "ndscan"
+    ccb, title: str, dataset_prefix: str, group: str | list[str] = "ndscan"
 ) -> None:
     """Issue a client control broadcast to create an ndscan applet displaying the scan
     published under the given dataset prefix.

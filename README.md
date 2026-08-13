@@ -66,6 +66,16 @@ Release notes
     manually re-implement the online fits to e.g. save the fit results to a
     dataset in a `TopLevelRunner` calibration experiment, or to make accessible
     to parent fragments in a subscan.
+  - *Subscan previews*: Subscan data is now also published while the subscan is
+    still executing to a separate root (in `<prefix>previews.<subscan_path>.`),
+    with an applet displaying them live "off to the side" of the main scan
+    created automatically. This is enabled by default for all subscans; opt out
+    per subscan by passing `expose_in_progress=False` to `setattr_subscan()` or
+    `SubscanExpFragment.build_fragment()`, or on the execution side via the new
+    `publish_subscan_previews` argument to `TopLevelRunner`. Like all broadcast
+    datasets, the previews are archived into the results file, so the state of
+    the last subscan execution remains inspectable after the fact (e.g. as an
+    extra root in `ndscan_show`), which can be useful after unexpected failures.
 - **`results` tooling**:
   - *Richer metadata in ndscan_show*: `ndscan_show` displays the experiment
     class name and any vanilla ARTIQ arguments stored in the results file.
