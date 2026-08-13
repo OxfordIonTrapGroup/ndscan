@@ -127,6 +127,10 @@ Release notes
   - Fixed erroneous use of `min`/`max` as half-span limits for centred scans in
     the argument editor.
 - **Plot applet**:
+  - Applets now cleanly reset their state when the scan published under the
+    subscribed dataset prefix is replaced by one with a different schema (e.g.
+    for `TopLevelRunner` used with a constant dataset prefix), and correctly
+    treat point datasets shrinking as a rewrite of the displayed data.
   - The context menu is now available even when a plot has no panes (e.g.
     rolling plots with only subscan data), and subscans are shown by default
     when a fragment has no top-level channels; submenus outside plot items now
@@ -168,7 +172,6 @@ Release notes
 - qasync `>= 0.28`, as this fixes a horrendous Windows threading bug surfacing
   on newer (`> 3.10`) Python versions (see
   [CabbageDevelopment/qasync#128](https://github.com/CabbageDevelopment/qasync/issues/128)).
-
 
 
 Quickstart guide
