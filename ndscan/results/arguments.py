@@ -66,7 +66,7 @@ def format_scan_range(
             points = f"{rang['num_points']} points"
         return f"{centre} ± {half_span}, {points}"
     if typ == "list":
-        return f"list: [{rang['values']}]"
+        return f"list: {rang['values']}"
 
     return f"<Unknown scan type '{typ}'.>"
 
