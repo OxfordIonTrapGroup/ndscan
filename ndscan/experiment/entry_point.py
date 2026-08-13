@@ -32,8 +32,6 @@ from artiq.language import (
 
 from ..utils import (
     PARAMS_ARG_KEY,
-    SCHEMA_REVISION,
-    SCHEMA_REVISION_KEY,
     NoAxesMode,
     merge_no_duplicates,
     shorten_to_unambiguous_suffixes,
@@ -63,7 +61,12 @@ from .scan_runner import (
     filter_default_analyses,
     select_runner_class,
 )
-from .utils import dump_json, is_kernel, to_metadata_broadcast_type
+from .utils import (
+    broadcast_scan_metadata,
+    dump_json,
+    is_kernel,
+    issue_create_applet_ccb,
+)
 
 __all__ = [
     "ArgumentInterface",
@@ -491,16 +494,6 @@ class TopLevelRunner(HasEnvironment):
         self.set_dataset(self.dataset_prefix + "completed", True, broadcast=True)
 
     def _broadcast_metadata(self):
-        def push(name, value):
-            self.set_dataset(self.dataset_prefix + name, value, broadcast=True)
-
-        push(SCHEMA_REVISION_KEY, SCHEMA_REVISION)
-
-        source_prefix = self.get_dataset("system_id", default="rid")
-        push("source_id", f"{source_prefix}_{self.scheduler.rid}")
-
-        push("completed", False)
-
         self._scan_desc = describe_scan(
             self.spec, self.fragment, self._short_child_channel_names
         )
@@ -511,24 +504,17 @@ class TopLevelRunner(HasEnvironment):
             name: channel.describe() for name, channel in self._analysis_results.items()
         }
 
-        for name, value in self._scan_desc.items():
-            # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
-            ds_value = to_metadata_broadcast_type(value)
-            if ds_value is None:
-                push(name, dump_json(value))
-            else:
-                push(name, ds_value)
+        source_prefix = self.get_dataset("system_id", default="rid")
+        broadcast_scan_metadata(
+            lambda name, value: self.set_dataset(
+                self.dataset_prefix + name, value, broadcast=True
+            ),
+            f"{source_prefix}_{self.scheduler.rid}",
+            self._scan_desc,
+        )
 
     def create_applet(self, title: str, group: str = "ndscan"):
-        cmd = [
-            "${python}",
-            "-m ndscan.applet",
-            "--server=${server}",
-            "--port-notify=${port_notify}",
-            "--port-control=${port_control}",
-            f"--prefix={self.dataset_prefix}",
-        ]
-        self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
+        issue_create_applet_ccb(self.ccb, title, self.dataset_prefix, group=group)
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> dict[str, str]:
