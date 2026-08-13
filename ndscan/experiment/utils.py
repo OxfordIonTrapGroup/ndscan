@@ -47,9 +47,9 @@ def to_metadata_broadcast_type(obj: Any) -> Any | None:
 
     Since dataset values need to be exportable to HDF5 using h5py without any further
     configuration, and at the same time publishable via sipyco (i.e. PYON), the set of
-    allowable types is quite restricted. (Notably, maps andnon-rectangular arrays are
-    not supported). If compatibility is not assured, this function conservatively
-    returns ``None``, so the value
+    allowable types is quite restricted. (Notably, maps and non-rectangular arrays are
+    not supported.) If compatibility is not assured, this function conservatively
+    returns ``None``, such that callers can choose a safe encoding.
     """
     if isinstance(obj, numpy.integer):
         return int(obj)
