@@ -14,6 +14,8 @@ import pyqtgraph.exporters
 
 from .._qt import QtCore, QtGui, QtWidgets
 from .model import Context, Root
+from .model.history import HistoryFromScanModel
+from .time_slider import TimeSlider, TimeSliderContainer
 
 logger = logging.getLogger(__name__)
 
@@ -487,6 +489,39 @@ class SliceableMenuPanesWidget(SubplotMenuPanesWidget):
         # which in causes the dock to be removed.
         self.slice_plots[name].close()
         self.setFocus()
+
+
+def add_time_slider(
+    layout: QtWidgets.QGraphicsLayout,
+    scene: QtWidgets.QGraphicsScene,
+    model: HistoryFromScanModel,
+) -> TimeSlider:
+    """
+    Add a `TimeSliderContainer` at the bottom of the `layout` provided to allow
+    scrubbing over point acquisition history described by `model`.
+    """
+    container = TimeSliderContainer()
+    time_slider = container.slider
+    time_slider.setSizePolicy(
+        QtWidgets.QSizePolicy.Policy.Expanding,
+        QtWidgets.QSizePolicy.Policy.Fixed,
+    )
+
+    time_slider_proxy = scene.addWidget(container)
+    layout.addItem(
+        time_slider_proxy,
+        layout.rowCount(),
+        0,
+        QtCore.Qt.AlignmentFlag.AlignBaseline | QtCore.Qt.AlignmentFlag.AlignJustify,
+    )
+
+    time_slider.update_points(model.get_point_data())
+    time_slider.cutoff_changed.connect(model.update_cutoff)
+
+    model.parent.points_appended.connect(time_slider.update_points)
+    model.parent.points_rewritten.connect(time_slider.update_points)
+
+    return time_slider
 
 
 def add_source_id_label(
