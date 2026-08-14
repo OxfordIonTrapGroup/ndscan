@@ -43,8 +43,7 @@ class SliceRoot(Root):
         if fixed_point_idx is None:
             if self._model:
                 self._model.quit()
-                self.model_changed.emit(None)
-            self._model = None
+            self.detach_model()
             return
 
         if self._model is None:
@@ -52,6 +51,11 @@ class SliceRoot(Root):
                 self._parent, self.axis_idx, self._selected_point
             )
             self.model_changed.emit(self._model)
+
+    def detach_model(self):
+        if self._model is not None:
+            self._model = None
+            self.model_changed.emit(None)
 
     def get_model(self) -> Model | None:
         return self._model
