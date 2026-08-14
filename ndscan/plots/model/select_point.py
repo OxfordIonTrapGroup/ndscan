@@ -2,11 +2,14 @@ from typing import Any
 
 import numpy
 
+from ..._qt import QtCore
 from ...utils import strip_prefix
 from . import ScanModel, SinglePointModel
 
 
 class SelectPointFromScanModel(SinglePointModel):
+    source_index_changed = QtCore.pyqtSignal(object)
+
     def __init__(self, source: ScanModel):
         super().__init__(source.schema_revision, source.context)
         self._source = source
@@ -61,6 +64,7 @@ class SelectPointFromScanModel(SinglePointModel):
             return
         self._point = point
         self.point_changed.emit(point)
+        self.source_index_changed.emit(idx)
 
 
 def _all_array_equal(left, right):

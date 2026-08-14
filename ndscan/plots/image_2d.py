@@ -11,10 +11,15 @@ from .._qt import QtCore, QtGui
 from . import colormaps
 from .cursor import CrosshairAxisLabel, CrosshairLabel, LabeledCrosshairCursor
 from .model import ScanModel
+from .model.history import HistoryFromScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.slice import create_slice_roots
 from .model.subscan import create_subscan_roots
-from .plot_widgets import SliceableMenuPanesWidget, add_source_id_label
+from .plot_widgets import (
+    SliceableMenuPanesWidget,
+    add_source_id_label,
+    add_time_slider,
+)
 from .utils import (
     CONTRASTING_COLOR_TO_HIGHLIGHT,
     HIGHLIGHT_PEN,
@@ -282,6 +287,16 @@ class _ImagePlot:
                 self.averages_by_coords[coords][0] if averaging_enabled else z
             )
 
+        # Remove any old points that have now been deleted
+        if num_to_show < self.num_shown:
+            all_x_inds = _coords_to_indices(x_data[:num_to_show], self.x_range)
+            all_y_inds = _coords_to_indices(y_data[:num_to_show], self.y_range)
+
+            removal_mask = np.full(self.image_data.shape, True)
+            removal_mask[all_x_inds, all_y_inds] = False
+
+            self.image_data[removal_mask] = np.nan
+
         cmap = colormaps.plasma
         channel = self.channels[self.active_channel_name]
         display_hints = channel.get("display_hints", {})
@@ -312,13 +327,17 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
     def __init__(self, model: ScanModel):
         super().__init__()
 
-        self.model = model
+        self.base_model = model
+        self.model = HistoryFromScanModel(model)
 
         self.model.channel_schemata_changed.connect(self._initialise_series)
         self.model.points_appended.connect(lambda p: self._update_points(p, False))
         self.model.points_rewritten.connect(lambda p: self._update_points(p, True))
 
         self.selected_point_model = SelectPointFromScanModel(self.model)
+        self.selected_point_model.source_index_changed.connect(
+            self._set_highlighted_index
+        )
 
         self.data_names = []
 
@@ -329,6 +348,7 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         self.plot: _ImagePlot | None = None
         self.crosshair = None
         self._highlighted_xy = (None, None)
+        self.time_slider = None
 
         self.found_duplicate_coords = False
         self.unique_coords = set[tuple[float, float]]()
@@ -420,6 +440,9 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
 
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
         self.slice_roots = create_slice_roots(self.model, self.selected_point_model)
+
+        if self.time_slider is None and self.base_model.has_independent_history:
+            self.add_time_slider()
 
         self.ready.emit()
 
@@ -528,8 +551,7 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         y = self.plot.y_range[0] + y_idx * self.plot.y_range[2]
 
         source_idx = self._xy_to_source_index(x, y)
-        if source_idx is not None:
-            self._highlight_point_at_index(source_idx)
+        self.selected_point_model.set_source_index(source_idx)
 
     def keyPressEvent(self, event):
         """Handle arrow key presses to move the highlighted point."""
@@ -549,12 +571,11 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         step = -1 if is_left or is_down else 1
         neighbour_idx = self._get_highlighted_neighbour_index(axis, step)
         if neighbour_idx is not None:
-            self._highlight_point_at_index(neighbour_idx)
+            self.selected_point_model.set_source_index(neighbour_idx)
         event.accept()
 
-    def _highlight_point_at_index(self, source_idx: int | None):
+    def _set_highlighted_index(self, source_idx: int | None):
         """Highlight the point at the given index of the source data."""
-        self.selected_point_model.set_source_index(source_idx)
 
         if source_idx is None:
             self._highlighted_xy = (None, None)
@@ -654,3 +675,27 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
             }
 
         view_box.setLimits(**kwargs)
+
+    def add_time_slider(self):
+        self.time_slider = add_time_slider(self.layout, self.scene(), self.model)
+        self.time_slider.cutoff_changed.connect(self.time_cutoff_changed)
+
+    def time_cutoff_changed(self, cutoff: int):
+        if cutoff == -1:
+            return
+
+        # Check if previously highlighted point should still exist
+        highlighted_idx = self.selected_point_model.get_source_index()
+
+        if highlighted_idx is not None and highlighted_idx > cutoff:
+            self._set_highlighted_index(None)
+
+    def focusInEvent(self, event):
+        if self.time_slider is not None:
+            self.time_slider.show()
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        if self.time_slider is not None:
+            self.time_slider.hide()
+        super().focusOutEvent(event)

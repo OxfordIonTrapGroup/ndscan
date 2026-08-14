@@ -174,6 +174,8 @@ class ScanModel(Model):
     points_appended = QtCore.pyqtSignal(dict)
     annotations_changed = QtCore.pyqtSignal(list)
 
+    has_independent_history = True
+
     def __init__(
         self, axes: list[dict[str, Any]], schema_revision: int, context: Context
     ):

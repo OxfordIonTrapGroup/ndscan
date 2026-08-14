@@ -30,6 +30,7 @@ FIT_COLORS = [
 #: pyqtgraph mkPen spec for highlighting selected points.
 HIGHLIGHT_PEN = {"color": "#ffff00", "width": 5}
 CONTRASTING_COLOR_TO_HIGHLIGHT = "#c61187ff"
+TIME_SLIDER_COLOR = "#a1d4e6"
 
 
 def _get_priority(channel_metadata: dict[str, Any]):

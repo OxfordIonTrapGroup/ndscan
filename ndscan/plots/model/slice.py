@@ -115,6 +115,8 @@ class SliceForScanModel(ScanModel):
     necessitate a new model instance.
     """
 
+    has_independent_history = False
+
     def __init__(
         self,
         parent: ScanModel,
@@ -148,6 +150,19 @@ class SliceForScanModel(ScanModel):
     def _update(self, *_args) -> None:
         parent_data = self._parent.get_point_data()
         fixed_point_idx = self._fixed_point.get_source_index()
+
+        if fixed_point_idx is None:
+            return
+
+        # De-select point if it has been removed
+        # FIXME: This should ideally be handled by the widget handling the selection
+        # of the `fixed_point`, but we must do this after the parent model to decide
+        # which points to remove, where it then emits the signal this slot attaches to
+        num_points = len(parent_data.get("axis_0", []))
+        if fixed_point_idx >= num_points:
+            self._fixed_point.set_source_index(None)
+            return
+
         sliced_data = self.slice_data(parent_data, fixed_point_idx)
 
         data_rewritten = False

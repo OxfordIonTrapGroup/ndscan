@@ -9,11 +9,13 @@ from .._qt import QtCore
 from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
 from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
+from .model.history import HistoryFromScanModel
 from .model.select_point import SelectPointFromScanModel
 from .model.subscan import create_subscan_roots
 from .plot_widgets import (
     SubplotMenuPanesWidget,
     add_source_id_label,
+    add_time_slider,
     build_channel_selection_context_menu,
 )
 from .utils import (
@@ -250,7 +252,8 @@ class _XYSeries(QtCore.QObject):
 class XY1DPlotWidget(SubplotMenuPanesWidget):
     def __init__(self, model: ScanModel):
         super().__init__()
-        self.model = model
+        self.base_model = model
+        self.model = HistoryFromScanModel(model)
 
         # Since we are a QObject ourselves, and the parents will make sure the widget is
         # deleteLater()d on the on the C++ side once it is removed from the UI, we can
@@ -278,6 +281,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
 
         self.crosshairs = []
         self._highlighted_spot = None
+        self.time_slider = None
 
         # List of all scalar channel names for the context menu.
         self.data_names = None
@@ -405,6 +409,9 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                 )
             ],
         )
+
+        if self.time_slider is None and self.base_model.has_independent_history:
+            self.add_time_slider()
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -634,3 +641,27 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             x_min = -0.5
             x_max = len(param_categories) - 0.5
             view_box.setLimits(xMin=x_min, xMax=x_max, minXRange=1.05)
+
+    def add_time_slider(self):
+        self.time_slider = add_time_slider(self.layout, self.scene(), self.model)
+        self.time_slider.cutoff_changed.connect(self.time_cutoff_changed)
+
+    def focusInEvent(self, event):
+        if self.time_slider is not None:
+            self.time_slider.show()
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        if self.time_slider is not None:
+            self.time_slider.hide()
+        super().focusOutEvent(event)
+
+    def time_cutoff_changed(self, state: int):
+        if state == -1:
+            return
+
+        # Check if previously highlighted point still exists
+        highlighted_idx = self.selected_point_model.get_source_index()
+
+        if highlighted_idx is not None and highlighted_idx > state:
+            self._set_highlighted_index(None)
