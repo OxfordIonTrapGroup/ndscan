@@ -41,15 +41,23 @@ class TimeSlider(QtWidgets.QSlider):
 
         self._set_stylesheet()
 
+    def is_following_latest(self):
+        """Return whether the slider is at its maximum, where it has the meaning of
+        following points as they come in (cutoff -1).
+        """
+        return self.target_idx == -1
+
     def update_points(self, point_data: dict[str, list]):
         num_points = len(next(iter(point_data.values()), []))
         self.setMaximum(max(0, num_points - 1))
 
-        if self.target_idx == -1:
+        if self.is_following_latest():
             self.setValue(self.maximum())
 
     def rollback_target(self, index):
         if index == self.maximum():
+            # When scrubbing all the way to the right, switch to the "sticky" following
+            # mode.
             self.target_idx = -1
         else:
             self.target_idx = index

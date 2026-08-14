@@ -696,6 +696,6 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         super().focusInEvent(event)
 
     def focusOutEvent(self, event):
-        if self.time_slider is not None:
+        if self.time_slider is not None and self.time_slider.is_following_latest():
             self.time_slider.hide()
         super().focusOutEvent(event)
