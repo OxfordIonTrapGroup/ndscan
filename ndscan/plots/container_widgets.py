@@ -107,8 +107,7 @@ class RootWidget(QtWidgets.QWidget):
 
         self.plot_widget: VerticalPanesWidget = None
 
-        if self.root.get_model() is not None:
-            self._change_model()
+        self._change_model(self.root.get_model())
 
     def get_title(self) -> str:
         return self.root.get_title()
@@ -122,7 +121,7 @@ class RootWidget(QtWidgets.QWidget):
             self.plot_widget.close()
         super().closeEvent(ev)
 
-    def _change_model(self):
+    def _change_model(self, model):
         if self.plot_widget is not None:
             self._show_message("No data.")
             self.widget_stack.removeWidget(self.plot_widget)
@@ -137,7 +136,6 @@ class RootWidget(QtWidgets.QWidget):
 
             self.plot_widget = None
 
-        model = self.root.get_model()
         if model is not None:
             self._show_message("Waiting for channel metadata for scan…")
 
