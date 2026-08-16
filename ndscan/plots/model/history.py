@@ -125,6 +125,4 @@ class HistoryFromScanModel(ScanModel):
         self.parent.points_appended.disconnect(self._append_data)
         self.parent.points_rewritten.disconnect(self._rewrite_data)
         self.parent.annotations_changed.disconnect(self._update_annotations)
-        self.parent.channel_schemata_changed.disconnect(
-            self._on_channel_schemata_changed
-        )
+        self.parent.channel_schemata_changed.disconnect(self.channel_schemata_changed)
