@@ -27,10 +27,145 @@ exist.
 Release notes
 -------------
 
-### Latest Git (unreleased)
+### Latest Git (unreleased; since commit f35626c)
 
- - Plots: Nonsensically large error bars (e.g. from bad fits) are now ignored
-   for auto-scaling.
+#### New features
+
+- **Dashboard interface**:
+  - *Parameter tree dialog*: The argument editor gained a tree view of the full
+    fragment/parameter hierarchy, shown in a separate dialog. Use the new button
+    at the bottom of the override list or Ctrl+Alt+T to open.
+  - *Enum member scans*: The argument editor now allows selecting a subset of
+    enum members to be scanned.
+  - *Parameter explanations*: Parameters accept a new `explanation` field for
+    longer free-form descriptions, shown as tooltips in the argument editor and
+    in the parameter tree. Suggested use cases are to describe the precise
+    physical meaning or consequence of a parameter, or how to set/calibrate it,
+    which previously often has been implicit knowledge in a lab setting.
+- **Plot applet**:
+  - *Dockable subscan and slice panes*: Subscans and alternate plots are now
+    shown as dockable panes right next to the main scan, replacing the old
+    separate-window UI. Shift+click on a subscan entry shows/hides all subscans
+    at once.
+  - *Time slider for scan history*: Plots now include a slider for scrubbing
+    back through the point acquisition history of a scan, letting you replay how
+    data came in. Slice panes follow the rolled-back state.
+  - *1D slices of N-dimensional scans*: Points in 2D image plots are now
+    selectable (including for subscans), and 1-dimensional slices through the
+    selected point can be pulled up as additional plot panes.
+  - *Keyboard navigation for point selection*: Highlighted points can be stepped
+    through with cursor keys in both 1D and 2D plots.
+  - *Clipboard export*: Ctrl+C copies the current plot to the clipboard, with a
+    brief flash as visual confirmation.
+- **Experiment code/execution**:
+  - *OnlineFit run experiment-side*: `OnlineFit` analyses are now run after
+    experiment/subscan completion by default, and expose their parameters/error
+    estimates as analysis results (requires a recent oitg version with
+    `FitBase.all_parameter_names`). Previously, they were only being run and
+    displayed live in the applet on the client side. This avoids having to
+    manually re-implement the online fits to e.g. save the fit results to a
+    dataset in a `TopLevelRunner` calibration experiment, or to make accessible
+    to parent fragments in a subscan.
+- **`results` tooling**:
+  - *Richer metadata in ndscan_show*: `ndscan_show` displays the experiment
+    class name and any vanilla ARTIQ arguments stored in the results file.
+
+#### Improvements
+
+- **Dashboard interface**:
+  - *Per-point repeats*: New `num_repeats_per_point` scan option to repeat each
+    point a given number of times before moving on (in addition to the existing
+    whole-scan repeats). This can be useful to gather statistics if moving
+    between points is slow (e.g. due to waiting for external hardware to
+    settle).
+  - The scan options section is expanded by default (#443).
+  - Layout whitespace has been reduced considerably for a more compact editor,
+    consistent across platforms and ARTIQ branches (previously an
+    Oxford-internal ARTIQ patch).
+  - Scan parameters (ranges) can now be loaded back into the argument editor
+    from previous scans.
+- **Plot applet**:
+  - *Enum/categorical axes in plots*: Cursor labels now use the `EnumParam` spec
+    member values consistently, "set parameter from crosshair" coerces the raw
+    coordinate to the actual parameter type instead of always writing a float,
+    and the accessible view range for categorical axes is restricted so you
+    cannot scroll to coordinates without a defined meaning.
+  - *Error bar autoscaling*: When error bars are nonsensically large (e.g. as
+    sometimes resulting from bad fits), they are ignored for the purpose of plot
+    autoscaling (though still at their full size when zoomed out).
+- **Experiment code/execution**:
+  - *Int-native scans*: Scans over `IntParams` now directly generate integer
+    points; rounding is improved and refining scans terminate once the range is
+    exhausted.
+  - *Overrides for one-shot fragments*: `run_fragment_once()` and
+    `create_and_run_fragment_once()` now accept parameter overrides, making it
+    easier to run fragments with modified parameters outside a scan.
+  - *Fewer redundant lifecycle calls*: `device_cleanup()` is no longer called
+    after every single subscan point (only when the subscan fragment is cleaned
+    up), reducing overhead in kernel subscan loops.
+  - *Improved result channel lifetime errors*: Missing or duplicate `push()`
+    calls per point now raise a dedicated `ResultLifecycleError` naming the
+    offending channel, and are also caught in no-axis (single/time series) mode.
+  - `Fragment.setattr_…()` methods validate their class argument type up front
+    for clearer errors when e.g. calling `setattr_param()` with a `FloatChannel`
+    type argument.
+- **`results` tooling**:
+  - *results.pyplot improvements*: `auto_plot()` now returns the generated
+    figures for further customisation, shows error bars, and uses
+    `constrained_layout` for better spacing.
+- **Tooling migration**: Development tooling moved from Poetry to uv (keeping
+  the poe task runner) and from flake8/yapf to Ruff. Installing via `pip
+  install` is unaffected.
+
+#### Bug fixes
+
+- **Dashboard interface**:
+  - Infinite-repeat settings are now correctly read back.
+  - Fixed erroneous use of `min`/`max` as half-span limits for centred scans in
+    the argument editor.
+- **Plot applet**:
+  - The context menu is now available even when a plot has no panes (e.g.
+    rolling plots with only subscan data), and subscans are shown by default
+    when a fragment has no top-level channels; submenus outside plot items now
+    work.
+  - Fixed point selection in 2D image plots failing due to an exact
+    floating-point comparison (#472).
+  - Fixed crashes when using cursor keys with no point selected.
+  - Fixed incorrect neighbour-index calculation when stepping through points.
+  - Subscan data channels are now resolved by path so experiments with
+    multiple/nested subscans are displayed correctly.
+  - Fixed several regressions around model initialisation: HDF5 loading errors
+    when default annotations are present, single-point scans with subscans (both
+    live and loaded from HDF5), and rolling plots the last (only saved) point in
+    `ndscan_show`.
+  - Fixed memory leaks/slowdowns when changing plot models, when the source-id
+    label is destroyed, and when closing subscan panes.
+  - Fixed loading of string data from HDF5 result files in `ndscan_show`.
+- **Experiment code/execution**:
+  - Fixed subscans being misconfigured after transitory-error interruptions
+    (both host and kernel subscans).
+- **`results` tooling**:
+  - `ndscan_show` console output/`ndscan_to_txt` argument dumps now handle
+    (refining) centre-span scan ranges (#497) and no longer double-quote list
+    scan ranges
+- **Compatibility fixes**:
+  - Handle both ARTIQ 8 and ARTIQ 9 (`apply_color()` API change)
+  - Restore PyQt5 compatibility for now (`QShortcut` location), though this is
+    no longer routinely tested.
+  - NumPy 2 compatibility (`np.inf`).
+  - Touch events are disabled to silence `qt.pointer.dispatch` warning spam on
+    macOS.
+
+#### Packaging notes
+
+- sipyco is pinned to v1.9 in the default distribution to avoid the PYONv2
+  incompatibility until a compatibility shim is implemented in ndscan (though it
+  can be overridden using `tool.uv.override-dependencies` in client projects;
+  some Oxford users are on newer versions already).
+- qasync `>= 0.28`, as this fixes a horrendous Windows threading bug surfacing
+  on newer (`> 3.10`) Python versions (see
+  [CabbageDevelopment/qasync#128](https://github.com/CabbageDevelopment/qasync/issues/128)).
+
 
 
 Quickstart guide
