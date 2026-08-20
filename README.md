@@ -85,6 +85,9 @@ Release notes
   - Scan parameters (ranges) can now be loaded back into the argument editor
     from previous scans.
 - **Plot applet**:
+  - *Y-axis label layout*: Long y-axis labels are now line-wrapped to fit the
+    plot pane height, and the layout is refreshed after zooming such that tick
+    values no longer intersect axis labels.
   - *Enum/categorical axes in plots*: Cursor labels now use the `EnumParam` spec
     member values consistently, "set parameter from crosshair" coerces the raw
     coordinate to the actual parameter type instead of always writing a float,
