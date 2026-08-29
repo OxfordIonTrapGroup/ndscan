@@ -15,7 +15,6 @@ from .model.subscan import create_subscan_roots
 from .plot_widgets import (
     SubplotMenuPanesWidget,
     add_source_id_label,
-    add_time_slider,
     build_channel_selection_context_menu,
 )
 from .utils import (
@@ -411,7 +410,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         )
 
         if self.time_slider is None and self.base_model.has_independent_history:
-            self.add_time_slider()
+            self.time_slider = self.add_time_slider(self.model)
+            self.time_slider.cutoff_changed.connect(self.time_cutoff_changed)
 
         # Make sure we put back annotations (if they haven't changed but the points
         # have been rewritten, there might not be an annotations_changed event).
@@ -641,10 +641,6 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
             x_min = -0.5
             x_max = len(param_categories) - 0.5
             view_box.setLimits(xMin=x_min, xMax=x_max, minXRange=1.05)
-
-    def add_time_slider(self):
-        self.time_slider = add_time_slider(self.layout, self.scene(), self.model)
-        self.time_slider.cutoff_changed.connect(self.time_cutoff_changed)
 
     def focusInEvent(self, event):
         if self.time_slider is not None:

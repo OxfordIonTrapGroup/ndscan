@@ -18,7 +18,6 @@ from .model.subscan import create_subscan_roots
 from .plot_widgets import (
     SliceableMenuPanesWidget,
     add_source_id_label,
-    add_time_slider,
 )
 from .utils import (
     CONTRASTING_COLOR_TO_HIGHLIGHT,
@@ -442,7 +441,8 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
         self.slice_roots = create_slice_roots(self.model, self.selected_point_model)
 
         if self.time_slider is None and self.base_model.has_independent_history:
-            self.add_time_slider()
+            self.time_slider = self.add_time_slider(self.model)
+            self.time_slider.cutoff_changed.connect(self.time_cutoff_changed)
 
         self.ready.emit()
 
@@ -675,10 +675,6 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
             }
 
         view_box.setLimits(**kwargs)
-
-    def add_time_slider(self):
-        self.time_slider = add_time_slider(self.layout, self.scene(), self.model)
-        self.time_slider.cutoff_changed.connect(self.time_cutoff_changed)
 
     def time_cutoff_changed(self, cutoff: int):
         if cutoff == -1:

@@ -221,6 +221,10 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         self.layout.setVerticalSpacing(3)
         self.panes = list[MultiYAxisPlotItem]()
 
+        #: Proxy widget for the time slider, if any (see add_time_slider()).
+        #: Kept in a layout row below the last pane.
+        self._time_slider_proxy: QtWidgets.QGraphicsProxyWidget | None = None
+
         self.copy_shortcut = QtGui.QShortcut(QtGui.QKeySequence.StandardKey.Copy, self)
         self.copy_shortcut.activated.connect(self.copy_to_clipboard)
         self._flash_overlay = None
@@ -259,6 +263,11 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         plot = MultiYAxisPlotItem()
         if self.panes:
             self.nextRow()
+
+        # The time slider, if any, occupies the row the new pane is destined for, so
+        # move it out of the way first and re-attach it below.
+        self._detach_time_slider()
+
         self.addItem(plot)
         self.panes.append(plot)
 
@@ -274,6 +283,8 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         # results. We will want to revisit this in the future when it inevitably breaks
         # again.
         self.layout.setRowPreferredHeight(len(self.panes) - 1, 10000)
+
+        self._attach_time_slider()
 
         return plot
 
@@ -321,9 +332,57 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
             pane.getAxis("left").setWidth(width)
 
     def clear_panes(self):
+        for idx in range(len(self.panes)):
+            # Make sure not to leave any preferred heights behind from the workaround in
+            # add_pane(), as rows previously occupied by a pane might later be occupied
+            # e.g. by the time slider, which would reserve too much
+            self.layout.setRowPreferredHeight(idx, 0)
         for pane in self.panes:
             pane.reset_y_axes()
         self.panes.clear()
+
+    def add_time_slider(self, model: HistoryFromScanModel) -> TimeSlider:
+        """Add a :class:`.TimeSliderContainer` in the row below the panes to allow
+        scrubbing over the point acquisition history described by ``model``.
+
+        The slider row stays anchored directly below the last pane across any later
+        :meth:`add_pane`/:meth:`clear_panes` calls.
+        """
+        container = TimeSliderContainer()
+        time_slider = container.slider
+        time_slider.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+
+        self._time_slider_proxy = self.scene().addWidget(container)
+        self._attach_time_slider()
+
+        time_slider.update_points(model.get_point_data())
+        time_slider.cutoff_changed.connect(model.update_cutoff)
+
+        model.parent.points_appended.connect(time_slider.update_points)
+        model.parent.points_rewritten.connect(time_slider.update_points)
+
+        return time_slider
+
+    def _attach_time_slider(self):
+        """Add the time slider to self.layout (if created with add_time_slider())."""
+        if self._time_slider_proxy is None:
+            return
+        self.layout.addItem(
+            self._time_slider_proxy,
+            len(self.panes),
+            0,
+            QtCore.Qt.AlignmentFlag.AlignBaseline
+            | QtCore.Qt.AlignmentFlag.AlignJustify,
+        )
+
+    def _detach_time_slider(self):
+        """Remove the time slider from self.layout (if created with add_time_slider()."""
+        if self._time_slider_proxy is None:
+            return
+        self.layout.removeItem(self._time_slider_proxy)
 
     def copy_to_clipboard(self):
         if self._flash_overlay is not None:
@@ -630,39 +689,6 @@ class SliceableMenuPanesWidget(SubplotMenuPanesWidget):
         # which in causes the dock to be removed.
         self.slice_plots[name].close()
         self.setFocus()
-
-
-def add_time_slider(
-    layout: QtWidgets.QGraphicsLayout,
-    scene: QtWidgets.QGraphicsScene,
-    model: HistoryFromScanModel,
-) -> TimeSlider:
-    """
-    Add a `TimeSliderContainer` at the bottom of the `layout` provided to allow
-    scrubbing over point acquisition history described by `model`.
-    """
-    container = TimeSliderContainer()
-    time_slider = container.slider
-    time_slider.setSizePolicy(
-        QtWidgets.QSizePolicy.Policy.Expanding,
-        QtWidgets.QSizePolicy.Policy.Fixed,
-    )
-
-    time_slider_proxy = scene.addWidget(container)
-    layout.addItem(
-        time_slider_proxy,
-        layout.rowCount(),
-        0,
-        QtCore.Qt.AlignmentFlag.AlignBaseline | QtCore.Qt.AlignmentFlag.AlignJustify,
-    )
-
-    time_slider.update_points(model.get_point_data())
-    time_slider.cutoff_changed.connect(model.update_cutoff)
-
-    model.parent.points_appended.connect(time_slider.update_points)
-    model.parent.points_rewritten.connect(time_slider.update_points)
-
-    return time_slider
 
 
 def add_source_id_label(
