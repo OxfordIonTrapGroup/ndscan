@@ -27,7 +27,7 @@ exist.
 Release notes
 -------------
 
-### Latest Git (unreleased; since commit f35626c)
+### v0.4.0
 
 #### New features
 
