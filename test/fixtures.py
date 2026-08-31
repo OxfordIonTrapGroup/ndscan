@@ -182,6 +182,21 @@ class MultiPointTransitoryErrorFragment(TransitoryErrorFragment):
         self.reset_counters()
 
 
+class PartialResultTransitoryErrorFragment(MultiPointTransitoryErrorFragment):
+    """MultiPointTransitoryErrorFragment that pushes to an extra result channel before
+    the error is raised in run_once(), to test that partial results are discarded when
+    a point is retried.
+    """
+
+    def build_fragment(self, *args, **kwargs):
+        super().build_fragment(*args, **kwargs)
+        self.setattr_result("partial_result", IntChannel)
+
+    def run_once(self):
+        self.partial_result.push(self.value.get())
+        super().run_once()
+
+
 class RequestTerminationFragment(ExpFragment):
     """To test handling of TerminationRequested exceptions without having to implement
     actual termination requests in a mock scheduler, raises TerminationRequested as
