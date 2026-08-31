@@ -678,6 +678,7 @@ def make_fragment_scan_exp(
     *args,
     max_rtio_underflow_retries: int = 3,
     max_transitory_error_retries: int = 10,
+    **kwargs,
 ) -> type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
@@ -692,12 +693,15 @@ def make_fragment_scan_exp(
                 # ...
 
         MyExpFragmentScan = make_fragment_scan_exp(MyExpFragment)
+
+    :param args: Any arguments to forward to ``build_fragment()``.
+    :param kwargs: Any keyword arguments to forward to ``build_fragment()``.
     """
 
     class FragmentScanShim(FragmentScanExperiment):
         def build(self):
             super().build(
-                lambda: fragment_class(self, [], *args),
+                lambda: fragment_class(self, [], *args, **kwargs),
                 max_rtio_underflow_retries=max_rtio_underflow_retries,
                 max_transitory_error_retries=max_transitory_error_retries,
             )

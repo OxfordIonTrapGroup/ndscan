@@ -108,7 +108,9 @@ class FragmentScanExpCase(HasEnvironmentCase):
         # whether counters are correctly reset between points in time series scan.
         exp = self.create(
             make_fragment_scan_exp(
-                MultiPointTransitoryErrorFragment, 3, max_transitory_error_retries=3
+                MultiPointTransitoryErrorFragment,
+                num_device_setup_to_fail=3,
+                max_transitory_error_retries=3,
             )
         )
         exp.args._params["scan"]["no_axes_mode"] = "time_series"
@@ -137,7 +139,9 @@ class FragmentScanExpCase(HasEnvironmentCase):
     def test_time_series_transitory_limit(self):
         exp = self.create(
             make_fragment_scan_exp(
-                MultiPointTransitoryErrorFragment, 3, max_transitory_error_retries=2
+                MultiPointTransitoryErrorFragment,
+                num_device_setup_to_fail=3,
+                max_transitory_error_retries=2,
             )
         )
         exp.args._params["scan"]["no_axes_mode"] = "time_series"
