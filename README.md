@@ -29,6 +29,11 @@ Release notes
 
 ### Latest Git (unreleased)
 
+#### Improvements
+
+- `make_fragment_scan_exp()` now also forwards keyword arguments to
+  `build_fragment()`, matching `create_and_run_fragment_once()`.
+
 ### v0.4.0
 
 #### New features
