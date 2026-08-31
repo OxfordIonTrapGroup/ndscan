@@ -80,6 +80,16 @@ Release notes
     manually re-implement the online fits to e.g. save the fit results to a
     dataset in a `TopLevelRunner` calibration experiment, or to make accessible
     to parent fragments in a subscan.
+  - *Subscan previews*: Subscan data is now also published while the subscan is
+    still executing to a separate root (in `<prefix>previews.<subscan_path>.`),
+    with an applet displaying them live "off to the side" of the main scan
+    created automatically. This is enabled by default for all subscans; opt out
+    per subscan by passing `expose_in_progress=False` to `setattr_subscan()` or
+    `SubscanExpFragment.build_fragment()`, or on the execution side via the new
+    `publish_subscan_previews` argument to `TopLevelRunner`. Like all broadcast
+    datasets, the previews are archived into the results file, so the state of
+    the last subscan execution remains inspectable after the fact (e.g. as an
+    extra root in `ndscan_show`), which can be useful after unexpected failures.
 - **`results` tooling**:
   - *Richer metadata in ndscan_show*: `ndscan_show` displays the experiment
     class name and any vanilla ARTIQ arguments stored in the results file.
@@ -141,6 +151,10 @@ Release notes
   - Fixed erroneous use of `min`/`max` as half-span limits for centred scans in
     the argument editor.
 - **Plot applet**:
+  - Applets now cleanly reset their state when the scan published under the
+    subscribed dataset prefix is replaced by one with a different schema (e.g.
+    for `TopLevelRunner` used with a constant dataset prefix), and correctly
+    treat point datasets shrinking as a rewrite of the displayed data.
   - The context menu is now available even when a plot has no panes (e.g.
     rolling plots with only subscan data), and subscans are shown by default
     when a fragment has no top-level channels; submenus outside plot items now
@@ -161,6 +175,9 @@ Release notes
 - **Experiment code/execution**:
   - Fixed subscans being misconfigured after transitory-error interruptions
     (both host and kernel subscans).
+  - Failed online fit executions (e.g. for fit results exposed as subscan
+    analysis result channels) now push NaN values instead of leaving the results
+    unset/`None`.
 - **`results` tooling**:
   - `ndscan_show` console output/`ndscan_to_txt` argument dumps now handle
     (refining) centre-span scan ranges (#497) and no longer double-quote list
@@ -182,7 +199,6 @@ Release notes
 - qasync `>= 0.28`, as this fixes a horrendous Windows threading bug surfacing
   on newer (`> 3.10`) Python versions (see
   [CabbageDevelopment/qasync#128](https://github.com/CabbageDevelopment/qasync/issues/128)).
-
 
 
 Quickstart guide

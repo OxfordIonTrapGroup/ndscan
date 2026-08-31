@@ -108,6 +108,7 @@ class SubscanModel(ScanModel):
         self._update(parent.get_point())
 
     def quit(self) -> None:
+        super().quit()
         self._parent.point_changed.disconnect(self._update)
 
     def _update(self, parent_data: dict[str, Any] | None) -> None:

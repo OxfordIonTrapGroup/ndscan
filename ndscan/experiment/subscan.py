@@ -7,18 +7,21 @@ import logging
 from collections import OrderedDict
 from copy import copy
 from functools import reduce
+from typing import Any
 
 from artiq.language import kernel, portable, rpc
 
-from ..utils import merge_no_duplicates, shorten_to_unambiguous_suffixes
+from ..utils import merge_no_duplicates, shorten_to_unambiguous_suffixes, strip_suffix
 from .default_analysis import AnnotationContext, DefaultAnalysis
 from .fragment import ExpFragment, Fragment, RestartKernelTransitoryError
 from .parameters import ParamHandle
 from .result_channels import (
     ArraySink,
     LastValueSink,
+    MulticastSink,
     OpaqueChannel,
     ResultChannel,
+    ResultSink,
     SubscanChannel,
 )
 from .scan_generator import ScanGenerator, ScanOptions, generate_points
@@ -31,11 +34,68 @@ from .scan_runner import (
     filter_default_analyses,
     select_runner_class,
 )
-from .utils import is_kernel
+from .utils import dump_json, is_kernel
 
-__all__ = ["setattr_subscan", "Subscan", "SubscanExpFragment"]
+__all__ = ["setattr_subscan", "InProgressWriter", "Subscan", "SubscanExpFragment"]
 
 logger = logging.getLogger(__name__)
+
+
+class InProgressWriter:
+    """Interface for incrementally publishing subscan data while the subscan is still
+    executing (see :meth:`Subscan.attach_in_progress_writer`).
+
+    Implementations (e.g. ``entry_point.TopLevelRunner``, which publishes to datasets
+    in the schema used for top-level scans) are expected to overwrite whatever they
+    published every time the subscan runs anew (i.e. at every new point of whatever
+    the enclosing scan is).
+    """
+
+    def announce_scan_spec(
+        self,
+        scan_desc: dict[str, Any],
+        point_channels: dict[str, ResultChannel],
+    ) -> None:
+        """Publish metadata for a new scan spec, and prepare for the point data to be
+        overwritten by the next pushes.
+
+        Called whenever the scan spec is (re-)configured, before any points execute.
+
+        :param scan_desc: The scan metadata, in the ``describe()``\\ d form also used
+            for top-level scans.
+        :param point_channels: The result channels carrying the per-point data, keyed
+            by name (``axis_<i>``/``channel_<name>``, matching the ``points.*``
+            naming in the top-level scan schema). Each channel is pushed to once per
+            completed point; to actually receive the data, the writer needs to
+            install sinks on the channels (replacing any sinks it installed in a
+            previous call), or can choose not to for data it is not interested in.
+        """
+        raise NotImplementedError
+
+    def complete(self, annotations_json: str | None = None) -> None:
+        """Mark the subscan as complete; the data should remain visible until the
+        first point arrives the next time the subscan runs.
+
+        :param annotations_json: If given, the final annotations for the completed
+            scan (e.g. including results from executed default analyses), to display
+            until the subscan next runs.
+        """
+        raise NotImplementedError
+
+
+class _ChannelSink(ResultSink):
+    """Sink forwarding pushed values into a :class:`ResultChannel`.
+
+    This is used to tee per-point subscan data into the preview channels announced to
+    any attached in-progress writer; :meth:`ResultChannel.push` discards the values
+    unless/until a writer installs a sink on the channel.
+    """
+
+    def __init__(self, channel: ResultChannel):
+        self._channel = channel
+
+    def push(self, value: Any) -> None:
+        self._channel.push(value)
 
 
 class Subscan:
@@ -55,6 +115,8 @@ class Subscan:
         short_child_channel_names: dict[str, ResultChannel],
         analyses: list[DefaultAnalysis],
         parent_analysis_result_channels: dict[str, ResultChannel],
+        expose_in_progress: bool = True,
+        in_progress_result_channels: dict[str, ResultChannel] | None = None,
     ):
         self._runner = runner
         self._fragment = fragment
@@ -66,6 +128,43 @@ class Subscan:
         self._short_child_channel_names = short_child_channel_names
         self._analyses = analyses
         self._parent_analysis_result_channels = parent_analysis_result_channels
+
+        #: Whether an in-progress writer can be attached to incrementally publish the
+        #: subscan data (see attach_in_progress_writer()).
+        self.expose_in_progress = expose_in_progress
+        self._in_progress_writer: InProgressWriter | None = None
+        self._in_progress_result_channels = dict(in_progress_result_channels or {})
+        self._in_progress_axis_channels: list[ResultChannel] = []
+        self._spec: ScanSpec | None = None
+
+    def attach_in_progress_writer(self, writer: InProgressWriter) -> None:
+        """Attach a writer to incrementally publish the subscan data – i.e. point by
+        point, while the subscan is still executing.
+
+        This is typically invoked by whatever runs the enclosing scan (e.g.
+        ``TopLevelRunner``, which publishes the data to datasets in the schema used
+        for top-level scans for live display in a separate applet); the subscan
+        machinery only announces the scan metadata and the result channels carrying
+        the per-point data, on which the writer can then install sinks (see
+        :meth:`InProgressWriter.announce_scan_spec`).
+
+        Can only be used if ``expose_in_progress`` was left enabled when the subscan
+        was created. Attaching a writer replaces any previously attached one, such
+        that the same fragment tree can be run repeatedly (e.g. by more than one
+        ``TopLevelRunner``, each publishing to its own dataset root). If a scan spec
+        has already been configured, it is immediately announced to the writer.
+        """
+        assert self.expose_in_progress, (
+            "Subscan was created with expose_in_progress=False"
+        )
+        self._in_progress_writer = writer
+        if self._spec is not None:
+            # Scan spec was already configured before the writer was attached (e.g.
+            # from build_fragment()).
+            writer.announce_scan_spec(
+                self._describe_in_progress_schema(),
+                self._current_in_progress_channels(),
+            )
 
     def run(
         self,
@@ -91,9 +190,7 @@ class Subscan:
         """
         self.set_scan_spec(axis_generators, options)
         self._fragment.prepare()
-        self._runner.run(
-            self._fragment, self._spec, list(self._coordinate_sinks.values())
-        )
+        self._runner.run(self._fragment, self._spec, self._runner_axis_sinks)
         return self._push_results(execute_default_analyses)
 
     def set_scan_spec(
@@ -126,8 +223,31 @@ class Subscan:
             logger.debug("Discarded previous results in Subscan.set_scan_spec()")
 
         self._spec = ScanSpec(axes, generators, options)
-        self._runner.setup(self._fragment, axes, list(self._coordinate_sinks.values()))
+        self._runner_axis_sinks: list[ResultSink] = list(
+            self._coordinate_sinks.values()
+        )
+        if self.expose_in_progress:
+            # Grow the list of axis preview channels on demand, reusing existing ones
+            # across scan spec changes.
+            while len(self._in_progress_axis_channels) < len(axes):
+                # Just use OpaqueChannel to make axis forwarding uniform with channels;
+                # axis metadata is separately forwarded to InProgressWriters anyway.
+                self._in_progress_axis_channels.append(
+                    OpaqueChannel(f"axis_{len(self._in_progress_axis_channels)}")
+                )
+            self._runner_axis_sinks = [
+                MulticastSink([sink, _ChannelSink(channel)])
+                for sink, channel in zip(
+                    self._runner_axis_sinks, self._in_progress_axis_channels
+                )
+            ]
+        self._runner.setup(self._fragment, axes, self._runner_axis_sinks)
         self._regenerate_points()
+        if self._in_progress_writer is not None:
+            self._in_progress_writer.announce_scan_spec(
+                self._describe_in_progress_schema(),
+                self._current_in_progress_channels(),
+            )
 
     def _regenerate_points(self):
         self._runner.set_points(
@@ -154,6 +274,11 @@ class Subscan:
         self._push_schema(analysis_schema)
         coordinates = self._push_coordinates()
         values = self._push_values()
+        if self._in_progress_writer is not None:
+            annotations = analysis_schema.get("annotations", None)
+            self._in_progress_writer.complete(
+                None if annotations is None else dump_json(annotations)
+            )
         return coordinates, values, analysis_results
 
     def _push_schema(self, analysis_schema):
@@ -186,6 +311,42 @@ class Subscan:
             sink.clear()
         return values
 
+    def _make_annotation_context(
+        self, coordinate_sinks: dict[ParamHandle, ArraySink]
+    ) -> AnnotationContext:
+        def get_axis_index(handle):
+            for i, h in enumerate(coordinate_sinks.keys()):
+                if handle._store == h._store:
+                    return i
+            assert False
+
+        return AnnotationContext(
+            get_axis_index,
+            lambda channel: self._short_child_channel_names[channel],
+            lambda channel: channel.path in self._parent_analysis_result_channels,
+        )
+
+    def _current_in_progress_channels(self) -> dict[str, ResultChannel]:
+        channels = dict(self._in_progress_result_channels)
+        for i in range(len(self._spec.axes)):
+            channels[f"axis_{i}"] = self._in_progress_axis_channels[i]
+        return channels
+
+    def _describe_in_progress_schema(self) -> dict[str, Any]:
+        scan_desc = describe_scan(
+            self._spec, self._fragment, self._short_child_channel_names
+        )
+        # Include the data-independent analysis metadata (online fits are re-run by
+        # the displaying applet, so this gives live fits for free); analyses executed
+        # host-side at the end of the scan are handled in InProgressWriter.complete().
+        analyses = filter_default_analyses(self._fragment, self._spec.axes)
+        scan_desc.update(
+            describe_analyses(
+                analyses, self._make_annotation_context(self._coordinate_sinks)
+            )
+        )
+        return scan_desc
+
     def _handle_default_analyses(
         self,
         axes: list[ScanAxis],
@@ -208,17 +369,7 @@ class Subscan:
             chan: sink.get_all() for chan, sink in self._child_result_sinks.items()
         }
 
-        def get_axis_index(handle):
-            for i, h in enumerate(coordinate_sinks.keys()):
-                if handle._store == h._store:
-                    return i
-            assert False
-
-        context = AnnotationContext(
-            get_axis_index,
-            lambda channel: self._short_child_channel_names[channel],
-            lambda channel: channel.path in self._parent_analysis_result_channels,
-        )
+        context = self._make_annotation_context(coordinate_sinks)
         schema = describe_analyses(analyses, context)
         schema["analysis_results"] = {
             name: parent.path
@@ -260,6 +411,7 @@ def setattr_subscan(
     axis_params: list[tuple[Fragment, str]],
     save_results_by_default: bool = True,
     expose_analysis_results: bool = True,
+    expose_in_progress: bool = True,
 ) -> Subscan:
     """Set up a scan for the given subfragment.
 
@@ -287,6 +439,11 @@ def setattr_subscan(
         this, all results must be known when this function is called (that is, all
         ``axis_params`` should actually be scanned, and the analysis must not fail to
         produce results).
+    :param expose_in_progress: Whether to allow whatever runs the enclosing scan
+        (e.g. ``TopLevelRunner``) to also publish the subscan data incrementally –
+        i.e. point by point, while the subscan is still in progress – for instance
+        for live display in a separate applet "off to the side" of the main scan
+        (see :meth:`Subscan.attach_in_progress_writer`).
 
     :return: A :class:`Subscan` instance to use to actually execute the scan.
     """
@@ -304,6 +461,7 @@ def setattr_subscan(
         axis_params,
         save_results_by_default,
         expose_analysis_results,
+        expose_in_progress,
     )
     setattr(owner, scan_name, subscan)
     return subscan
@@ -316,6 +474,7 @@ def setup_subscan(
     axis_params: list[tuple[Fragment, str]],
     save_results_by_default: bool = True,
     expose_analysis_results: bool = True,
+    expose_in_progress: bool = True,
 ) -> Subscan:
     # Override target parameter stores with newly created stores.
     # TODO: Potentially make handles have identity and accept them directly.
@@ -349,9 +508,7 @@ def setup_subscan(
 
     child_result_sinks = {}
     for channel in original_channels.values():
-        sink = ArraySink()
-        channel.set_sink(sink)
-        child_result_sinks[channel] = sink
+        child_result_sinks[channel] = ArraySink()
 
     # … and re-export result channels that the collected data will be pushed to.
     channel_name_map = shorten_to_unambiguous_suffixes(
@@ -359,10 +516,25 @@ def setup_subscan(
     )
     aggregate_result_channels = {}
     short_child_channel_names = {}
+    in_progress_result_channels: dict[str, ResultChannel] = {}
     for full_name, short_name in channel_name_map.items():
         short_identifier = short_name.replace("/", "_")
         channel = original_channels[full_name]
         short_child_channel_names[channel] = short_identifier
+
+        sink: ResultSink = child_result_sinks[channel]
+        if expose_in_progress and channel.save_by_default:
+            # Also mirror the values into a preview channel announced to any
+            # later-attached in-progress writer (only for channels that will appear
+            # in the published schema, see describe_scan()). The values are discarded
+            # unless/until a writer installs a sink on the preview channel.
+            key = "channel_" + short_identifier
+            # Just use OpaqueChannel, as metadata has already been collected and is
+            # forwarded to InProgressWriters anyway.
+            preview_channel = OpaqueChannel(key)
+            in_progress_result_channels[key] = preview_channel
+            sink = MulticastSink([sink, _ChannelSink(preview_channel)])
+        channel.set_sink(sink)
 
         # TODO: Implement ArrayChannel to represent a variable number of dimensions
         # around a scalar channel so we can keep the schema information here instead of
@@ -415,7 +587,7 @@ def setup_subscan(
         # ARTIQ compiler needs a different type for each RunnerInstance.
         pass
 
-    return SubscanInstance(
+    subscan = SubscanInstance(
         runner,
         scanned_fragment,
         axes,
@@ -426,7 +598,16 @@ def setup_subscan(
         short_child_channel_names,
         analyses,
         parent_analysis_result_channels,
+        expose_in_progress,
+        in_progress_result_channels,
     )
+    # Register for discovery by whatever runs the enclosing scan (e.g. for in-progress
+    # previews); pass the scanned fragment explicitly, as it has been detached from
+    # the normal fragment tree recursion.
+    result_target._register_subscan(
+        strip_suffix(name_prefix, "_"), subscan, scanned_fragment
+    )
+    return subscan
 
 
 class SubscanExpFragment(ExpFragment):
@@ -527,6 +708,7 @@ class SubscanExpFragment(ExpFragment):
         axis_params: list[tuple[Fragment, str]],
         save_results_by_default: bool = True,
         expose_analysis_results: bool = True,
+        expose_in_progress: bool = True,
     ) -> None:
         """
         :param scanned_fragment_parent: The fragment that owns the scanned fragment.
@@ -541,6 +723,11 @@ class SubscanExpFragment(ExpFragment):
             for this to work, all results must be known when this function is called
             (that is, all ``axis_params`` should actually be scanned, and any analyses
             must not fail to produce results).
+        :param expose_in_progress: Whether to allow whatever runs the enclosing scan
+            (e.g. ``TopLevelRunner``) to also publish the subscan data incrementally
+            – i.e. point by point, while the subscan is still in progress – for
+            instance for live display in a separate applet "off to the side" of the
+            main scan (see :meth:`Subscan.attach_in_progress_writer`).
         """
         if isinstance(scanned_fragment, str):
             scanned_fragment = getattr(scanned_fragment_parent, scanned_fragment)
@@ -554,6 +741,7 @@ class SubscanExpFragment(ExpFragment):
             axis_params,
             save_results_by_default,
             expose_analysis_results,
+            expose_in_progress,
         )
         if not is_kernel(scanned_fragment.run_once):
             self.run_once = self._subscan.acquire

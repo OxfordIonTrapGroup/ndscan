@@ -24,6 +24,10 @@ class SubscriberRoot(Root):
         ``"ndscan."`` for the default location.
     """
 
+    #: Metadata datasets that define the identity/schema of the displayed scan; if any
+    #: of them change, the model needs to be rebuilt from scratch.
+    _SCHEMA_KEYS = ("axes", "channels", "online_analyses")
+
     def __init__(self, prefix: str, context: Context):
         super().__init__()
 
@@ -31,11 +35,13 @@ class SubscriberRoot(Root):
         self._context = context
         self._model = None
 
-        # For root dataset sources, scan metadata doesn't change once it's been set.
-        self._schema_revision = None
         self._title = f"{prefix} <synchronising>"
         self._source_id_set = False
-        self._axes_initialised = False
+        # Cached metadata JSON strings, to detect when the scan published under the
+        # given prefix has been replaced by one with a different schema (e.g. for
+        # in-progress subscan roots, which are rewritten while the enclosing scan
+        # executes) and the model needs to be rebuilt.
+        self._schema_json = {}
 
     def data_changed(
         self, values: dict[str, Any], mods: Iterable[dict[str, Any]]
@@ -59,10 +65,28 @@ class SubscriberRoot(Root):
                 self._context.set_source_id(source_id)
                 self._source_id_set = True
 
-        if not self._axes_initialised:
-            axes_json = d("axes")
+        # Check whether any of the schema metadata changed (compared to what the
+        # current model was built from); initial arrival of a dataset (e.g. "channels"
+        # only being written after the model was already created from "axes") is not a
+        # change. Writers emit "axes" last, so the rebuild triggered by a change to it
+        # is guaranteed to see a consistent set of metadata; changes to the other keys
+        # can still cause transient rebuilds against a stale "axes" value if a write
+        # burst is observed in parts, but those converge once the "axes" change (if
+        # any) arrives.
+        schema_changed = False
+        for key in self._SCHEMA_KEYS:
+            value = d(key)
+            if value is not None and value != self._schema_json.get(key, None):
+                if self._schema_json.get(key, None) is not None:
+                    schema_changed = True
+                self._schema_json[key] = value
+
+        if self._model is None or schema_changed:
+            axes_json = self._schema_json.get("axes", None)
             if not axes_json:
                 return
+            if self._model is not None:
+                self._model.quit()
             axes = json.loads(axes_json)
 
             dim = len(axes)
@@ -75,7 +99,6 @@ class SubscriberRoot(Root):
                     axes, self._prefix, schema_revision, self._context
                 )
 
-            self._axes_initialised = True
             self.model_changed.emit(self._model)
 
         self._model.data_changed(values, mods)
@@ -95,6 +118,7 @@ class SubscriberSinglePointModel(SinglePointModel):
         self._channel_schemata = None
         self._current_point = None
         self._next_point = {}
+        self._synced = False
 
     def get_channel_schemata(self) -> dict[str, Any] | None:
         return self._channel_schemata
@@ -120,6 +144,21 @@ class SubscriberSinglePointModel(SinglePointModel):
                     continue
                 self._next_point[name] = value
             mods.pop(0)
+        elif not self._synced:
+            # The model was created while the source datasets already existed (e.g.
+            # after the metadata under the subscribed prefix changed and the model was
+            # rebuilt), so there is no init mod to observe; pick up any
+            # already-published point data directly from the current values. Ignore
+            # channels that are not part of the current schema, as those can only be
+            # left over from a scan previously published under the same prefix.
+            channels_json = values.get(self._prefix + "channels")
+            current_channels = json.loads(channels_json) if channels_json else {}
+            for key, value in values.items():
+                name = strip_prefix(key, self._prefix + "point.")
+                if name == key or name not in current_channels:
+                    continue
+                self._next_point[name] = value
+        self._synced = True
 
         if not self._series_initialised:
             channels_json = values.get(self._prefix + "channels")
@@ -212,21 +251,43 @@ class SubscriberScanModel(ScanModel):
         for name, source in self._analysis_result_sources.items():
             source.set(values.get(self._prefix + "analysis_result." + name))
 
+        # Check whether points were appended, or rewritten from scratch (e.g. by an
+        # in-progress subscan publisher, where the arrays start over for every new
+        # point of the enclosing scan – note that an array getting shorter is the only
+        # reliable signal for this, as the point values themselves may well repeat
+        # between iterations).
         point_data_changed = False
+        point_data_grew = False
         for name in [f"axis_{i}" for i in range(len(self.axes))] + [
             "channel_" + c for c in self._channel_schemata.keys()
         ]:
             point_values = values.get(self._prefix + "points." + name, [])
-            if not point_data_changed:
-                # Check if points were appended or rewritten.
-                if name in self._point_data:
-                    imax = min(len(point_values), len(self._point_data[name]))
-                    if point_values[:imax] != self._point_data[name][:imax]:
-                        point_data_changed = True
-            self._point_data[name] = point_values
+            old_values = self._point_data.get(name, None)
+            if old_values is None:
+                # First time this model sees the array. Whatever is already published
+                # predates it (the model was rebuilt for a changed schema, or the
+                # applet attached to a scan already in progress), so treat it as a
+                # rewrite rather than an append: it is not incremental data, and
+                # consumers need to reset any state accumulated for a previous scan.
+                point_data_changed |= len(point_values) > 0
+            elif (
+                len(point_values) < len(old_values)
+                or point_values[: len(old_values)] != old_values
+            ):
+                point_data_changed = True
+            else:
+                point_data_grew |= len(point_values) > len(old_values)
+            # Store a copy rather than the list from `values`: sipyco applies append
+            # mods in place (ModAction.append), so that object is the very same one
+            # cached here on the previous update, and comparing it against itself
+            # would never show any of the appended points.
+            self._point_data[name] = list(point_values)
         if point_data_changed:
             self.points_rewritten.emit(self._point_data)
-        else:
+        elif point_data_grew:
+            # Only emit points_appended when there is actually new data, as e.g.
+            # unrelated dataset updates below the subscribed prefix also end up here,
+            # and consumers such as online analyses trigger work on every emission.
             self.points_appended.emit(self._point_data)
 
     def get_annotations(self) -> list[Annotation]:

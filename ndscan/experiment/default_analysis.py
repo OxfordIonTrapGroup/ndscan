@@ -398,6 +398,11 @@ class OnlineFit(DefaultAnalysis):
             )
         except FitError:
             logger.warning("Fit failed for fit type '%s'", self.fit_type, exc_info=True)
+            # Still push a value (NaN) to all the result channels, such that
+            # downstream consumers (e.g. per-point dataset writers for the results
+            # exposed to an enclosing scan) are not left with missing/None values.
+            for channel in self._result_channels.values():
+                channel.push(float("nan"))
             return []
 
         weights = 1 / (np.asarray(y_err) ** 2) if y_err is not None else np.ones_like(y)

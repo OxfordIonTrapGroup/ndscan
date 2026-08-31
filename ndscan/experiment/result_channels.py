@@ -2,6 +2,7 @@
 Result handling building blocks.
 """
 
+from collections.abc import Iterable
 from typing import Any
 
 import artiq.language.units
@@ -14,6 +15,7 @@ __all__ = [
     "SingleUseSink",
     "LastValueSink",
     "ArraySink",
+    "MulticastSink",
     "AppendingDatasetSink",
     "ScalarDatasetSink",
     "ResultChannel",
@@ -143,6 +145,20 @@ class ArraySink(ResultSink):
         self.data = []
 
 
+class MulticastSink(ResultSink):
+    """Sink that forwards each pushed value to a number of other sinks."""
+
+    def __init__(self, sinks: Iterable[ResultSink]):
+        """
+        :param sinks: The sinks to forward pushed values to, in order.
+        """
+        self.sinks = list(sinks)
+
+    def push(self, value: Any) -> None:
+        for sink in self.sinks:
+            sink.push(value)
+
+
 class AppendingDatasetSink(ResultSink, HasEnvironment):
     def build(self, key: str, broadcast: bool = True) -> None:
         """
@@ -169,6 +185,16 @@ class AppendingDatasetSink(ResultSink, HasEnvironment):
     def get_all(self) -> list[Any]:
         """Read back the previously pushed values from the target dataset (if any)."""
         return [] if (self.last_value is None) else self.get_dataset(self.key)
+
+    def clear(self) -> None:
+        """Forget all previously pushed values; the next :meth:`push` will overwrite
+        the target dataset with a new single-element array (rather than appending), and
+        :meth:`get_all` returns an empty list until then.
+
+        The dataset itself is left untouched until the next push, so any existing
+        contents remain visible to observers in the meantime.
+        """
+        self.last_value = None
 
 
 class ScalarDatasetSink(ResultSink, HasEnvironment):

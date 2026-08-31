@@ -32,8 +32,6 @@ from artiq.language import (
 
 from ..utils import (
     PARAMS_ARG_KEY,
-    SCHEMA_REVISION,
-    SCHEMA_REVISION_KEY,
     NoAxesMode,
     merge_no_duplicates,
     shorten_to_unambiguous_suffixes,
@@ -51,6 +49,7 @@ from .result_channels import (
     AppendingDatasetSink,
     LastValueSink,
     ResultChannel,
+    ResultSink,
     ScalarDatasetSink,
 )
 from .scan_generator import GENERATORS, INT_GENERATORS, ScanGenerator, ScanOptions
@@ -63,7 +62,14 @@ from .scan_runner import (
     filter_default_analyses,
     select_runner_class,
 )
-from .utils import dump_json, is_kernel, to_metadata_broadcast_type
+from .subscan import InProgressWriter
+from .utils import (
+    broadcast_scan_metadata,
+    dump_json,
+    is_kernel,
+    issue_create_applet_ccb,
+    to_metadata_broadcast_value,
+)
 
 __all__ = [
     "ArgumentInterface",
@@ -310,6 +316,168 @@ class ArgumentInterface(HasEnvironment):
         return spec, no_axes_mode, skip_on_persistent_transitory_error
 
 
+class _InProgressPointSink(ResultSink):
+    """Forwards pushed per-point values to the parent
+    :class:`_InProgressDatasetWriter`; installed by the writer on the preview result
+    channels announced by the subscan.
+
+    This is a lightweight adapter (see
+    :meth:`_InProgressDatasetWriter._push_point`); the actual dataset sinks are owned
+    by the writer, so they survive repeated scan spec changes.
+    """
+
+    def __init__(self, writer: "_InProgressDatasetWriter", key_suffix: str):
+        self._writer = writer
+        self._key_suffix = key_suffix
+
+    def push(self, value: Any) -> None:
+        self._writer._push_point(self._key_suffix, value)
+
+
+class _InProgressDatasetWriter(HasEnvironment, InProgressWriter):
+    """Incrementally publishes subscan data to datasets in the schema used for
+    top-level scans (under a separate dataset root), such that in-progress subscans
+    can be displayed live in a separate applet (see
+    :meth:`.Subscan.attach_in_progress_writer`).
+
+    The datasets are overwritten every time the subscan runs anew (i.e. at every new
+    point of whatever the enclosing scan is), with the data from the previous run
+    left visible until the first point of the next one arrives.
+    """
+
+    def build(self, prefix: str, source_id: str):
+        """
+        :param prefix: The dataset root to publish to (including any trailing dot).
+        :param source_id: Source id to publish (matching the enclosing scan).
+        """
+        self.prefix = prefix
+        self._source_id = source_id
+        # Dataset sinks by key suffix (e.g. "points.channel_result"), created on
+        # demand and kept across subscan runs/spec changes.
+        self._point_sinks: dict[str, AppendingDatasetSink] = {}
+        self._enabled_for_spec = False
+        self._warned_no_axes = False
+        self._pending_restart = False
+        self._last_scan_identity_json = None
+        self._base_annotations_json = None
+        self._current_annotations_json = None
+
+    def announce_scan_spec(
+        self,
+        scan_desc: dict[str, Any],
+        point_channels: dict[str, ResultChannel],
+    ) -> None:
+        """"""
+        # Take ownership of the preview channels even if we end up not publishing
+        # anything for this spec, as they are long-lived and might still carry the
+        # sinks of a previously attached writer (which would otherwise keep receiving
+        # this subscan's data and write it to its own, stale dataset root).
+        for key_suffix, channel in point_channels.items():
+            channel.set_sink(_InProgressPointSink(self, "points." + key_suffix))
+
+        self._enabled_for_spec = len(scan_desc["axes"]) > 0
+        if not self._enabled_for_spec:
+            if not self._warned_no_axes:
+                self._warned_no_axes = True
+                logger.warning(
+                    "In-progress publishing not supported for zero-axis subscans; "
+                    "no data will be published to '%s' while such a scan spec is "
+                    "configured (this warning is only emitted once)",
+                    self.prefix,
+                )
+            return
+
+        for sink in self._point_sinks.values():
+            sink.clear()
+
+        # The seed is (by default) randomised anew for each ScanOptions instance, so
+        # exclude it when checking whether the spec actually changed.
+        scan_identity_json = dump_json(
+            {k: v for k, v in scan_desc.items() if k != "seed"}
+        )
+        if scan_identity_json == self._last_scan_identity_json:
+            # The spec did not actually change (e.g. Subscan.run() re-configures the
+            # scan for every point of the enclosing scan); just have the next point
+            # push reset the completed flag/annotations, such that – as for repeated
+            # acquire() calls with an unchanged spec – the previous run remains
+            # visible in its final state until the new data starts to arrive.
+            if "seed" in scan_desc:
+                self._push_metadata("seed", scan_desc["seed"])
+            self._pending_restart = True
+            return
+        self._last_scan_identity_json = scan_identity_json
+
+        # The spec changed: blank out data for any axes/channels not part of the new
+        # spec, as it would never be overwritten by the new pushes and thus linger
+        # indefinitely (e.g. into the archived HDF5 file).
+        #
+        # FIXME: The metadata for the new spec is published right away, while the
+        # point data for the axes/channels that remain is deliberately left in place
+        # until the first point of the new run arrives (see
+        # test_overwrite_between_iterations). Subscribers thus briefly display the
+        # previous run against the new metadata; deferring the metadata push to the
+        # first point (as the unchanged-spec path does via _pending_restart) would
+        # make the transition atomic.
+        current_keys = {"points." + key_suffix for key_suffix in point_channels.keys()}
+        for key_suffix in list(self._point_sinks.keys()):
+            if key_suffix not in current_keys:
+                del self._point_sinks[key_suffix]
+                self.set_dataset(self.prefix + key_suffix, [], broadcast=True)
+
+        self._pending_restart = False
+        self._base_annotations_json = dump_json(scan_desc.get("annotations", []))
+        self._current_annotations_json = self._base_annotations_json
+
+        broadcast_scan_metadata(self._push_metadata, self._source_id, scan_desc)
+
+    def complete(self, annotations_json: str | None = None) -> None:
+        """"""
+        if not self._enabled_for_spec:
+            return
+        self._push_metadata("completed", True)
+        if annotations_json is not None and (
+            annotations_json != self._current_annotations_json
+        ):
+            self._push_metadata("annotations", annotations_json)
+            self._current_annotations_json = annotations_json
+        for sink in self._point_sinks.values():
+            sink.clear()
+        self._pending_restart = True
+
+    def _push_point(self, key_suffix: str, value: Any) -> None:
+        if not self._enabled_for_spec:
+            return
+        self._before_point_push()
+        sink = self._point_sinks.get(key_suffix, None)
+        if sink is None:
+            sink = AppendingDatasetSink(self, self.prefix + key_suffix)
+            self._point_sinks[key_suffix] = sink
+        sink.push(value)
+
+    def _before_point_push(self) -> None:
+        # On the first point of a new subscan run (after complete()), reset the
+        # completed flag/annotations just before the point datasets are overwritten,
+        # such that the previous run remained visible in its final state up to this
+        # point.
+        if not self._pending_restart:
+            return
+        self._pending_restart = False
+        self._push_metadata("completed", False)
+        if self._current_annotations_json != self._base_annotations_json:
+            self._push_metadata("annotations", self._base_annotations_json)
+            self._current_annotations_json = self._base_annotations_json
+
+    def _push_metadata(self, name: str, value: Any) -> None:
+        # Flatten just like broadcast_scan_metadata() does, such that a given key
+        # always holds the same representation (e.g. the seed, which is re-pushed on
+        # its own when the spec is otherwise unchanged). Flattening is idempotent, so
+        # it does not matter that broadcast_scan_metadata() already applies it to the
+        # values it pushes through here.
+        self.set_dataset(
+            self.prefix + name, to_metadata_broadcast_value(value), broadcast=True
+        )
+
+
 class TopLevelRunner(HasEnvironment):
     def build(
         self,
@@ -320,6 +488,7 @@ class TopLevelRunner(HasEnvironment):
         max_transitory_error_retries: int = 10,
         dataset_prefix: str | None = None,
         skip_on_persistent_transitory_error: bool = False,
+        publish_subscan_previews: bool = True,
     ):
         self.fragment = fragment
         self.spec = spec
@@ -406,11 +575,39 @@ class TopLevelRunner(HasEnvironment):
 
         self._coordinate_sinks = None
 
+        # Discover subscans in the fragment tree (including nested ones) to publish
+        # in-progress previews for; the writers are attached in run().
+        self._subscan_previews = {}
+        self._subscan_preview_writers_attached = False
+        if publish_subscan_previews:
+            subscans = {}
+            self.fragment._collect_subscans(subscans)
+            self._subscan_previews = {
+                name: subscan
+                for name, subscan in subscans.items()
+                if subscan.expose_in_progress
+            }
+
         self.fragment.prepare()
+
+    def _subscan_preview_prefix(self, name: str) -> str:
+        return f"{self.dataset_prefix}previews.{name}."
 
     def run(self):
         """Run the (possibly trivial) scan."""
+        source_prefix = self.get_dataset("system_id", default="rid")
+        self._source_id = f"{source_prefix}_{self.scheduler.rid}"
+
         self._broadcast_metadata()
+
+        if not self._subscan_preview_writers_attached:
+            self._subscan_preview_writers_attached = True
+            for name, subscan in self._subscan_previews.items():
+                subscan.attach_in_progress_writer(
+                    _InProgressDatasetWriter(
+                        self, self._subscan_preview_prefix(name), self._source_id
+                    )
+                )
 
         if not self.spec.axes or self._is_time_series:
             timestamp_sink = None
@@ -491,16 +688,6 @@ class TopLevelRunner(HasEnvironment):
         self.set_dataset(self.dataset_prefix + "completed", True, broadcast=True)
 
     def _broadcast_metadata(self):
-        def push(name, value):
-            self.set_dataset(self.dataset_prefix + name, value, broadcast=True)
-
-        push(SCHEMA_REVISION_KEY, SCHEMA_REVISION)
-
-        source_prefix = self.get_dataset("system_id", default="rid")
-        push("source_id", f"{source_prefix}_{self.scheduler.rid}")
-
-        push("completed", False)
-
         self._scan_desc = describe_scan(
             self.spec, self.fragment, self._short_child_channel_names
         )
@@ -511,24 +698,23 @@ class TopLevelRunner(HasEnvironment):
             name: channel.describe() for name, channel in self._analysis_results.items()
         }
 
-        for name, value in self._scan_desc.items():
-            # Flatten arrays/dictionaries to JSON strings for HDF5 compatibility.
-            ds_value = to_metadata_broadcast_type(value)
-            if ds_value is None:
-                push(name, dump_json(value))
-            else:
-                push(name, ds_value)
+        broadcast_scan_metadata(
+            lambda name, value: self.set_dataset(
+                self.dataset_prefix + name, value, broadcast=True
+            ),
+            self._source_id,
+            self._scan_desc,
+        )
 
-    def create_applet(self, title: str, group: str = "ndscan"):
-        cmd = [
-            "${python}",
-            "-m ndscan.applet",
-            "--server=${server}",
-            "--port-notify=${port_notify}",
-            "--port-control=${port_control}",
-            f"--prefix={self.dataset_prefix}",
-        ]
-        self.ccb.issue("create_applet", title, " ".join(cmd), group=group)
+    def create_applet(self, title: str, group: str | list[str] = "ndscan"):
+        issue_create_applet_ccb(self.ccb, title, self.dataset_prefix, group=group)
+        for name in self._subscan_previews.keys():
+            issue_create_applet_ccb(
+                self.ccb,
+                f"{title}: subscan '{name}'",
+                self._subscan_preview_prefix(name),
+                group=([group] if isinstance(group, str) else group) + ["previews"],
+            )
 
 
 def _shorten_result_channel_names(full_names: Iterable[str]) -> dict[str, str]:
