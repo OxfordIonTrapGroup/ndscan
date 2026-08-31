@@ -607,6 +607,7 @@ class _NoAxisRunner(HasEnvironment):
                     self.num_current_transitory_errors = 0
                     self.num_current_underflows = 0
                 except RTIOUnderflow:
+                    self._discard_point()
                     self.num_current_underflows += 1
                     if self.num_current_underflows > self.max_rtio_underflow_retries:
                         raise
@@ -618,6 +619,7 @@ class _NoAxisRunner(HasEnvironment):
                         ")",
                     )
                 except RestartKernelTransitoryError:
+                    self._discard_point()
                     self.num_current_transitory_errors += 1
                     if (
                         self.num_current_transitory_errors
@@ -633,6 +635,7 @@ class _NoAxisRunner(HasEnvironment):
                     )
                     return False
                 except TransitoryError:
+                    self._discard_point()
                     self.num_current_transitory_errors += 1
                     if (
                         self.num_current_transitory_errors
@@ -662,6 +665,10 @@ class _NoAxisRunner(HasEnvironment):
     def _remove_result_batcher(self):
         self._result_batcher.remove()
         self._result_batcher = None
+
+    @rpc(flags={"async"})
+    def _discard_point(self):
+        self._result_batcher.discard_current()
 
     @rpc(flags={"async"})
     def _finish_point(self):
