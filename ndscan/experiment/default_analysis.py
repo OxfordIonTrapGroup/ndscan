@@ -274,6 +274,9 @@ class OnlineFit(DefaultAnalysis):
         self._result_channels = {}
         self._channel_prefix = f"{fit_type}_fit_"
 
+        if analysis_identifier is not None:
+            self._channel_prefix = f"{analysis_identifier}_{self._channel_prefix}"
+
         if self._save_fit_results:
             for param in params:
                 self._result_channels[f"{self._channel_prefix}{param}"] = OpaqueChannel(
