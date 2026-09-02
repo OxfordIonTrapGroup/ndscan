@@ -10,6 +10,7 @@ from fixtures import (
     DoublePushFragment,
     MultiPointTransitoryErrorFragment,
     MultiReboundAddOneFragment,
+    PartialResultTransitoryErrorFragment,
     ReadParamDefault,
     ReboundAddOneFragment,
     RequestTerminationFragment,
@@ -108,7 +109,9 @@ class FragmentScanExpCase(HasEnvironmentCase):
         # whether counters are correctly reset between points in time series scan.
         exp = self.create(
             make_fragment_scan_exp(
-                MultiPointTransitoryErrorFragment, 3, max_transitory_error_retries=3
+                MultiPointTransitoryErrorFragment,
+                num_device_setup_to_fail=3,
+                max_transitory_error_retries=3,
             )
         )
         exp.args._params["scan"]["no_axes_mode"] = "time_series"
@@ -137,7 +140,9 @@ class FragmentScanExpCase(HasEnvironmentCase):
     def test_time_series_transitory_limit(self):
         exp = self.create(
             make_fragment_scan_exp(
-                MultiPointTransitoryErrorFragment, 3, max_transitory_error_retries=2
+                MultiPointTransitoryErrorFragment,
+                num_device_setup_to_fail=3,
+                max_transitory_error_retries=2,
             )
         )
         exp.args._params["scan"]["no_axes_mode"] = "time_series"
@@ -148,6 +153,53 @@ class FragmentScanExpCase(HasEnvironmentCase):
         exp.prepare()
         with self.assertRaises(TransitoryError):
             exp.run()
+
+    def test_single_point_partial_result_discarded(self):
+        # run_once() pushes to partial_result before raising the transitory errors, so
+        # those partial results need to be discarded for the retries to be able to push
+        # again.
+        exp = self.create(
+            make_fragment_scan_exp(
+                PartialResultTransitoryErrorFragment,
+                num_run_once_to_fail=2,
+                max_transitory_error_retries=3,
+            )
+        )
+
+        exp.prepare()
+        exp.run()
+
+        def d(key):
+            return self.dataset_db.get("ndscan.rid_0." + key)
+
+        self.assertEqual(d("point.result"), 42)
+        self.assertEqual(d("point.partial_result"), 42)
+
+    def test_time_series_partial_result_discarded(self):
+        # As above, but for a time series scan, where discarding the partial results is
+        # what keeps the per-channel dataset arrays aligned with each other.
+        exp = self.create(
+            make_fragment_scan_exp(
+                PartialResultTransitoryErrorFragment,
+                num_run_once_to_fail=1,
+                fail_at_point=lambda point_idx: point_idx == 1,
+                max_transitory_error_retries=3,
+            )
+        )
+        exp.args._params["scan"]["no_axes_mode"] = "time_series"
+
+        # Three points, the second of which takes two attempts.
+        self.scheduler.num_check_pause_calls_until_termination = 5
+
+        exp.prepare()
+        exp.run()
+
+        def d(key):
+            return self.dataset_db.get("ndscan.rid_0." + key)
+
+        self.assertEqual(d("points.channel_result"), [42, 42, 42])
+        self.assertEqual(d("points.channel_partial_result"), [42, 42, 42])
+        self.assertEqual(len(d("points.axis_0")), 3)
 
     def test_run_1d_scan(self):
         fragment_fqn = "fixtures.AddOneFragment"

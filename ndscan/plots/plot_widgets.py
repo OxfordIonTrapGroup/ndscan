@@ -20,6 +20,99 @@ from .time_slider import TimeSlider, TimeSliderContainer
 logger = logging.getLogger(__name__)
 
 
+class LineWrappedAxisItem(pyqtgraph.AxisItem):
+    """AxisItem for y axes that line-wraps the label text to fit the pane height, and
+    emits an event if the width required to draw ticks/labels without overlap changes.
+
+    By default, pyqtgraph renders axis labels on a single line, which for verbose
+    channel descriptions easily exceeds the height of a pane (particularly with multiple
+    panes and small plot window sizes).
+
+    Terminology note: This is used for vertical (y) axes, where the label text is drawn
+    vertically, such that the self.label bounding box coordinate system is rotated by
+    90 degrees (width/height swapped).
+    """
+
+    #: Emitted whenever the horizontal space needed to show tick values and label side
+    #: by side might have changed (either due to the tick labels responding to the plot
+    #: being zoomed, or due to the text being re-wrapped).
+    min_width_changed = QtCore.pyqtSignal()
+
+    def __init__(self, orientation: str):
+        super().__init__(orientation)
+
+        # Centre the label text along the axis. This matches the stock positioning for
+        # labels of a single line (column), but also looks tidier than the default
+        # left-alignment for the last line of wrapped label text.
+        option = self.label.document().defaultTextOption()
+        option.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
+        self.label.document().setDefaultTextOption(option)
+
+        # Width updates cannot be applied while the layout is being resized (or the
+        # axis painted); coalesce them into a deferred update instead.
+        self._width_single_shot = QtCore.QTimer(self)
+        self._width_single_shot.setSingleShot(True)
+        self._width_single_shot.setInterval(0)
+        self._width_single_shot.timeout.connect(self._updateWidth)
+
+    def resizeEvent(self, ev=None):
+        # Guard against resize events being dispatched after close() (not sure if
+        # necessary).
+        if self.label is None:
+            super().resizeEvent(ev)
+            return
+
+        # Wrap the label text to fit the available height.
+        height = self.size().height()
+        if height > 0 and self.label.textWidth() != height:
+            old_thickness = self.label.boundingRect().height()
+            self.label.setTextWidth(height)
+            if self.label.boundingRect().height() != old_thickness:
+                self.min_width_changed.emit()
+                if self.fixedWidth is None:
+                    self._width_single_shot.start()
+        super().resizeEvent(ev)
+
+    def _updateMaxTextSize(self, x):
+        old_text_width = self.textWidth
+        super()._updateMaxTextSize(x)
+        if self.textWidth != old_text_width:
+            self.min_width_changed.emit()
+
+    def min_width(self) -> float:
+        """Return the width required to show tick values and the label side by side
+        without overlapping.
+        """
+        # KLUDGE: Copy/paste from pyqtgraph.AxisItem._updateWidth; the calculation is
+        # not exposed separately.
+        if not self.style["showValues"]:
+            w = 0
+        elif self.style["autoExpandTextSpace"]:
+            w = self.textWidth
+        else:
+            w = self.style["tickTextWidth"]
+        w += self.style["tickTextOffset"][0] if self.style["showValues"] else 0
+        w += max(0, self.style["tickLength"])
+        if self.label.isVisible():
+            # The pyqtgraph sources had a 0.8× fudge factor here, commenting on the
+            # bounding rectangle being "usually an overestimate", but this isn't
+            # appropriate for multi-line labels anymore (and should be implemented
+            # better upstream).
+            w += self.label.boundingRect().height()
+        return w
+
+    def _updateWidth(self):
+        # Handle the path depending on min_width() ourselves to ensure the
+        # implementations stay in sync.
+        if not self.isVisible() or self.fixedWidth is not None:
+            super()._updateWidth()
+            return
+        w = self.min_width()
+        self.setMaximumWidth(w)
+        self.setMinimumWidth(w)
+        self.picture = None
+
+
 class MultiYAxisPlotItem(pyqtgraph.PlotItem):
     """Wraps PlotItem with the ability to create multiple y axes linked to the same x
     axis.
@@ -28,7 +121,16 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            axisItems={
+                "left": LineWrappedAxisItem("left"),
+                "right": LineWrappedAxisItem("right"),
+            }
+        )
+        # Passing an explicit right axis item causes PlotItem to show it by default;
+        # restore the stock behaviour of only showing it once actually used (see
+        # new_y_axis()).
+        self.hideAxis("right")
         self._num_y_axes = 0
         self._additional_view_boxes = []
         self._additional_right_axes = []
@@ -53,7 +155,7 @@ class MultiYAxisPlotItem(pyqtgraph.PlotItem):
             self.showAxis("right")
             axis = self.getAxis("right")
         else:
-            axis = pyqtgraph.AxisItem("right")
+            axis = LineWrappedAxisItem("right")
             # FIXME: Z value setting is cargo-culted in from the pyqtgraph example –
             # what should the correct value be?
             axis.setZValue(-10000)
@@ -113,14 +215,26 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
 
     def __init__(self):
         super().__init__()
+
         self.layout: QtGui.QGraphicsGridLayout = self.ci.layout
         self.layout.setContentsMargins(3, 3, 3, 3)
         self.layout.setVerticalSpacing(3)
         self.panes = list[MultiYAxisPlotItem]()
 
+        #: Proxy widget for the time slider, if any (see add_time_slider()).
+        #: Kept in a layout row below the last pane.
+        self._time_slider_proxy: QtWidgets.QGraphicsProxyWidget | None = None
+
         self.copy_shortcut = QtGui.QShortcut(QtGui.QKeySequence.StandardKey.Copy, self)
         self.copy_shortcut.activated.connect(self.copy_to_clipboard)
         self._flash_overlay = None
+
+        #: Coalesces per-axis width change notifications (potentially many during
+        #: relayout) into a single deferred update (see link_x_axes()).
+        self._y_axis_widths_single_shot = QtCore.QTimer(self)
+        self._y_axis_widths_single_shot.setSingleShot(True)
+        self._y_axis_widths_single_shot.setInterval(0)
+        self._y_axis_widths_single_shot.timeout.connect(self._update_y_axis_widths)
 
         # We don't need any scroll gestures, etc., and this avoids "qt.pointer.dispatch:
         # skipping QEventPoint(…) : no target window" stderr spam on macOS from within
@@ -129,11 +243,31 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
             QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False
         )
 
+        # KLUDGE: Disable the BSP tree to work around a memory corruption issue/segfault
+        # triggered by _y_axis_widths_single_shot/_update_y_axis_widths() in combination
+        # with a scene rebuild (e.g. due to the schema being rewritten). Presumably,
+        # there is a subtle lifetime issue, where a re-layout triggers a deferred (?)
+        # BSP tree update which then refers to scene items already destroyed by the GC.
+        # I (DPN) could not figure out whether this is an issue in pyqtgraph, PyQt, or
+        # Qt itself (observed using pyqtgraph 0.13.7 and PyQt 6.9.1 on
+        # Python 3.12.10/macOS 15.7.4).
+        #
+        # We typically only have ~100 graphics items anyway (e.g. ScatterPlotItem just
+        # counts as one), so this should not be a performance issue.
+        self.scene().setItemIndexMethod(
+            QtWidgets.QGraphicsScene.ItemIndexMethod.NoIndex
+        )
+
     def add_pane(self) -> MultiYAxisPlotItem:
         """Extend layout vertically by one :class:`.MultiYAxisPlotItem`."""
         plot = MultiYAxisPlotItem()
         if self.panes:
             self.nextRow()
+
+        # The time slider, if any, occupies the row the new pane is destined for, so
+        # move it out of the way first and re-attach it below.
+        self._detach_time_slider()
+
         self.addItem(plot)
         self.panes.append(plot)
 
@@ -150,6 +284,8 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         # again.
         self.layout.setRowPreferredHeight(len(self.panes) - 1, 10000)
 
+        self._attach_time_slider()
+
         return plot
 
     def link_x_axes(self) -> None:
@@ -158,31 +294,95 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         Call after all panes have been added.
         """
         if len(self.panes) < 2:
-            # Nothing to link; just leave everything to the default pyqtgraph layout,
-            # which has better (responsive) y-axis width scaling.
+            # Nothing to link; avoid complexity and leave everything to the default
+            # pyqtgraph layout.
             return
 
-        # Ensure left spines of all panes are aligned by forcing the y axes to the same
-        # width.
-        # FIXME: This should be dynamic (e.g. if the number of tick digits changes).
-        max_axis_width = max(p.getAxis("left").width() for p in self.panes)
         for pane in self.panes:
-            pane.getAxis("left").setWidth(max_axis_width)
+            # Ensure left spines of all panes are aligned by forcing the y axes to the
+            # same width. The required width changes depending on the label line
+            # wrapping and the width of the tick labels (numbers).
+            pane.getAxis("left").min_width_changed.connect(
+                self._y_axis_widths_single_shot.start
+            )
 
             # With more than one stacked plot with grids, having a complete border
             # instead of drawing only the axes looks nicer.
             pane.show_border()
 
-            if pane is not self.panes[-1]:
-                pane.setXLink(self.panes[-1])
-                # We can't completely hide the bottom axis, as the vertical grid lines
-                # are also part of it.
-                pane.getAxis("bottom").setStyle(showValues=False)
+        # Link x axes, hiding the tick value labels of all but the bottom pane.
+        for pane in self.panes[:-1]:
+            pane.setXLink(self.panes[-1])
+            # We can't completely hide the bottom axis, as the vertical grid lines
+            # are also part of it.
+            pane.getAxis("bottom").setStyle(showValues=False)
+
+        self._update_y_axis_widths()
+
+    def _update_y_axis_widths(self) -> None:
+        """Set all the left y axes to the same, sufficient width to keep the pane view
+        boxes horizontally aligned (see :meth:`link_x_axes`)."""
+        if len(self.panes) < 2:
+            # Either axes were never linked (single pane, where the width is left to
+            # the default pyqtgraph auto-sizing), or the panes have since been cleared
+            # (with a width update still queued).
+            return
+        width = max(pane.getAxis("left").min_width() for pane in self.panes)
+        for pane in self.panes:
+            pane.getAxis("left").setWidth(width)
 
     def clear_panes(self):
+        for idx in range(len(self.panes)):
+            # Make sure not to leave any preferred heights behind from the workaround in
+            # add_pane(), as rows previously occupied by a pane might later be occupied
+            # e.g. by the time slider, which would reserve too much
+            self.layout.setRowPreferredHeight(idx, 0)
         for pane in self.panes:
             pane.reset_y_axes()
         self.panes.clear()
+
+    def add_time_slider(self, model: HistoryFromScanModel) -> TimeSlider:
+        """Add a :class:`.TimeSliderContainer` in the row below the panes to allow
+        scrubbing over the point acquisition history described by ``model``.
+
+        The slider row stays anchored directly below the last pane across any later
+        :meth:`add_pane`/:meth:`clear_panes` calls.
+        """
+        container = TimeSliderContainer()
+        time_slider = container.slider
+        time_slider.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+
+        self._time_slider_proxy = self.scene().addWidget(container)
+        self._attach_time_slider()
+
+        time_slider.update_points(model.get_point_data())
+        time_slider.cutoff_changed.connect(model.update_cutoff)
+
+        model.parent.points_appended.connect(time_slider.update_points)
+        model.parent.points_rewritten.connect(time_slider.update_points)
+
+        return time_slider
+
+    def _attach_time_slider(self):
+        """Add the time slider to self.layout (if created with add_time_slider())."""
+        if self._time_slider_proxy is None:
+            return
+        self.layout.addItem(
+            self._time_slider_proxy,
+            len(self.panes),
+            0,
+            QtCore.Qt.AlignmentFlag.AlignBaseline
+            | QtCore.Qt.AlignmentFlag.AlignJustify,
+        )
+
+    def _detach_time_slider(self):
+        """Remove the time slider from self.layout (if created with add_time_slider()."""
+        if self._time_slider_proxy is None:
+            return
+        self.layout.removeItem(self._time_slider_proxy)
 
     def copy_to_clipboard(self):
         if self._flash_overlay is not None:
@@ -489,39 +689,6 @@ class SliceableMenuPanesWidget(SubplotMenuPanesWidget):
         # which in causes the dock to be removed.
         self.slice_plots[name].close()
         self.setFocus()
-
-
-def add_time_slider(
-    layout: QtWidgets.QGraphicsLayout,
-    scene: QtWidgets.QGraphicsScene,
-    model: HistoryFromScanModel,
-) -> TimeSlider:
-    """
-    Add a `TimeSliderContainer` at the bottom of the `layout` provided to allow
-    scrubbing over point acquisition history described by `model`.
-    """
-    container = TimeSliderContainer()
-    time_slider = container.slider
-    time_slider.setSizePolicy(
-        QtWidgets.QSizePolicy.Policy.Expanding,
-        QtWidgets.QSizePolicy.Policy.Fixed,
-    )
-
-    time_slider_proxy = scene.addWidget(container)
-    layout.addItem(
-        time_slider_proxy,
-        layout.rowCount(),
-        0,
-        QtCore.Qt.AlignmentFlag.AlignBaseline | QtCore.Qt.AlignmentFlag.AlignJustify,
-    )
-
-    time_slider.update_points(model.get_point_data())
-    time_slider.cutoff_changed.connect(model.update_cutoff)
-
-    model.parent.points_appended.connect(time_slider.update_points)
-    model.parent.points_rewritten.connect(time_slider.update_points)
-
-    return time_slider
 
 
 def add_source_id_label(

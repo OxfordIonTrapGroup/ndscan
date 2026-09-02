@@ -607,6 +607,7 @@ class _NoAxisRunner(HasEnvironment):
                     self.num_current_transitory_errors = 0
                     self.num_current_underflows = 0
                 except RTIOUnderflow:
+                    self._discard_point()
                     self.num_current_underflows += 1
                     if self.num_current_underflows > self.max_rtio_underflow_retries:
                         raise
@@ -618,6 +619,7 @@ class _NoAxisRunner(HasEnvironment):
                         ")",
                     )
                 except RestartKernelTransitoryError:
+                    self._discard_point()
                     self.num_current_transitory_errors += 1
                     if (
                         self.num_current_transitory_errors
@@ -633,6 +635,7 @@ class _NoAxisRunner(HasEnvironment):
                     )
                     return False
                 except TransitoryError:
+                    self._discard_point()
                     self.num_current_transitory_errors += 1
                     if (
                         self.num_current_transitory_errors
@@ -664,6 +667,10 @@ class _NoAxisRunner(HasEnvironment):
         self._result_batcher = None
 
     @rpc(flags={"async"})
+    def _discard_point(self):
+        self._result_batcher.discard_current()
+
+    @rpc(flags={"async"})
     def _finish_point(self):
         self._result_batcher.ensure_complete_and_push()
         if self.timestamp_sink:
@@ -678,6 +685,7 @@ def make_fragment_scan_exp(
     *args,
     max_rtio_underflow_retries: int = 3,
     max_transitory_error_retries: int = 10,
+    **kwargs,
 ) -> type[FragmentScanExperiment]:
     """Create a :class:`FragmentScanExperiment` subclass that scans the given
     :class:`.ExpFragment`, ready to be picked up by the ARTIQ explorer/…
@@ -692,12 +700,15 @@ def make_fragment_scan_exp(
                 # ...
 
         MyExpFragmentScan = make_fragment_scan_exp(MyExpFragment)
+
+    :param args: Any arguments to forward to ``build_fragment()``.
+    :param kwargs: Any keyword arguments to forward to ``build_fragment()``.
     """
 
     class FragmentScanShim(FragmentScanExperiment):
         def build(self):
             super().build(
-                lambda: fragment_class(self, [], *args),
+                lambda: fragment_class(self, [], *args, **kwargs),
                 max_rtio_underflow_retries=max_rtio_underflow_retries,
                 max_transitory_error_retries=max_transitory_error_retries,
             )
