@@ -130,8 +130,16 @@ class Annotation:
 
         spec = {"kind": self.kind}
         spec["coordinates"] = to_spec_map(self.coordinates)
-        # FIXME: to_spec_map() on parameters as well for associated_channels?
-        spec["parameters"] = self.parameters
+
+        # KLUDGE: Hard-code handling of associated_channels to support channel
+        # references there. Should re-evaluate serialisation design to avoid the special
+        # case here.
+        spec["parameters"] = dict(self.parameters)
+        if (channels := self.parameters.get("associated_channels")) is not None:
+            spec["parameters"]["associated_channels"] = [
+                context.describe_coordinate(c) for c in channels
+            ]
+
         spec["data"] = to_spec_map(self.data)
         return spec
 

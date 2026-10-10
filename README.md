@@ -40,6 +40,8 @@ Release notes
   point are now discarded in scans without axes (single points and time series),
   as they already were for scans with axes, instead of triggering a spurious
   `Already pushed to result channel …` error.
+- Annotations specifying `ResultChannel`s as `associated_channels` are now
+  serialised properly, instead of failing with a JSON `TypeError`.
 
 ### v0.4.0
 
