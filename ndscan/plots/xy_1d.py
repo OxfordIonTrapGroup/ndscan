@@ -6,7 +6,14 @@ import numpy as np
 import pyqtgraph
 
 from .._qt import QtCore
-from .annotation_items import ComputedCurveItem, CurveItem, VLineItem
+from .annotation_items import (
+    ComputedCurveItem,
+    CurveItem,
+    NamedValueItem,
+    NoteItem,
+    TextAnnotationStack,
+    VLineItem,
+)
 from .cursor import CrosshairAxisLabel, LabeledCrosshairCursor
 from .model import ScanModel
 from .model.history import HistoryFromScanModel
@@ -267,6 +274,8 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.selected_point_model = SelectPointFromScanModel(self.model)
 
         self.annotation_items = []
+        #: One stack of text annotations per pane, indexed like ``self.panes``.
+        self.text_annotation_stacks = list[TextAnnotationStack]()
         self.series = []
         self.unique_x_data = set()
         self.found_duplicate_x_data = False
@@ -311,6 +320,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         self.unique_x_data.clear()
         self.found_duplicate_x_data = False
         self._clear_annotations()
+        self.text_annotation_stacks.clear()
 
         self.subscan_roots = create_subscan_roots(self.selected_point_model)
 
@@ -332,6 +342,7 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
         for axes_series in panes_axes_shown:
             pane = self.add_pane()
             pane.showGrid(x=True, y=True)
+            self.text_annotation_stacks.append(TextAnnotationStack(pane.getViewBox()))
             crosshair_labels = []
             for series in axes_series:
                 axis, view_box = pane.new_y_axis()
@@ -526,6 +537,27 @@ class XY1DPlotWidget(SubplotMenuPanesWidget):
                             x_limits,
                         )
                         self.annotation_items.append(item)
+
+            elif (a.kind == "note" and "text" in a.data) or (
+                a.kind == "named_value" and "value" in a.data
+            ):
+                channel_refs = a.parameters.get("associated_channels", None)
+                for series in channel_refs_to_series(channel_refs):
+                    color = FIT_COLORS[series.series_idx % len(FIT_COLORS)]
+                    stack = self.text_annotation_stacks[series.pane_idx]
+                    if a.kind == "note":
+                        item = NoteItem(a.data["text"], stack, color)
+                    else:
+                        item = NamedValueItem(
+                            a.parameters.get("label", ""),
+                            a.data["value"],
+                            a.data.get("value_error", None),
+                            a.parameters.get("unit", ""),
+                            a.parameters.get("scale", 1.0),
+                            stack,
+                            color,
+                        )
+                    self.annotation_items.append(item)
 
             else:
                 logger.info(

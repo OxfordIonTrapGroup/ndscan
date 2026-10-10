@@ -29,6 +29,15 @@ Release notes
 
 ### Latest Git (unreleased)
 
+#### New features
+
+- **Text annotations**: Analyses can now return `annotations.note()` and
+  `annotations.named_value()` annotations, which are shown in the top right
+  corner of the plot pane of the associated result channel (stacked if there
+  are multiple). `named_value()` displays e.g. a fit result as
+  `<label>: <value>(<error>) <unit>`, with the value and error taken from any
+  annotation data source (such as analysis results).
+
 #### Improvements
 
 - `make_fragment_scan_exp()` now also forwards keyword arguments to
