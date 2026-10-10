@@ -1,8 +1,8 @@
 """
 Annotations are a way for analyses (:mod:`ndscan.experiment.default_analysis`) to
 specify additional information to be displayed to the user along with the scan data, for
-instance a fit curve or a line indicating a centre frequency or oscillation period
-derived from the analysis.
+instance a fit curve, a line indicating a centre frequency or oscillation period
+derived from the analysis, or a line of text showing a fitted value.
 
 Conceptually, annotations express hints about a suitable user interface for exploration
 of experimental data, rather than a mechanism for data storage or exchange. To make
@@ -17,10 +17,18 @@ from typing import Any, Callable
 import numpy as np
 
 from ..utils import FIT_OBJECTS
-from .parameters import ParamHandle
-from .result_channels import ResultChannel
+from .parameters import ParamHandle, resolve_numeric_scale
+from .result_channels import NumericChannel, ResultChannel
 
-__all__ = ["Annotation", "curve_1d", "curve", "computed_curve", "axis_location"]
+__all__ = [
+    "Annotation",
+    "curve_1d",
+    "curve",
+    "computed_curve",
+    "axis_location",
+    "note",
+    "named_value",
+]
 
 
 class AnnotationValueRef:
@@ -104,7 +112,8 @@ class Annotation:
     """An annotation to be displayed alongside scan result data, recording derived
     quantities (e.g. a fit minimizer).
 
-    See :func:`curve`, :func:`curve_1d`, :func:`computed_curve`, :func:`axis_location`.
+    See :func:`curve`, :func:`curve_1d`, :func:`computed_curve`, :func:`axis_location`,
+    :func:`note`, :func:`named_value`.
     """
 
     def __init__(
@@ -295,3 +304,80 @@ def axis_location(
     return Annotation(
         "location", coordinates={axis: position}, parameters=parameters, data=data
     )
+
+
+def note(
+    text: str | ResultChannel | AnnotationValueRef,
+    associated_channels: list | None = None,
+) -> Annotation:
+    """Create an annotation displaying a free-form line of text.
+
+    This will typically be shown in the top right corner of the plot area in the plot
+    applet (stacked with any other text annotations). See :func:`named_value` for a
+    variant to display a (numerical) value along with its uncertainty and unit.
+
+    :param text: The text to display. Typically a fixed string, though, like for other
+        annotation data, an (analysis result) :class:`.ResultChannel` can be given as
+        well.
+    :param associated_channels: If given, the text will be shown on the same plot/pane
+        as the given result channels, and in a matching colour (possibly more than
+        once).
+
+    :return: The :class:`Annotation` object describing the note.
+    """
+    parameters = {}
+    if associated_channels:
+        parameters["associated_channels"] = associated_channels
+    return Annotation("note", parameters=parameters, data={"text": text})
+
+
+def named_value(
+    label: str,
+    value: Any | AnnotationValueRef,
+    value_error: float | AnnotationValueRef | None = None,
+    unit: str | None = None,
+    scale: float | None = None,
+    associated_channels: list | None = None,
+) -> Annotation:
+    """Create an annotation displaying a named value, for instance a parameter
+    derived from a fit, together with its uncertainty, if known.
+
+    This will typically be shown as a line of text of the form
+    ``<label>: <value>(<error>) <unit>`` in the top right corner of the plot area in
+    the plot applet (stacked with any other text annotations; see also :func:`note`).
+
+    :param label: The name of the value to display (e.g. ``"π time"``).
+    :param value: The value to display, given in the usual (SI base) units, that is,
+        not already divided by ``scale``. Typically an analysis result
+        :class:`.ResultChannel`, though a fixed value can also be given.
+    :param value_error: Optionally, the uncertainty ("error bar") associated with the
+        given value, in the same units.
+    :param unit: Name of the unit to display the value in (e.g. ``"ms"``, ``"kHz"``).
+        If ``None`` and ``value`` is a :class:`.NumericChannel`, the unit (and scale)
+        of that channel is used.
+    :param scale: Unit scaling. If ``None``, the default scaling as per ARTIQ's unit
+        handling machinery (``artiq.language.units``) is used.
+    :param associated_channels: If given, the value will be shown on the same
+        plot/pane as the given result channels, and in a matching colour (possibly more
+        than once).
+
+    :return: The :class:`Annotation` object describing the named value.
+    """
+    if unit is None:
+        if isinstance(value, NumericChannel):
+            unit = value.unit or ""
+            if scale is None:
+                scale = value.scale
+        else:
+            unit = ""
+    parameters = {
+        "label": label,
+        "unit": unit,
+        "scale": resolve_numeric_scale(scale, unit),
+    }
+    if associated_channels:
+        parameters["associated_channels"] = associated_channels
+    data = {"value": value}
+    if value_error is not None:
+        data["value_error"] = value_error
+    return Annotation("named_value", parameters=parameters, data=data)
