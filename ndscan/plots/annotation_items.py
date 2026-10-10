@@ -4,6 +4,7 @@ This includes, for instance, fit curves and lines indicating fit results.
 """
 
 import logging
+import numbers
 
 import numpy
 import pyqtgraph
@@ -249,3 +250,164 @@ class VLineItem(AnnotationItem):
         self._left_line.setPos(x - delta_x)
         self._center_line.setPos(x)
         self._right_line.setPos(x + delta_x)
+
+
+class TextAnnotationStack(QtCore.QObject):
+    """Arranges text items in a column pinned to the top right corner of a view box.
+
+    The items are positioned in screen space (i.e. they do not move as the view range
+    changes), in the order they were added. Hidden items do not take up any space.
+    """
+
+    #: Distance from the view box border, in pixels.
+    MARGIN = 2
+
+    def __init__(self, view_box):
+        super().__init__(view_box)  # Automatically disconnect when view_box is deleted.
+        self._view_box = view_box
+        self._items = list[pyqtgraph.TextItem]()
+        self._view_box.sigResized.connect(self.relayout)
+
+    def add_item(self, item: pyqtgraph.TextItem) -> None:
+        # Parent the item to the view box directly instead of using addItem(), which
+        # would place it in the child group transformed according to the view range.
+        item.setParentItem(self._view_box)
+        item.setZValue(1000)
+        self._items.append(item)
+        self.relayout()
+
+    def remove_item(self, item: pyqtgraph.TextItem) -> None:
+        self._items.remove(item)
+        if (scene := item.scene()) is not None:
+            scene.removeItem(item)
+        self.relayout()
+
+    def relayout(self) -> None:
+        x = self._view_box.width() - self.MARGIN
+        y = self.MARGIN
+        for item in self._items:
+            if not item.isVisibleTo(self._view_box):
+                continue
+            item.setPos(x, y)
+            y += item.boundingRect().height()
+
+
+class _StackedTextItem(AnnotationItem):
+    """Base class for annotations shown as a line of text in a
+    :class:`TextAnnotationStack`, updated whenever the data sources change (and hidden
+    while there is no data yet).
+
+    Subclasses call :meth:`_connect_sources` once set up, and implement
+    :meth:`_format_text`.
+    """
+
+    def __init__(self, stack: TextAnnotationStack, color):
+        super().__init__(stack)  # Automatically disconnect when stack is deleted.
+        self._stack = stack
+        self._sources = []
+        # Use a translucent background to keep the text legible on top of any data
+        # points/grid lines, and a small margin to visually group the lines together.
+        fill = pyqtgraph.mkColor(pyqtgraph.getConfigOption("background"))
+        fill.setAlpha(160)
+        self._text_item = pyqtgraph.TextItem(color=color, anchor=(1, 0), fill=fill)
+        self._text_item.textItem.document().setDocumentMargin(1)
+        self._text_item.setVisible(False)
+        self._stack.add_item(self._text_item)
+
+    def _connect_sources(self, sources: list[AnnotationDataSource | None]) -> None:
+        self._sources = [s for s in sources if s is not None]
+        for source in self._sources:
+            source.changed.connect(self._redraw)
+        self._redraw()
+
+    def remove(self):
+        for source in self._sources:
+            source.changed.disconnect(self._redraw)
+        self._stack.remove_item(self._text_item)
+
+    def _format_text(self) -> str | None:
+        """Return the text to display, or ``None`` if there is no data yet."""
+        raise NotImplementedError
+
+    def _redraw(self):
+        text = self._format_text()
+        if text is None:
+            self._text_item.setVisible(False)
+        else:
+            self._text_item.setText(text)
+            self._text_item.setVisible(True)
+        self._stack.relayout()
+
+
+class NoteItem(_StackedTextItem):
+    """Shows a free-form line of text."""
+
+    def __init__(
+        self, text_source: AnnotationDataSource, stack: TextAnnotationStack, color
+    ):
+        super().__init__(stack, color)
+        self._text_source = text_source
+        self._connect_sources([text_source])
+
+    def _format_text(self) -> str | None:
+        text = self._text_source.get()
+        return None if text is None else str(text)
+
+
+class NamedValueItem(_StackedTextItem):
+    """Shows a value with optional uncertainty as ``<label>: <value>(<error>) <unit>``
+    (see :func:`format_named_value`).
+    """
+
+    def __init__(
+        self,
+        label: str,
+        value_source: AnnotationDataSource,
+        error_source: AnnotationDataSource | None,
+        unit: str,
+        scale: float,
+        stack: TextAnnotationStack,
+        color,
+    ):
+        super().__init__(stack, color)
+        self._label = label
+        self._value_source = value_source
+        self._error_source = error_source
+        self._unit = unit
+        self._scale = scale
+        self._connect_sources([value_source, error_source])
+
+    def _format_text(self) -> str | None:
+        value = self._value_source.get()
+        if value is None:
+            return None
+        error = self._error_source.get() if self._error_source else None
+        return format_named_value(self._label, value, error, self._unit, self._scale)
+
+
+def format_named_value(label: str, value, error, unit: str, scale: float) -> str:
+    """Format a named value as ``<label>: <value>(<error>) <unit>``.
+
+    :param value: The value, in data (SI base) units. Non-numerical values are shown
+        as-is (without unit).
+    :param error: The uncertainty associated with the value, in data units. If
+        ``None``, ``NaN`` or zero, it is omitted.
+    :param unit: The name of the display unit, if any.
+    :param scale: The unit scale; values are divided by this for display.
+    """
+    if not isinstance(value, numbers.Real) or isinstance(value, bool):
+        # Unit can only be meaningfully attached to numbers.
+        return f"{label}: {value}"
+
+    if scale != 1:
+        value /= scale
+
+    if not isinstance(error, numbers.Real) or numpy.isnan(error) or error == 0.0:
+        # As for VLineItem, just omit the uncertainty if it is not available (e.g.
+        # because the covariance extraction failed in a fit).
+        value_str = str(value)
+    else:
+        value_str = uncertainty_to_string(value, error / scale)
+
+    unit_suffix = (" " + unit) if unit else ""
+    return f"{label}: {value_str}{unit_suffix}"
