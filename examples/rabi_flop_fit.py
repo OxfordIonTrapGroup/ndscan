@@ -53,6 +53,14 @@ class RabiFlopWithAnalysis(RabiFlopSim):
                 position=analysis_results["t_pi"],
                 position_error=analysis_results["t_pi_err"],
             ),
+            # Shown as text in the top right corner of the plot (using the unit of the
+            # t_pi result channel).
+            annotations.named_value(
+                label="π time",
+                value=analysis_results["t_pi"],
+                value_error=analysis_results["t_pi_err"],
+                associated_channels=[self.readout.p],
+            ),
             annotations.curve_1d(
                 x_axis=self.duration,
                 x_values=analysis_results["fit_xs"],
