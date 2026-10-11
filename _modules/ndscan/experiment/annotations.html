@@ -77,8 +77,8 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Annotations are a way for analyses (:mod:`ndscan.experiment.default_analysis`) to</span>
 <span class="sd">specify additional information to be displayed to the user along with the scan data, for</span>
-<span class="sd">instance a fit curve or a line indicating a centre frequency or oscillation period</span>
-<span class="sd">derived from the analysis.</span>
+<span class="sd">instance a fit curve, a line indicating a centre frequency or oscillation period</span>
+<span class="sd">derived from the analysis, or a line of text showing a fitted value.</span>
 
 <span class="sd">Conceptually, annotations express hints about a suitable user interface for exploration</span>
 <span class="sd">of experimental data, rather than a mechanism for data storage or exchange. To make</span>
@@ -93,10 +93,18 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">FIT_OBJECTS</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamHandle</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultChannel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamHandle</span><span class="p">,</span> <span class="n">resolve_numeric_scale</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.result_channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">NumericChannel</span><span class="p">,</span> <span class="n">ResultChannel</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;curve_1d&quot;</span><span class="p">,</span> <span class="s2">&quot;curve&quot;</span><span class="p">,</span> <span class="s2">&quot;computed_curve&quot;</span><span class="p">,</span> <span class="s2">&quot;axis_location&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Annotation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;curve_1d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;curve&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;computed_curve&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;axis_location&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;note&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;named_value&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AnnotationValueRef</span><span class="p">:</span>
@@ -182,7 +190,8 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An annotation to be displayed alongside scan result data, recording derived</span>
 <span class="sd">    quantities (e.g. a fit minimizer).</span>
 
-<span class="sd">    See :func:`curve`, :func:`curve_1d`, :func:`computed_curve`, :func:`axis_location`.</span>
+<span class="sd">    See :func:`curve`, :func:`curve_1d`, :func:`computed_curve`, :func:`axis_location`,</span>
+<span class="sd">    :func:`note`, :func:`named_value`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -208,8 +217,16 @@
 
         <span class="n">spec</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">}</span>
         <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;coordinates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_spec_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">)</span>
-        <span class="c1"># FIXME: to_spec_map() on parameters as well for associated_channels?</span>
-        <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+
+        <span class="c1"># KLUDGE: Hard-code handling of associated_channels to support channel</span>
+        <span class="c1"># references there. Should re-evaluate serialisation design to avoid the special</span>
+        <span class="c1"># case here.</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">channels</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;associated_channels&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;associated_channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">describe_coordinate</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels</span>
+            <span class="p">]</span>
+
         <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_spec_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">spec</span></div>
 
@@ -377,6 +394,89 @@
     <span class="k">return</span> <span class="n">Annotation</span><span class="p">(</span>
         <span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">coordinates</span><span class="o">=</span><span class="p">{</span><span class="n">axis</span><span class="p">:</span> <span class="n">position</span><span class="p">},</span> <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span>
     <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="note">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.note">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">note</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ResultChannel</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">,</span>
+    <span class="n">associated_channels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an annotation displaying a free-form line of text.</span>
+
+<span class="sd">    This will typically be shown in the top right corner of the plot area in the plot</span>
+<span class="sd">    applet (stacked with any other text annotations). See :func:`named_value` for a</span>
+<span class="sd">    variant to display a (numerical) value along with its uncertainty and unit.</span>
+
+<span class="sd">    :param text: The text to display. Typically a fixed string, though, like for other</span>
+<span class="sd">        annotation data, an (analysis result) :class:`.ResultChannel` can be given as</span>
+<span class="sd">        well.</span>
+<span class="sd">    :param associated_channels: If given, the text will be shown on the same plot/pane</span>
+<span class="sd">        as the given result channels, and in a matching colour (possibly more than</span>
+<span class="sd">        once).</span>
+
+<span class="sd">    :return: The :class:`Annotation` object describing the note.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">associated_channels</span><span class="p">:</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;associated_channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">associated_channels</span>
+    <span class="k">return</span> <span class="n">Annotation</span><span class="p">(</span><span class="s2">&quot;note&quot;</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">})</span></div>
+
+
+
+<div class="viewcode-block" id="named_value">
+<a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.annotations.named_value">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">named_value</span><span class="p">(</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span><span class="p">,</span>
+    <span class="n">value_error</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">AnnotationValueRef</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">associated_channels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Annotation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an annotation displaying a named value, for instance a parameter</span>
+<span class="sd">    derived from a fit, together with its uncertainty, if known.</span>
+
+<span class="sd">    This will typically be shown as a line of text of the form</span>
+<span class="sd">    ``&lt;label&gt;: &lt;value&gt;(&lt;error&gt;) &lt;unit&gt;`` in the top right corner of the plot area in</span>
+<span class="sd">    the plot applet (stacked with any other text annotations; see also :func:`note`).</span>
+
+<span class="sd">    :param label: The name of the value to display (e.g. ``&quot;π time&quot;``).</span>
+<span class="sd">    :param value: The value to display, given in the usual (SI base) units, that is,</span>
+<span class="sd">        not already divided by ``scale``. Typically an analysis result</span>
+<span class="sd">        :class:`.ResultChannel`, though a fixed value can also be given.</span>
+<span class="sd">    :param value_error: Optionally, the uncertainty (&quot;error bar&quot;) associated with the</span>
+<span class="sd">        given value, in the same units.</span>
+<span class="sd">    :param unit: Name of the unit to display the value in (e.g. ``&quot;ms&quot;``, ``&quot;kHz&quot;``).</span>
+<span class="sd">        If ``None`` and ``value`` is a :class:`.NumericChannel`, the unit (and scale)</span>
+<span class="sd">        of that channel is used.</span>
+<span class="sd">    :param scale: Unit scaling. If ``None``, the default scaling as per ARTIQ&#39;s unit</span>
+<span class="sd">        handling machinery (``artiq.language.units``) is used.</span>
+<span class="sd">    :param associated_channels: If given, the value will be shown on the same</span>
+<span class="sd">        plot/pane as the given result channels, and in a matching colour (possibly more</span>
+<span class="sd">        than once).</span>
+
+<span class="sd">    :return: The :class:`Annotation` object describing the named value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">unit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">NumericChannel</span><span class="p">):</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">unit</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">scale</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">scale</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">scale</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+        <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="n">unit</span><span class="p">,</span>
+        <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="n">resolve_numeric_scale</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">unit</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">associated_channels</span><span class="p">:</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;associated_channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">associated_channels</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">value_error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;value_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value_error</span>
+    <span class="k">return</span> <span class="n">Annotation</span><span class="p">(</span><span class="s2">&quot;named_value&quot;</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
 
 </pre></div>
 
