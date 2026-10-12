@@ -251,7 +251,7 @@ class OnlineFit(DefaultAnalysis):
         if fit_type not in FIT_OBJECTS:
             raise ValueError(f"Unrecognised fit type: '{fit_type}'")
 
-        params = []
+        params: list[str] = []
         try:
             params = FIT_OBJECTS[fit_type].all_parameter_names
         except AttributeError:
@@ -269,6 +269,12 @@ class OnlineFit(DefaultAnalysis):
                 # If none specified and oitg version does not support derived_parameter_names,
                 # do not save results
                 save_fit_results = False
+
+        params = [clean_channel_name(p) for p in params]
+        assert len(params) == len(set(params)), (
+            f"Duplicate parameter names for OnlineFit {fit_type} after cleaning."
+        )
+
         self._save_fit_results = (save_fit_results is None) or save_fit_results
 
         self._result_channels = {}
@@ -396,6 +402,7 @@ class OnlineFit(DefaultAnalysis):
                 constants=self.constants,
                 initialise=self.initial_values,
             )
+
         except FitError:
             logger.warning("Fit failed for fit type '%s'", self.fit_type, exc_info=True)
             return []
@@ -408,12 +415,15 @@ class OnlineFit(DefaultAnalysis):
         )
 
         for param, value in p_dict.items():
-            param_name = self._channel_prefix + param
-            if param_name not in self._result_channels:
+            # Sanitize p_dict keys to match the channel name set up in constructor
+            clean_param_name = self._channel_prefix + clean_channel_name(param)
+            if clean_param_name not in self._result_channels:
                 continue
-            self._result_channels[param_name].push(value)
-            if param_name + "_err" in self._result_channels:
-                self._result_channels[param_name + "_err"].push(p_error_dict[param])
+            self._result_channels[clean_param_name].push(value)
+            if clean_param_name + "_err" in self._result_channels:
+                self._result_channels[clean_param_name + "_err"].push(
+                    p_error_dict[param]
+                )
 
         self._result_channels[f"{self._channel_prefix}reduced_chi_squared"].push(
             reduced_chi_squared
@@ -460,3 +470,10 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
         context: AnnotationContext,
     ) -> list[dict[str, Any]]:
         return self._wrapped.execute(axis_data, result_data, context)
+
+
+def clean_channel_name(channel_name: str) -> str:
+    """
+    Clean fit param names to become valid python identifiers for ndscan results channels.
+    """
+    return channel_name.replace("/", "_")

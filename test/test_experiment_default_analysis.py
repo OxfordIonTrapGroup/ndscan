@@ -49,6 +49,38 @@ class CustomAnalysisTestCase(unittest.TestCase):
         self.assertFalse(match_default_analysis(a, make_axes(foo, bar)))
 
 
+class OnlineFitChannelNameTestCase(unittest.TestCase):
+    def test_online_fit_sinusoid_channel_names(self):
+        """Test channel names of sinusoid fit. Verify that the ...t_pi/2...
+        parameter names have been corrected to ...t_pi_2..."""
+        o = OnlineFit("sinusoid", data=None, save_fit_results=True)
+        self.assertIn("sinusoid_fit_t_pi_2", o._result_channels.keys())
+        self.assertNotIn("sinusoid_fit_t_pi/2", o._result_channels.keys())
+        self.assertIn("sinusoid_fit_t_pi_2_err", o._result_channels.keys())
+        self.assertNotIn("sinusoid_fit_t_pi/2_err", o._result_channels.keys())
+        self.assertEqual(
+            o._result_channels["sinusoid_fit_t_pi_2"].path, "sinusoid_t_pi_2"
+        )
+        self.assertEqual(
+            o._result_channels["sinusoid_fit_t_pi_2_err"].path, "sinusoid_t_pi_2_err"
+        )
+
+    def test_all_online_fit_is_identifier(self):
+        """Test that for every fit object, the resulting channel names are valid
+        python identifiers, and that there are no duplicate channel names."""
+        for fit_type in FIT_OBJECTS:
+            o = OnlineFit(fit_type, data=None, save_fit_results=True)
+            for k, v in o._result_channels.items():
+                self.assertTrue(
+                    k.isidentifier(),
+                    f"{k} from {fit_type} fit is not a valid python identifier",
+                )
+                self.assertTrue(
+                    v.path.isidentifier(),
+                    f"{v.path} from {fit_type} fit is not a valid python identifier",
+                )
+
+
 class OnlineFitDataSource(ExpFragment):
     def build_fragment(
         self,
@@ -160,6 +192,7 @@ class OnlineFitAnalysisTestCase(HasEnvironmentCase):
         else:
             # Residuals should be zero for perfect match, since we don't add noise.
             self.assertLess(np.abs(reduced_chi_squared), 1e-5)
+        return results
 
     def test_exact(self):
         for fit_name, true_params in self.CASES.items():
@@ -170,6 +203,37 @@ class OnlineFitAnalysisTestCase(HasEnvironmentCase):
                 initial_values={},
                 gaussian_noise=0.0,
             )
+
+    def test_sinusoid_exact(self):
+        # We need to override the initial values for sinusoid, or else
+        # the auto-initialized values are outside of the param bounds.
+        sinusoid_true_params = {
+            "omega": 10.0,
+            "t_dead": 0.01,
+            "a": 0.8,
+            "c": 0.05,
+            "phi": -0.05,
+        }
+        init_values = {
+            "omega": 1e-3,
+            "t_dead": 1e-3,
+            "a": 1e-3,
+            "c": 1e-3,
+            "phi": 1e-3,
+        }
+        results = self._test_execute(
+            "sinusoid",
+            sinusoid_true_params,
+            constants={},
+            initial_values=init_values,
+            gaussian_noise=0.0,
+        )
+
+        self.assertIn(self.exp._sinusoid_fit_t_pi_2, results.keys())
+        self.assertIn(self.exp._sinusoid_fit_t_pi_2_err, results.keys())
+
+        self.assertIsNotNone(results[self.exp._sinusoid_fit_t_pi_2])
+        self.assertIsNotNone(results[self.exp._sinusoid_fit_t_pi_2_err])
 
     def test_noisy(self):
         for fit_name, true_params in self.CASES.items():
