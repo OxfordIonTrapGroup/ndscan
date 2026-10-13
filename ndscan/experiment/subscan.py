@@ -70,7 +70,7 @@ class Subscan:
     def run(
         self,
         axis_generators: list[tuple[ParamHandle, ScanGenerator]],
-        options: ScanOptions = ScanOptions(),
+        options: ScanOptions | None = None,
         execute_default_analyses: bool = True,
     ) -> tuple[dict[ParamHandle, list], dict[ResultChannel, list]]:
         """Run the subscan with the given axis iteration specifications, and return the
@@ -99,8 +99,13 @@ class Subscan:
     def set_scan_spec(
         self,
         axis_generators: list[tuple[ParamHandle, ScanGenerator]],
-        options: ScanOptions = ScanOptions(),
+        options: ScanOptions | None = None,
     ):
+        if options is None:
+            # Avoid sharing mutable instances; also causes a new random seed unless
+            # options are specified.
+            options = ScanOptions()
+
         axes: list[ScanAxis] = []
         generators: list[ScanGenerator] = []
         self._coordinate_sinks = OrderedDict[ParamHandle, ArraySink]()
@@ -561,7 +566,7 @@ class SubscanExpFragment(ExpFragment):
     def configure(
         self,
         axis_generators: list[tuple[ParamHandle, ScanGenerator]],
-        options: ScanOptions = ScanOptions(),
+        options: ScanOptions | None = None,
     ) -> None:
         """Configure point generators for each scan axis, and scan options.
 

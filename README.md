@@ -51,6 +51,8 @@ Release notes
   `Already pushed to result channel …` error.
 - Annotations specifying `ResultChannel`s as `associated_channels` are now
   serialised properly, instead of failing with a JSON `TypeError`.
+- Subscans configured without explicit `ScanOptions` now get a new random seed
+  on every `run()`/`configure()` call.
 
 ### v0.4.0
 
