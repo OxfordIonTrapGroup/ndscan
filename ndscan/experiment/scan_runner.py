@@ -542,7 +542,7 @@ def filter_default_analyses(
     result = []
     for analysis in fragment.get_default_analyses():
         if not isinstance(analysis, DefaultAnalysis):
-            raise ValueError(
+            raise TypeError(
                 f"Unexpected get_default_analyses() return value for {fragment}: "
                 "Expected list of ndscan.experiment.DefaultAnalysis instances, got "
                 f"element of type '{analysis}'"
