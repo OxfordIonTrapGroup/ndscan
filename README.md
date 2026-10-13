@@ -53,6 +53,8 @@ Release notes
   serialised properly, instead of failing with a JSON `TypeError`.
 - Subscans configured without explicit `ScanOptions` now get a new random seed
   on every `run()`/`configure()` call.
+- The type check in `get_default_analyses()` now raises `TypeError` rather than
+  `ValueError`.
 
 ### v0.4.0
 
