@@ -215,6 +215,26 @@ class RunSubscanTwiceCase(ExpFragmentCase):
             self.assertEqual(values, {parent.child.result: expected_results})
 
 
+class DefaultOptionsSubscanFragment(ExpFragment):
+    def build_fragment(self):
+        self.setattr_fragment("child", AddOneFragment)
+        setattr_subscan(self, "scan", self.child, [(self.child, "value")])
+
+    def run_once(self):
+        self.scan.run([(self.child.value, LinearGenerator(0, 3, 4, True))])
+
+
+class DefaultOptionsSubscanCase(ExpFragmentCase):
+    def test_fresh_seed(self):
+        # Each subscan run with default options should use a new random seed.
+        parent = self.create(DefaultOptionsSubscanFragment)
+        seeds = [
+            json.loads(run_fragment_once(parent)[parent.scan_spec])["seed"]
+            for _ in range(2)
+        ]
+        self.assertNotEqual(seeds[0], seeds[1])
+
+
 class SubscanAnalysisFragment(ExpFragment):
     def build_fragment(
         self, declare_both_scannable=False, always_execute_analyses=True
