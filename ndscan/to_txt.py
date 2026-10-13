@@ -37,7 +37,7 @@ def main():
 
     path, datasets, prefixes, schema = load_h5(args)
     if len(prefixes) > 1:
-        raise Exception(
+        raise ValueError(
             "More than one ndscan prefix found. Please specify one. "
             + f"Prefixes: {prefixes}"
         )
