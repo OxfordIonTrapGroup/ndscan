@@ -222,9 +222,6 @@ class LinearGenerator(ScanGenerator):
     def args_from_centre_span(
         centre, half_span, num_points, randomise_order, limit_lower, limit_upper
     ):
-        num_points = num_points
-        randomise_order = randomise_order
-
         start = centre - half_span
         if limit_lower is not None:
             start = max(start, limit_lower)

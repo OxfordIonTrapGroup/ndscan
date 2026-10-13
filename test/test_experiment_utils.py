@@ -6,7 +6,7 @@ from ndscan.experiment.utils import is_kernel, path_matches_spec
 
 
 class PathMatchingTest(unittest.TestCase):
-    PATHS = [a.split("/") for a in ["foo", "a/b", "a/b/c"]]
+    PATHS = [a.split("/") for a in ["foo", "a/b", "a/b/c"]]  # noqa: RUF012
 
     def test_simple_match(self):
         for p in self.PATHS:

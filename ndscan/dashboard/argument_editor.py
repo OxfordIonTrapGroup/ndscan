@@ -868,7 +868,7 @@ class OverrideEntry(LayoutWidget):
             value = eval_default_using_local_datasets(
                 self.schema["default"], manager_datasets
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(
                 'Failed to evaluate defaults string "%s" for %s: %s',
                 self.schema["default"],

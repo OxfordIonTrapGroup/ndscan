@@ -194,9 +194,8 @@ def select_generator_class(
     available, so each integer is visited at most once and refining scans
     terminate.
     """
-    if param_type == "int":
-        if (cls := INT_GENERATORS.get(scan_type)) is not None:
-            return cls
+    if param_type == "int" and (cls := INT_GENERATORS.get(scan_type)) is not None:
+        return cls
     return GENERATORS.get(scan_type)
 
 
@@ -342,17 +341,16 @@ class TopLevelRunner(HasEnvironment):
         self.dataset_prefix = dataset_prefix
 
         self._is_time_series = False
-        if not self.spec.axes:
-            if no_axes_mode == NoAxesMode.time_series:
-                self._is_time_series = True
-                param_schema = {
-                    "type": "float",
-                    "fqn": "timestamp",
-                    "description": "Elapsed time",
-                    "default": "0.0",
-                    "spec": {"min": 0.0, "unit": "s", "scale": 1.0},
-                }
-                self.spec.axes = [ScanAxis(param_schema, "*", None)]
+        if not self.spec.axes and no_axes_mode == NoAxesMode.time_series:
+            self._is_time_series = True
+            param_schema = {
+                "type": "float",
+                "fqn": "timestamp",
+                "description": "Elapsed time",
+                "default": "0.0",
+                "spec": {"min": 0.0, "unit": "s", "scale": 1.0},
+            }
+            self.spec.axes = [ScanAxis(param_schema, "*", None)]
 
         # Initialise result channels.
         chan_dict = {}

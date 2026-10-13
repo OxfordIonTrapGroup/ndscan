@@ -427,7 +427,7 @@ class ListScanOption(NumericScanOption):
                 try:
                     [float(f) for f in parse_list_pyon(input)]
                     return QtGui.QValidator.State.Acceptable, input, pos
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return QtGui.QValidator.State.Intermediate, input, pos
 
         self.box_pyon = QtWidgets.QLineEdit()
@@ -443,7 +443,7 @@ class ListScanOption(NumericScanOption):
     def write_to_params(self, params: dict) -> None:
         try:
             values = [v * self.scale for v in parse_list_pyon(self.box_pyon.text())]
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.info(e)
             values = []
         spec = {

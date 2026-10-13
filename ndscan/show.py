@@ -99,7 +99,7 @@ def load_h5(args):
 
     try:
         file = h5py.File(path, "r")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         QtWidgets.QMessageBox.critical(None, "Unable to load file", str(e))
         sys.exit(1)
 
@@ -142,7 +142,7 @@ def load_h5(args):
     expid = pyon.decode(file["expid"][()])
     try:
         schema = extract_param_schema(expid["arguments"])
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print("No ndscan parameter arguments found:", e)
         print()
         schema = None
@@ -189,7 +189,7 @@ def main():
         context.set_source_id(get_source_id(datasets, prefixes))
 
         roots = [HDF5Root(datasets, p, context, title) for p in prefixes]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         QtWidgets.QMessageBox.critical(
             None,
             "Error parsing ndscan file",

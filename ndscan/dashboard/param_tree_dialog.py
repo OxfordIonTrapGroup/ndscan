@@ -329,5 +329,5 @@ class ParamTreeDialog(QtWidgets.QDialog):
                     schema["default"], self.manager_datasets
                 ),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return f"<error evaluating default: {e}>"
