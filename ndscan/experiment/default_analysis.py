@@ -259,8 +259,8 @@ class OnlineFit(DefaultAnalysis):
             # If explicitly requested to save fit results, then get all non-derived params
             if save_fit_results is True:
                 logger.warning(
-                    "Derived parameters not accessible in installed version of oitg. "
-                    "Consider upgrading.",
+                    "Derived parameters for fit type '%s' not accessible in installed "
+                    "version of oitg. Consider upgrading.",
                     fit_type,
                     exc_info=True,
                 )
