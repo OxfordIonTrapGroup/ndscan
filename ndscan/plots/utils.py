@@ -489,13 +489,15 @@ def format_label_value(
     data_to_display_scale: float,
     limits: tuple[float, float],
     unit_suffix: str,
-    param_schema: dict[str, Any] = {},
+    param_schema: dict[str, Any] | None = None,
 ) -> str:
     """Format axis position with sensible precision for display in a label.
 
     We do not have any metadata for the number of digits to show, so we guess from the
     range of displayed data (if available).
     """
+    if param_schema is None:
+        param_schema = {}
     axis_type = param_schema.get("type", "float")
 
     try:

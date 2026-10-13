@@ -85,7 +85,7 @@ class CrosshairAxisLabel(CrosshairLabel):
         data_to_display_scale: float = 1.0,
         color: str = SERIES_COLORS[0],
         is_x: bool = False,
-        param_schema: dict[str, Any] = {},
+        param_schema: dict[str, Any] | None = None,
     ):
         super().__init__(view_box, unit_suffix, data_to_display_scale, color)
         self.is_x = is_x

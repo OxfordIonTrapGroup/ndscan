@@ -809,7 +809,7 @@ def run_fragment_once(
     fragment: ExpFragment,
     max_rtio_underflow_retries: int = 3,
     max_transitory_error_retries: int = 10,
-    overrides: dict[str, list[tuple[str, ParamStore]]] = {},
+    overrides: dict[str, list[tuple[str, ParamStore]]] | None = None,
 ) -> dict[ResultChannel, Any]:
     """Initialise the passed fragment and run it once, capturing and returning the
     values from any result channels.
@@ -855,7 +855,7 @@ def create_and_run_fragment_once(
     *args,
     max_rtio_underflow_retries: int = 3,
     max_transitory_error_retries: int = 10,
-    overrides: dict[str, list[tuple[str, ParamStore]]] = {},
+    overrides: dict[str, list[tuple[str, ParamStore]]] | None = None,
     **kwargs,
 ) -> dict[str, Any]:
     """Create an instance of the passed :class:`.ExpFragment` type and runs it once,

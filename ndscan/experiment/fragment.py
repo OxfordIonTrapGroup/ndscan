@@ -652,7 +652,7 @@ class Fragment(HasEnvironment):
         self._detached_subfragments.add(fragment)
 
     def init_params(
-        self, overrides: dict[str, list[tuple[str, ParamStore]]] = {}
+        self, overrides: dict[str, list[tuple[str, ParamStore]]] | None = None
     ) -> None:
         """Initialise free parameters of this fragment and all its subfragments.
 
@@ -671,6 +671,8 @@ class Fragment(HasEnvironment):
             Each override is specified as a tuple `(pathspec, store)` of a path spec and
             the store to use for parameters the path of which matches the spec.
         """
+        if overrides is None:
+            overrides = {}
         for name, param in self._free_params.items():
             store = None
             for override_pathspec, override_store in overrides.get(param.fqn, []):
