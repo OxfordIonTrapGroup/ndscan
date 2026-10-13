@@ -227,7 +227,7 @@ class OnlineFit(DefaultAnalysis):
         :data:`DEFAULT_FIT_ANNOTATIONS` will be queried.
     :param analysis_identifier: Optional explicit name to use for online analysis.
         Defaults to ``fit_<fit_type>``, but can be set explicitly to allow more than one
-        fit of a given type at a time.
+        fit of a given type at a time. Must be a valid python identifier.
     :param constants: Specifies parameters to be held constant during the fit. This is
         a dictionary mapping fit parameter names to the respective constant values,
         forwarded to :meth:`oitg.fitting.FitBase.FitBase.fit`.
@@ -241,7 +241,7 @@ class OnlineFit(DefaultAnalysis):
         fit_type: str,
         data: dict[str, ParamHandle | ResultChannel],
         annotations: dict[str, dict[str, Any]] | None = None,
-        analysis_identifier: str = None,
+        analysis_identifier: str | None = None,
         constants: dict[str, Any] | None = None,
         initial_values: dict[str, Any] | None = None,
         save_fit_results: bool | None = None,
@@ -278,7 +278,10 @@ class OnlineFit(DefaultAnalysis):
         self._save_fit_results = (save_fit_results is None) or save_fit_results
 
         self._result_channels = {}
-        self._channel_prefix = f"{fit_type}_fit_"
+        if analysis_identifier is None:
+            self._channel_prefix = f"{fit_type}_fit_"
+        else:
+            self._channel_prefix = analysis_identifier + "_"
 
         if self._save_fit_results:
             for param in params:
