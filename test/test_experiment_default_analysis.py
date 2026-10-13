@@ -6,7 +6,11 @@ from typing import Any
 import numpy as np
 from mock_environment import HasEnvironmentCase
 
-from ndscan.experiment.default_analysis import CustomAnalysis, OnlineFit
+from ndscan.experiment.default_analysis import (
+    CustomAnalysis,
+    OnlineFit,
+    clean_channel_name,
+)
 from ndscan.experiment.entry_point import run_fragment_once
 from ndscan.experiment.fragment import ExpFragment
 from ndscan.experiment.parameters import (
@@ -90,6 +94,7 @@ class OnlineFitDataSource(ExpFragment):
         initial_values: dict[str, Any] | None = None,
         gaussian_noise: float = 0.0,
         random_seed: int = 0,
+        analysis_identifier: str | None = None,
     ):
         self.fit_name = fit_name
 
@@ -97,6 +102,7 @@ class OnlineFitDataSource(ExpFragment):
         self.constants = {} if constants is None else constants
         self.initial_values = {} if initial_values is None else initial_values
         self.gaussian_noise = gaussian_noise
+        self.analysis_identifier = analysis_identifier
         self.setattr_param("x", FloatParam, "x axis (function input)", default=0.0)
         self.setattr_result("y", FloatChannel)
         if self.gaussian_noise > 0.0:
@@ -122,6 +128,7 @@ class OnlineFitDataSource(ExpFragment):
                 data=data,
                 constants=self.constants,
                 initial_values=self.initial_values,
+                analysis_identifier=self.analysis_identifier,
             )
         ]
 
@@ -161,7 +168,13 @@ class OnlineFitAnalysisTestCase(HasEnvironmentCase):
     }
 
     def _test_execute(
-        self, fit_name, true_params, constants, initial_values, gaussian_noise=0.0
+        self,
+        fit_name,
+        true_params,
+        constants,
+        initial_values,
+        gaussian_noise=0.0,
+        analysis_identifier=None,
     ):
         self.exp = self.create(
             OnlineFitDataSourceSubscan,
@@ -171,10 +184,16 @@ class OnlineFitAnalysisTestCase(HasEnvironmentCase):
             constants=constants,
             initial_values=initial_values,
             gaussian_noise=gaussian_noise,
+            analysis_identifier=analysis_identifier,
         )
 
         def fit_channel(key) -> ResultChannel:
-            return getattr(self.exp, f"_{fit_name}_fit_{key}")
+            full_attr = (
+                f"_{fit_name}_fit_{key}"
+                if (analysis_identifier is None)
+                else f"_{analysis_identifier}_{key}"
+            )
+            return getattr(self.exp, full_attr)
 
         results = run_fragment_once(self.exp)
         for param_name, true_value in true_params.items():
@@ -234,6 +253,57 @@ class OnlineFitAnalysisTestCase(HasEnvironmentCase):
 
         self.assertIsNotNone(results[self.exp._sinusoid_fit_t_pi_2])
         self.assertIsNotNone(results[self.exp._sinusoid_fit_t_pi_2_err])
+
+    def test_analysis_identifier_channel_prefix(self):
+        """
+        Test to ensure that the analysis_identifier value precedes the channel name
+        as expected for an online fit.
+        """
+        sinusoid_true_params = {
+            "omega": 10.0,
+            "t_dead": 0.01,
+            "a": 0.8,
+            "c": 0.05,
+            "phi": -0.05,
+        }
+        init_values = {
+            "omega": 1e-3,
+            "t_dead": 1e-3,
+            "a": 1e-3,
+            "c": 1e-3,
+            "phi": 1e-3,
+        }
+        self.assertRaises(
+            AssertionError,
+            lambda: self._test_execute(
+                "sinusoid",
+                sinusoid_true_params,
+                constants={},
+                initial_values=init_values,
+                gaussian_noise=0.0,
+                analysis_identifier="z/",
+            ),
+        )
+
+        custom_identifier = "CUSTOM_ANALYSIS_IDENTIFIER"
+
+        results = self._test_execute(
+            "sinusoid",
+            sinusoid_true_params,
+            constants={},
+            initial_values=init_values,
+            gaussian_noise=0.0,
+            analysis_identifier=custom_identifier,
+        )
+
+        original_fit_param_names = [
+            clean_channel_name(p_name)
+            for p_name in FIT_OBJECTS["sinusoid"].all_parameter_names
+        ]
+        for p in original_fit_param_names:
+            attr = getattr(self.exp, f"_{custom_identifier}_{p}")
+            self.assertIn(attr, results.keys())
+            self.assertIsNotNone(results[attr])
 
     def test_noisy(self):
         for fit_name, true_params in self.CASES.items():
