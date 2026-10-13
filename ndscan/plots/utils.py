@@ -1,6 +1,7 @@
 import html
 import logging
 from collections.abc import Iterable
+from contextlib import suppress
 from typing import Any
 
 import numpy as np
@@ -287,17 +288,16 @@ def extract_linked_datasets(param_schema: dict[str, Any]) -> list[str]:
     :return: A list of dataset keys mentioned.
     """
     datasets = []
-    try:
-        # Intercept dataset() to build up list of accessed keys.
-        def log_datasets(dataset, default=None):
-            datasets.append(dataset)
-            return default
 
+    # Intercept dataset() to build up list of accessed keys.
+    def log_datasets(dataset, default=None):
+        datasets.append(dataset)
+        return default
+
+    # Ignore default parsing errors here; the user will get warnings from the
+    # experiment dock and on the core device anyway.
+    with suppress(Exception):
         eval_param_default(param_schema["default"], log_datasets)
-    except Exception:
-        # Ignore default parsing errors here; the user will get warnings from the
-        # experiment dock and on the core device anyway.
-        pass
     return datasets
 
 
@@ -359,7 +359,7 @@ def setup_axis_item(axis_item, axes: list[tuple[str, str, str, str, dict[str, An
         series that is displayed on this axis. These tuples can be passed directly into
         ``.cursor.CrosshairLabel``.
     """
-    unit_suffix, data_to_display_scale = get_axis_scaling_info(axes[0][-1])
+    _, data_to_display_scale = get_axis_scaling_info(axes[0][-1])
     axis_item.setScale(data_to_display_scale)
     axis_item.autoSIPrefix = False
 
@@ -549,7 +549,7 @@ def parse_coord_param_value(coord: float, param_schema: dict[str, Any]) -> Any:
     else:
         axis_type = param_schema.get("type", "float")
         if axis_type == "int":
-            return int(round(coord))
+            return int(round(coord))  # noqa: RUF046 (float on NumPy 1.x)
         elif axis_type == "float":
             return coord
         else:

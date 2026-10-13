@@ -506,7 +506,9 @@ class ContextMenuPanesWidget(VerticalPanesWidget):
         # every time. This is slightly wasteful, but context menus should be created
         # seldomly enough for the slight increase in latency not to matter.
 
-        def get_context_menu(*args, pane_idx=len(self.panes) - 1):
+        pane_idx = len(self.panes) - 1
+
+        def get_context_menu(*args):
             builder = ContextMenuBuilder(pane.getViewBox().menu)
             self.build_context_menu(pane_idx, builder)
             return builder.finish()
@@ -580,9 +582,9 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
                 self.close_subscan_plot(name)
         else:
             if toggle_all:
-                for name in self.subscan_roots.keys():
-                    if name not in self.subscan_plots:
-                        self.open_subscan_plot(name)
+                for key in self.subscan_roots:
+                    if key not in self.subscan_plots:
+                        self.open_subscan_plot(key)
             else:
                 self.open_subscan_plot(name)
 
@@ -660,9 +662,9 @@ class SliceableMenuPanesWidget(SubplotMenuPanesWidget):
                 self.close_slice_plot(name)
         else:
             if toggle_all:
-                for name in self.slice_roots.keys():
-                    if name not in self.slice_plots:
-                        self.open_slice_plot(name)
+                for key in self.slice_roots:
+                    if key not in self.slice_plots:
+                        self.open_slice_plot(key)
             else:
                 self.open_slice_plot(name)
 

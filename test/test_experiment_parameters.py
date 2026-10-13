@@ -1,3 +1,5 @@
+# Mutable class attributes are used for test case data tables.
+# ruff: noqa: RUF012
 import unittest
 from enum import Enum, unique
 

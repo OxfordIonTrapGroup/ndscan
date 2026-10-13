@@ -146,7 +146,7 @@ class OnlineFitDataSourceSubscan(SubscanExpFragment):
 
 
 class OnlineFitAnalysisTestCase(HasEnvironmentCase):
-    CASES = {
+    CASES = {  # noqa: RUF012
         "gaussian": {
             "x0": 2.0,
             "y0": 1.0,

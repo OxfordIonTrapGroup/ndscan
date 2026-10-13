@@ -35,7 +35,7 @@ def get_argparser():
 def main():
     args = get_argparser().parse_args()
 
-    path, datasets, prefixes, schema = load_h5(args)
+    path, datasets, prefixes, _ = load_h5(args)
     if len(prefixes) > 1:
         raise ValueError(
             "More than one ndscan prefix found. Please specify one. "

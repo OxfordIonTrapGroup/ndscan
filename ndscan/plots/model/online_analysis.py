@@ -130,5 +130,5 @@ def _run_fit(fit_type, xs, ys, y_errs, constants, initial_values):
         return FIT_OBJECTS[fit_type].fit(
             x=xs, y=ys, y_err=y_errs, constants=constants, initialise=initial_values
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None, None

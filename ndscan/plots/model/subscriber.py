@@ -54,10 +54,11 @@ class SubscriberRoot(Root):
             self.title_changed.emit(self._title)
 
         source_id = d("source_id")
-        if not self._source_id_set or self._context.get_source_id() != source_id:
-            if source_id:
-                self._context.set_source_id(source_id)
-                self._source_id_set = True
+        if source_id and (
+            not self._source_id_set or self._context.get_source_id() != source_id
+        ):
+            self._context.set_source_id(source_id)
+            self._source_id_set = True
 
         if not self._axes_initialised:
             axes_json = d("axes")
@@ -146,15 +147,18 @@ class SubscriberSinglePointModel(SinglePointModel):
                 continue
             self._next_point[name] = m["value"][1]
 
-        if self._current_point is None and values.get(self._prefix + "completed"):
-            # If the scan is already completed on the initial sync, we still need to
-            # emit at least one point.
-            #
-            # The flag is also set when an experiment fails, though, so avoid producing
-            # errors for missing data if no channel has been pushed (i.e. the point
-            # failed cleanly).
-            if self._next_point:
-                emit_point()
+        # If the scan is already completed on the initial sync, we still need to emit
+        # at least one point.
+        #
+        # The flag is also set when an experiment fails, though, so avoid producing
+        # errors for missing data if no channel has been pushed (i.e. the point failed
+        # cleanly).
+        if (
+            self._current_point is None
+            and values.get(self._prefix + "completed")
+            and self._next_point
+        ):
+            emit_point()
 
 
 class SubscriberScanModel(ScanModel):
@@ -217,12 +221,11 @@ class SubscriberScanModel(ScanModel):
             "channel_" + c for c in self._channel_schemata
         ]:
             point_values = values.get(self._prefix + "points." + name, [])
-            if not point_data_changed:
-                # Check if points were appended or rewritten.
-                if name in self._point_data:
-                    imax = min(len(point_values), len(self._point_data[name]))
-                    if point_values[:imax] != self._point_data[name][:imax]:
-                        point_data_changed = True
+            # Check if points were appended or rewritten.
+            if not point_data_changed and name in self._point_data:
+                imax = min(len(point_values), len(self._point_data[name]))
+                if point_values[:imax] != self._point_data[name][:imax]:
+                    point_data_changed = True
             self._point_data[name] = point_values
         if point_data_changed:
             self.points_rewritten.emit(self._point_data)

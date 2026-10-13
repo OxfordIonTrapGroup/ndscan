@@ -69,7 +69,7 @@ def _num_points_in_range(range_spec):
 
 
 def _coords_to_indices(coords, range_spec):
-    min, max, increment = range_spec
+    min, _, increment = range_spec
     return np.rint((np.array(coords) - min) / increment).astype(int)
 
 
