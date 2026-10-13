@@ -75,7 +75,7 @@ def main():
     if len(np.unique(num_points)) != 1:
         print("Point data is not rectangular. Deleting incomplete last point(s).")
         min_len = np.min(num_points)
-        for key in point_data.keys():
+        for key in point_data:
             point_data[key] = point_data[key][:min_len]
 
     # Order by axis values, with x axis varying fastest

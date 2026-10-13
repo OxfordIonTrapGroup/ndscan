@@ -20,9 +20,7 @@ class SubscanRoot(Root):
 
         self.name = strip_suffix(self._schema_key, "_spec")
         if self.name == self._schema_key:
-            raise ValueError(
-                "Unexpected scan schema channel name: {}".format(self._schema_key)
-            )
+            raise ValueError(f"Unexpected scan schema channel name: {self._schema_key}")
 
         self._update(parent.get_point())
 
@@ -75,7 +73,7 @@ class SubscanModel(ScanModel):
         path_prefix = strip_suffix(parent_schemata[spec_channel_name]["path"], "spec")
         self._data_channel_names = {}
         for name in [f"axis_{i}" for i in range(len(self.axes))] + [
-            "channel_" + c for c in self._channel_schemata.keys()
+            "channel_" + c for c in self._channel_schemata
         ]:
             path = path_prefix + name
             parent_name = names_by_path.get(path)

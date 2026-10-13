@@ -70,7 +70,7 @@ def get_argparser():
 
 def fetch_explicit_prefix(args):
     prefix = args.prefix
-    if prefix and not prefix[-1] == ".":
+    if prefix and prefix[-1] != ".":
         prefix += "."
     return prefix
 
@@ -124,9 +124,8 @@ def load_h5(args):
             QtWidgets.QMessageBox.critical(
                 None,
                 "Not an ndscan file",
-                "Datasets '{}*' in file '{}' do not look like ndscan results.".format(
-                    prefix, args.path
-                ),
+                f"Datasets '{prefix}*' in file '{args.path}' do not look like ndscan "
+                "results.",
             )
             sys.exit(1)
         prefixes = [prefix]

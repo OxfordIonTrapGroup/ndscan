@@ -29,8 +29,6 @@ class ResultLifecycleError(RuntimeError):
     point.
     """
 
-    pass
-
 
 class ResultSink:
     """ """
@@ -324,8 +322,7 @@ class NumericChannel(ResultChannel):
                     scale = getattr(artiq.language.units, unit)
                 except AttributeError:
                     raise KeyError(
-                        "Unit {} is unknown, you must specify "
-                        "the scale manually".format(unit)
+                        f"Unit {unit} is unknown, you must specify the scale manually"
                     )
         self.scale = scale
         self.unit = unit

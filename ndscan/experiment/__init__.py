@@ -11,9 +11,6 @@ from experiment client code, like ``artiq.experiment`` does for upstream ARTIQ::
     from ndscan.experiment import *
 """
 
-# The wildcard imports below aren't actually unused, as we re-export them.
-# ruff: noqa: F401
-
 import artiq.experiment
 from artiq.experiment import *
 

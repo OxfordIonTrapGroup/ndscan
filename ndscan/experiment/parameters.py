@@ -337,9 +337,7 @@ def resolve_numeric_scale(scale: float | None, unit: str) -> float:
     try:
         return getattr(units, unit)
     except AttributeError:
-        raise KeyError(
-            "Unit '{}' is unknown, you must specify the scale manually".format(unit)
-        )
+        raise KeyError(f"Unit '{unit}' is unknown, you must specify the scale manually")
 
 
 class ParamBase:

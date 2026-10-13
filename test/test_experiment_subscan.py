@@ -43,7 +43,7 @@ class SubscanCase(ExpFragmentCase):
     def _test_1d(self, parent, result_channel):
         coords, values = parent.run_once()
 
-        expected_values = [float(n) for n in range(0, 4)]
+        expected_values = [float(n) for n in range(4)]
         expected_results = [v + 1 for v in expected_values]
         self.assertEqual(coords, {parent.child.value: expected_values})
         self.assertEqual(values, {result_channel: expected_results})
@@ -52,7 +52,7 @@ class SubscanCase(ExpFragmentCase):
         parent = self.create(Scan1DFragment, AddOneFragment)
         results = run_fragment_once(parent)
 
-        expected_values = [float(n) for n in range(0, 4)]
+        expected_values = [float(n) for n in range(4)]
         expected_results = [v + 1 for v in expected_values]
         self.assertEqual(results[parent.scan_axis_0], expected_values)
         self.assertEqual(results[parent.scan_channel_result], expected_results)

@@ -98,9 +98,7 @@ def make_default_plot(
         make_default_1d_plot(datasets, root, figure, channel_filter=channel_filter)
     else:
         raise NotImplementedError(
-            "Default plots for {}-dimensional scans not yet implemented".format(
-                num_axes
-            )
+            f"Default plots for {num_axes}-dimensional scans not yet implemented"
         )
 
 

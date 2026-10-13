@@ -348,8 +348,8 @@ class CentreSpanScanOption(RangeScanOption):
             return False
 
         # Common to both finite/refining:
-        self.box_half_span.setValue((axis["range"].get("half_span", 0.0) / self.scale))
-        self.box_centre.setValue((axis["range"].get("centre", 0.0) / self.scale))
+        self.box_half_span.setValue(axis["range"].get("half_span", 0.0) / self.scale)
+        self.box_centre.setValue(axis["range"].get("centre", 0.0) / self.scale)
         self.check_randomise.setChecked(axis["range"].get("randomise_order", True))
         return True
 
@@ -611,7 +611,7 @@ class EnumScanOption(ScanOption):
 
         # For the moment, normalise everything to always be in the one order we allow
         # to be specified in the selection dialog box to avoid confusing behaviour.
-        selected = [k for k in self._members.keys() if k in values]
+        selected = [k for k in self._members if k in values]
 
         # Disallow empty selections.
         if not selected:

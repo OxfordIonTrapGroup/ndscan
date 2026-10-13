@@ -44,7 +44,7 @@ class Context(QtCore.QObject):
 
     source_id_changed = QtCore.pyqtSignal(str)
 
-    def __init__(self, set_dataset: Callable[[str, Any], None] = None):
+    def __init__(self, set_dataset: Callable[[str, Any], None] | None = None):
         super().__init__()
         self._set_dataset = set_dataset
         self._source_id = "<unknown>"

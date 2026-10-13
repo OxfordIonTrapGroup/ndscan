@@ -889,7 +889,5 @@ def create_and_run_fragment_once(
         max_transitory_error_retries=max_transitory_error_retries,
         overrides=overrides,
     )
-    shortened_names = _shorten_result_channel_names(
-        channel.path for channel in results.keys()
-    )
+    shortened_names = _shorten_result_channel_names(channel.path for channel in results)
     return {shortened_names[channel.path]: value for channel, value in results.items()}

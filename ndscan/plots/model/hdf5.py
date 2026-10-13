@@ -94,7 +94,7 @@ class HDF5ScanModel(ScanModel):
         self._analysis_result_sources = {}
         ark = prefix + "analysis_results"
         if ark in datasets:
-            for name in json.loads(datasets[ark][()]).keys():
+            for name in json.loads(datasets[ark][()]):
                 # FIXME: Need different HDF5 dataset operation for arrays?!
                 try:
                     self._analysis_result_sources[name] = FixedDataSource(
@@ -105,7 +105,7 @@ class HDF5ScanModel(ScanModel):
 
         self._point_data = {}
         for name in [f"axis_{i}" for i in range(len(self.axes))] + [
-            "channel_" + c for c in self._channel_schemata.keys()
+            "channel_" + c for c in self._channel_schemata
         ]:
             self._point_data[name] = _read(datasets[prefix + "points." + name])
 
