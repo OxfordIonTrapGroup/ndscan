@@ -480,8 +480,8 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
             ):
                 action = builder.append_action(f"Set '{d}' from crosshair")
                 action.triggered.connect(
-                    lambda *a, axis_idx=axis_idx, d=d: (
-                        self._set_dataset_from_crosshair(d, axis_idx)
+                    lambda *a, axis_idx=axis_idx, d=d: self._set_dataset_from_crosshair(
+                        d, axis_idx
                     )
                 )
             if len(x_datasets) == 1 and len(y_datasets) == 1:

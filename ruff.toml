@@ -1,12 +1,24 @@
-line-length=88
+line-length = 88
 
 [format]
 line-ending = "lf"
 
 [lint]
-ignore =[
-    # Star imports are common in idiomatic ARTIQ code
-    "F403", "F405"
+ignore = [
+    # Star imports are common in idiomatic ARTIQ code.
+    "F403",
+    "F405",
+
+    # Empty docstrings are used to hide derived methods in Sphinx output.
+    "D419",
+
+    # Empty comments are used in UI code with longer functions.
+    "PLR2044",
+
+    # Sphinx (autodoc_member_order = "bysource") relies on the order of __all__.
+    "RUF022",
+
+    # typing.Self is only available from Python 3.11.
+    "PYI034",
 ]
 extend-select = ["I"]
-
