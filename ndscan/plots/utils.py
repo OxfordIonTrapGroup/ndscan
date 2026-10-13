@@ -1,6 +1,7 @@
 import html
 import logging
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import numpy as np
 
@@ -79,9 +80,7 @@ def extract_scalar_channels(
         err_name = path_to_name[err_path]
         if err_name in error_bar_names:
             raise ValueError(
-                "More than one set of error bars specified for channel '{}'".format(
-                    err_path
-                )
+                f"More than one set of error bars specified for channel '{err_path}'"
             )
         error_bar_names[err_name] = name
 
@@ -105,7 +104,7 @@ def get_default_hidden_channels(channels: dict[str, Any], data_names: list[str])
     :param data_names: List of channel names to consider. See
         :func:``extract_scalar_channels()``.
     """
-    hidden_channels = set(n for n in data_names if _get_priority(channels[n]) < 0)
+    hidden_channels = {n for n in data_names if _get_priority(channels[n]) < 0}
     # Even if all channels have negative priority, show at least one.
     if len(hidden_channels) < len(data_names):
         hidden_channels.discard(data_names[0])

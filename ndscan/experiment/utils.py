@@ -55,6 +55,6 @@ def to_metadata_broadcast_type(obj: Any) -> Any | None:
         return int(obj)
     if isinstance(obj, numpy.floating):
         return float(obj)
-    if isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
+    if isinstance(obj, (int, float, str)):
         return obj
     return None

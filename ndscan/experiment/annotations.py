@@ -11,8 +11,9 @@ analysis result channels (see
 :meth:`.DefaultAnalysis.get_analysis_results`) should be used instead.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 
@@ -247,7 +248,7 @@ def computed_curve(
 
     :return: The :class:`Annotation` object describing the curve.
     """
-    if function_name not in FIT_OBJECTS.keys():
+    if function_name not in FIT_OBJECTS:
         known_types = ", ".join(FIT_OBJECTS.keys())
         raise ValueError(
             f"Computed curve type '{function_name}' is not among the "

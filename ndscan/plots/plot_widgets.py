@@ -7,7 +7,7 @@
 # in.
 
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 import pyqtgraph
 import pyqtgraph.exporters
@@ -554,7 +554,7 @@ class SubplotMenuPanesWidget(ContextMenuPanesWidget):
     ) -> None:
         if len(self.subscan_roots) > 0:
             builder.ensure_separator()
-            for name in self.subscan_roots.keys():
+            for name in self.subscan_roots:
                 action = builder.append_action(f"Subscan '{name}'")
                 action.setCheckable(True)
                 action.setChecked(name in self.subscan_plots)
@@ -635,7 +635,7 @@ class SliceableMenuPanesWidget(SubplotMenuPanesWidget):
     ) -> None:
         if len(self.slice_roots) > 0:
             builder.ensure_separator()
-            for name in self.slice_roots.keys():
+            for name in self.slice_roots:
                 action = builder.append_action(f"Slice along '{name}'")
                 action.setCheckable(True)
                 action.setChecked(name in self.slice_plots)

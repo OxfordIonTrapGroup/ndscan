@@ -49,7 +49,7 @@ class SelectPointFromScanModel(SinglePointModel):
                     point = None
                 else:
                     raise ValueError(
-                        "Invalid source index {} for length {}".format(idx, num_values)
+                        f"Invalid source index {idx} for length {num_values}"
                     )
             else:
                 point = {}

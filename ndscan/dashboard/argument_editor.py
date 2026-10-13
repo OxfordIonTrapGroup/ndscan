@@ -267,9 +267,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         self._save_timer.timeout.connect(self._save_to_argument)
 
         self._param_entries = OrderedDict()
-        self._groups = dict()
-        self._arg_to_widgets = dict()
-        self._override_items = dict()
+        self._groups = {}
+        self._arg_to_widgets = {}
+        self._override_items = {}
 
         self._add_override_icon = load_icon_cached("list-add-32.png")
         self._open_param_tree_icon = load_icon_cached("view-list-tree-32.png")
@@ -509,7 +509,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         if name in self._arg_to_widgets:
             logger.warning("Argument with name '%s' already exists, skipping.", name)
             return
-        widgets = dict()
+        widgets = {}
         self._arg_to_widgets[name] = widgets
 
         entry = procdesc_to_entry(argument["desc"])(argument)
@@ -651,7 +651,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
     def _set_override_line_active(self):
         self._update_param_choice_map()
         self._add_override_prompt_box.set_choices(
-            [(s, 0) for s in self._param_choice_map.keys()]
+            [(s, 0) for s in self._param_choice_map]
         )
 
         self._add_override_line.setEnabled(False)
@@ -693,11 +693,8 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
             class_desc, _ui_name = await self.manager.compute_expdesc(self.expurl)
             arginfo = class_desc["arginfo"]
         except Exception:
-            logger.error(
-                "Could not recompute argument '%s' of '%s'",
-                name,
-                self.expurl,
-                exc_info=True,
+            logger.exception(
+                "Could not recompute argument '%s' of '%s'", name, self.expurl
             )
             return
         argument = self.manager.get_submission_arguments(self.expurl)[name]
@@ -735,7 +732,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         self._set_save_timer()
 
     def _update_param_choice_map(self):
-        self._param_choice_map = dict()
+        self._param_choice_map = {}
 
         def add(fqn, path):
             # Skip params already displayed.

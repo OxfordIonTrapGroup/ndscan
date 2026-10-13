@@ -185,7 +185,7 @@ class ResultBatcher:
         """Discard any results that may have been pushed already (e.g. if a point was
         interrupted.)
         """
-        for channel in self._orig_sinks.keys():
+        for channel in self._orig_sinks:
             if channel.sink.is_set():
                 # This is normal, e.g. when a transitory error interrupts a point.
                 logger.debug("Discarding result for '%s'", channel)
@@ -196,7 +196,7 @@ class ResultBatcher:
         forward the results to the original sinks.
         """
         # First check whether we have all the values.
-        for channel in self._orig_sinks.keys():
+        for channel in self._orig_sinks:
             if not channel.sink.is_set():
                 raise ResultLifecycleError(
                     f"Missing value for result channel '{channel}' "
@@ -331,7 +331,7 @@ class KernelScanRunner(ScanRunner):
         code += "    return self._RUN_CHUNK_SCAN_COMPLETE\n"
         code += "for i in range(len(p0)):\n"
         for idx in range(num_axes):
-            code += "    self._param_setter_{0}(p{0}[i])\n".format(idx)
+            code += f"    self._param_setter_{idx}(p{idx}[i])\n"
         code += "    if self._run_point():\n"
         code += "        return self._RUN_CHUNK_INTERRUPTED\n"
         code += "return self._RUN_CHUNK_PROCEED"

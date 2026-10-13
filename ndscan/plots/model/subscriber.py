@@ -205,7 +205,7 @@ class SubscriberScanModel(ScanModel):
         analysis_results_json = values.get(self._prefix + "analysis_results")
         if analysis_results_json != self._analysis_results_json:
             if analysis_results_json is not None:
-                for name in json.loads(analysis_results_json).keys():
+                for name in json.loads(analysis_results_json):
                     # Make sure source exists.
                     self.get_analysis_result_source(name)
             self._analysis_results_json = analysis_results_json
@@ -214,7 +214,7 @@ class SubscriberScanModel(ScanModel):
 
         point_data_changed = False
         for name in [f"axis_{i}" for i in range(len(self.axes))] + [
-            "channel_" + c for c in self._channel_schemata.keys()
+            "channel_" + c for c in self._channel_schemata
         ]:
             point_values = values.get(self._prefix + "points." + name, [])
             if not point_data_changed:

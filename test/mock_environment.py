@@ -14,7 +14,7 @@ from sipyco.sync_struct import process_mod
 
 class MockDatasetDB:
     def __init__(self):
-        self.data = dict()
+        self.data = {}
 
     def get(self, key):
         return self.data[key][1]

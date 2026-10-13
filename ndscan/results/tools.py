@@ -8,7 +8,7 @@ def find_ndscan_roots(datasets: dict[str, Any]) -> list[str]:
     prefixes (e.g. ``ndscan.``).
     """
     results = []
-    for name in datasets.keys():
+    for name in datasets:
         if name == SCHEMA_REVISION_KEY or name.endswith("." + SCHEMA_REVISION_KEY):
             results.append(strip_suffix(name, SCHEMA_REVISION_KEY))
     if not results:

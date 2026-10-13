@@ -100,7 +100,7 @@ class DatasetSinglePointModel(SinglePointModel):
         self._channel_schemata = json.loads(dataset_db.get(prefix + "channels"))
         self._point = {
             name: dataset_db.get(prefix + "point." + name)
-            for name in self._channel_schemata.keys()
+            for name in self._channel_schemata
         }
 
     def get_channel_schemata(self) -> dict[str, Any]:

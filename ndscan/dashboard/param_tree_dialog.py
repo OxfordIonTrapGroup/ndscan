@@ -245,7 +245,7 @@ class ParamTreeDialog(QtWidgets.QDialog):
         self.tree_widget.setUpdatesEnabled(False)
         self.tree_widget.clear()
 
-        self.fragment_tree_items = dict()
+        self.fragment_tree_items = {}
         # Lexicographic in particular also ensures that parents are first.
         paths = sorted(self.instances.keys())
         for path in paths:
