@@ -207,7 +207,7 @@ async def run(args):
                 track_contents=False,
             )
             dataset_keys.clear()
-            dataset_keys |= initial_datasets.keys()
+            dataset_keys.update(initial_datasets.keys())
 
         if schedule_sub is None:
 
