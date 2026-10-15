@@ -288,9 +288,8 @@
 <span class="sd">    available, so each integer is visited at most once and refining scans</span>
 <span class="sd">    terminate.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">param_type</span> <span class="o">==</span> <span class="s2">&quot;int&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">cls</span> <span class="o">:=</span> <span class="n">INT_GENERATORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scan_type</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">cls</span>
+    <span class="k">if</span> <span class="n">param_type</span> <span class="o">==</span> <span class="s2">&quot;int&quot;</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">cls</span> <span class="o">:=</span> <span class="n">INT_GENERATORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scan_type</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span>
     <span class="k">return</span> <span class="n">GENERATORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scan_type</span><span class="p">)</span>
 
 
@@ -436,17 +435,16 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dataset_prefix</span> <span class="o">=</span> <span class="n">dataset_prefix</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">no_axes_mode</span> <span class="o">==</span> <span class="n">NoAxesMode</span><span class="o">.</span><span class="n">time_series</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="n">param_schema</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;float&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;fqn&quot;</span><span class="p">:</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Elapsed time&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;0.0&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
-                <span class="p">}</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ScanAxis</span><span class="p">(</span><span class="n">param_schema</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span> <span class="ow">and</span> <span class="n">no_axes_mode</span> <span class="o">==</span> <span class="n">NoAxesMode</span><span class="o">.</span><span class="n">time_series</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">param_schema</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;float&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;fqn&quot;</span><span class="p">:</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Elapsed time&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;0.0&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ScanAxis</span><span class="p">(</span><span class="n">param_schema</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
 
         <span class="c1"># Initialise result channels.</span>
         <span class="n">chan_dict</span> <span class="o">=</span> <span class="p">{}</span>
@@ -908,7 +906,7 @@
     <span class="n">fragment</span><span class="p">:</span> <span class="n">ExpFragment</span><span class="p">,</span>
     <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
     <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-    <span class="n">overrides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{},</span>
+    <span class="n">overrides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ResultChannel</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialise the passed fragment and run it once, capturing and returning the</span>
 <span class="sd">    values from any result channels.</span>
@@ -957,7 +955,7 @@
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
     <span class="n">max_rtio_underflow_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
     <span class="n">max_transitory_error_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-    <span class="n">overrides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{},</span>
+    <span class="n">overrides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParamStore</span><span class="p">]]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an instance of the passed :class:`.ExpFragment` type and runs it once,</span>
@@ -991,9 +989,7 @@
         <span class="n">max_transitory_error_retries</span><span class="o">=</span><span class="n">max_transitory_error_retries</span><span class="p">,</span>
         <span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">shortened_names</span> <span class="o">=</span> <span class="n">_shorten_result_channel_names</span><span class="p">(</span>
-        <span class="n">channel</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-    <span class="p">)</span>
+    <span class="n">shortened_names</span> <span class="o">=</span> <span class="n">_shorten_result_channel_names</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">results</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">shortened_names</span><span class="p">[</span><span class="n">channel</span><span class="o">.</span><span class="n">path</span><span class="p">]:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
 
 </pre></div>

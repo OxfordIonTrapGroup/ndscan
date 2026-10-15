@@ -428,9 +428,7 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-            <span class="s2">&quot;Unit &#39;</span><span class="si">{}</span><span class="s2">&#39; is unknown, you must specify the scale manually&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unit &#39;</span><span class="si">{</span><span class="n">unit</span><span class="si">}</span><span class="s2">&#39; is unknown, you must specify the scale manually&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ParamBase</span><span class="p">:</span>
@@ -638,7 +636,7 @@
         <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
             <span class="c1"># This parsed and called dataset(), so okay.</span>
             <span class="k">pass</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
             <span class="c1"># Contrary to usual ndscan style, do not put quotation marks around the</span>
             <span class="c1"># value here and rather put it inside parentheses for clarity, as the user</span>
             <span class="c1"># error is likely to be missing quotes. Also do not chain this onto the</span>
@@ -736,7 +734,7 @@
         <span class="k">class</span><span class="w"> </span><span class="nc">EnumParamStore</span><span class="p">(</span><span class="n">ParamStore</span><span class="p">):</span>
             <span class="n">RpcType</span> <span class="o">=</span> <span class="n">int32</span>
             <span class="c1"># TODO: Make sure this is emitted efficiently as a global by the compiler.</span>
-            <span class="n">instances</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">enum_type</span><span class="p">]</span>
+            <span class="n">instances</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">enum_type</span><span class="p">]</span>  <span class="c1"># noqa: RUF012</span>
 
             <span class="nd">@portable</span>
             <span class="k">def</span><span class="w"> </span><span class="nf">_notify_handles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -822,7 +820,7 @@
             <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
                 <span class="c1"># This parsed and called dataset(), so okay.</span>
                 <span class="k">pass</span>
-            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
                 <span class="k">raise</span> <span class="n">InvalidDefaultError</span><span class="p">(</span>
                     <span class="s2">&quot;str default values for EnumParm must be valid PYON strings &quot;</span>
                     <span class="o">+</span> <span class="s2">&quot;(including quotes) that evaluate to the name of an enum member &quot;</span>

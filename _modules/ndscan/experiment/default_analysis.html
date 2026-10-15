@@ -355,8 +355,8 @@
             <span class="c1"># If explicitly requested to save fit results, then get all non-derived params</span>
             <span class="k">if</span> <span class="n">save_fit_results</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;Derived parameters not accessible in installed version of oitg. &quot;</span>
-                    <span class="s2">&quot;Consider upgrading.&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Derived parameters for fit type &#39;</span><span class="si">%s</span><span class="s2">&#39; not accessible in installed &quot;</span>
+                    <span class="s2">&quot;version of oitg. Consider upgrading.&quot;</span><span class="p">,</span>
                     <span class="n">fit_type</span><span class="p">,</span>
                     <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="p">)</span>

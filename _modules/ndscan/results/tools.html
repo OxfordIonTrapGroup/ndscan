@@ -86,14 +86,13 @@
 <span class="sd">    prefixes (e.g. ``ndscan.``).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">SCHEMA_REVISION_KEY</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">SCHEMA_REVISION_KEY</span><span class="p">):</span>
             <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strip_suffix</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">SCHEMA_REVISION_KEY</span><span class="p">))</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span> <span class="ow">and</span> <span class="s2">&quot;ndscan.axes&quot;</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
         <span class="c1"># This might be an old file before the schema revision dataset and multiple</span>
         <span class="c1"># roots were added.</span>
-        <span class="k">if</span> <span class="s2">&quot;ndscan.axes&quot;</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ndscan.&quot;</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ndscan.&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">results</span></div>
 
 

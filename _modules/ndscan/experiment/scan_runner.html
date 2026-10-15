@@ -279,7 +279,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Discard any results that may have been pushed already (e.g. if a point was</span>
 <span class="sd">        interrupted.)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
                 <span class="c1"># This is normal, e.g. when a transitory error interrupts a point.</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Discarding result for &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span>
@@ -290,7 +290,7 @@
 <span class="sd">        forward the results to the original sinks.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># First check whether we have all the values.</span>
-        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orig_sinks</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">channel</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
                 <span class="k">raise</span> <span class="n">ResultLifecycleError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Missing value for result channel &#39;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
@@ -425,7 +425,7 @@
         <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    return self._RUN_CHUNK_SCAN_COMPLETE</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;for i in range(len(p0)):</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_axes</span><span class="p">):</span>
-            <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    self._param_setter_</span><span class="si">{0}</span><span class="s2">(p</span><span class="si">{0}</span><span class="s2">[i])</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+            <span class="n">code</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;    self._param_setter_</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">(p</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">[i])</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;    if self._run_point():</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;        return self._RUN_CHUNK_INTERRUPTED</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">code</span> <span class="o">+=</span> <span class="s2">&quot;return self._RUN_CHUNK_PROCEED&quot;</span>
@@ -641,7 +641,7 @@
     <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">analysis</span> <span class="ow">in</span> <span class="n">fragment</span><span class="o">.</span><span class="n">get_default_analyses</span><span class="p">():</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">analysis</span><span class="p">,</span> <span class="n">DefaultAnalysis</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Unexpected get_default_analyses() return value for </span><span class="si">{</span><span class="n">fragment</span><span class="si">}</span><span class="s2">: &quot;</span>
                 <span class="s2">&quot;Expected list of ndscan.experiment.DefaultAnalysis instances, got &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;element of type &#39;</span><span class="si">{</span><span class="n">analysis</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
