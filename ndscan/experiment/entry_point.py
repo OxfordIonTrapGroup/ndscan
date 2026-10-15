@@ -249,10 +249,10 @@ class ArgumentInterface(HasEnvironment):
             except KeyError:
                 raise KeyError(
                     "Experiment does not have parameters matching "
-                    f"overrride for FQN '{fqn}' "
+                    f"override for FQN '{fqn}' "
                     + "(likely due to outdated argument editor after "
                     + "changes to experiment; try Recompute All Arguments)"
-                )
+                ) from None
             stores[fqn] = [
                 (
                     s["path"],
@@ -282,7 +282,7 @@ class ArgumentInterface(HasEnvironment):
                     f"scan axis with FQN '{fqn}' "
                     + "(likely due to outdated argument editor after "
                     + "changes to experiment; try Recompute All Arguments)"
-                )
+                ) from None
 
             generator_class = select_generator_class(axspec["type"], schema["type"])
             if not generator_class:

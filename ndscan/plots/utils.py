@@ -431,8 +431,8 @@ def enum_to_numeric(categories, values: list[Any]):
     try:
         to_idx = {x: i for i, x in enumerate(categories)}
         return [to_idx[x] for x in values]
-    except KeyError:
-        raise KeyError("Unexpected enum value found.")
+    except KeyError as e:
+        raise KeyError("Unexpected enum value found.") from e
 
 
 def call_later(func):
