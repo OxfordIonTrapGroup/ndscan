@@ -20,5 +20,39 @@ ignore = [
 
     # typing.Self is only available from Python 3.11.
     "PYI034",
+
+    # Complexity/magic value heuristics are not worth the churn.
+    "PLR09",
+    "PLR2004",
+
+    # An if nested in an else block can represent the semantics better than elif,
+    # especially in combination with comments.
+    "PLR5501",
+
+    # Function-local imports are used to break import cycles.
+    "PLC0415",
+
+    # Explicit concatenation is used for long multi-line strings.
+    "ISC003",
+
+    # Purely stylistic; also, unpacking is not supported in ARTIQ kernels.
+    "RUF005",
 ]
-extend-select = ["I"]
+extend-select = [
+    "I",
+    "ASYNC",
+    "B",
+    "C4",
+    "E",
+    "FURB",
+    "ISC",
+    "LOG",
+    "NPY",
+    "PGH",
+    "PL",
+    "RUF",
+    "W",
+]
+
+# En dashes, etc. are used deliberately in comments and UI strings.
+allowed-confusables = ["–", "×", "σ", "\u2009"]
