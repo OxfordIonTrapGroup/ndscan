@@ -341,7 +341,9 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">_current_axis_values</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_points</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_axis_values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                             <span class="k">return</span> <span class="kc">True</span>
-                    <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_axis_values</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_axis_values</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">):</span>
                         <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_setup</span><span class="p">()</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">run_once</span><span class="p">()</span>
@@ -349,7 +351,9 @@
                     <span class="n">result_batcher</span><span class="o">.</span><span class="n">ensure_complete_and_push</span><span class="p">()</span>
                     <span class="c1"># Now that we know self._fragment successfully produced a complete</span>
                     <span class="c1"># point, also record the axis coordinates.</span>
-                    <span class="k">for</span> <span class="n">sink</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_axis_sinks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_axis_values</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">sink</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_axis_sinks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_axis_values</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">):</span>
                         <span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_current_axis_values</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -460,7 +464,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_remove_result_batcher</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">device_cleanup</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>  <span class="c1"># noqa: B011</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@kernel</span>
@@ -538,7 +542,7 @@
 
         <span class="n">values</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)):</span>
                 <span class="c1"># KLUDGE: Explicitly coerce value to the target type here so we can use</span>
                 <span class="c1"># the regular (float) scans for integers until proper support for int</span>
                 <span class="c1"># scans is implemented.</span>
@@ -571,7 +575,7 @@
         <span class="c1"># Now that we know that a complete point was successfully produced, also record</span>
         <span class="c1"># the axis coordinates.</span>
         <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axis_sinks</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">sink</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axis_sinks</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="n">sink</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
         <span class="c1"># Prepare for the next point.</span>
@@ -590,7 +594,7 @@
             <span class="k">return</span>
         <span class="c1"># Set the host-side parameter stores.</span>
         <span class="n">next_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_chunk</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">next_values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">next_values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">param_store</span><span class="o">.</span><span class="n">value_from_pyon</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
 
     <span class="nd">@host_only</span>
@@ -673,7 +677,8 @@
         <span class="p">}</span>
         <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">axes</span>
     <span class="p">]</span>
-    <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">gen</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">generators</span><span class="p">):</span>
+    <span class="c1"># Time series scans have a synthetic timestamp axis without a generator.</span>
+    <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">gen</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_specs</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">generators</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="n">gen</span><span class="o">.</span><span class="n">describe_limits</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
 
     <span class="n">desc</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">axis_specs</span>

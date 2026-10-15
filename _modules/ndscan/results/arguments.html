@@ -98,7 +98,7 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="n">string</span> <span class="o">=</span> <span class="n">arguments</span><span class="p">[</span><span class="n">PARAMS_ARG_KEY</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ndscan argument (</span><span class="si">{</span><span class="n">PARAMS_ARG_KEY</span><span class="si">}</span><span class="s2">) not found&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ndscan argument (</span><span class="si">{</span><span class="n">PARAMS_ARG_KEY</span><span class="si">}</span><span class="s2">) not found&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
 
     <span class="k">return</span> <span class="n">pyon</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">string</span><span class="p">)</span></div>
 

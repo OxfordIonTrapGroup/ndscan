@@ -343,10 +343,10 @@
             <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
                     <span class="s2">&quot;Experiment does not have parameters matching &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;overrride for FQN &#39;</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;override for FQN &#39;</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
                     <span class="o">+</span> <span class="s2">&quot;(likely due to outdated argument editor after &quot;</span>
                     <span class="o">+</span> <span class="s2">&quot;changes to experiment; try Recompute All Arguments)&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
             <span class="n">stores</span><span class="p">[</span><span class="n">fqn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">(</span>
                     <span class="n">s</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span>
@@ -376,7 +376,7 @@
                     <span class="sa">f</span><span class="s2">&quot;scan axis with FQN &#39;</span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
                     <span class="o">+</span> <span class="s2">&quot;(likely due to outdated argument editor after &quot;</span>
                     <span class="o">+</span> <span class="s2">&quot;changes to experiment; try Recompute All Arguments)&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
 
             <span class="n">generator_class</span> <span class="o">=</span> <span class="n">select_generator_class</span><span class="p">(</span><span class="n">axspec</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span> <span class="n">schema</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">])</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">generator_class</span><span class="p">:</span>
@@ -544,7 +544,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_coordinate_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span>
             <span class="p">((</span><span class="n">a</span><span class="o">.</span><span class="n">param_schema</span><span class="p">[</span><span class="s2">&quot;fqn&quot;</span><span class="p">],</span> <span class="n">a</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="n">s</span><span class="o">.</span><span class="n">get_all</span><span class="p">())</span>
-            <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinate_sinks</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_value_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -745,7 +745,7 @@
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_remove_result_batcher</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>  <span class="c1"># noqa: B011</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@rpc</span><span class="p">(</span><span class="n">flags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;async&quot;</span><span class="p">})</span>
@@ -896,7 +896,7 @@
                     <span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fragment</span><span class="o">.</span><span class="n">device_cleanup</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Execution never reaches here, return is just to pacify compiler.&quot;</span>  <span class="c1"># noqa: B011</span>
         <span class="k">return</span> <span class="kc">True</span>
 
 

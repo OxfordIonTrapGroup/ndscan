@@ -351,8 +351,8 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">params</span> <span class="o">=</span> <span class="n">FIT_OBJECTS</span><span class="p">[</span><span class="n">fit_type</span><span class="p">]</span><span class="o">.</span><span class="n">all_parameter_names</span>
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-            <span class="c1"># For backwards-compatibility with older oitg versions</span>
-            <span class="c1"># If explicitly requested to save fit results, then get all non-derived params</span>
+            <span class="c1"># For backwards-compatibility with older oitg versions: If explicitly</span>
+            <span class="c1"># requested to save fit results, then get all non-derived params.</span>
             <span class="k">if</span> <span class="n">save_fit_results</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                     <span class="s2">&quot;Derived parameters for fit type &#39;</span><span class="si">%s</span><span class="s2">&#39; not accessible in installed &quot;</span>
@@ -362,8 +362,8 @@
                 <span class="p">)</span>
                 <span class="n">params</span> <span class="o">=</span> <span class="n">FIT_OBJECTS</span><span class="p">[</span><span class="n">fit_type</span><span class="p">]</span><span class="o">.</span><span class="n">parameter_names</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># If none specified and oitg version does not support derived_parameter_names,</span>
-                <span class="c1"># do not save results</span>
+                <span class="c1"># If none specified and oitg version does not support</span>
+                <span class="c1"># derived_parameter_names, do not save results.</span>
                 <span class="n">save_fit_results</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">clean_channel_name</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">]</span>
@@ -589,7 +589,8 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clean_channel_name</span><span class="p">(</span><span class="n">channel_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Clean fit param names to become valid Python identifiers for ndscan results channels.</span>
+<span class="sd">    Clean fit param names to become valid Python identifiers for ndscan results</span>
+<span class="sd">    channels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">channel_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
 </pre></div>

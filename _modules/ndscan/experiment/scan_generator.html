@@ -123,7 +123,9 @@
 <div class="viewcode-block" id="RefiningGenerator">
 <a class="viewcode-back" href="../../../apidocs.html#ndscan.experiment.scan_generator.RefiningGenerator">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RefiningGenerator</span><span class="p">(</span><span class="n">ScanGenerator</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates progressively finer grid by halving distance between points each level.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates progressively finer grid by halving distance between points each</span>
+<span class="sd">    level.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="n">randomise_order</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">))</span>
@@ -638,7 +640,12 @@
             <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">lvl</span> <span class="o">&lt;</span> <span class="n">max_level</span> <span class="k">for</span> <span class="n">lvl</span> <span class="ow">in</span> <span class="n">axis_levels</span><span class="p">):</span>
                 <span class="c1"># Previously visited this combination already.</span>
                 <span class="k">continue</span>
-            <span class="n">tp</span> <span class="o">=</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">lvl</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_levels</span><span class="p">,</span> <span class="n">axis_level_points</span><span class="p">)))</span>
+            <span class="n">tp</span> <span class="o">=</span> <span class="n">product</span><span class="p">(</span>
+                <span class="o">*</span><span class="p">(</span>
+                    <span class="n">p</span><span class="p">[</span><span class="n">lvl</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_levels</span><span class="p">,</span> <span class="n">axis_level_points</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
             <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">tp</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">num_repeats</span><span class="p">):</span>
