@@ -208,7 +208,7 @@ class RunSubscanTwiceCase(ExpFragmentCase):
         parent = self.create(RunSubscanTwiceFragment)
         results = parent.run_once()
 
-        for base, (coords, values, _) in zip([0, 4], results):
+        for base, (coords, values, _) in zip([0, 4], results, strict=True):
             expected_values = [float(n) for n in range(base, base + 4)]
             expected_results = [v + 1 for v in expected_values]
             self.assertEqual(coords, {parent.child.value: expected_values})

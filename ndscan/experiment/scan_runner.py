@@ -247,7 +247,9 @@ class HostScanRunner(ScanRunner):
                         self._current_axis_values = next(self._points, None)
                         if self._current_axis_values is None:
                             return True
-                    for axis, value in zip(self._axes, self._current_axis_values):
+                    for axis, value in zip(
+                        self._axes, self._current_axis_values, strict=True
+                    ):
                         axis.param_store.set_value(value)
                     self._fragment.device_setup()
                     self._fragment.run_once()
@@ -255,7 +257,9 @@ class HostScanRunner(ScanRunner):
                     result_batcher.ensure_complete_and_push()
                     # Now that we know self._fragment successfully produced a complete
                     # point, also record the axis coordinates.
-                    for sink, value in zip(self._axis_sinks, self._current_axis_values):
+                    for sink, value in zip(
+                        self._axis_sinks, self._current_axis_values, strict=True
+                    ):
                         sink.push(value)
                     self._current_axis_values = None
 
@@ -444,7 +448,7 @@ class KernelScanRunner(ScanRunner):
 
         values = tuple([] for _ in self._axes)
         for p in self._current_chunk:
-            for i, (value, axis) in enumerate(zip(p, self._axes)):
+            for i, (value, axis) in enumerate(zip(p, self._axes, strict=True)):
                 # KLUDGE: Explicitly coerce value to the target type here so we can use
                 # the regular (float) scans for integers until proper support for int
                 # scans is implemented.
@@ -477,7 +481,7 @@ class KernelScanRunner(ScanRunner):
         # Now that we know that a complete point was successfully produced, also record
         # the axis coordinates.
         values = self._current_chunk.pop(0)
-        for value, sink in zip(values, self._axis_sinks):
+        for value, sink in zip(values, self._axis_sinks, strict=True):
             sink.push(value)
 
         # Prepare for the next point.
@@ -496,7 +500,7 @@ class KernelScanRunner(ScanRunner):
             return
         # Set the host-side parameter stores.
         next_values = self._current_chunk[0]
-        for value, axis in zip(next_values, self._axes):
+        for value, axis in zip(next_values, self._axes, strict=True):
             axis.param_store.set_value(axis.param_store.value_from_pyon(value))
 
     @host_only
@@ -571,7 +575,8 @@ def describe_scan(
         }
         for ax in spec.axes
     ]
-    for ax, gen in zip(axis_specs, spec.generators):
+    # Time series scans have a synthetic timestamp axis without a generator.
+    for ax, gen in zip(axis_specs, spec.generators, strict=False):
         gen.describe_limits(ax)
 
     desc["axes"] = axis_specs

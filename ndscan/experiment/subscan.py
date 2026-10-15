@@ -170,8 +170,10 @@ class Subscan:
 
     def _push_coordinates(self):
         coordinates = OrderedDict()
+        # There may be more coordinate channels than axes actually scanned (see
+        # setup_subscan()).
         for channel, (param, sink) in zip(
-            self._coordinate_channels, self._coordinate_sinks.items()
+            self._coordinate_channels, self._coordinate_sinks.items(), strict=False
         ):
             v = sink.get_all()
             coordinates[param] = v

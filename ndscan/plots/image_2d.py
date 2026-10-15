@@ -242,6 +242,7 @@ class _ImagePlot:
             x_data[num_skip:num_to_show],
             y_data[num_skip:num_to_show],
             z_data[num_skip:num_to_show],
+            strict=True,
         ):
             avg, num = self.averages_by_coords.get((x, y), (0.0, 0))
             num += 1
@@ -279,7 +280,7 @@ class _ImagePlot:
 
         x_inds = _coords_to_indices(x_data[num_skip:num_to_show], self.x_range)
         y_inds = _coords_to_indices(y_data[num_skip:num_to_show], self.y_range)
-        for i, (x_idx, y_idx) in enumerate(zip(x_inds, y_inds)):
+        for i, (x_idx, y_idx) in enumerate(zip(x_inds, y_inds, strict=True)):
             data_idx = num_skip + i
             coords, z = (x_data[data_idx], y_data[data_idx]), z_data[data_idx]
             self.image_data[x_idx, y_idx] = (
@@ -454,7 +455,12 @@ class Image2DPlotWidget(SliceableMenuPanesWidget):
             # If all points were unique so far, check if we have duplicates now.
             if not self.found_duplicate_coords:
                 num_skip = len(self.unique_coords)
-                for x in zip(points["axis_0"][num_skip:], points["axis_1"][num_skip:]):
+                # Axes can be of different lengths while a point is being appended.
+                for x in zip(
+                    points["axis_0"][num_skip:],
+                    points["axis_1"][num_skip:],
+                    strict=False,
+                ):
                     if x in self.unique_coords:
                         self.found_duplicate_coords = True
                         break

@@ -535,7 +535,12 @@ def generate_points(
             if all(lvl < max_level for lvl in axis_levels):
                 # Previously visited this combination already.
                 continue
-            tp = product(*(p[lvl] for (lvl, p) in zip(axis_levels, axis_level_points)))
+            tp = product(
+                *(
+                    p[lvl]
+                    for (lvl, p) in zip(axis_levels, axis_level_points, strict=True)
+                )
+            )
             points.extend(tp)
 
         for _ in range(options.num_repeats):

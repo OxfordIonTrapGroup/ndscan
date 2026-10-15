@@ -450,7 +450,7 @@ class TopLevelRunner(HasEnvironment):
     def _make_coordinate_dict(self):
         return OrderedDict(
             ((a.param_schema["fqn"], a.path), s.get_all())
-            for a, s in zip(self.spec.axes, self._coordinate_sinks)
+            for a, s in zip(self.spec.axes, self._coordinate_sinks, strict=True)
         )
 
     def _make_value_dict(self):

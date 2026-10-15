@@ -262,7 +262,7 @@ plasma_data = [
     (0.99607843137254903, (240, 246, 35, 255)),
     (1.0, (239, 248, 33, 255)),
 ]
-plasma = pyqtgraph.ColorMap(*zip(*plasma_data))
+plasma = pyqtgraph.ColorMap(*zip(*plasma_data, strict=True))
 
 kovesi_c8_data = [
     (203, 125, 111),

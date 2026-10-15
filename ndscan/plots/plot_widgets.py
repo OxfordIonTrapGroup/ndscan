@@ -773,7 +773,7 @@ def build_channel_selection_context_menu(
         update_checkboxes_enabled()
         state_changed_callback()
 
-    for name, checkbox in zip(data_names, checkboxes):
+    for name, checkbox in zip(data_names, checkboxes, strict=True):
         checkbox.setTristate(False)
         checkbox.setChecked(name not in hidden_channels)
         checkbox.stateChanged.connect(lambda a, n=name: state_changed(a, n))
