@@ -31,30 +31,39 @@ Release notes
 
 #### New features
 
-- **Text annotations**: Analyses can now return `annotations.note()` and
-  `annotations.named_value()` annotations, which are shown in the top right
-  corner of the plot pane of the associated result channel(s). Prefer
-  `named_value()` to format e.g. fit results as
-  `<label>: <value>(<error>) <unit>`, where value and error can be directly
-  taken from annotation data sources (e.g. fit results).
+- **Plot applet**:
+  - *Text annotations*: Analyses can now return `annotations.note()` and
+    `annotations.named_value()` annotations, which are shown in the top right
+    corner of the plot pane of the associated result channel(s). Prefer
+    `named_value()` to format e.g. fit results as `<label>: <value>(<error>)
+    <unit>`, where value and error can be directly taken from annotation data
+    sources (e.g. fit results).
 
 #### Improvements
 
-- `make_fragment_scan_exp()` now also forwards keyword arguments to
-  `build_fragment()`, matching `create_and_run_fragment_once()`.
+- **Experiment code/execution**:
+  - `make_fragment_scan_exp()` now also forwards keyword arguments to
+    `build_fragment()`, matching `create_and_run_fragment_once()`.
 
 #### Bug fixes
 
-- Results already pushed before a transitory error/RTIO underflow interrupted a
-  point are now discarded in scans without axes (single points and time series),
-  as they already were for scans with axes, instead of triggering a spurious
-  `Already pushed to result channel …` error.
-- Annotations specifying `ResultChannel`s as `associated_channels` are now
-  serialised properly, instead of failing with a JSON `TypeError`.
-- Subscans configured without explicit `ScanOptions` now get a new random seed
-  on every `run()`/`configure()` call.
-- The type check in `get_default_analyses()` now raises `TypeError` rather than
-  `ValueError`.
+- **Experiment code/execution**:
+  - The `OnlineFit` `analysis_identifier` parameter is now actually taken into
+    account (can be used to disambiguate between the analysis results of
+    multiple online fits generated after the fact, instead of using
+    `ResultPrefixAnalysisWrapper`).
+  - Fixed `OnlineFit` analysis result handling where `oitg.fitting` parameter
+    names weren't valid identifiers (`sinusoid` with `t_pi/2`).
+  - Results already pushed before a transitory error/RTIO underflow interrupted
+    a point are now discarded in scans without axes (single points and time
+    series), as they already were for scans with axes, instead of triggering a
+    spurious `Already pushed to result channel …` error.
+  - Annotations specifying `ResultChannel`s as `associated_channels` are now
+    serialised properly, instead of failing with a JSON `TypeError`.
+  - Subscans configured without explicit `ScanOptions` now get a new random seed
+    on every `run()`/`configure()` call.
+  - The type check in `get_default_analyses()` now raises `TypeError` rather
+    than `ValueError`.
 
 ### v0.4.0
 
