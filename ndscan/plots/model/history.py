@@ -1,8 +1,6 @@
 import logging
 from typing import Any
 
-import numpy as np
-
 from . import ScanModel
 
 logger = logging.getLogger(__name__)
@@ -51,6 +49,16 @@ class HistoryFromScanModel(ScanModel):
         self.annotations_changed.emit(annotations)
 
     def update_cutoff(self, cutoff: int) -> None:
+        """Set the cutoff (e.g. from the user scrubbing the time slider) and emit the
+        resulting data.
+
+        As the underlying parent data is unchanged, this always emits
+        ``points_appended``, which consumers handle for data of any length (e.g. image
+        plots blank out the pixels for points no longer shown when rolling back).
+        """
+        self._set_cutoff_and_emit(cutoff, rewritten=False)
+
+    def _set_cutoff_and_emit(self, cutoff: int, rewritten: bool) -> None:
         parent_data = self.parent.get_point_data()
 
         num_points = len(next(iter(parent_data.values()), []))
@@ -65,42 +73,34 @@ class HistoryFromScanModel(ScanModel):
                 f"(have only {num_points} points available)"
             )
         self._cutoff = cutoff
-
-        data_rewritten = False
-        for name, incoming_values in sliced_data.items():
-            # Check if points were appended or rewritten.
-            if name in self._sliced_data:
-                imax = min(len(incoming_values), len(self._sliced_data[name]))
-                if not np.array_equal(
-                    incoming_values[:imax], self._sliced_data[name][:imax]
-                ):
-                    data_rewritten = True
-
         self._sliced_data = sliced_data
 
-        if data_rewritten:
+        if rewritten:
             self.points_rewritten.emit(self._sliced_data)
         else:
             self.points_appended.emit(self._sliced_data)
 
     def _rewrite_data(self, *args) -> None:
-        point_data = self.parent.get_point_data()
-        num_points = len(next(iter(point_data.values()), []))
-
-        if self._cutoff >= num_points:
-            self.update_cutoff(-1)
-
-        self.update_cutoff(self._cutoff)
+        # Forward the parent's classification as-is rather than attempting to re-derive
+        # it by comparing the data: the values may well repeat between reruns of a scan
+        # (e.g. in-progress subscan previews restarting for every point of an enclosing
+        # scan), and consumers rely on points_rewritten to reset accumulated state
+        # (e.g. for averaging).
+        cutoff = self._cutoff
+        num_points = len(next(iter(self.parent.get_point_data().values()), []))
+        if cutoff >= num_points:
+            # The selected point no longer exists; follow the latest data again.
+            cutoff = -1
+        self._set_cutoff_and_emit(cutoff, rewritten=True)
 
     def _append_data(self, *args) -> None:
         point_data = self.parent.get_point_data()
         num_points = len(next(iter(point_data.values()), []))
 
-        if self._cutoff >= num_points:
+        if self._cutoff == -1 or self._cutoff >= num_points:
+            # Either following the latest data, or the selected point no longer
+            # exists (so follow the latest data again).
             self.update_cutoff(-1)
-
-        if self._cutoff == -1:
-            self.update_cutoff(self._cutoff)
 
     def slice_data(
         self,
@@ -122,9 +122,8 @@ class HistoryFromScanModel(ScanModel):
         return self._sliced_data
 
     def quit(self) -> None:
+        super().quit()
         self.parent.points_appended.disconnect(self._append_data)
         self.parent.points_rewritten.disconnect(self._rewrite_data)
         self.parent.annotations_changed.disconnect(self._update_annotations)
-        self.parent.channel_schemata_changed.disconnect(
-            self._on_channel_schemata_changed
-        )
+        self.parent.channel_schemata_changed.disconnect(self.channel_schemata_changed)

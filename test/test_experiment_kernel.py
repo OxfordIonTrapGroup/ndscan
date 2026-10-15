@@ -5,6 +5,7 @@ Collecting them all in a single module might or might not turn out to be a good 
 could also keep them inline with the other test_experiment_* unit test modules.
 """
 
+import json
 import math
 from collections import Counter
 from dataclasses import dataclass
@@ -400,6 +401,24 @@ class TestSubscanKernelCase(KernelEmulatorCase):
             "test_experiment_kernel.FragmentSubscanParent",
             "float_frag_scan__channel_result",
             "int_frag_scan__channel_result",
+        )
+
+        # The in-progress preview datasets (published by default) should show the
+        # (only) completed iteration in the top-level scan schema. This exercises the
+        # incremental publishing RPCs from an actual kernel scan loop.
+        def d(key):
+            return self.dataset_db.get("ndscan.rid_0.previews.float_frag_scan." + key)
+
+        self.assertEqual(d(SCHEMA_REVISION_KEY), SCHEMA_REVISION)
+        self.assertEqual(d("completed"), True)
+        self.assertEqual(d("source_id"), "rid_0")
+        self.assertEqual(len(json.loads(d("axes"))), 1)
+        self.assertEqual(list(json.loads(d("channels")).keys()), ["result"])
+        np.testing.assert_array_max_ulp(
+            d("points.axis_0"), FLOAT_GEN.points_for_level(0)
+        )
+        np.testing.assert_array_max_ulp(
+            d("points.channel_result"), FLOAT_GEN.points_for_level(0)
         )
 
     def test_subclass_subscan(self):

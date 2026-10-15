@@ -221,6 +221,7 @@ class SliceForScanModel(ScanModel):
         return self._sliced_data
 
     def quit(self) -> None:
+        super().quit()
         self._parent.points_appended.disconnect(self._update)
         self._parent.points_rewritten.disconnect(self._update)
         self._fixed_point.point_changed.disconnect(self._update)

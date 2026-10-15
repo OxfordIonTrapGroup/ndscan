@@ -161,6 +161,11 @@ class Model(QtCore.QObject):
     def get_channel_schemata(self) -> dict[str, Any]:
         raise NotImplementedError
 
+    def quit(self) -> None:
+        """Stop any background activity in preparation for the model being
+        discarded."""
+        pass
+
 
 class SinglePointModel(Model):
     point_changed = QtCore.pyqtSignal(object)
@@ -193,6 +198,10 @@ class ScanModel(Model):
 
     def get_analysis_result_source(self, name: str) -> AnnotationDataSource | None:
         raise NotImplementedError
+
+    def quit(self) -> None:
+        for analysis in self._online_analyses.values():
+            analysis.stop()
 
     #
     # TODO: Having these as elaborate implementation in the base class leaves a bit of a
