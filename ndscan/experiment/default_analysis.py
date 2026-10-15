@@ -227,7 +227,7 @@ class OnlineFit(DefaultAnalysis):
         :data:`DEFAULT_FIT_ANNOTATIONS` will be queried.
     :param analysis_identifier: Optional explicit name to use for online analysis.
         Defaults to ``fit_<fit_type>``, but can be set explicitly to allow more than one
-        fit of a given type at a time. Must be a valid python identifier.
+        fit of a given type at a time. Must be a valid Python identifier.
     :param constants: Specifies parameters to be held constant during the fit. This is
         a dictionary mapping fit parameter names to the respective constant values,
         forwarded to :meth:`oitg.fitting.FitBase.FitBase.fit`.
@@ -477,6 +477,6 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
 
 def clean_channel_name(channel_name: str) -> str:
     """
-    Clean fit param names to become valid python identifiers for ndscan results channels.
+    Clean fit param names to become valid Python identifiers for ndscan results channels.
     """
     return channel_name.replace("/", "_")
