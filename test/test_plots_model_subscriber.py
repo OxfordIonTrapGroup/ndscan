@@ -39,7 +39,8 @@ class SinglePointTest(unittest.TestCase):
             }
         )
         self.pending_mods = []
-        self.datasets.publish = lambda a: self.pending_mods.append(a)
+        # Lambda for late binding, as init() replaces self.pending_mods.
+        self.datasets.publish = lambda a: self.pending_mods.append(a)  # noqa: PLW0108
 
     def init(self):
         self.pending_mods = [

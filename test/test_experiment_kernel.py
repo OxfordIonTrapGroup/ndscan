@@ -166,11 +166,11 @@ class TestSmorgasbordKernelCase(KernelEmulatorCase):
             num_repeats = num_points // len(scan_def.schema_values)
             self.assertEqual(
                 Counter(d(f"points.axis_{i}")),
-                Counter({k: num_repeats for k in scan_def.schema_values}),
+                Counter(dict.fromkeys(scan_def.schema_values, num_repeats)),
             )
             self.assertEqual(
                 Counter(d(f"points.channel_{scan_def.param_name}_result")),
-                Counter({k: num_repeats for k in scan_def.result_values}),
+                Counter(dict.fromkeys(scan_def.result_values, num_repeats)),
             )
 
 

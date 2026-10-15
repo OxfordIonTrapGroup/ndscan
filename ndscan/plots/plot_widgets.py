@@ -379,7 +379,7 @@ class VerticalPanesWidget(pyqtgraph.GraphicsLayoutWidget):
         )
 
     def _detach_time_slider(self):
-        """Remove the time slider from self.layout (if created with add_time_slider()."""
+        """Remove the time slider from self.layout (if created by add_time_slider())."""
         if self._time_slider_proxy is None:
             return
         self.layout.removeItem(self._time_slider_proxy)

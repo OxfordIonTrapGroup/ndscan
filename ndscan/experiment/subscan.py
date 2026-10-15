@@ -219,7 +219,7 @@ class Subscan:
             for i, h in enumerate(coordinate_sinks.keys()):
                 if handle._store == h._store:
                     return i
-            assert False
+            raise AssertionError("Axis not found among coordinate sinks")
 
         context = AnnotationContext(
             get_axis_index,

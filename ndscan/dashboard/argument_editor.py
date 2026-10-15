@@ -45,7 +45,7 @@ def _try_extract_ndscan_params(
         return None, arguments
 
     state = arg.get("state", None)
-    params = pyon.decode(state if state else arg["desc"]["default"])
+    params = pyon.decode(state or arg["desc"]["default"])
     vanilla_args = arguments.copy()
     del vanilla_args[PARAMS_ARG_KEY]
     return params, vanilla_args

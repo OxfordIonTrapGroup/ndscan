@@ -141,7 +141,8 @@ class ParamTreeDialog(QtWidgets.QDialog):
         self.right_pane.setLayout(QtWidgets.QVBoxLayout())
         self.right_pane.layout().setContentsMargins(3, 3, 3, 0)
 
-        # Use a read-only QTextEdit for display rather than a QLabel due to better line wrapping customisation. I'm
+        # Use a read-only QTextEdit for display rather than a QLabel due to better line
+        # wrapping customisation.
         self.text_edit = QtWidgets.QTextEdit(self)
         self.text_edit.setReadOnly(True)
         self.text_edit.setViewportMargins(0, 0, 0, 0)
