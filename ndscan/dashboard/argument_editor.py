@@ -230,7 +230,7 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         super().__init__()
 
         self.manager = manager
-        self.dock = expurl
+        self.dock = dock
         self.expurl = expurl
 
         self.setColumnCount(3)

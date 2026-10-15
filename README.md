@@ -69,6 +69,10 @@ Release notes
   - 2D image plots now read the default zoom level from the scan range even if
     an endpoint is exactly zero (instead of zooming to the data received so far).
 
+- **Dashboard interface**:
+  - Recomputing a plain ARTIQ argument now correctly reapplies the dock colour
+    (on ARTIQ versions that support them).
+
 ### v0.4.0
 
 #### New features
