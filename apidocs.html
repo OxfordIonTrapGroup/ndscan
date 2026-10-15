@@ -1145,7 +1145,7 @@ handling machinery (<code class="docutils literal notranslate"><span class="pre"
 <dt class="sig sig-object py" id="ndscan.experiment.result_channels.NumericChannel.get_last">
 <span class="sig-name descname"><span class="pre">get_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ndscan/experiment/result_channels.html#NumericChannel.get_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndscan.experiment.result_channels.NumericChannel.get_last" title="Link to this definition"></a></dt>
 <dd><p>Returns the last value pushed to this result channel.</p>
-<p>This method is a workaround for limitations of ARTIQ python, which make it
+<p>This method is a workaround for limitations of ARTIQ Python, which make it
 impractical to extract values from the sinks without going through RPCs.</p>
 </dd></dl>
 
@@ -1997,7 +1997,7 @@ dictionaries mapping coordinate names to fit result names. If <code class="docut
 <code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_FIT_ANNOTATIONS</span></code> will be queried.</p></li>
 <li><p><strong>analysis_identifier</strong> – Optional explicit name to use for online analysis.
 Defaults to <code class="docutils literal notranslate"><span class="pre">fit_&lt;fit_type&gt;</span></code>, but can be set explicitly to allow more than one
-fit of a given type at a time. Must be a valid python identifier.</p></li>
+fit of a given type at a time. Must be a valid Python identifier.</p></li>
 <li><p><strong>constants</strong> – Specifies parameters to be held constant during the fit. This is
 a dictionary mapping fit parameter names to the respective constant values,
 forwarded to <code class="xref py py-meth docutils literal notranslate"><span class="pre">oitg.fitting.FitBase.FitBase.fit()</span></code>.</p></li>

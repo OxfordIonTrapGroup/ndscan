@@ -323,7 +323,7 @@
 <span class="sd">        :data:`DEFAULT_FIT_ANNOTATIONS` will be queried.</span>
 <span class="sd">    :param analysis_identifier: Optional explicit name to use for online analysis.</span>
 <span class="sd">        Defaults to ``fit_&lt;fit_type&gt;``, but can be set explicitly to allow more than one</span>
-<span class="sd">        fit of a given type at a time. Must be a valid python identifier.</span>
+<span class="sd">        fit of a given type at a time. Must be a valid Python identifier.</span>
 <span class="sd">    :param constants: Specifies parameters to be held constant during the fit. This is</span>
 <span class="sd">        a dictionary mapping fit parameter names to the respective constant values,</span>
 <span class="sd">        forwarded to :meth:`oitg.fitting.FitBase.FitBase.fit`.</span>
@@ -589,7 +589,7 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clean_channel_name</span><span class="p">(</span><span class="n">channel_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Clean fit param names to become valid python identifiers for ndscan results channels.</span>
+<span class="sd">    Clean fit param names to become valid Python identifiers for ndscan results channels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">channel_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
 </pre></div>
