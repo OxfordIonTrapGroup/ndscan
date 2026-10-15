@@ -334,7 +334,7 @@ class NumericChannel(ResultChannel):
     def get_last(self):
         """Returns the last value pushed to this result channel.
 
-        This method is a workaround for limitations of ARTIQ python, which make it
+        This method is a workaround for limitations of ARTIQ Python, which make it
         impractical to extract values from the sinks without going through RPCs.
         """
         if not self._value_pushed:

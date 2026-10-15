@@ -71,17 +71,17 @@ class OnlineFitChannelNameTestCase(unittest.TestCase):
 
     def test_all_online_fit_is_identifier(self):
         """Test that for every fit object, the resulting channel names are valid
-        python identifiers, and that there are no duplicate channel names."""
+        Python identifiers, and that there are no duplicate channel names."""
         for fit_type in FIT_OBJECTS:
             o = OnlineFit(fit_type, data=None, save_fit_results=True)
             for k, v in o._result_channels.items():
                 self.assertTrue(
                     k.isidentifier(),
-                    f"{k} from {fit_type} fit is not a valid python identifier",
+                    f"{k} from {fit_type} fit is not a valid Python identifier",
                 )
                 self.assertTrue(
                     v.path.isidentifier(),
-                    f"{v.path} from {fit_type} fit is not a valid python identifier",
+                    f"{v.path} from {fit_type} fit is not a valid Python identifier",
                 )
 
 
