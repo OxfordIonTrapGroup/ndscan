@@ -271,6 +271,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         self._arg_to_widgets = {}
         self._override_items = {}
 
+        # Keep references to running tasks, as the event loop only holds weak ones.
+        self._background_tasks = set()
+
         self._add_override_icon = load_icon_cached("list-add-32.png")
         self._open_param_tree_icon = load_icon_cached("view-list-tree-32.png")
         self._remove_override_icon = load_icon_cached("list-remove-32.png")
@@ -686,7 +689,9 @@ class ArgumentEditor(QtWidgets.QTreeWidget, OverrideProvider):
         return group
 
     def _recompute_vanilla_argument_clicked(self, name):
-        asyncio.ensure_future(self._recompute_vanilla_argument(name))
+        task = asyncio.ensure_future(self._recompute_vanilla_argument(name))
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     async def _recompute_vanilla_argument(self, name):
         try:
