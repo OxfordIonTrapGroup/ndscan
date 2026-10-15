@@ -236,15 +236,15 @@ async def run(args):
                 rest = key[len(args.key_prefix) :]
                 rid = rest[: rest.index(".")]
                 preexisting_data_rids.add(rid)
-        for rid in preexisting_data_rids:
+        for rid_str in preexisting_data_rids:
             try:
-                rid = int(rid)
+                rid = int(rid_str)
             except ValueError:
                 # Old ndscan/…? Shouldn't usually happen.
                 logger.warning(
                     "Key fragment '%s' in pre-existing datasets under '%s' "
                     + "does not look like a rid; ignoring.",
-                    rid,
+                    rid_str,
                     args.key_prefix,
                 )
                 continue

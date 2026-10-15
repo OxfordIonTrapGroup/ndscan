@@ -255,8 +255,8 @@ class OnlineFit(DefaultAnalysis):
         try:
             params = FIT_OBJECTS[fit_type].all_parameter_names
         except AttributeError:
-            # For backwards-compatibility with older oitg versions
-            # If explicitly requested to save fit results, then get all non-derived params
+            # For backwards-compatibility with older oitg versions: If explicitly
+            # requested to save fit results, then get all non-derived params.
             if save_fit_results is True:
                 logger.warning(
                     "Derived parameters for fit type '%s' not accessible in installed "
@@ -266,8 +266,8 @@ class OnlineFit(DefaultAnalysis):
                 )
                 params = FIT_OBJECTS[fit_type].parameter_names
             else:
-                # If none specified and oitg version does not support derived_parameter_names,
-                # do not save results
+                # If none specified and oitg version does not support
+                # derived_parameter_names, do not save results.
                 save_fit_results = False
 
         params = [clean_channel_name(p) for p in params]
@@ -477,6 +477,7 @@ class ResultPrefixAnalysisWrapper(DefaultAnalysis):
 
 def clean_channel_name(channel_name: str) -> str:
     """
-    Clean fit param names to become valid Python identifiers for ndscan results channels.
+    Clean fit param names to become valid Python identifiers for ndscan results
+    channels.
     """
     return channel_name.replace("/", "_")

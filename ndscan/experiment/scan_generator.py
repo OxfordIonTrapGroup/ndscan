@@ -42,7 +42,9 @@ class ScanGenerator:
 
 
 class RefiningGenerator(ScanGenerator):
-    """Generates progressively finer grid by halving distance between points each level."""
+    """Generates progressively finer grid by halving distance between points each
+    level.
+    """
 
     def __init__(self, lower, upper, randomise_order):
         self.lower = float(min(lower, upper))

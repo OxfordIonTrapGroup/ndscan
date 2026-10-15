@@ -370,7 +370,7 @@ class KernelScanRunner(ScanRunner):
             self._remove_result_batcher()
             if device_cleanup:
                 self._fragment.device_cleanup()
-        assert False, "Execution never reaches here, return is just to pacify compiler."
+        assert False, "Execution never reaches here, return is just to pacify compiler."  # noqa: B011
         return True
 
     @kernel

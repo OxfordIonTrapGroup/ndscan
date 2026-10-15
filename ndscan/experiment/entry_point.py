@@ -651,7 +651,7 @@ class _NoAxisRunner(HasEnvironment):
         finally:
             self._remove_result_batcher()
             self.fragment.device_cleanup()
-        assert False, "Execution never reaches here, return is just to pacify compiler."
+        assert False, "Execution never reaches here, return is just to pacify compiler."  # noqa: B011
         return True
 
     @rpc(flags={"async"})
@@ -799,7 +799,7 @@ class _FragmentRunner(HasEnvironment):
                     )
         finally:
             self.fragment.device_cleanup()
-        assert False, "Execution never reaches here, return is just to pacify compiler."
+        assert False, "Execution never reaches here, return is just to pacify compiler."  # noqa: B011
         return True
 
 

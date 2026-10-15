@@ -1,4 +1,3 @@
-import random
 import time
 from enum import Enum, unique
 
@@ -6,6 +5,8 @@ import numpy as np
 from oitg.errorbars import binom_onesided
 
 from ndscan.experiment import *
+
+rng = np.random.default_rng()
 
 
 class Readout(Fragment):
@@ -30,8 +31,8 @@ class Readout(Fragment):
 
         counts = np.empty(num_shots, dtype=np.int16)
         for i in range(num_shots):
-            mean = self.mean_0.get() if random.random() > p else self.mean_1.get()
-            counts[i] = np.random.poisson(mean)
+            mean = self.mean_0.get() if rng.random() > p else self.mean_1.get()
+            counts[i] = rng.poisson(mean)
         self.counts.push(counts)
 
         num_brights = np.sum(counts >= self.threshold.get())

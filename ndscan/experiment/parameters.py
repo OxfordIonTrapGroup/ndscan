@@ -645,7 +645,7 @@ def _get_enum_compiler_types(
         class EnumParamStore(ParamStore):
             RpcType = int32
             # TODO: Make sure this is emitted efficiently as a global by the compiler.
-            instances = [o for o in enum_type]  # noqa: RUF012
+            instances = list(enum_type)  # noqa: RUF012
 
             @portable
             def _notify_handles(self):
