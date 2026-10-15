@@ -205,7 +205,11 @@ def main():
         )
         widget = PlotAreaTabWidget(
             OrderedDict(
-                zip((strip_suffix(label_map[p], ".") for p in prefixes), roots)
+                zip(
+                    (strip_suffix(label_map[p], ".") for p in prefixes),
+                    roots,
+                    strict=True,
+                )
             ),
             context,
         )

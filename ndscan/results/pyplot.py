@@ -43,7 +43,7 @@ def make_default_1d_plot(
     x_vals = np.array(ds("points.axis_0")) / x_scale
     ascending = np.argsort(x_vals)
 
-    for name, plt_axis in zip(y_axis_names, plt_axes):
+    for name, plt_axis in zip(y_axis_names, plt_axes, strict=True):
         y_schema = channel_schemata[name]
         y_unit = y_schema["unit"]
         y_label = y_schema["description"]
