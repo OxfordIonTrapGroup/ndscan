@@ -65,6 +65,10 @@ Release notes
   - The type check in `get_default_analyses()` now raises `TypeError` rather
     than `ValueError`.
 
+- **Plot applet**:
+  - 2D image plots now read the default zoom level from the scan range even if
+    an endpoint is exactly zero (instead of zooming to the data received so far).
+
 ### v0.4.0
 
 #### New features
