@@ -689,10 +689,10 @@ class Fragment(HasEnvironment):
                 identity = (param.fqn, self._stringize_path())
                 try:
                     value = param.eval_default(self._get_dataset_or_set_default)
-                except Exception:  # noqa: BLE001
+                except Exception as e:
                     raise ValueError(
                         f"Error while evaluating default value for '{identity}'"
-                    )
+                    ) from e
                 store = param.make_store(identity, value)
                 self._default_params.append((param, store))
 

@@ -20,7 +20,7 @@ def extract_param_schema(arguments: dict[str, Any]) -> dict[str, Any]:
     try:
         string = arguments[PARAMS_ARG_KEY]
     except KeyError:
-        raise KeyError(f"ndscan argument ({PARAMS_ARG_KEY}) not found")
+        raise KeyError(f"ndscan argument ({PARAMS_ARG_KEY}) not found") from None
 
     return pyon.decode(string)
 

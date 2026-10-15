@@ -323,7 +323,7 @@ class NumericChannel(ResultChannel):
                 except AttributeError:
                     raise KeyError(
                         f"Unit {unit} is unknown, you must specify the scale manually"
-                    )
+                    ) from None
         self.scale = scale
         self.unit = unit
 

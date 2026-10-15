@@ -337,7 +337,9 @@ def resolve_numeric_scale(scale: float | None, unit: str) -> float:
     try:
         return getattr(units, unit)
     except AttributeError:
-        raise KeyError(f"Unit '{unit}' is unknown, you must specify the scale manually")
+        raise KeyError(
+            f"Unit '{unit}' is unknown, you must specify the scale manually"
+        ) from None
 
 
 class ParamBase:
@@ -729,12 +731,12 @@ class EnumParam(ParamBase):
             except NotImplementedError:
                 # This parsed and called dataset(), so okay.
                 pass
-            except Exception:  # noqa: BLE001
+            except Exception as e:
                 raise InvalidDefaultError(
                     "str default values for EnumParm must be valid PYON strings "
                     + "(including quotes) that evaluate to the name of an enum member "
                     + f'(got: "{default}")'
-                )
+                ) from e
         self.StoreType, self.HandleType = _get_enum_compiler_types(enum_class)
         super().__init__(
             fqn=fqn,
