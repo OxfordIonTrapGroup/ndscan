@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 def _calc_range_spec(preset_min, preset_max, preset_increment, data):
     sorted_data = np.unique(data).astype(float)
 
-    lower = preset_min if preset_min else sorted_data[0]
-    upper = preset_max if preset_max else sorted_data[-1]
+    lower = preset_min if preset_min is not None else sorted_data[0]
+    upper = preset_max if preset_max is not None else sorted_data[-1]
 
     if preset_increment:
         increment = preset_increment
